@@ -4,6 +4,7 @@ const (
 	SourceAPI       Source = "tfe-api"
 	SourceUI        Source = "tfe-ui"
 	SourceTerraform Source = "terraform+cloud"
+	SourceForgejo   Source = "forgejo"
 	SourceGithub    Source = "github"
 	SourceGitlab    Source = "gitlab"
 )

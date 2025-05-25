@@ -220,6 +220,9 @@ func (s *Spawner) handleWithError(logger logr.Logger, event vcs.Event) error {
 		case vcs.GitlabKind:
 			cvOpts.Source = configversion.SourceGitlab
 			runOpts.Source = SourceGitlab
+		case vcs.ForgejoKind:
+			cvOpts.Source = configversion.SourceForgejo
+			runOpts.Source = SourceForgejo
 		}
 		cv, err := s.configs.Create(ctx, ws.ID, cvOpts)
 		if err != nil {

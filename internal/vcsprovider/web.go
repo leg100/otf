@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/a-h/templ"
@@ -25,8 +26,9 @@ type webHandlers struct {
 	client     webClient
 	githubApps webGithubAppClient
 
-	GithubHostname string
-	GitlabHostname string
+	GithubHostname  string
+	GitlabHostname  string
+	ForgejoHostname string
 }
 
 type webClient interface {
@@ -73,10 +75,25 @@ func (h *webHandlers) newPersonalToken(w http.ResponseWriter, r *http.Request) {
 	switch params.Kind {
 	case vcs.GithubKind:
 		props.scope = "repo"
-		props.tokensURL = urlbuilder.New("https", h.GithubHostname).Path("/settings/tokens").Build()
+		props.tokensURL = url.URL{
+			Scheme: "https",
+			Host:   h.GithubHostname,
+			Path:   "/settings/tokens",
+		}
 	case vcs.GitlabKind:
 		props.scope = "api"
-		props.tokensURL = urlbuilder.New("https", h.GitlabHostname).Path("/-/profile/personal_access_tokens").Build()
+		props.tokensURL = url.URL{
+			Scheme: "https",
+			Host:   h.GitlabHostname,
+			Path:   "/-/profile/personal_access_tokens",
+		}
+	case vcs.ForgejoKind:
+		props.scope = "repo (read/write) and user"
+		props.tokensURL = url.URL{
+			Scheme: "https",
+			Host:   h.ForgejoHostname,
+			Path:   "/user/settings/applications",
+		}
 	}
 	html.Render(newPAT(props), w, r)
 }

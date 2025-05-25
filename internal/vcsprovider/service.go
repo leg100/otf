@@ -38,6 +38,7 @@ type (
 		vcs.Subscriber
 
 		GithubAppService    *github.Service
+		ForgejoHostname     string
 		GithubHostname      string
 		GitlabHostname      string
 		SkipTLSVerification bool
@@ -48,6 +49,7 @@ type (
 func NewService(opts Options) *Service {
 	factory := factory{
 		githubapps:          opts.GithubAppService,
+		forgejoHostname:     opts.ForgejoHostname,
 		githubHostname:      opts.GithubHostname,
 		gitlabHostname:      opts.GitlabHostname,
 		skipTLSVerification: opts.SkipTLSVerification,
@@ -67,6 +69,7 @@ func NewService(opts Options) *Service {
 		HostnameService: opts.HostnameService,
 		GithubHostname:  opts.GithubHostname,
 		GitlabHostname:  opts.GitlabHostname,
+		ForgejoHostname: opts.ForgejoHostname,
 		client:          &svc,
 		githubApps:      opts.GithubAppService,
 	}

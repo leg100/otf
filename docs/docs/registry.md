@@ -8,7 +8,7 @@ To publish a module, go to the organization main menu, select **modules** and cl
 
 ![modules list](images/modules_list.png){.screenshot}
 
-You then need to select a VCS provider. If none are visible you need to first create a [provider](vcs_providers.md).
+You then need to select a VCS provider. If none are visible you need to first create a [provider](./vcs_providers/index.md).
 
 ![new module select vcs provider](images/modules_select_provider.png){.screenshot}
 

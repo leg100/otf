@@ -8,6 +8,7 @@ import (
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/vcs"
+	"net/url"
 	"time"
 )
 
@@ -44,6 +45,10 @@ templ list(props listProps) {
 			} else {
 				<span>Alternatively, <a class="underline" href={ paths.NewGithubApp() }>create a GitHub app</a> and you will be able to create VCS providers using a Github app installation.</span>
 			}
+			<form action={ paths.NewVCSProvider(props.organization) } method="GET">
+				<button class="btn">New Forgejo VCS Provider (Personal Token)</button>
+				<input type="hidden" name="kind" id="kind" value="forgejo"/>
+			</form>
 		</div>
 		<div id="content-list">
 			@components.Table(
@@ -117,7 +122,7 @@ templ edit(provider *VCSProvider) {
 
 type newPATProps struct {
 	provider  *VCSProvider
-	tokensURL templ.SafeURL
+	tokensURL url.URL
 	scope     string
 }
 
@@ -130,7 +135,7 @@ templ newPAT(props newPATProps) {
 		},
 	}) {
 		<div>
-			Create a { internal.Title(string(props.provider.Kind)) } VCS provider with a <a class="underline" href={ props.tokensURL }>personal token</a> with the <span class="font-bold">{ props.scope }</span> scope.
+			Create a { internal.Title(string(props.provider.Kind)) } VCS provider with a <a class="underline" href={ templ.SafeURL(props.tokensURL.String()) }>personal token</a> with the <span class="font-bold">{ props.scope }</span> scope.
 		</div>
 		@form(formProps{
 			provider: props.provider,
