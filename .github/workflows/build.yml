@@ -22,7 +22,12 @@ jobs:
       - name: Check no diff
         run: make check-no-diff
       - name: Lint check
-        run: make lint
+        run: |
+          make lint
+          helm lint ./charts/otfd
+          helm lint ./charts/otf-agent
+          helm template ./charts/otfd > /dev/null
+          helm template ./charts/otf-agent --set token=my_agent_token --set url=https://otf.ninja > /dev/null
       - name: Vet check
         run: make vet
       - name: Add hosts to /etc/hosts
@@ -94,40 +99,58 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   charts:
-    # only create otf-charts PR for new releases
+    # only upgrade charts for new releases
     needs: [release-please,release]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          token: ${{ secrets.OTF_CHARTS_TOKEN }}
-          repository: leg100/otf-charts
+        uses: actions/checkout@v4
       - name: Bump version
         run: |
           # set app version on all charts
           yq -i ".appVersion = \"${{ needs.release-please.outputs.version }}\"" ./charts/otfd/Chart.yaml
           yq -i ".appVersion = \"${{ needs.release-please.outputs.version }}\"" ./charts/otf-agent/Chart.yaml
           # bump patch in chart version
-          CHART=otfd make bump
-          CHART=otf-agent make bump
+          CHART=otfd make bump-chart-version
+          CHART=otf-agent make bump-chart-version
           # re-generate README.md to reflect updated version
           eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
           brew install norwoodj/tap/helm-docs
           helm-docs
-          # create branch and commit
+      - name: Lint check
+        run: |
+          helm lint ./charts/otfd
+          helm lint ./charts/otf-agent
+          helm template ./charts/otfd > /dev/null
+          helm template ./charts/otf-agent --set token=my_agent_token --set url=https://otf.ninja > /dev/null
+      - name: Create kind cluster
+        uses: helm/kind-action@v1.12.0
+      - name: Test
+        run: |
+          make test-otfd
+      - name: Debug
+        if: failure()
+        run: |
+          kubectl -n otfd-test get all
+          kubectl -n otfd-test describe pod
+          kubectl -n otfd-test logs -l app.kubernetes.io/name=postgresql
+          kubectl -n otfd-test logs -l app.kubernetes.io/name=otfd
+      - name: Checkout charts repo
+        uses: actions/checkout@v4
+        with:
+          path: otf-charts
+          token: ${{ secrets.OTF_CHARTS_TOKEN }}
+          repository: leg100/otf-charts
+      - name: Copy charts to charts repo
+        run: |
+          cp -R ./charts/* ./otf-charts/
+      - name: Commit changes to otf-charts repo
+        run: |
+          # switch to checkout of otf-charts repo
+          cd ./otf-charts
+          # stage changes and commit
           git config --global user.email "chart-bumper@otf.ninja"
           git config --global user.name "Chart bumper"
-          git checkout -b new-otf-version-${{ needs.release-please.outputs.tag_name }}
           git add -A
           git commit -m "New otf version ${{ needs.release-please.outputs.tag_name }}"
-          git push origin new-otf-version-${{ needs.release-please.outputs.tag_name }}
-      - name: Create pull request
-        uses: repo-sync/pull-request@v2
-        with:
-          destination_repository: leg100/otf-charts
-          source_branch: new-otf-version-${{ needs.release-please.outputs.tag_name }}
-          destination_branch: master
-          pr_title: "New OTF version: ${{ needs.release-please.outputs.tag_name }}"
-          github_token: ${{ secrets.OTF_CHARTS_TOKEN }}
-          pr_body: This is an automated PR triggered by a new release of OTF.
+          git push origin master

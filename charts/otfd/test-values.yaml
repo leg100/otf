@@ -1,0 +1,9 @@
+secret: 2876cb147697052eec5b3cdb56211681
+siteToken: site-token
+database: postgres://otfd-postgresql?user=postgres
+databasePasswordFromSecret:
+  name: otfd-postgresql
+  key: postgres-password
+postgres:
+  enabled: true
+  database: otf

@@ -1,0 +1,85 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "otf-agent.fullname" . }}
+  labels:
+    {{- include "otf-agent.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "otf-agent.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "otf-agent.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.topologySpreadConstraints }}
+      topologySpreadConstraints:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "otf-agent.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: OTF_TOKEN
+            {{- with .Values.tokenFromSecret }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .name }}
+                  key: {{ .key }}
+            {{- else }}
+              value: "{{ .Values.token }}"
+            {{- end }}
+            - name: OTF_URL
+              value: "{{ required ".Values.url is required" .Values.url }}"
+            {{- with .Values.logging }}
+            {{- with .verbosity }}
+            - name: OTF_V
+              value: "{{ . }}"
+            {{- end }}
+            {{- with .format }}
+            - name: OTF_LOG_FORMAT
+              value: "{{ . }}"
+            {{- end }}
+            {{- end }}
+            {{- with .Values.pluginCache }}
+            - name: OTF_PLUGIN_CACHE
+              value: "{{ . }}"
+            {{- end }}
+            {{- with .Values.concurrency }}
+            - name: OTF_CONCURRENCY
+              value: "{{ . }}"
+            {{- end }}
+{{- range $key, $value := .Values.extraEnvs }}
+            - name: {{ $key }}
+              value: {{ $value }}
+{{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
