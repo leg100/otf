@@ -99,18 +99,12 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   charts:
-    # only create otf-charts PR for new releases
+    # only upgrade charts for new releases
     needs: [release-please,release]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Checkout charts repo
-        uses: actions/checkout@v4
-        with:
-          path: otf-charts
-          token: ${{ secrets.OTF_CHARTS_TOKEN }}
-          repository: leg100/otf-charts
       - name: Bump version
         run: |
           # set app version on all charts
@@ -123,18 +117,41 @@ jobs:
           eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
           brew install norwoodj/tap/helm-docs
           helm-docs
-      - name: Copy charts to otf-charts repo
+      - name: Lint check
+        run: |
+          helm lint ./charts/otfd
+          helm lint ./charts/otf-agent
+          helm template ./charts/otfd > /dev/null
+          helm template ./charts/otf-agent --set token=my_agent_token --set url=https://otf.ninja > /dev/null
+      - name: Create kind cluster
+        uses: helm/kind-action@v1.8.0
+      - name: Test
+        run: |
+          make test-otfd
+      - name: Debug
+        if: failure()
+        run: |
+          kubectl -n otfd-test get all
+          kubectl -n otfd-test describe pod
+          kubectl -n otfd-test logs -l app.kubernetes.io/name=postgresql
+          kubectl -n otfd-test logs -l app.kubernetes.io/name=otfd
+      - name: Checkout charts repo
+        uses: actions/checkout@v4
+        with:
+          path: otf-charts
+          token: ${{ secrets.OTF_CHARTS_TOKEN }}
+          repository: leg100/otf-charts
+      - name: Copy charts to charts repo
         run: |
           cp -R ./charts/* ./otf-charts/
       - name: Commit any changes to otf-charts repo
         run: |
-          # create branch and commit
+          # stage changes and commit
           git config --global user.email "chart-bumper@otf.ninja"
           git config --global user.name "Chart bumper"
-          git checkout -b new-otf-version-${{ needs.release-please.outputs.tag_name }}
           git add -A
           git commit -m "New otf version ${{ needs.release-please.outputs.tag_name }}"
-          git push origin new-otf-version-${{ needs.release-please.outputs.tag_name }}
+          git push origin master
       - name: Create pull request
         uses: repo-sync/pull-request@v2
         with:

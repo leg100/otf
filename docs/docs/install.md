@@ -24,7 +24,18 @@ The server and agent components are also available as docker images:
 
 ## Install helm chart
 
-You can install an `otfd` cluster on Kubernetes using the helm chart. See the [helm chart repository](https://github.com/leg100/otf-charts) for further information.
+You can install OTF onto Kubernetes using helm charts.
+
+Add the helm repository:
+
+```bash
+helm repo add otf https://leg100.github.io/otf-charts
+```
+
+Then follow instructions for installing the relevant chart:
+
+* [otfd](https://github.com/leg100/otf/blob/master/charts/otfd/README.md)
+* [otf-agent](https://github.com/leg100/otf/blob/master/charts/otf-agent/README.md)
 
 ## Install from source
 
