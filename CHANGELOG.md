@@ -1,5 +1,45 @@
 # Changelog
 
+## [0.3.23](https://github.com/leg100/otf/compare/v0.3.22...v0.3.23) (2025-05-26)
+
+
+### Features
+
+* add forgejo vcs provider ([#771](https://github.com/leg100/otf/issues/771)) ([dbb3c0a](https://github.com/leg100/otf/commit/dbb3c0a5221a3c5f78e5244a4fecc74116046a6b))
+* **tests:** add browser tracing ([10fd15d](https://github.com/leg100/otf/commit/10fd15dc1a78ab51c4cf4fa651707b9ca9d0444f))
+
+
+### Bug Fixes
+
+* "Save variable set" button on the variableset edit page ([#778](https://github.com/leg100/otf/issues/778)) ([ed7a3d2](https://github.com/leg100/otf/commit/ed7a3d2d094198a304bd17fc705c8768db94d087))
+* a bad background color on the oauth2 confirmation page ([#786](https://github.com/leg100/otf/issues/786)) ([09b3366](https://github.com/leg100/otf/commit/09b33667ecde38db970097f6e24dbef7c2841b89))
+* add primary key to events table ([1cc6a21](https://github.com/leg100/otf/commit/1cc6a217197d7daf74bd0a00896db14a0f5763ab))
+* drop organization event trigger ([869b82f](https://github.com/leg100/otf/commit/869b82f6d6056c6c9e9d6cbaaa44faf0d93766d3))
+* event cleanup failing ([7a76322](https://github.com/leg100/otf/commit/7a76322d17f76de938fa344a96262fab3a5d7626))
+* jobs belonging to terminated runners should not restart allocator ([3b8e111](https://github.com/leg100/otf/commit/3b8e11169f7bc912fefa918d87c62c55754cc244))
+* permit events larger than 8000 bytes ([e528d9a](https://github.com/leg100/otf/commit/e528d9ac37519f14f09df8080c1089b356c31d2b))
+* reduce websocket logging noise ([ed81049](https://github.com/leg100/otf/commit/ed81049f3e253bebbd7fad7e54c4fff1e0ed7c27))
+* start subsystems in order to eliminate flaky tests ([63ab291](https://github.com/leg100/otf/commit/63ab291ccde9af7d4bffc31155cd03fa3115ba26))
+* support earliest supported version of postgres (v13) ([649f499](https://github.com/leg100/otf/commit/649f499fd4f078c943d15427eb7c2da0a564cf7c))
+* **tests:** broken runner registration test ([36ac6a7](https://github.com/leg100/otf/commit/36ac6a77c85f9295bc3675190b050cbceb145fbd))
+* **tests:** disable flaky terraform login redirect check ([4f3f6c0](https://github.com/leg100/otf/commit/4f3f6c0c1e310a6d5f2142444c09dd09151fe5ca))
+* **tests:** don't use singleton http handler ([eae2149](https://github.com/leg100/otf/commit/eae2149e2e2a90c4b044118c4b38a90764245a7f))
+* **tests:** screenshots not being archived upon failure ([3ff867e](https://github.com/leg100/otf/commit/3ff867e119b83705d98c7d005f61b2f368838751))
+* **tests:** suppress tls handshake errors ([d3c42ab](https://github.com/leg100/otf/commit/d3c42ab0d022265767c2e140111cfe6266f5866e))
+* **tests:** use check instead of click for flaky tests ([e458abe](https://github.com/leg100/otf/commit/e458abe82b789d303ca9f9866756e3c2168ee205))
+* **tests:** use workaround for flaky checkbox clicks ([d8dc659](https://github.com/leg100/otf/commit/d8dc659cb77bb0a015911aaddaaa85a84fd4d2af))
+* wait for listener to start first ([b49fdb7](https://github.com/leg100/otf/commit/b49fdb73bd7ba970e65e917594254fd881a61218))
+* wrong math operator causes logs to be prematurely chunked ([9fcd312](https://github.com/leg100/otf/commit/9fcd31286bf387b5923661945802906d5b9da3ad))
+
+
+### Miscellaneous
+
+* archive browser traces in github actions ([0310143](https://github.com/leg100/otf/commit/0310143e7a2e6e49e4929b63e572295a7964b9bc))
+* debug GHA failing tests ([c7ef8ce](https://github.com/leg100/otf/commit/c7ef8ce261386e8dacae4619aa7fa165019a58f8))
+* remove unused list components ([e7166ea](https://github.com/leg100/otf/commit/e7166ea1823eee4283e1a40b50f9c46c27875577))
+* require log chunk attributes ([00d61c8](https://github.com/leg100/otf/commit/00d61c83a00ef6df28079b823b6271a6b7165888))
+* revert go test make task ([6d0b2a3](https://github.com/leg100/otf/commit/6d0b2a3fbeebb41227877b67f2d3d98239ad7bb8))
+
 ## [0.3.22](https://github.com/leg100/otf/compare/v0.3.21...v0.3.22) (2025-05-18)
 
 
