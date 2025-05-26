@@ -112,11 +112,11 @@ templ (t appTable) Row(app *App) {
 			</a>
 		</td>
 		<td>
-			@components.CopyableContent() {
-				<span class="identifier">
+			<span class="identifier">
+				@components.CopyableContent() {
 					{ int(app.ID) }
-				</span>
-			}
+				}
+			</span>
 		</td>
 		<td>
 			if t.canDeleteApp {
@@ -156,11 +156,11 @@ templ (t installsTable) Row(install *Installation) {
 			</span>
 		</td>
 		<td>
-			@components.CopyableContent() {
-				<span class="identifier">
+			<span class="identifier">
+				@components.CopyableContent() {
 					{ int(*install.ID) }
-				</span>
-			}
+				}
+			</span>
 		</td>
 		<td>
 			<form action={ paths.DeleteInstallGithubApp(internal.ToStringer(strconv.Itoa(int(*install.ID)))) } method="POST">
