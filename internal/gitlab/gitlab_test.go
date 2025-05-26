@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"testing"
 
+	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/stretchr/testify/require"
 )
 
@@ -23,10 +24,12 @@ func setup(t *testing.T) (*http.ServeMux, *Client) {
 	u, err := url.Parse(server.URL)
 	require.NoError(t, err)
 
+	// disable tls
+	otfhttp.SkipTLSVerification = true
+
 	// client is the Gitlab client being tested.
 	client, err := NewClient(ClientOptions{
-		Hostname:            u.Host,
-		SkipTLSVerification: true,
+		Hostname: u.Host,
 	})
 	if err != nil {
 		t.Fatalf("Failed to create client: %v", err)

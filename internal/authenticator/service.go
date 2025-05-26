@@ -22,7 +22,6 @@ type (
 		TokensService        *tokens.Service
 		OpaqueHandlerConfigs []OpaqueHandlerConfig
 		IDTokenHandlerConfig OIDCConfig
-		SkipTLSVerification  bool
 	}
 
 	service struct {
@@ -46,7 +45,6 @@ func NewAuthenticatorService(ctx context.Context, opts Options) (*service, error
 			// skip creating OAuth client when creds are unspecified
 			continue
 		}
-		cfg.SkipTLSVerification = opts.SkipTLSVerification
 		client, err := newOAuthClient(
 			&opaqueHandler{cfg},
 			opts.HostnameService,
@@ -65,7 +63,6 @@ func NewAuthenticatorService(ctx context.Context, opts Options) (*service, error
 		// skip creating OIDC authenticator when creds are unspecified
 		return &svc, nil
 	}
-	opts.IDTokenHandlerConfig.SkipTLSVerification = opts.SkipTLSVerification
 	handler, err := newIDTokenHandler(ctx, opts.IDTokenHandlerConfig)
 	if err != nil {
 		return nil, err
@@ -76,12 +73,11 @@ func NewAuthenticatorService(ctx context.Context, opts Options) (*service, error
 		opts.TokensService,
 		opts.UserService,
 		OAuthConfig{
-			Endpoint:            handler.provider.Endpoint(),
-			Scopes:              opts.IDTokenHandlerConfig.Scopes,
-			ClientID:            opts.IDTokenHandlerConfig.ClientID,
-			ClientSecret:        opts.IDTokenHandlerConfig.ClientSecret,
-			Name:                opts.IDTokenHandlerConfig.Name,
-			SkipTLSVerification: opts.SkipTLSVerification,
+			Endpoint:     handler.provider.Endpoint(),
+			Scopes:       opts.IDTokenHandlerConfig.Scopes,
+			ClientID:     opts.IDTokenHandlerConfig.ClientID,
+			ClientSecret: opts.IDTokenHandlerConfig.ClientSecret,
+			Name:         opts.IDTokenHandlerConfig.Name,
 		},
 	)
 	if err != nil {

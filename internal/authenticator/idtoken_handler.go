@@ -36,8 +36,6 @@ type (
 		ClientID string
 		// ClientSecret is the client secret for the OIDC provider.
 		ClientSecret string
-		// Skip TLS Verification when communicating with issuer.
-		SkipTLSVerification bool
 		// Scopes to request from the OIDC provider.
 		Scopes []string
 		// UsernameClaim is the claim that provides the username.
@@ -51,7 +49,7 @@ func newIDTokenHandler(ctx context.Context, opts OIDCConfig) (*idtokenHandler, e
 	}
 	// construct oidc provider, using our own http client, which lets us disable
 	// tls verification for testing purposes.
-	ctx = contextWithClient(ctx, opts.SkipTLSVerification)
+	ctx = contextWithClient(ctx)
 	provider, err := oidc.NewProvider(ctx, opts.IssuerURL)
 	if err != nil {
 		return nil, fmt.Errorf("constructing OIDC provider: %w", err)

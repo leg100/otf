@@ -15,6 +15,7 @@ import (
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/daemon"
 	"github.com/leg100/otf/internal/github"
+	"github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/module"
 	"github.com/leg100/otf/internal/notifications"
@@ -71,7 +72,7 @@ func setup(t *testing.T, opts ...configOption) (*testDaemon, *organization.Organ
 	}
 	// Skip TLS verification for tests because they'll be standing up various
 	// stub TLS servers with self-certified certs.
-	cfg.SkipTLSVerification = true
+	http.SkipTLSVerification = true
 
 	//daemon.ApplyDefaults(&cfg.Config)
 	cfg.SSL = true

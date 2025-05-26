@@ -38,10 +38,9 @@ type (
 	factory struct {
 		githubapps *github.Service
 
-		forgejoHostname     string
-		githubHostname      string
-		gitlabHostname      string
-		skipTLSVerification bool // toggle skipping verification of VCS host's TLS cert.
+		forgejoHostname string
+		githubHostname  string
+		gitlabHostname  string
 	}
 
 	CreateOptions struct {

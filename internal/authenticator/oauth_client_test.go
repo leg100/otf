@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal"
+	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/stretchr/testify/assert"
@@ -56,6 +57,8 @@ func newTestOAuthServerClient(t *testing.T, userID resource.TfeID) *OAuthClient 
 	u, err := url.Parse(srv.URL)
 	require.NoError(t, err)
 
+	otfhttp.SkipTLSVerification = true
+
 	client, err := newOAuthClient(
 		fakeTokenHandler{},
 		internal.NewHostnameService("otf-server.com"),
@@ -67,8 +70,7 @@ func newTestOAuthServerClient(t *testing.T, userID resource.TfeID) *OAuthClient 
 				AuthURL:  srv.URL,
 				TokenURL: srv.URL,
 			},
-			Name:                "fake-cloud",
-			SkipTLSVerification: true,
+			Name: "fake-cloud",
 		},
 	)
 	require.NoError(t, err)

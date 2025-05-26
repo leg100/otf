@@ -156,28 +156,26 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	}
 
 	githubAppService := github.NewService(github.Options{
-		Logger:              logger,
-		Authorizer:          authorizer,
-		DB:                  db,
-		HostnameService:     hostnameService,
-		GithubHostname:      cfg.GithubHostname,
-		SkipTLSVerification: cfg.SkipTLSVerification,
+		Logger:          logger,
+		Authorizer:      authorizer,
+		DB:              db,
+		HostnameService: hostnameService,
+		GithubHostname:  cfg.GithubHostname,
 	})
 
 	vcsEventBroker := &vcs.Broker{}
 
 	vcsProviderService := vcsprovider.NewService(vcsprovider.Options{
-		Logger:              logger,
-		Authorizer:          authorizer,
-		DB:                  db,
-		Responder:           responder,
-		HostnameService:     hostnameService,
-		GithubAppService:    githubAppService,
-		ForgejoHostname:     cfg.ForgejoHostname,
-		GithubHostname:      cfg.GithubHostname,
-		GitlabHostname:      cfg.GitlabHostname,
-		SkipTLSVerification: cfg.SkipTLSVerification,
-		Subscriber:          vcsEventBroker,
+		Logger:           logger,
+		Authorizer:       authorizer,
+		DB:               db,
+		Responder:        responder,
+		HostnameService:  hostnameService,
+		GithubAppService: githubAppService,
+		ForgejoHostname:  cfg.ForgejoHostname,
+		GithubHostname:   cfg.GithubHostname,
+		GitlabHostname:   cfg.GitlabHostname,
+		Subscriber:       vcsEventBroker,
 	})
 	repoService := repohooks.NewService(ctx, repohooks.Options{
 		Logger:              logger,
@@ -341,7 +339,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 			},
 		},
 		IDTokenHandlerConfig: cfg.OIDC,
-		SkipTLSVerification:  cfg.SkipTLSVerification,
 	})
 	if err != nil {
 		return nil, err

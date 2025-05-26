@@ -27,8 +27,7 @@ type (
 	}
 
 	ClientOptions struct {
-		Hostname            string
-		SkipTLSVerification bool
+		Hostname string
 
 		OAuthToken    *oauth2.Token
 		PersonalToken *string
@@ -45,7 +44,7 @@ func NewClient(cfg ClientOptions) (*Client, error) {
 			),
 		}
 	)
-	if cfg.SkipTLSVerification {
+	if otfhttp.SkipTLSVerification {
 		options = append(options, gitlab.WithHTTPClient(
 			&http.Client{Transport: otfhttp.InsecureTransport},
 		))
@@ -66,17 +65,15 @@ func NewClient(cfg ClientOptions) (*Client, error) {
 
 func NewTokenClient(opts vcs.NewTokenClientOptions) (vcs.Client, error) {
 	return NewClient(ClientOptions{
-		Hostname:            opts.Hostname,
-		PersonalToken:       &opts.Token,
-		SkipTLSVerification: opts.SkipTLSVerification,
+		Hostname:      opts.Hostname,
+		PersonalToken: &opts.Token,
 	})
 }
 
 func NewOAuthClient(cfg authenticator.OAuthConfig, token *oauth2.Token) (authenticator.IdentityProviderClient, error) {
 	return NewClient(ClientOptions{
-		Hostname:            cfg.Hostname,
-		OAuthToken:          token,
-		SkipTLSVerification: cfg.SkipTLSVerification,
+		Hostname:   cfg.Hostname,
+		OAuthToken: token,
 	})
 }
 

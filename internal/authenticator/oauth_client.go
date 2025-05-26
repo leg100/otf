@@ -11,6 +11,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
+	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
@@ -50,13 +51,12 @@ type (
 
 	// OAuthConfig is configuration for constructing an OAuth client
 	OAuthConfig struct {
-		Hostname            string
-		ClientID            string
-		ClientSecret        string
-		Endpoint            oauth2.Endpoint
-		Scopes              []string
-		Name                string
-		SkipTLSVerification bool
+		Hostname     string
+		ClientID     string
+		ClientSecret string
+		Endpoint     oauth2.Endpoint
+		Scopes       []string
+		Name         string
 	}
 )
 
@@ -150,7 +150,7 @@ func (a *OAuthClient) callbackHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		// Exchange code for an access token (optionally skipping TLS verification
 		// for testing purposes).
-		ctx := contextWithClient(r.Context(), a.SkipTLSVerification)
+		ctx := contextWithClient(r.Context())
 		return a.config().Exchange(ctx, resp.AuthCode)
 	}()
 	if err != nil {
@@ -222,12 +222,12 @@ func updateHost(u, host string) (string, error) {
 }
 
 // contextWithClient returns a context that embeds an OAuth2 http client.
-func contextWithClient(ctx context.Context, skipTLSVerification bool) context.Context {
-	if skipTLSVerification {
+func contextWithClient(ctx context.Context) context.Context {
+	if otfhttp.SkipTLSVerification {
 		return context.WithValue(ctx, oauth2.HTTPClient, &http.Client{
 			Transport: &http.Transport{
 				TLSClientConfig: &tls.Config{
-					InsecureSkipVerify: skipTLSVerification,
+					InsecureSkipVerify: true,
 				},
 			},
 		})
