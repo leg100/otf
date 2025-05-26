@@ -76,7 +76,7 @@ var ErrInfinitePaginationDetected = errors.New("infinite pagination detected")
 // an operation that retrieves a page at a time.
 func ListAll[T any](fn func(PageOptions) (*Page[T], error)) ([]T, error) {
 	var (
-		opts PageOptions
+		opts = PageOptions{PageSize: MaxPageSize}
 		all  []T
 		// keep track of the last NextPage to prevent an infinite loop.
 		lastNextPage int
