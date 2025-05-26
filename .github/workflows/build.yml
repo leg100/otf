@@ -144,20 +144,13 @@ jobs:
       - name: Copy charts to charts repo
         run: |
           cp -R ./charts/* ./otf-charts/
-      - name: Commit any changes to otf-charts repo
+      - name: Commit changes to otf-charts repo
         run: |
+          # switch to checkout of otf-charts repo
+          cd ./otf-charts
           # stage changes and commit
           git config --global user.email "chart-bumper@otf.ninja"
           git config --global user.name "Chart bumper"
           git add -A
           git commit -m "New otf version ${{ needs.release-please.outputs.tag_name }}"
           git push origin master
-      - name: Create pull request
-        uses: repo-sync/pull-request@v2
-        with:
-          destination_repository: leg100/otf-charts
-          source_branch: new-otf-version-${{ needs.release-please.outputs.tag_name }}
-          destination_branch: master
-          pr_title: "New OTF version: ${{ needs.release-please.outputs.tag_name }}"
-          github_token: ${{ secrets.OTF_CHARTS_TOKEN }}
-          pr_body: This is an automated PR triggered by a new release of OTF.
