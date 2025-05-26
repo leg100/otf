@@ -143,7 +143,7 @@ jobs:
           repository: leg100/otf-charts
       - name: Copy charts to charts repo
         run: |
-          cp -R ./charts/* ./otf-charts/
+          cp -R ./charts ./otf-charts/
       - name: Commit changes to otf-charts repo
         run: |
           # switch to checkout of otf-charts repo
