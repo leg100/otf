@@ -167,21 +167,6 @@ func (a *Service) List(ctx context.Context, organization organization.Name) ([]*
 	return providers, nil
 }
 
-func (a *Service) ListAllVCSProviders(ctx context.Context) ([]*VCSProvider, error) {
-	subject, err := a.Authorize(ctx, authz.ListVCSProvidersAction, resource.SiteID)
-	if err != nil {
-		return nil, err
-	}
-
-	providers, err := a.db.list(ctx)
-	if err != nil {
-		a.Error(err, "listing vcs providers", "subject", subject)
-		return nil, err
-	}
-	a.V(9).Info("listed vcs providers", "subject", subject)
-	return providers, nil
-}
-
 // ListVCSProvidersByGithubAppInstall is unauthenticated: only for internal use.
 func (a *Service) ListVCSProvidersByGithubAppInstall(ctx context.Context, installID int64) ([]*VCSProvider, error) {
 	subject, err := authz.SubjectFromContext(ctx)
