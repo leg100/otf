@@ -1,0 +1,202 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "otfd.fullname" . }}
+  labels:
+    {{- include "otfd.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "otfd.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "otfd.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "otfd.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          {{- with .Values.envsFromSecret }}
+          envFrom:
+            - secretRef:
+                name: {{ . }}
+          {{- end }}
+          env:
+{{- range $key, $value := .Values.extraEnvs }}
+            - name: {{ $key }}
+              value: {{ $value }}
+{{- end }}
+            - name: OTF_HOSTNAME
+              value: "{{ .Values.hostname }}"
+            {{- with .Values.logging }}
+            - name: OTF_V
+              value: "{{ .verbosity }}"
+            - name: OTF_LOG_FORMAT
+              value: "{{ .format }}"
+            - name: OTF_LOG_HTTP_REQUESTS
+              value: "{{ .http }}"
+            {{- end }}
+            - name: OTF_DATABASE
+              value: {{ .Values.database }}
+            {{ with .Values.databaseUsernameFromSecret }}
+            - name: PGUSER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .name }}
+                  key: {{ .key }}
+            {{ end }}
+            {{ with .Values.databasePasswordFromSecret }}
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .name }}
+                  key: {{ .key }}
+            {{ end }}
+            - name: OTF_SECRET
+            {{ with .Values.secretFromSecret }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .name }}
+                  key: {{ .key }}
+            {{ else }}
+              value: {{ .Values.secret }}
+            {{ end }}
+            - name: OTF_SITE_TOKEN
+              value: {{ .Values.siteToken }}
+            {{ if .Values.maxConfigSize }}
+            - name: OTF_MAX_CONFIG_SIZE
+              value: "{{ .Values.maxConfigSize }}"
+            {{ end }}
+            {{ if .Values.defaultEngine }}
+            - name: OTF_DEFAULT_ENGINE
+              value: "{{ .Values.defaultEngine }}"
+            {{ end }}
+            - name: OTF_GITHUB_CLIENT_ID
+              value: {{ .Values.github.clientID }}
+            - name: OTF_GITHUB_CLIENT_SECRET
+              value: {{ .Values.github.clientSecret }}
+            - name: OTF_GITHUB_HOSTNAME
+              value: {{ .Values.github.hostname }}
+            - name: OTF_GITLAB_CLIENT_ID
+              value: {{ .Values.gitlab.clientID }}
+            - name: OTF_GITLAB_CLIENT_SECRET
+              value: {{ .Values.gitlab.clientSecret }}
+            - name: OTF_GITLAB_HOSTNAME
+              value: {{ .Values.gitlab.hostname }}
+            {{ with .Values.google.audience -}}
+            - name: OTF_GOOGLE_JWT_AUDIENCE
+              value: {{ . }}
+            {{- end }}
+            {{ with .Values.oidc }}
+            - name: OTF_OIDC_NAME
+              value: {{ .name }}
+            - name: OTF_OIDC_ISSUER_URL
+              value: {{ .issuerURL }}
+            - name: OTF_OIDC_CLIENT_ID
+              value: {{ .clientID }}
+            {{ with .usernameClaim }}
+            - name: OTF_OIDC_USERNAME_CLAIM
+              value: {{ . }}
+            {{ end }}
+            {{ with .scopes }}
+            - name: OTF_OIDC_SCOPES
+              value: {{ . | join "," }}
+            {{ end }}
+            {{ with .clientSecretFromSecret }}
+            - name: OTF_OIDC_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .name }}
+                  key: {{ .key }}
+            {{- end }}
+            {{- end }}
+            - name: OTF_SANDBOX
+              value: "{{ .Values.sandbox }}"
+            {{ if .Values.caCerts.enabled -}}
+            - name: SSL_CERT_DIR
+              value: /certs
+            {{- end }}
+            {{ with .Values.proxy -}}
+            - name: HTTPS_PROXY
+              value: "{{ . }}"
+            - name: HTTP_PROXY
+              value: "{{ . }}"
+            - name: https_proxy
+              value: "{{ . }}"
+            - name: http_proxy
+              value: "{{ . }}"
+            {{- end }}
+            {{ with .Values.no_proxy -}}
+            - name: NO_PROXY
+              value: "{{ . }}"
+            - name: no_proxy
+              value: "{{ . }}"
+            {{- end }}
+            {{ with .Values.allowedOrigins -}}
+            - name: OTF_ALLOWED_ORIGINS
+              value: "{{ . | join "," }}"
+            {{- end }}
+            {{ with .Values.siteAdmins -}}
+            - name: OTF_SITE_ADMINS
+              value: "{{ . | join ","}}"
+            {{- end }}
+          securityContext:
+            privileged: {{ .Values.sandbox }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+          - name: tmp
+            mountPath: /tmp
+          {{ if .Values.caCerts.enabled -}}
+          - name: certs
+            mountPath: /certs
+          {{ end }}
+      volumes:
+        - name: tmp
+          emptyDir:
+        {{ if .Values.caCerts.enabled -}}
+        - name: certs
+          secret:
+            secretName: {{ .Values.caCerts.secretName }}
+            {{ with .Values.caCerts.secretItems -}}
+            items:
+              {{- toYaml . | nindent 14 }}
+            {{- end }}
+        {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

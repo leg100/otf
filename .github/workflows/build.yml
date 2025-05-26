@@ -99,8 +99,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+      - name: Checkout charts repo
+        uses: actions/checkout@v4
         with:
+          path: otf-charts
           token: ${{ secrets.OTF_CHARTS_TOKEN }}
           repository: leg100/otf-charts
       - name: Bump version
@@ -109,12 +112,17 @@ jobs:
           yq -i ".appVersion = \"${{ needs.release-please.outputs.version }}\"" ./charts/otfd/Chart.yaml
           yq -i ".appVersion = \"${{ needs.release-please.outputs.version }}\"" ./charts/otf-agent/Chart.yaml
           # bump patch in chart version
-          CHART=otfd make bump
-          CHART=otf-agent make bump
+          CHART=otfd make bump-chart-version
+          CHART=otf-agent make bump-chart-version
           # re-generate README.md to reflect updated version
           eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
           brew install norwoodj/tap/helm-docs
           helm-docs
+      - name: Copy charts to otf-charts repo
+        run: |
+          cp -R ./charts/* ./otf-charts/
+      - name: Commit any changes to otf-charts repo
+        run: |
           # create branch and commit
           git config --global user.email "chart-bumper@otf.ninja"
           git config --global user.name "Chart bumper"

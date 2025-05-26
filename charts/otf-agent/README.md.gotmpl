@@ -1,0 +1,57 @@
+# Helm Chart for `otf-agent`
+{{ template "chart.deprecationWarning" . }}
+
+{{ template "chart.badgesSection" . }}
+
+Installs the [otf agent](https://docs.otf.ninja/latest/agents/).
+
+## Usage
+
+First follow the instructions in the repo [README.md](../../README.md) to add the helm repository.
+
+Then ensure:
+
+* You have a running deployment of `otfd`.
+* You have generated an agent token (see the [agent docs](https://docs.otf.ninja/latest/agents/)).
+
+Once you have these, deploy the chart with the URL of the `otfd` deployment and the agent token, e.g.:
+
+```bash
+helm install otf-agent otf/otf-agent \
+    --set url=https://otf.acme.corp \
+    --set token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhZ2VudF9wb29sX2lkIjoiYXBvb2wtNWI5MDQ0M2VkODJlZjc2OSIsImlhdCI6MTcyOTUzMDMwMywia2luZCI6ImFnZW50X3Rva2VuIiwic3ViIjoiYXQtWDZLdjVuQVE4Y1NQQ3lvZCJ9._wziD3FlGC2xdF4Ss_sf-igcagrgrhUmM5AFJGrwQso
+```
+
+Alternatively you can deploy the token via a secret:
+
+```bash
+# create secret
+kubectl create secret generic agent-token \
+    --from-literal token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhZ2VudF9wb29sX2lkIjoiYXBvb2wtNWI5MDQ0M2VkODJlZjc2OSIsImlhdCI6MTcyOTUzMDMwMywia2luZCI6ImFnZW50X3Rva2VuIiwic3ViIjoiYXQtWDZLdjVuQVE4Y1NQQ3lvZCJ9._wziD3FlGC2xdF4Ss_sf-igcagrgrhUmM5AFJGrwQso
+# deploy chart
+helm template otf-agent otf/otf-agent
+    --set url=https://otf.acme.corp
+    --set tokenFromSecret.name=agent-token,tokenFromSecret.key=token
+```
+
+Check the deploy succeeded:
+
+```bash
+kubectl get pod -l app.kubernetes.io/name=otf-agent
+NAME                        READY   STATUS    RESTARTS   AGE
+otf-agent-b8968d764-v6rbk   1/1     Running   0          3h29m
+```
+
+And check the logs to confirm it has registered itself with the server:
+
+```bash
+kubectl logs -f otf-agent-b8968d764-v6rbk
+2024/10/21 17:06:01 INFO starting agent version=v0.2.4-15-g029e5255-dirty
+2024/10/21 17:06:01 INFO registered successfully agent.id=agent-xuY1t2oeMMTjyaWz agent.server=false agent.status=idle agent.ip_
+address=10.244.0.18 agent.pool_id=apool-5b90443ed82ef769
+2024/10/21 17:06:01 INFO waiting for next job
+```
+
+{{ template "chart.valuesSection" . }}
+
+{{ template "helm-docs.versionFooter" . }}

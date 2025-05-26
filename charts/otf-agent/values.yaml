@@ -1,0 +1,95 @@
+# Default values for otf-agent.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# -- Number of agents to deploy to cluster. Note: each agent shares the same token and therefore belongs to the same pool. To deploy agents belonging to different pools you'll need to deploy multiple charts.
+replicaCount: 1
+
+image:
+  repository: leg100/otf-agent
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: ""
+
+# see https://docs.otf.ninja/latest/config/flags/ for all options
+
+# -- (string) Token to authenticate the agent. Either this or `tokenFromSecret` must be specified.
+token:
+
+# -- (object) Source token from a secret. Either this or `token` must be specified.
+tokenFromSecret:
+  # name of secret
+  # name: ""
+  # key within secret containing token
+  # key: ""
+
+# -- (string) URL of the OTF server to connect to. Must begin with `https://` or `http://`. Required.
+url:
+
+# -- (int) Set the number of runs that can be processed concurrently. See [docs](https://docs.otf.ninja/latest/config/flags/#-concurrency).
+concurrency:
+
+logging:
+  # -- (int) Logging verbosity, the higher the number the more verbose the logs. See [docs](https://docs.otf.ninja/latest/config/flags/#-v).
+  verbosity:
+  # -- (string) Logging format: default, text, or json. See [docs](https://docs.otf.ninja/latest/config/flags/#-log-format)
+  format:
+
+# -- (bool) Enable shared plugin cache for terraform providers.
+pluginCache:
+
+# -- Extra environment variables to be passed to the deployment.
+extraEnvs: []
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+rbac:
+  # Specifies whether RBAC resources should be created
+  create: true
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext:
+  {}
+  # fsGroup: 2000
+
+securityContext:
+  {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+resources:
+  {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+topologySpreadConstraints: []
