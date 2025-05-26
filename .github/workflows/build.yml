@@ -22,7 +22,12 @@ jobs:
       - name: Check no diff
         run: make check-no-diff
       - name: Lint check
-        run: make lint
+        run: |
+          make lint
+          helm lint ./charts/otfd
+          helm lint ./charts/otf-agent
+          helm template ./charts/otfd > /dev/null
+          helm template ./charts/otf-agent --set token=my_agent_token --set url=https://otf.ninja > /dev/null
       - name: Vet check
         run: make vet
       - name: Add hosts to /etc/hosts
