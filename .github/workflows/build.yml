@@ -52,12 +52,12 @@ jobs:
         env:
           GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
         run: make test
-      - name: Archive browser screenshots
+      - name: Archive browser traces
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: e2e-screenshots
-          path: internal/integration/screenshots
+          name: e2e-browser-traces
+          path: internal/integration/traces
   release-please:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/master'
