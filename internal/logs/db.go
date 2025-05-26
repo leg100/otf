@@ -55,7 +55,7 @@ WITH chunks AS (
 		WHERE run_id = @run_id
 		AND   phase  = @phase
 		ORDER BY _offset
-	)
+	) AS chunks
 	GROUP BY run_id, phase
 )
 INSERT INTO logs (run_id, phase, logs)
@@ -103,7 +103,7 @@ FROM (
     WHERE run_id = @run_id
     AND   phase  = @phase
     ORDER BY _offset
-)
+) AS chunks
 GROUP BY run_id, phase
 UNION
 SELECT

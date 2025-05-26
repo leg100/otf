@@ -29,14 +29,29 @@ BEGIN
 END;
 $$;
 
-CREATE OR REPLACE TRIGGER notify_event AFTER INSERT OR DELETE OR UPDATE ON agent_pools FOR EACH ROW EXECUTE FUNCTION build_and_send_event();
-CREATE OR REPLACE TRIGGER notify_event AFTER INSERT OR DELETE OR UPDATE ON runners FOR EACH ROW EXECUTE FUNCTION build_and_send_event();
-CREATE OR REPLACE TRIGGER notify_event AFTER INSERT OR DELETE OR UPDATE ON jobs FOR EACH ROW EXECUTE FUNCTION build_and_send_event();
-CREATE OR REPLACE TRIGGER notify_event AFTER INSERT OR DELETE OR UPDATE ON notification_configurations FOR EACH ROW EXECUTE FUNCTION build_and_send_event();
-CREATE OR REPLACE TRIGGER notify_event AFTER INSERT OR DELETE OR UPDATE ON logs FOR EACH ROW EXECUTE FUNCTION build_and_send_event();
-CREATE OR REPLACE TRIGGER notify_event AFTER INSERT OR DELETE OR UPDATE ON organizations FOR EACH ROW EXECUTE FUNCTION build_and_send_event();
-CREATE OR REPLACE TRIGGER notify_event AFTER INSERT OR DELETE OR UPDATE ON workspaces FOR EACH ROW EXECUTE FUNCTION build_and_send_event();
-CREATE OR REPLACE TRIGGER notify_event AFTER INSERT OR DELETE OR UPDATE ON runs FOR EACH ROW EXECUTE FUNCTION build_and_send_event();
+DROP TRIGGER notify_event ON agent_pools;
+CREATE TRIGGER notify_event AFTER INSERT OR DELETE OR UPDATE ON agent_pools FOR EACH ROW EXECUTE FUNCTION build_and_send_event();
+
+DROP TRIGGER notify_event ON runners;
+CREATE TRIGGER notify_event AFTER INSERT OR DELETE OR UPDATE ON runners FOR EACH ROW EXECUTE FUNCTION build_and_send_event();
+
+DROP TRIGGER notify_event ON jobs;
+CREATE TRIGGER notify_event AFTER INSERT OR DELETE OR UPDATE ON jobs FOR EACH ROW EXECUTE FUNCTION build_and_send_event();
+
+DROP TRIGGER notify_event ON notification_configurations;
+CREATE TRIGGER notify_event AFTER INSERT OR DELETE OR UPDATE ON notification_configurations FOR EACH ROW EXECUTE FUNCTION build_and_send_event();
+
+DROP TRIGGER notify_event ON logs;
+CREATE TRIGGER notify_event AFTER INSERT OR DELETE OR UPDATE ON logs FOR EACH ROW EXECUTE FUNCTION build_and_send_event();
+
+DROP TRIGGER notify_event ON organizations;
+CREATE TRIGGER notify_event AFTER INSERT OR DELETE OR UPDATE ON organizations FOR EACH ROW EXECUTE FUNCTION build_and_send_event();
+
+DROP TRIGGER notify_event ON workspaces;
+CREATE TRIGGER notify_event AFTER INSERT OR DELETE OR UPDATE ON workspaces FOR EACH ROW EXECUTE FUNCTION build_and_send_event();
+
+DROP TRIGGER notify_event ON runs;
+CREATE TRIGGER notify_event AFTER INSERT OR DELETE OR UPDATE ON runs FOR EACH ROW EXECUTE FUNCTION build_and_send_event();
 
 DROP FUNCTION agent_pools_notify_event;
 DROP FUNCTION runners_notify_event;
