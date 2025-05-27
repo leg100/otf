@@ -112,10 +112,6 @@ func (s *Service) CreateRepohook(ctx context.Context, opts CreateRepohookOptions
 	return hook.id, nil
 }
 
-func (s *Service) RegisterCloudHandler(kind vcs.Kind, h EventUnmarshaler) {
-	s.handlers.cloudHandlers.Set(kind, h)
-}
-
 func (s *Service) DeleteUnreferencedRepohooks(ctx context.Context) error {
 	hooks, err := s.db.listUnreferencedRepohooks(ctx)
 	if err != nil {

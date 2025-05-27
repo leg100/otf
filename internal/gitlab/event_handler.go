@@ -10,9 +10,14 @@ import (
 	"strings"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/repohooks"
 	"github.com/leg100/otf/internal/vcs"
 	gitlab "gitlab.com/gitlab-org/api/client-go"
 )
+
+func init() {
+	repohooks.RegisterEventHandler(vcs.GitlabKind, HandleEvent)
+}
 
 func HandleEvent(r *http.Request, secret string) (*vcs.EventPayload, error) {
 	if token := r.Header.Get("X-Gitlab-Token"); token != secret {

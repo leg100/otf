@@ -7,8 +7,13 @@ import (
 	"strings"
 
 	"github.com/google/go-github/v65/github"
+	"github.com/leg100/otf/internal/repohooks"
 	"github.com/leg100/otf/internal/vcs"
 )
+
+func init() {
+	repohooks.RegisterEventHandler(vcs.GithubKind, HandleEvent)
+}
 
 func HandleEvent(r *http.Request, secret string) (*vcs.EventPayload, error) {
 	payload, err := github.ValidatePayload(r, []byte(secret))

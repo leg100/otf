@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	"codeberg.org/mvdkleijn/forgejo-sdk/forgejo/v2"
+	"github.com/leg100/otf/internal/repohooks"
 	"github.com/leg100/otf/internal/vcs"
 )
 
@@ -16,6 +17,10 @@ const (
 	httpHeaderSignature = "X-Forgejo-Signature"
 	httpHeaderEvent     = "X-Forgejo-Event"
 )
+
+func init() {
+	repohooks.RegisterEventHandler(vcs.ForgejoKind, HandleEvent)
+}
 
 func HandleEvent(r *http.Request, secret string) (*vcs.EventPayload, error) {
 	// verify signature (see forgejo.VerifyWebhookSignatureMiddleware)

@@ -19,14 +19,21 @@ const (
 	handlerPrefix = "/webhooks/vcs"
 )
 
+var registeredHandlers *internal.SafeMap[vcs.Kind, EventUnmarshaler]
+
+func RegisterEventHandler(kind vcs.Kind, h EventUnmarshaler) {
+	registeredHandlers.Set(kind, h)
+}
+
+func init() {
+	registeredHandlers = internal.NewSafeMap[vcs.Kind, EventUnmarshaler]()
+}
+
 type (
 	// handlers handle VCS events triggered by webhooks
 	handlers struct {
 		logr.Logger
 		vcs.Publisher
-
-		cloudHandlers *internal.SafeMap[vcs.Kind, EventUnmarshaler]
-
 		handlerDB
 	}
 
@@ -44,10 +51,9 @@ type (
 
 func newHandler(logger logr.Logger, publisher vcs.Publisher, db handlerDB) *handlers {
 	return &handlers{
-		Logger:        logger,
-		Publisher:     publisher,
-		handlerDB:     db,
-		cloudHandlers: internal.NewSafeMap[vcs.Kind, EventUnmarshaler](),
+		Logger:    logger,
+		Publisher: publisher,
+		handlerDB: db,
 	}
 }
 
@@ -71,7 +77,7 @@ func (h *handlers) repohookHandler(w http.ResponseWriter, r *http.Request) {
 	h.V(2).Info("received vcs event", "repohook_id", opts.ID, "repo", hook.repoPath, "cloud", hook.cloud)
 
 	// look up cloud-specific handler for event
-	cloudHandler, ok := h.cloudHandlers.Get(hook.cloud)
+	cloudHandler, ok := registeredHandlers.Get(hook.cloud)
 	if !ok {
 		h.Error(nil, "no event unmarshaler found for event", "repohook_id", opts.ID, "repo", hook.repoPath, "cloud", hook.cloud)
 		http.Error(w, "no event unmarshaler found for event", http.StatusNotFound)

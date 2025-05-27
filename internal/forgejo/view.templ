@@ -1,0 +1,32 @@
+package forgejo
+
+import (
+	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/http/html/components"
+	"github.com/leg100/otf/internal/http/html/paths"
+	"net/url"
+)
+
+type newPATProps struct {
+	provider  *VCSProvider
+	tokensURL url.URL
+	scope     string
+}
+
+templ newPAT(props newPATProps) {
+	@components.Layout(components.LayoutProps{
+		Title:        "new vcs provider",
+		Organization: props.provider.Organization,
+		Breadcrumbs: []components.Breadcrumb{
+			{Name: "New " + internal.Title(string(props.provider.Kind)) + " VCS Provider"},
+		},
+	}) {
+		<div>
+			Create a { internal.Title(string(props.provider.Kind)) } VCS provider with a <a class="underline" href={ templ.SafeURL(props.tokensURL.String()) }>personal token</a> with the <span class="font-bold">{ props.scope }</span> scope.
+		</div>
+		@form(formProps{
+			provider: props.provider,
+			action:   paths.CreateVCSProvider(props.provider.Organization),
+		})
+	}
+}
