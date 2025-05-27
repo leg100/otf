@@ -21,6 +21,6 @@ func RegisterTFEServiceProvider(service TFEServiceProviderType, plugin Plugin) {
 
 type Plugin interface {
 	NewClient(vcsProvider *VCSProvider, transport http.Transport) (vcs.Client, error)
-	NewHandler(w http.ResponseWriter, r *http.Request)
-	EditHandler(w http.ResponseWriter, r *http.Request)
+	NewHandler(r *http.Request)
+	EditHandler(r *http.Request)
 }

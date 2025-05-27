@@ -14,6 +14,7 @@ import (
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/daemon"
 	"github.com/leg100/otf/internal/forgejo"
+	. "github.com/leg100/otf/internal/forgejo"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/gitlab"
 	"github.com/leg100/otf/internal/logr"

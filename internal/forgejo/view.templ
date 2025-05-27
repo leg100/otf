@@ -1,8 +1,6 @@
 package forgejo
 
 import (
-	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/paths"
 	"net/url"
 )
@@ -13,20 +11,22 @@ type newPATProps struct {
 	scope     string
 }
 
+var tokensURL = templ.SafeURL((&url.URL{
+	Scheme: "https",
+	Host:   hostname,
+	Path:   "/user/settings/applications",
+}).String())
+
 templ newPAT(props newPATProps) {
-	@components.Layout(components.LayoutProps{
-		Title:        "new vcs provider",
-		Organization: props.provider.Organization,
-		Breadcrumbs: []components.Breadcrumb{
-			{Name: "New " + internal.Title(string(props.provider.Kind)) + " VCS Provider"},
-		},
-	}) {
-		<div>
-			Create a { internal.Title(string(props.provider.Kind)) } VCS provider with a <a class="underline" href={ templ.SafeURL(props.tokensURL.String()) }>personal token</a> with the <span class="font-bold">{ props.scope }</span> scope.
-		</div>
-		@form(formProps{
-			provider: props.provider,
-			action:   paths.CreateVCSProvider(props.provider.Organization),
-		})
-	}
+	<div>
+		Create a Forgejo VCS provider with a <a class="link" href={ tokensURL }>personal token</a> with the following permissions:
+		<ul>
+			<li>repository read and write</li>
+			<li>user read</li>
+		</ul>
+	</div>
+	@form(formProps{
+		provider: props.provider,
+		action:   paths.CreateVCSProvider(props.provider.Organization),
+	})
 }
