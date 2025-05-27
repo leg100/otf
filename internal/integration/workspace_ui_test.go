@@ -12,6 +12,7 @@ import (
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/playwright-community/playwright-go"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -39,6 +40,29 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 
 			err = expect.Locator(page.GetByRole("alert")).ToHaveText("created workspace: workspace-1")
 			require.NoError(t, err)
+		})
+	})
+
+	t.Run("get with latest run", func(t *testing.T) {
+		daemon, org, ctx := setup(t)
+		ws := daemon.createWorkspace(t, ctx, org)
+		run := daemon.createRun(t, ctx, ws, nil, nil)
+
+		browser.New(t, ctx, func(page playwright.Page) {
+			_, err := page.Goto(workspaceURL(daemon.System.Hostname(), org.Name, ws.Name))
+			require.NoError(t, err)
+
+			err = expect.Locator(page.Locator("//div[@id='latest-run']//tbody/tr")).ToHaveId("run-item-" + run.ID.String())
+			require.NoError(t, err)
+
+			// click clipboard icon to copy run ID into clipboard
+			err = page.Locator(`//div[@id='latest-run']//img[@id='clipboard-icon']`).Click()
+			require.NoError(t, err)
+
+			// read run ID from clipboard and check it matches actual run ID
+			clipboardContents, err := page.EvaluateHandle(`window.navigator.clipboard.readText()`)
+			require.NoError(t, err)
+			assert.Equal(t, run.ID.String(), clipboardContents.String())
 		})
 	})
 
