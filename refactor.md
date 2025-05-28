@@ -15,3 +15,4 @@
     * register tfe api service_provider
     * register a client constructor that takes round tripper (which can be configured to skip tls verification)
 * make existing event handler registration a package-level function.
+* don't disable tls verification in (github.service).newClient()
