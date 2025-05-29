@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.3.24](https://github.com/leg100/otf/compare/v0.3.23...v0.3.24) (2025-05-29)
+
+
+### Bug Fixes
+
+* **ci:** helm charts copied to wrong dir in otf-charts repo ([94ab37b](https://github.com/leg100/otf/commit/94ab37ba3900dc9788beecb1aad37aaf8af85767))
+* **docs:** lists in forgeyo doc rendering items on same line ([db13b7a](https://github.com/leg100/otf/commit/db13b7a29896bafe145af6361f92466f11f052b3))
+* when copying an ID, copy only the ID, not the &lt;span&gt; tag ([#790](https://github.com/leg100/otf/issues/790)) ([1eb4268](https://github.com/leg100/otf/commit/1eb4268ef05cd3e76c5031b700e1a12817968135))
+
 ## [0.3.23](https://github.com/leg100/otf/compare/v0.3.22...v0.3.23) (2025-05-26)
 
 
