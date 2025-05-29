@@ -17,19 +17,19 @@ templ new(organization organization.Name, hostname string) {
 	{{
 	tokensURL := &url.URL{
 		Scheme: "https",
-		Host:   s.hostname,
+		Host:   hostname,
 		Path:   "/user/settings/applications",
 	}
 	}}
 	@components.Layout(components.LayoutProps{
 		Title:        "new forgejo vcs provider",
-		Organization: props.provider.Organization,
+		Organization: organization,
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "New Forgejo VCS Provider"},
 		},
 	}) {
 		<div>
-			Create a Forgejo VCS provider with a <a class="underline" href={ templ.SafeURL(props.tokensURL.String()) }>personal token</a> with the <span class="font-bold">{ props.scope }</span> scope.
+			Create a Forgejo VCS provider with a <a class="underline" href={ templ.SafeURL(tokensURL.String()) }>personal token</a>. It shou
 		</div>
 		@form(formProps{
 			provider: props.provider,
