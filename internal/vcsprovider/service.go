@@ -25,6 +25,7 @@ type (
 		api               *tfe
 		beforeDeleteHooks []func(context.Context, *VCSProvider) error
 		githubapps        *github.Service
+		registry          map[vcs.Kind]Plugin
 
 		*internal.HostnameService
 		*factory

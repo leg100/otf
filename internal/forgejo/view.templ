@@ -1,0 +1,86 @@
+package forgejo
+
+import (
+	"github.com/leg100/otf/internal/http/html/components"
+	"github.com/leg100/otf/internal/http/html/paths"
+	"github.com/leg100/otf/internal/organization"
+	"net/url"
+)
+
+type newProps struct {
+	provider  *VCSProvider
+	tokensURL url.URL
+	scope     string
+}
+
+templ new(organization organization.Name, hostname string) {
+	{{
+	tokensURL := &url.URL{
+		Scheme: "https",
+		Host:   s.hostname,
+		Path:   "/user/settings/applications",
+	}
+	}}
+	@components.Layout(components.LayoutProps{
+		Title:        "new forgejo vcs provider",
+		Organization: props.provider.Organization,
+		Breadcrumbs: []components.Breadcrumb{
+			{Name: "New Forgejo VCS Provider"},
+		},
+	}) {
+		<div>
+			Create a Forgejo VCS provider with a <a class="underline" href={ templ.SafeURL(props.tokensURL.String()) }>personal token</a> with the <span class="font-bold">{ props.scope }</span> scope.
+		</div>
+		@form(formProps{
+			provider: props.provider,
+			action:   paths.CreateVCSProvider(props.provider.Organization),
+		})
+	}
+}
+
+var tokensURL = templ.SafeURL((&url.URL{
+	Scheme: "https",
+	Host:   hostname,
+	Path:   "/user/settings/applications",
+}).String())
+
+templ form(props NewComponentOptions) {
+	<div>
+		Create a Forgejo VCS provider with a <a class="link" href={ tokensURL }>personal token</a> with the following permissions:
+		<ul>
+			<li>repository read and write</li>
+			<li>user read</li>
+		</ul>
+	</div>
+	<div>
+		<div class="field">
+			<label for="name">Name</label>
+			<input
+				class="input w-64"
+				type="text"
+				name="name"
+				id="name"
+				if props.provider.Name != "" {
+					value={ props.provider.Name }
+				} else {
+					placeholder={ props.provider.String() }
+				}
+			/>
+			<span class="description">An optional display name for your VCS provider.</span>
+		</div>
+		<div class="field">
+			<label for="token">Token</label>
+			<textarea
+				class="input w-96"
+				rows="3"
+				name="token"
+				id="token"
+				if props.edit {
+					placeholder="*****"
+				} else {
+					required
+				}
+			></textarea>
+		</div>
+	</div>
+}

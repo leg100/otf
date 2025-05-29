@@ -3,8 +3,8 @@ package vcsprovider
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
-	"net/url"
 	"strings"
 
 	"github.com/a-h/templ"
@@ -25,6 +25,7 @@ type webHandlers struct {
 
 	client     webClient
 	githubApps webGithubAppClient
+	registry   map[vcs.Kind]Plugin
 
 	GithubHostname  string
 	GitlabHostname  string
@@ -48,7 +49,7 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 	r = html.UIRouter(r)
 
 	r.HandleFunc("/organizations/{organization_name}/vcs-providers", h.list).Methods("GET")
-	r.HandleFunc("/organizations/{organization_name}/vcs-providers/new", h.newPersonalToken).Methods("GET")
+	r.HandleFunc("/organizations/{organization_name}/vcs-providers/new", h.new).Methods("GET")
 	r.HandleFunc("/organizations/{organization_name}/vcs-providers/new-github-app", h.newGithubApp).Methods("GET")
 	r.HandleFunc("/organizations/{organization_name}/vcs-providers/create", h.create).Methods("POST")
 	r.HandleFunc("/vcs-providers/{vcs_provider_id}/edit", h.edit).Methods("GET")
@@ -56,46 +57,46 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 	r.HandleFunc("/vcs-providers/{vcs_provider_id}/delete", h.delete).Methods("POST")
 }
 
-func (h *webHandlers) newPersonalToken(w http.ResponseWriter, r *http.Request) {
+func (h *webHandlers) new(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		Organization organization.Name `schema:"organization_name,required"`
-		Kind         vcs.Kind          `schema:"kind,required"`
+		Kind vcs.Kind `schema:"kind,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	props := newPATProps{
-		provider: &VCSProvider{
-			Kind:         params.Kind,
-			Organization: params.Organization,
-		},
+	plugin, ok := h.registry[params.Kind]
+	if !ok {
+		html.Error(w, fmt.Sprintf("vcs provider kind %s not found", params.Kind), http.StatusUnprocessableEntity)
+		return
 	}
-	switch params.Kind {
-	case vcs.GithubKind:
-		props.scope = "repo"
-		props.tokensURL = url.URL{
-			Scheme: "https",
-			Host:   h.GithubHostname,
-			Path:   "/settings/tokens",
-		}
-	case vcs.GitlabKind:
-		props.scope = "api"
-		props.tokensURL = url.URL{
-			Scheme: "https",
-			Host:   h.GitlabHostname,
-			Path:   "/-/profile/personal_access_tokens",
-		}
-	case vcs.ForgejoKind:
-		props.scope = "repo (read/write) and user"
-		props.tokensURL = url.URL{
-			Scheme: "https",
-			Host:   h.ForgejoHostname,
-			Path:   "/user/settings/applications",
-		}
-	}
-	html.Render(newPAT(props), w, r)
+	plugin.NewHandler(w, r)
+
+	//switch params.Kind {
+	//case vcs.GithubKind:
+	//	props.scope = "repo"
+	//	props.tokensURL = url.URL{
+	//		Scheme: "https",
+	//		Host:   h.GithubHostname,
+	//		Path:   "/settings/tokens",
+	//	}
+	//case vcs.GitlabKind:
+	//	props.scope = "api"
+	//	props.tokensURL = url.URL{
+	//		Scheme: "https",
+	//		Host:   h.GitlabHostname,
+	//		Path:   "/-/profile/personal_access_tokens",
+	//	}
+	//case vcs.ForgejoKind:
+	//	props.scope = "repo (read/write) and user"
+	//	props.tokensURL = url.URL{
+	//		Scheme: "https",
+	//		Host:   h.ForgejoHostname,
+	//		Path:   "/user/settings/applications",
+	//	}
+	//}
+	//html.Render(newPAT(props), w, r)
 }
 
 func (h *webHandlers) newGithubApp(w http.ResponseWriter, r *http.Request) {
