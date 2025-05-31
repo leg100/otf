@@ -5,7 +5,7 @@ To connect workspaces and modules to git repositories containing Terraform confi
 * [Github app](../github_app.md)
 * Github personal access token
 * Gitlab personal access token
-* [Forgejo personal access token](forgejo.md)
+* [Forgejo/Gitea personal access token](forgejo.md)
 
 ## Walkthrough
 

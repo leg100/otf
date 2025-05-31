@@ -119,7 +119,7 @@ func list(props listProps) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "\" method=\"GET\"><button class=\"btn\">New Forgejo VCS Provider (Personal Token)</button> <input type=\"hidden\" name=\"kind\" id=\"kind\" value=\"forgejo\"></form></div><div id=\"content-list\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "\" method=\"GET\"><button class=\"btn\">New Forgejo/Gitea VCS Provider (Personal Token)</button> <input type=\"hidden\" name=\"kind\" id=\"kind\" value=\"forgejo\"></form></div><div id=\"content-list\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

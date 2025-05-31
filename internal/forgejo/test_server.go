@@ -484,7 +484,9 @@ func SendEventRequest(t *testing.T, event string, url, secret string, payload []
 	require.NoError(t, err)
 	req.Header.Add("Content-type", "application/json")
 	req.Header.Add("X-Forgejo-Event", string(event))
+	req.Header.Add("X-Gitea-Event", string(event))
 	req.Header.Add("X-Forgejo-Signature", hex.EncodeToString(sig))
+	req.Header.Add("X-Gitea-Signature", hex.EncodeToString(sig))
 
 	res, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
