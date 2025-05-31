@@ -209,7 +209,7 @@ func (c *Client) CreateWebhook(ctx context.Context, opts vcs.CreateWebhookOption
 		return "", err
 	}
 	opt := forgejo.CreateHookOption{
-		Type: forgejo.HookTypeForgejo,
+		Type: forgejo.HookTypeGitea,
 		Config: map[string]string{
 			"content_type": "json",
 			"url":          opts.Endpoint,

@@ -1,12 +1,18 @@
 # Forgejo
 
-OTF can use Forgejo for both authentication (OIDC) and as a VCS provider.  Here's a setup guide.
+OTF can use Forgejo/Gitea for both authentication (OIDC) and as a VCS provider.  Here's a setup guide.
+
+## Compatibility
+
+At time of writing (May 2025), the APIs of Gitea and Forgejo are largely compatible, allowing OTF to work with both.  There are only some small differences in naming; OTF uses the webhook type "gitea", which is supported by both.
+
+This guide is tested to work with Forgejo 11.0.1, and Gitea 1.24.0.
 
 # Authentication
 
 OTF's general [OIDC](https://docs.otf.ninja/auth/providers/oidc/) instructions apply.  This document only provides some forgejo-specific details.
 
-## Setting up Forgejo
+## Setting up Forgejo/Gitea
 
 Some examples exist in [the forgejo documentation](https://forgejo.org/docs/latest/user/oauth2-provider/#examples).
 
