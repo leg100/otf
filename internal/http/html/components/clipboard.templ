@@ -17,9 +17,9 @@ templ CopyableContent() {
 }
 
 templ Identifier(id resource.TfeID) {
-	@CopyableContent() {
-		<span class="identifier truncate">
+	<span class="identifier truncate">
+		@CopyableContent() {
 			{ id.String() }
-		</span>
-	}
+		}
+	</span>
 }

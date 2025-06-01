@@ -11,6 +11,7 @@ OTF's general [OIDC](https://docs.otf.ninja/auth/providers/oidc/) instructions a
 Some examples exist in [the forgejo documentation](https://forgejo.org/docs/latest/user/oauth2-provider/#examples).
 
 Forgejo is set up by going to the "Applications" tab of:
+
 1. User settings → Applications → Manage OAuth2 applications
 2. An organization page → Settings → Applications
 3. Site administration → Integrations → Applications
@@ -19,6 +20,7 @@ The differences between these options are who configures/manages it,
 and who can log in through it.
 
 Set it up with the following fields:
+
 * The Application Name can be anything.
 * The Redirect URI should be set as described in the OTF OIDC instructions.
 * The "Confidential client" box should be checked.
