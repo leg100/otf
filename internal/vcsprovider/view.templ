@@ -105,7 +105,7 @@ templ edit(provider *VCSProvider) {
 			{Name: "Settings"},
 		},
 	}) {
-		@form(formProps{
+		@Form(FormProps{
 			provider: provider,
 			edit:     true,
 			action:   paths.UpdateVCSProvider(provider.ID),
@@ -185,13 +185,13 @@ templ newGithubApp(props newGithubAppProps) {
 	}
 }
 
-type formProps struct {
+type FormProps struct {
 	provider *VCSProvider
 	action   templ.SafeURL
 	edit     bool
 }
 
-templ Form(props formProps) {
+templ Form(props FormProps) {
 	<form class="flex flex-col gap-5" action={ props.action } method="POST">
 		<div class="field">
 			<label for="name">Name</label>
@@ -208,22 +208,20 @@ templ Form(props formProps) {
 			/>
 			<span class="description">An optional display name for your VCS provider.</span>
 		</div>
-		if props.provider.GithubApp == nil {
-			<div class="field">
-				<label for="token">Token</label>
-				<textarea
-					class="input w-96"
-					rows="3"
-					name="token"
-					id="token"
-					if props.edit {
-						placeholder="*****"
-					} else {
-						required
-					}
-				></textarea>
-			</div>
-		}
+		<div class="field">
+			<label for="token">Token</label>
+			<textarea
+				class="input w-96"
+				rows="3"
+				name="token"
+				id="token"
+				if props.edit {
+					placeholder="*****"
+				} else {
+					required
+				}
+			></textarea>
+		</div>
 		if props.edit {
 			<button class="btn w-32">Update</button>
 		} else {

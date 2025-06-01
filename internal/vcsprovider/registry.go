@@ -4,7 +4,7 @@ import (
 	"net/http"
 )
 
-type Plugin interface {
+type Provider interface {
 	// NewClient constructs a client for interacting with the upstream vcs provider
 	NewClient(provider *VCSProvider)
 	// NewHandler renders a web page for creating a new vcs provider

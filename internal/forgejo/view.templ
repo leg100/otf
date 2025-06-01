@@ -29,9 +29,17 @@ templ new(organization organization.Name, hostname string) {
 		},
 	}) {
 		<div>
-			Create a Forgejo VCS provider with a <a class="underline" href={ templ.SafeURL(tokensURL.String()) }>personal token</a>. It shou
+			Create a Forgejo VCS provider with a <a class="underline" href={ templ.SafeURL(tokensURL.String()) }>personal access token</a>. The personal access token needs the following permissions:
+			<ul>
+				<li>
+					repository read and write
+				</li>
+				<li>
+					user read
+				</li>
+			</ul>
 		</div>
-		@form(formProps{
+		@vcsprovider.Form(vcsprovider.FormProps{
 			provider: props.provider,
 			action:   paths.CreateVCSProvider(props.provider.Organization),
 		})

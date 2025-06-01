@@ -25,7 +25,7 @@ type webHandlers struct {
 
 	client     webClient
 	githubApps webGithubAppClient
-	registry   map[vcs.Kind]Plugin
+	registry   map[vcs.Kind]Provider
 
 	GithubHostname  string
 	GitlabHostname  string
