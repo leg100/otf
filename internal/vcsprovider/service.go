@@ -25,6 +25,7 @@ type (
 		api               *tfe
 		beforeDeleteHooks []func(context.Context, *VCSProvider) error
 		githubapps        *github.Service
+		schemas           map[vcs.Kind]ConfigSchema
 
 		*internal.HostnameService
 		*factory
@@ -99,6 +100,10 @@ func NewService(opts Options) *Service {
 		}
 	})
 	return &svc
+}
+
+func (a *Service) RegisterSchema(kind vcs.Kind, schema ConfigSchema) {
+	a.schemas[kind] = schema
 }
 
 func (a *Service) AddHandlers(r *mux.Router) {

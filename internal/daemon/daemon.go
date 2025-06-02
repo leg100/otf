@@ -294,6 +294,42 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Listener:         listener,
 	})
 
+	// github token provider
+	//
+	// TODO: create new type "github-token"
+	vcsProviderService.RegisterSchema(vcs.GithubKind, vcsprovider.ConfigSchema{
+		WantsHostname: true,
+		WantsToken:    true,
+	})
+
+	// github app provider
+	vcsProviderService.RegisterSchema(vcs.GithubKind, vcsprovider.ConfigSchema{
+		WantsHostname: true,
+		ListInstallationIDs: func(ctx context.Context) (map[string]int64, error) {
+			installs, err := githubAppService.ListInstallations(ctx)
+			if err != nil {
+				return nil, err
+			}
+			m := make(map[string]int64, len(installs))
+			for _, install := range installs {
+				m[install.String()] = *install.ID
+			}
+			return m, nil
+		},
+	})
+
+	// forgejo provider
+	vcsProviderService.RegisterSchema(vcs.ForgejoKind, vcsprovider.ConfigSchema{
+		WantsHostname: true,
+		WantsToken:    true,
+	})
+
+	// gitlab provider
+	vcsProviderService.RegisterSchema(vcs.GitlabKind, vcsprovider.ConfigSchema{
+		WantsHostname: true,
+		WantsToken:    true,
+	})
+
 	runner, err := runner.NewServerRunner(runner.ServerRunnerOptions{
 		Logger:     logger,
 		Config:     cfg.RunnerConfig,

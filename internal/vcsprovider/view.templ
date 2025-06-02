@@ -8,7 +8,6 @@ import (
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/vcs"
-	"net/url"
 	"time"
 )
 
@@ -106,9 +105,9 @@ templ edit(provider *VCSProvider) {
 		},
 	}) {
 		@form(formProps{
-			provider: provider,
-			edit:     true,
-			action:   paths.UpdateVCSProvider(provider.ID),
+			edit:   true,
+			action: paths.UpdateVCSProvider(provider.ID),
+			kind:   provider.Kind,
 		})
 		<hr class="my-4"/>
 		<h3 class="font-semibold text-lg mb-2">Advanced</h3>
@@ -120,26 +119,25 @@ templ edit(provider *VCSProvider) {
 	}
 }
 
-type newPATProps struct {
-	provider  *VCSProvider
-	tokensURL url.URL
-	scope     string
+type newProviderProps struct {
+	organization organization.Name
+	kind         vcs.Kind
 }
 
-templ newPAT(props newPATProps) {
+templ newProvider(props newProviderProps) {
 	@components.Layout(components.LayoutProps{
 		Title:        "new vcs provider",
-		Organization: props.provider.Organization,
+		Organization: props.organization,
 		Breadcrumbs: []components.Breadcrumb{
-			{Name: "New " + internal.Title(string(props.provider.Kind)) + " VCS Provider"},
+			{Name: "New " + internal.Title(string(props.kind)) + " VCS Provider"},
 		},
 	}) {
 		<div>
-			Create a { internal.Title(string(props.provider.Kind)) } VCS provider with a <a class="underline" href={ templ.SafeURL(props.tokensURL.String()) }>personal token</a> with the <span class="font-bold">{ props.scope }</span> scope.
+			Create a { props.kind } VCS provider.
 		</div>
 		@form(formProps{
-			provider: props.provider,
-			action:   paths.CreateVCSProvider(props.provider.Organization),
+			action: paths.CreateVCSProvider(props.organization),
+			kind:   props.kind,
 		})
 	}
 }
@@ -186,9 +184,12 @@ templ newGithubApp(props newGithubAppProps) {
 }
 
 type formProps struct {
-	provider *VCSProvider
-	action   templ.SafeURL
-	edit     bool
+	action templ.SafeURL
+	schema ConfigSchema
+	name   string
+	config Config
+	edit   bool
+	kind   vcs.Kind
 }
 
 templ form(props formProps) {
@@ -200,15 +201,11 @@ templ form(props formProps) {
 				type="text"
 				name="name"
 				id="name"
-				if props.provider.Name != "" {
-					value={ props.provider.Name }
-				} else {
-					placeholder={ props.provider.String() }
-				}
+				value={ props.name }
 			/>
 			<span class="description">An optional display name for your VCS provider.</span>
 		</div>
-		if props.provider.GithubApp == nil {
+		if props.schema.WantsToken {
 			<div class="field">
 				<label for="token">Token</label>
 				<textarea
@@ -224,11 +221,30 @@ templ form(props formProps) {
 				></textarea>
 			</div>
 		}
+		if props.schema.ListInstallationIDs != nil {
+			{{
+					installIDs, err := props.schema.ListInstallationIDs(ctx)
+					if err != nil {
+						return err
+					}
+			}}
+			<div class="field">
+				<label for="install_id">Installation</label>
+				<select class="select w-48" name="install_id" id="select-install-id">
+					for name, id := range installIDs {
+						<option value={ id } selected?={ id == props.config.InstallationID }>
+							{ name }
+						</option>
+					}
+				</select>
+				<span class="description">Select an installation.</span>
+			</div>
+		}
 		if props.edit {
 			<button class="btn w-32">Update</button>
 		} else {
 			<button class="btn w-32">Create</button>
-			<input type="hidden" name="kind" id="kind" value={ string(props.provider.Kind) }/>
+			<input type="hidden" name="kind" id="kind" value={ string(props.kind) }/>
 		}
 	</form>
 }
