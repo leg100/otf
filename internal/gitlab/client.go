@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/a-h/templ"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authenticator"
 	otfhttp "github.com/leg100/otf/internal/http"
@@ -31,7 +32,7 @@ type (
 		SkipTLSVerification bool
 
 		OAuthToken    *oauth2.Token
-		PersonalToken *string
+		PersonalToken *string `schema:"token"`
 	}
 )
 
@@ -78,6 +79,10 @@ func NewOAuthClient(cfg authenticator.OAuthConfig, token *oauth2.Token) (authent
 		OAuthToken:          token,
 		SkipTLSVerification: cfg.SkipTLSVerification,
 	})
+}
+
+func (c *Client) EditFormFields() templ.Component {
+	return nil
 }
 
 func (g *Client) GetCurrentUser(ctx context.Context) (user.Username, error) {

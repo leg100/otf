@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/a-h/templ"
 	"github.com/bradleyfalzon/ghinstallation/v2"
 	"github.com/google/go-github/v65/github"
 	"github.com/leg100/otf/internal"
@@ -42,7 +43,7 @@ type (
 
 		// Only specify one of the following
 		OAuthToken    *oauth2.Token
-		PersonalToken *string
+		PersonalToken *string `schema:"token"`
 		*AppCredentials
 		*InstallCredentials
 	}
@@ -60,7 +61,7 @@ type (
 	// https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/about-authentication-with-a-github-app#authentication-as-an-app-installation
 	InstallCredentials struct {
 		// Github installation ID
-		ID int64
+		ID int64 `schema:"install_id"`
 		// Github username if installed in a user account; mutually exclusive
 		// with Organization
 		User *string
@@ -145,6 +146,10 @@ func NewOAuthClient(cfg authenticator.OAuthConfig, token *oauth2.Token) (authent
 		OAuthToken:          token,
 		SkipTLSVerification: cfg.SkipTLSVerification,
 	})
+}
+
+func (c *Client) EditFormFields() templ.Component {
+	return nil
 }
 
 func (g *Client) GetCurrentUser(ctx context.Context) (user.Username, error) {

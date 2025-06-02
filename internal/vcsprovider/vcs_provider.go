@@ -32,6 +32,8 @@ type (
 		GithubApp *github.InstallCredentials // mutually exclusive with Token.
 
 		skipTLSVerification bool // toggle skipping verification of VCS host's TLS cert.
+
+		vcs.Client
 	}
 
 	// factory produces VCS providers

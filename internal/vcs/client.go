@@ -2,6 +2,9 @@ package vcs
 
 import (
 	"context"
+	"encoding/json"
+
+	"github.com/a-h/templ"
 )
 
 type (
@@ -25,6 +28,11 @@ type (
 		ListPullRequestFiles(ctx context.Context, repo string, pull int) ([]string, error)
 		// GetCommit retrieves commit from the repo with the given git ref
 		GetCommit(ctx context.Context, repo, ref string) (Commit, error)
+		// EditFormFields provides the fields for an html form with which to
+		// edit the client's configuration.
+		EditFormFields() templ.Component
+		// MarshalJSON marshals the client configuration to JSON.
+		json.Marshaler
 	}
 
 	// NewTokenClientOptions are options for creating a client using a personal

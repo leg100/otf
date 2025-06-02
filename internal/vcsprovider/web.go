@@ -3,6 +3,7 @@ package vcsprovider
 import (
 	"context"
 	"errors"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -25,6 +26,7 @@ type webHandlers struct {
 
 	client     webClient
 	githubApps webGithubAppClient
+	registry   map[vcs.Kind]ClientCreator
 
 	GithubHostname  string
 	GitlabHostname  string
@@ -48,7 +50,7 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 	r = html.UIRouter(r)
 
 	r.HandleFunc("/organizations/{organization_name}/vcs-providers", h.list).Methods("GET")
-	r.HandleFunc("/organizations/{organization_name}/vcs-providers/new", h.newPersonalToken).Methods("GET")
+	r.HandleFunc("/organizations/{organization_name}/vcs-providers/new", h.new).Methods("GET")
 	r.HandleFunc("/organizations/{organization_name}/vcs-providers/new-github-app", h.newGithubApp).Methods("GET")
 	r.HandleFunc("/organizations/{organization_name}/vcs-providers/create", h.create).Methods("POST")
 	r.HandleFunc("/vcs-providers/{vcs_provider_id}/edit", h.edit).Methods("GET")
@@ -56,12 +58,28 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 	r.HandleFunc("/vcs-providers/{vcs_provider_id}/delete", h.delete).Methods("POST")
 }
 
-func (h *webHandlers) newPersonalToken(w http.ResponseWriter, r *http.Request) {
+func (h *webHandlers) new(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		Organization organization.Name `schema:"organization_name,required"`
 		Kind         vcs.Kind          `schema:"kind,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+
+	creator, ok := h.registry[params.Kind]
+	if !ok {
+		html.Error(w, "kind not found", http.StatusUnprocessableEntity)
+		return
+	}
+	query, err := io.ReadAll(r.Body)
+	if err != nil {
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+	client, err := creator.Create(query, nil)
+	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}

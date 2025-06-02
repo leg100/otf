@@ -15,12 +15,19 @@ import (
 	"time"
 
 	"codeberg.org/mvdkleijn/forgejo-sdk/forgejo/v2"
+	"github.com/a-h/templ"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/vcs"
 )
 
 type Client struct {
 	client *forgejo.Client
+}
+
+type Config struct {
+	Token               string
+	Hostname            string
+	SkipTLSVerification bool
 }
 
 func NewTokenClient(opts vcs.NewTokenClientOptions) (vcs.Client, error) {
@@ -37,6 +44,18 @@ func NewTokenClient(opts vcs.NewTokenClientOptions) (vcs.Client, error) {
 		}
 		options = append(options, forgejo.SetHTTPClient(client))
 	}
+	rv, err := forgejo.NewClient(url, options...)
+	if err != nil {
+		return nil, err
+	}
+	return &Client{client: rv}, nil
+}
+
+func NewClient(config Config, transport *http.Transport) (vcs.Client, error) {
+	url := fmt.Sprintf("https://%s", config.Hostname)
+	options := make([]forgejo.ClientOption, 0, 2)
+	options = append(options, forgejo.SetToken(config.Token))
+	options = append(options, forgejo.SetHTTPClient(&http.Client{Transport: transport}))
 	rv, err := forgejo.NewClient(url, options...)
 	if err != nil {
 		return nil, err
@@ -502,4 +521,8 @@ func (c *Client) GetCommit(ctx context.Context, repo, refname string) (vcs.Commi
 	rv.URL = commit.HTMLURL
 
 	return rv, nil
+}
+
+func (c *Client) EditFormFields() templ.Component {
+	return formFields(formFieldsProps{edit: true})
 }

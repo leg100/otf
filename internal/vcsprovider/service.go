@@ -28,6 +28,8 @@ type (
 
 		*internal.HostnameService
 		*factory
+
+		registry map[vcs.Kind]ClientCreator
 	}
 
 	Options struct {
@@ -99,6 +101,10 @@ func NewService(opts Options) *Service {
 		}
 	})
 	return &svc
+}
+
+func (a *Service) RegisterKind(kind vcs.Kind, loader ClientCreator) {
+	a.registry[kind] = loader
 }
 
 func (a *Service) AddHandlers(r *mux.Router) {

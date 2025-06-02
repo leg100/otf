@@ -1,0 +1,25 @@
+package forgejo
+
+type formFieldsProps struct {
+	edit bool
+}
+
+templ formFields(props formFieldsProps) {
+	<div class="field">
+		<label for="token">Token</label>
+		<textarea
+			class="input w-96"
+			rows="3"
+			name="token"
+			id="token"
+			if props.edit {
+				placeholder="*****"
+			} else {
+				required
+			}
+		></textarea>
+		<span class="description">
+			The personal access token needs the permissions <span class="bold">repository read and write</span> and <span>user read</span>
+		</span>
+	</div>
+}

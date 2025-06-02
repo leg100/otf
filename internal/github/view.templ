@@ -7,6 +7,52 @@ import (
 	"strconv"
 )
 
+type tokenFormFieldsProps struct {
+	edit bool
+}
+
+templ tokenFormFields(props tokenFormFieldsProps) {
+	<div class="field">
+		<label for="token">Token</label>
+		<textarea
+			class="input w-96"
+			rows="3"
+			name="token"
+			id="token"
+			if props.edit {
+				placeholder="*****"
+			} else {
+				required
+			}
+		></textarea>
+	</div>
+}
+
+type appFormFieldsProps struct {
+	edit           bool
+	githubHostname string
+	app            *App
+	installations  []*Installation
+}
+
+templ appFormFields(props appFormFieldsProps) {
+	if len(props.installations) > 0 {
+		<div class="field">
+			<label for="install_id">Installation</label>
+			<select class="select w-48" name="install_id" id="select-install-id">
+				for _, install := range props.installations {
+					<option value={ int(*install.ID) }>{ install.String() }</option>
+				}
+			</select>
+			<span class="description">Select a Github App installation.</span>
+		</div>
+	} else {
+		<span>
+			No installations of the GitHub app found. Install it <a class="underline" href={ templ.SafeURL(props.app.NewInstallURL(props.githubHostname)) }>on Github first</a>.
+		</span>
+	}
+}
+
 type newAppViewProps struct {
 	manifest       string
 	githubHostname string
