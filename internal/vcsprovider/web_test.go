@@ -24,7 +24,7 @@ func TestVCSProvider_newPersonalToken(t *testing.T) {
 			q := "/?organization_name=acme-corp&kind=" + kind
 			r := httptest.NewRequest("GET", q, nil)
 			w := httptest.NewRecorder()
-			svc.newPersonalToken(w, r)
+			svc.new(w, r)
 			assert.Equal(t, 200, w.Code, w.Body.String())
 		})
 	}
