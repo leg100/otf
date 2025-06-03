@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
@@ -20,66 +19,45 @@ type pgdb struct {
 }
 
 func (db *pgdb) create(ctx context.Context, provider *VCSProvider) error {
-	err := db.Tx(ctx, func(ctx context.Context) error {
-		args := pgx.NamedArgs{
-			"id":           provider.ID,
-			"created_at":   provider.CreatedAt,
-			"name":         provider.Name,
-			"vcs_kind":     provider.Kind,
-			"token":        provider.Token,
-			"organization": provider.Organization,
-		}
-		if provider.GithubApp != nil {
-			args["github_app_id"] = provider.GithubApp.AppCredentials.ID
-		}
-		_, err := db.Exec(ctx, `
+	args := pgx.NamedArgs{
+		"id":           provider.ID,
+		"token":        provider.Token,
+		"created_at":   provider.CreatedAt,
+		"name":         provider.Name,
+		"vcs_kind":     provider.Kind,
+		"organization": provider.Organization,
+	}
+	if provider.Installation != nil {
+		args["install_app_id"] = provider.Installation.AppID
+		args["install_id"] = provider.Installation.ID
+		args["install_username"] = provider.Installation.Username
+		args["install_organization"] = provider.Installation.Organization
+	}
+
+	_, err := db.Exec(ctx, `
 INSERT INTO vcs_providers (
     vcs_provider_id,
+    token,
     created_at,
     name,
     vcs_kind,
-    token,
-    github_app_id,
     organization_name
+    install_app_id,
+    install_id,
+    install_username,
+    install_organization,
 ) VALUES (
 	@id,
+	@token,
 	@created_at,
 	@name,
 	@vcs_kind,
-	@token,
-	@github_app_id,
 	@organization
+    @install_app_id,
+    @install_id,
+    @install_username,
+    @install_organization,
 )`, args)
-		if err != nil {
-			return err
-		}
-		if provider.GithubApp != nil {
-			_, err := db.Exec(ctx, `
-INSERT INTO github_app_installs (
-    github_app_id,
-    install_id,
-    username,
-    organization,
-    vcs_provider_id
-) VALUES (
-	@id,
-	@install_id,
-	@username,
-	@organization,
-	@vcs_provider_id
-)`, pgx.NamedArgs{
-				"id":              provider.GithubApp.AppCredentials.ID,
-				"install_id":      provider.GithubApp.ID,
-				"username":        provider.GithubApp.User,
-				"organization":    provider.GithubApp.Organization,
-				"vcs_provider_id": provider.ID,
-			})
-			if err != nil {
-				return err
-			}
-		}
-		return nil
-	})
 	return err
 }
 
@@ -89,12 +67,8 @@ func (db *pgdb) update(ctx context.Context, id resource.TfeID, fn func(context.C
 		db.DB,
 		func(ctx context.Context) (*VCSProvider, error) {
 			rows := db.Query(ctx, `
-SELECT
-    v.vcs_provider_id, v.token, v.created_at, v.name, v.vcs_kind, v.organization_name, v.github_app_id,
-    (ga.*)::"github_apps" AS github_app,
-    (gi.*)::"github_app_installs" AS github_app_install
+SELECT *
 FROM vcs_providers v
-LEFT JOIN (github_app_installs gi JOIN github_apps ga USING (github_app_id)) USING (vcs_provider_id)
 WHERE v.vcs_provider_id = $1
 FOR UPDATE OF v
 `, id)
@@ -102,12 +76,28 @@ FOR UPDATE OF v
 		},
 		fn,
 		func(ctx context.Context, provider *VCSProvider) error {
+			args := pgx.NamedArgs{
+				"id":    provider.ID,
+				"token": provider.Token,
+				"name":  provider.Name,
+			}
+			if provider.Installation != nil {
+				args["install_app_id"] = provider.Installation.AppID
+				args["install_id"] = provider.Installation.ID
+				args["install_username"] = provider.Installation.Username
+				args["install_organization"] = provider.Installation.Organization
+			}
 			_, err := db.Exec(ctx, `
 UPDATE vcs_providers
-SET name = $1, token = $2
-WHERE vcs_provider_id = $3
-RETURNING vcs_provider_id, token, created_at, name, vcs_kind, organization_name, github_app_id
-`, provider.Name, provider.Token, provider.ID)
+SET
+	name = @name,
+	token = @token,
+	install_app_id = @install_app_id,
+	install_id = @install_id,
+	install_username = @install_username,
+	install_organization = @install_organization
+WHERE vcs_provider_id = @id
+`, args)
 			return err
 		},
 	)
@@ -116,12 +106,8 @@ RETURNING vcs_provider_id, token, created_at, name, vcs_kind, organization_name,
 
 func (db *pgdb) get(ctx context.Context, id resource.TfeID) (*VCSProvider, error) {
 	rows := db.Query(ctx, `
-SELECT
-    v.vcs_provider_id, v.token, v.created_at, v.name, v.vcs_kind, v.organization_name, v.github_app_id,
-    (ga.*)::"github_apps" AS github_app,
-    (gi.*)::"github_app_installs" AS github_app_install
+SELECT *
 FROM vcs_providers v
-LEFT JOIN (github_app_installs gi JOIN github_apps ga USING (github_app_id)) USING (vcs_provider_id)
 WHERE v.vcs_provider_id = $1
 `, id)
 
@@ -129,25 +115,14 @@ WHERE v.vcs_provider_id = $1
 }
 
 func (db *pgdb) list(ctx context.Context) ([]*VCSProvider, error) {
-	rows := db.Query(ctx, `
-SELECT
-    v.vcs_provider_id, v.token, v.created_at, v.name, v.vcs_kind, v.organization_name, v.github_app_id,
-    (ga.*)::"github_apps" AS github_app,
-    (gi.*)::"github_app_installs" AS github_app_install
-FROM vcs_providers v
-LEFT JOIN (github_app_installs gi JOIN github_apps ga USING (github_app_id)) USING (vcs_provider_id)
-`)
+	rows := db.Query(ctx, `SELECT * FROM vcs_providers`)
 	return sql.CollectRows(rows, db.scan)
 }
 
 func (db *pgdb) listByOrganization(ctx context.Context, organization organization.Name) ([]*VCSProvider, error) {
 	rows := db.Query(ctx, `
-SELECT
-    v.vcs_provider_id, v.token, v.created_at, v.name, v.vcs_kind, v.organization_name, v.github_app_id,
-    (ga.*)::"github_apps" AS github_app,
-    (gi.*)::"github_app_installs" AS github_app_install
+SELECT *
 FROM vcs_providers v
-LEFT JOIN (github_app_installs gi JOIN github_apps ga USING (github_app_id)) USING (vcs_provider_id)
 WHERE v.organization_name = $1
 `, organization)
 	return sql.CollectRows(rows, db.scan)
@@ -155,12 +130,8 @@ WHERE v.organization_name = $1
 
 func (db *pgdb) listByGithubAppInstall(ctx context.Context, installID int64) ([]*VCSProvider, error) {
 	rows := db.Query(ctx, `
-SELECT
-    v.vcs_provider_id, v.token, v.created_at, v.name, v.vcs_kind, v.organization_name, v.github_app_id,
-    (ga.*)::"github_apps" AS github_app,
-    (gi.*)::"github_app_installs" AS github_app_install
+SELECT *
 FROM vcs_providers v
-JOIN (github_app_installs gi JOIN github_apps ga USING (github_app_id)) USING (vcs_provider_id)
 WHERE gi.install_id = $1
 `, installID)
 	return sql.CollectRows(rows, db.scan)
@@ -175,66 +146,46 @@ WHERE vcs_provider_id = $1
 	return err
 }
 
-type (
-	// model represents a database row for a vcs provider
-	model struct {
-		VCSProviderID    resource.TfeID `db:"vcs_provider_id"`
-		Token            *string
-		CreatedAt        time.Time `db:"created_at"`
-		Name             string
-		VCSKind          vcs.Kind               `db:"vcs_kind"`
-		OrganizationName organization.Name      `db:"organization_name"`
-		GithubAppID      *int                   `db:"github_app_id"`
-		GithubApp        *githubAppModel        `db:"github_app"`
-		GithubAppInstall *githubAppInstallModel `db:"github_app_install"`
-	}
-
-	githubAppModel struct {
-		GithubAppID   github.AppID `db:"github_app_id"`
-		WebhookSecret string       `db:"webhook_secret"`
-		PrivateKey    string       `db:"private_key"`
-		Slug          string
-		Organization  *string
-	}
-
-	githubAppInstallModel struct {
-		GithubAppID   int64 `db:"github_app_id"`
-		InstallID     int64 `db:"install_id"`
-		Username      *string
-		Organization  *string
-		VCSProviderID string `db:"vcs_provider_id"`
-	}
-)
-
 func (db *pgdb) scan(row pgx.CollectableRow) (*VCSProvider, error) {
-	model, err := pgx.RowToStructByName[model](row)
+	// model represents a database row for a vcs provider
+	type model struct {
+		VCSProviderID       resource.TfeID `db:"vcs_provider_id"`
+		Token               *string
+		CreatedAt           time.Time `db:"created_at"`
+		Name                string
+		VCSKind             vcs.Kind          `db:"vcs_kind"`
+		OrganizationName    organization.Name `db:"organization_name"`
+		InstallAppID        *int64            `db:"install_app_id"`
+		InstallID           *int64            `db:"install_id"`
+		InstallUsername     *string           `db:"install_username"`
+		InstallOrganization *string           `db:"install_organization"`
+	}
+
+	m, err := pgx.RowToStructByName[model](row)
 	if err != nil {
 		return nil, err
 	}
 	opts := CreateOptions{
-		Organization: model.OrganizationName,
-		Name:         model.Name,
+		Organization: m.OrganizationName,
+		Name:         m.Name,
+		Kind:         m.VCSKind,
+		Config: Config{
+			Token: m.Token,
+		},
 	}
-	var creds *github.InstallCredentials
-	if model.GithubApp != nil {
-		creds = &github.InstallCredentials{
-			ID: model.GithubAppInstall.InstallID,
-			AppCredentials: github.AppCredentials{
-				ID:         model.GithubApp.GithubAppID,
-				PrivateKey: model.GithubApp.PrivateKey,
-			},
-			User:         model.GithubAppInstall.Username,
-			Organization: model.GithubAppInstall.Organization,
+	if m.InstallID != nil {
+		opts.Installation = &Installation{
+			ID:           *m.InstallID,
+			AppID:        *m.InstallAppID,
+			Username:     m.InstallUsername,
+			Organization: m.InstallOrganization,
 		}
-	} else if model.Token != nil {
-		opts.Kind = model.VCSKind
-		opts.Token = model.Token
 	}
-	provider, err := db.newWithGithubCredentials(opts, creds)
+	provider, err := db.newProvider(opts)
 	if err != nil {
 		return nil, err
 	}
-	provider.ID = model.VCSProviderID
-	provider.CreatedAt = model.CreatedAt
+	provider.ID = m.VCSProviderID
+	provider.CreatedAt = m.CreatedAt
 	return provider, nil
 }

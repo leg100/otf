@@ -2,7 +2,6 @@
 package vcsprovider
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -29,6 +28,8 @@ type (
 		Kind  vcs.Kind // github/gitlab etc. Not necessary if GithubApp is non-nil.
 		Token *string  // personal access token.
 
+		Config
+
 		GithubApp *github.InstallCredentials // mutually exclusive with Token.
 
 		skipTLSVerification bool // toggle skipping verification of VCS host's TLS cert.
@@ -38,9 +39,6 @@ type (
 	factory struct {
 		githubapps *github.Service
 
-		forgejoHostname     string
-		githubHostname      string
-		gitlabHostname      string
 		skipTLSVerification bool // toggle skipping verification of VCS host's TLS cert.
 	}
 
@@ -63,48 +61,18 @@ type (
 	}
 )
 
-func (f *factory) newProvider(ctx context.Context, opts CreateOptions) (*VCSProvider, error) {
-	var (
-		creds *github.InstallCredentials
-		err   error
-	)
-	if opts.GithubAppInstallID != nil {
-		creds, err = f.githubapps.GetInstallCredentials(ctx, *opts.GithubAppInstallID)
-		if err != nil {
-			return nil, err
-		}
+func (f *factory) newProvider(opts CreateOptions) (*VCSProvider, error) {
+	if opts.Token == nil && opts.Installation == nil {
+		return nil, errors.New("must specify either token or github app installation ID")
 	}
-	return f.newWithGithubCredentials(opts, creds)
-}
-
-func (f *factory) newWithGithubCredentials(opts CreateOptions, creds *github.InstallCredentials) (*VCSProvider, error) {
 	provider := &VCSProvider{
 		ID:                  resource.NewTfeID(resource.VCSProviderKind),
 		Name:                opts.Name,
 		CreatedAt:           internal.CurrentTimestamp(nil),
 		Organization:        opts.Organization,
+		Config:              opts.Config,
+		Kind:                opts.Kind,
 		skipTLSVerification: f.skipTLSVerification,
-	}
-	if opts.Token != nil {
-		switch provider.Kind {
-		case vcs.GithubKind:
-			provider.Hostname = f.githubHostname
-		case vcs.GitlabKind:
-			provider.Hostname = f.gitlabHostname
-		case vcs.ForgejoKind:
-			provider.Hostname = f.forgejoHostname
-		default:
-			return nil, errors.New("no hostname found for vcs kind")
-		}
-		if err := provider.setToken(*opts.Token); err != nil {
-			return nil, err
-		}
-	} else if creds != nil {
-		provider.GithubApp = creds
-		provider.Kind = vcs.GithubKind
-		provider.Hostname = f.githubHostname
-	} else {
-		return nil, errors.New("must specify either token or github app installation ID")
 	}
 	return provider, nil
 }

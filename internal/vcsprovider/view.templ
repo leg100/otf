@@ -169,25 +169,25 @@ templ form(props formProps) {
 		}
 		if props.schema.ListInstallations != nil {
 			{{
-					installsResult, err := props.schema.ListInstallations(ctx)
+					result, err := props.schema.ListInstallations(ctx)
 					if err != nil {
 						return err
 					}
 			}}
-			if len(installsResult.Installations) > 0 {
+			if len(result.Results) > 0 {
 				<div class="field">
 					<label for="install_id">Installation</label>
 					<select class="select w-48" name="install_id" id="select-install-id">
-						for name, id := range installsResult.Installations {
-							<option value={ id } selected?={ id == props.config.InstallationID }>
-								{ name }
+						for _, install := range result.Results {
+							<option value={ install.ID } selected?={ install.ID == props.config.InstallationID }>
+								{ install.String() }
 							</option>
 						}
 					</select>
 					<span class="description">Select an installation.</span>
 				</div>
 			} else {
-				<span>No installations found. Install it <a class="underline" href={ installsResult.InstallationLink }>first</a>.</span>
+				<span>No installations found. Install it <a class="underline" href={ result.InstallationLink }>first</a>.</span>
 			}
 		}
 		if props.edit {

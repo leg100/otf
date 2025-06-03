@@ -18,8 +18,8 @@ type ConfigSchema struct {
 }
 
 type Config struct {
-	Token               string
-	InstallationID      int64 `schema:"install_id"`
+	Token               *string
+	Installation        *Installation
 	SkipTLSVerification bool
 }
 
@@ -27,7 +27,21 @@ type ListInstallationsResult struct {
 	// InstallationLink is a link to the site where a user can create an
 	// installation.
 	InstallationLink templ.SafeURL
-	// Installations is a map of IDs of existing installations keyed by a human
+	// Results is a map of IDs of existing installations keyed by a human
 	// meaningful name.
-	Installations map[string]int64
+	Results []Installation
+}
+
+type Installation struct {
+	ID           int64
+	AppID        int64
+	Username     *string
+	Organization *string
+}
+
+func (i Installation) String() string {
+	if i.Organization != nil {
+		return "org/" + *i.Organization
+	}
+	return "user/" + *i.Username
 }

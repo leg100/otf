@@ -50,9 +50,6 @@ type (
 func NewService(opts Options) *Service {
 	factory := factory{
 		githubapps:          opts.GithubAppService,
-		forgejoHostname:     opts.ForgejoHostname,
-		githubHostname:      opts.GithubHostname,
-		gitlabHostname:      opts.GitlabHostname,
 		skipTLSVerification: opts.SkipTLSVerification,
 	}
 	svc := Service{
@@ -114,7 +111,7 @@ func (a *Service) Create(ctx context.Context, opts CreateOptions) (*VCSProvider,
 		return nil, err
 	}
 
-	provider, err := a.newProvider(ctx, opts)
+	provider, err := a.newProvider(opts)
 	if err != nil {
 		return nil, err
 	}
