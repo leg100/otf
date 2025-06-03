@@ -45,13 +45,11 @@ type (
 	}
 
 	CreateOptions struct {
-		Organization organization.Name
+		Organization organization.Name `schema:"organization_name,required"`
 		Name         string
-		Kind         *vcs.Kind
+		Kind         vcs.Kind
 
-		// Specify either token or github app install ID
-		Token              *string
-		GithubAppInstallID *int64
+		Config
 	}
 
 	UpdateOptions struct {
@@ -88,10 +86,6 @@ func (f *factory) newWithGithubCredentials(opts CreateOptions, creds *github.Ins
 		skipTLSVerification: f.skipTLSVerification,
 	}
 	if opts.Token != nil {
-		if opts.Kind == nil {
-			return nil, errors.New("must specify both token and kind")
-		}
-		provider.Kind = *opts.Kind
 		switch provider.Kind {
 		case vcs.GithubKind:
 			provider.Hostname = f.githubHostname

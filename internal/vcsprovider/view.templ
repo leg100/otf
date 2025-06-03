@@ -2,19 +2,19 @@ package vcsprovider
 
 import (
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/components/paths"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/vcs"
+	"iter"
 	"time"
 )
 
 type listProps struct {
 	organization organization.Name
 	providers    *resource.Page[*VCSProvider]
-	app          *github.App
+	kinds        iter.Seq[vcs.Kind]
 }
 
 templ list(props listProps) {
@@ -29,25 +29,12 @@ templ list(props listProps) {
 			To connect workspaces and publish modules, OTF needs access to your version control system (VCS) provider. Use this page to create and list access to VCS providers.
 		</div>
 		<div class="flex flex-col gap-4 mt-4">
-			<form action={ paths.NewVCSProvider(props.organization) } method="GET">
-				<button class="btn">New Github VCS Provider (Personal Token)</button>
-				<input type="hidden" name="kind" id="kind" value="github"/>
-			</form>
-			<form action={ paths.NewVCSProvider(props.organization) } method="GET">
-				<button class="btn">New Gitlab VCS Provider (Personal Token)</button>
-				<input type="hidden" name="kind" id="kind" value="gitlab"/>
-			</form>
-			if props.app != nil {
-				<form action={ paths.NewGithubAppVCSProvider(props.organization) } method="GET">
-					<button class="btn">New Github VCS Provider (App)</button>
+			for kind := range props.kinds {
+				<form action={ paths.NewVCSProvider(props.organization) } method="GET">
+					<button class="btn">New { kind } VCS Provider</button>
+					<input type="hidden" name="kind" id="kind" value={ kind }/>
 				</form>
-			} else {
-				<span>Alternatively, <a class="underline" href={ paths.NewGithubApp() }>create a GitHub app</a> and you will be able to create VCS providers using a Github app installation.</span>
 			}
-			<form action={ paths.NewVCSProvider(props.organization) } method="GET">
-				<button class="btn">New Forgejo VCS Provider (Personal Token)</button>
-				<input type="hidden" name="kind" id="kind" value="forgejo"/>
-			</form>
 		</div>
 		<div id="content-list">
 			@components.Table(
@@ -142,47 +129,6 @@ templ newProvider(props newProviderProps) {
 	}
 }
 
-type newGithubAppProps struct {
-	organization   organization.Name
-	app            *github.App
-	installations  []*github.Installation
-	kind           vcs.Kind
-	githubHostname string
-}
-
-templ newGithubApp(props newGithubAppProps) {
-	@components.Layout(components.LayoutProps{
-		Title:        "new vcs provider",
-		Organization: props.organization,
-		Breadcrumbs: []components.Breadcrumb{
-			{Name: "New Github App VCS Provider"},
-		},
-	}) {
-		if len(props.installations) > 0 {
-			Create a VCS provider that leverages the permissions of a GitHub app installation.
-			<form class="flex flex-col gap-4" action={ paths.CreateVCSProvider(props.organization) } method="POST">
-				<div class="field">
-					<label for="name">Name</label>
-					<input class="input w-64" type="text" name="name" id="name" placeholder="github"/>
-					<span class="description">An optional display name for your VCS provider.</span>
-				</div>
-				<div class="field">
-					<label for="install_id">Installation</label>
-					<select class="select w-48" name="install_id" id="select-install-id">
-						for _, install := range props.installations {
-							<option value={ int(*install.ID) }>{ install.String() }</option>
-						}
-					</select>
-					<span class="description">Select a Github App installation.</span>
-				</div>
-				<button class="btn w-32" id="create-vcs-provider-button">Create</button>
-			</form>
-		} else {
-			<span>No installations of the GitHub app found. Install it <a class="underline" href={ templ.SafeURL(props.app.NewInstallURL(props.githubHostname)) }>on Github first</a>.</span>
-		}
-	}
-}
-
 type formProps struct {
 	action templ.SafeURL
 	schema ConfigSchema
@@ -221,24 +167,28 @@ templ form(props formProps) {
 				></textarea>
 			</div>
 		}
-		if props.schema.ListInstallationIDs != nil {
+		if props.schema.ListInstallations != nil {
 			{{
-					installIDs, err := props.schema.ListInstallationIDs(ctx)
+					installsResult, err := props.schema.ListInstallations(ctx)
 					if err != nil {
 						return err
 					}
 			}}
-			<div class="field">
-				<label for="install_id">Installation</label>
-				<select class="select w-48" name="install_id" id="select-install-id">
-					for name, id := range installIDs {
-						<option value={ id } selected?={ id == props.config.InstallationID }>
-							{ name }
-						</option>
-					}
-				</select>
-				<span class="description">Select an installation.</span>
-			</div>
+			if len(installsResult.Installations) > 0 {
+				<div class="field">
+					<label for="install_id">Installation</label>
+					<select class="select w-48" name="install_id" id="select-install-id">
+						for name, id := range installsResult.Installations {
+							<option value={ id } selected?={ id == props.config.InstallationID }>
+								{ name }
+							</option>
+						}
+					</select>
+					<span class="description">Select an installation.</span>
+				</div>
+			} else {
+				<span>No installations found. Install it <a class="underline" href={ installsResult.InstallationLink }>first</a>.</span>
+			}
 		}
 		if props.edit {
 			<button class="btn w-32">Update</button>

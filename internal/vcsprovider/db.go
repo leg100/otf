@@ -227,7 +227,7 @@ func (db *pgdb) scan(row pgx.CollectableRow) (*VCSProvider, error) {
 			Organization: model.GithubAppInstall.Organization,
 		}
 	} else if model.Token != nil {
-		opts.Kind = &model.VCSKind
+		opts.Kind = model.VCSKind
 		opts.Token = model.Token
 	}
 	provider, err := db.newWithGithubCredentials(opts, creds)

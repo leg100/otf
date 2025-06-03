@@ -2,14 +2,13 @@ package vcsprovider
 
 import (
 	"context"
-	"errors"
+	"maps"
 	"net/http"
 	"strings"
 
 	"github.com/a-h/templ"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
@@ -22,13 +21,8 @@ import (
 type webHandlers struct {
 	*internal.HostnameService
 
-	client     webClient
-	githubApps webGithubAppClient
-	schemas    map[vcs.Kind]ConfigSchema
-
-	GithubHostname  string
-	GitlabHostname  string
-	ForgejoHostname string
+	client  webClient
+	schemas map[vcs.Kind]ConfigSchema
 }
 
 type webClient interface {
@@ -39,17 +33,11 @@ type webClient interface {
 	Delete(ctx context.Context, id resource.TfeID) (*VCSProvider, error)
 }
 
-type webGithubAppClient interface {
-	GetApp(ctx context.Context) (*github.App, error)
-	ListInstallations(ctx context.Context) ([]*github.Installation, error)
-}
-
 func (h *webHandlers) addHandlers(r *mux.Router) {
 	r = html.UIRouter(r)
 
 	r.HandleFunc("/organizations/{organization_name}/vcs-providers", h.list).Methods("GET")
 	r.HandleFunc("/organizations/{organization_name}/vcs-providers/new", h.new).Methods("GET")
-	r.HandleFunc("/organizations/{organization_name}/vcs-providers/new-github-app", h.newGithubApp).Methods("GET")
 	r.HandleFunc("/organizations/{organization_name}/vcs-providers/create", h.create).Methods("POST")
 	r.HandleFunc("/vcs-providers/{vcs_provider_id}/edit", h.edit).Methods("GET")
 	r.HandleFunc("/vcs-providers/{vcs_provider_id}/update", h.update).Methods("POST")
@@ -73,55 +61,13 @@ func (h *webHandlers) new(w http.ResponseWriter, r *http.Request) {
 	html.Render(newProvider(props), w, r)
 }
 
-func (h *webHandlers) newGithubApp(w http.ResponseWriter, r *http.Request) {
-	var params struct {
-		Organization organization.Name `schema:"organization_name,required"`
-	}
-	if err := decode.All(&params, r); err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
-		return
-	}
-
-	app, err := h.githubApps.GetApp(r.Context())
-	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	installs, err := h.githubApps.ListInstallations(r.Context())
-	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	props := newGithubAppProps{
-		organization:   params.Organization,
-		app:            app,
-		installations:  installs,
-		kind:           vcs.GithubKind,
-		githubHostname: h.GithubHostname,
-	}
-	html.Render(newGithubApp(props), w, r)
-}
-
 func (h *webHandlers) create(w http.ResponseWriter, r *http.Request) {
-	var params struct {
-		OrganizationName   organization.Name `schema:"organization_name,required"`
-		Token              *string           `schema:"token"`
-		GithubAppInstallID *int64            `schema:"install_id"`
-		Name               string            `schema:"name"`
-		Kind               *vcs.Kind         `schema:"kind"`
-	}
+	var params CreateOptions
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	provider, err := h.client.Create(r.Context(), CreateOptions{
-		Organization:       params.OrganizationName,
-		Token:              params.Token,
-		GithubAppInstallID: params.GithubAppInstallID,
-		Name:               params.Name,
-		Kind:               params.Kind,
-	})
+	provider, err := h.client.Create(r.Context(), params)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -179,13 +125,6 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	app, err := h.githubApps.GetApp(r.Context())
-	if errors.Is(err, internal.ErrResourceNotFound) {
-		// app not found, which is ok.
-	} else if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
 	providers, err := h.client.List(r.Context(), params.Organization)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
@@ -194,7 +133,7 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 	props := listProps{
 		organization: params.Organization,
 		providers:    resource.NewPage(providers, params.PageOptions, nil),
-		app:          app,
+		kinds:        maps.Keys(h.schemas),
 	}
 	html.Render(list(props), w, r)
 }

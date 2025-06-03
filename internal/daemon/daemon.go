@@ -7,6 +7,7 @@ import (
 	"net"
 	"time"
 
+	"github.com/a-h/templ"
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
@@ -305,16 +306,23 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	// github app provider
 	vcsProviderService.RegisterSchema(vcs.GithubKind, vcsprovider.ConfigSchema{
 		WantsHostname: true,
-		ListInstallationIDs: func(ctx context.Context) (map[string]int64, error) {
+		ListInstallations: func(ctx context.Context) (vcsprovider.ListInstallationsResult, error) {
+			app, err := githubAppService.GetApp(ctx)
+			if err != nil {
+				return vcsprovider.ListInstallationsResult{}, err
+			}
 			installs, err := githubAppService.ListInstallations(ctx)
 			if err != nil {
-				return nil, err
+				return vcsprovider.ListInstallationsResult{}, err
 			}
 			m := make(map[string]int64, len(installs))
 			for _, install := range installs {
 				m[install.String()] = *install.ID
 			}
-			return m, nil
+			result := vcsprovider.ListInstallationsResult{
+				InstallationLink: templ.SafeURL(app.NewInstallURL(cfg.GithubHostname)),
+			}
+			return result, nil
 		},
 	})
 

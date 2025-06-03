@@ -65,14 +65,11 @@ func NewService(opts Options) *Service {
 			DB:      opts.DB,
 			factory: &factory,
 		},
+		schemas: make(map[vcs.Kind]ConfigSchema),
 	}
 	svc.web = &webHandlers{
 		HostnameService: opts.HostnameService,
-		GithubHostname:  opts.GithubHostname,
-		GitlabHostname:  opts.GitlabHostname,
-		ForgejoHostname: opts.ForgejoHostname,
 		client:          &svc,
-		githubApps:      opts.GithubAppService,
 	}
 	svc.api = &tfe{
 		Service:   &svc,
