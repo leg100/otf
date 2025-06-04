@@ -109,6 +109,7 @@ templ edit(provider *VCSProvider) {
 type newProviderProps struct {
 	organization organization.Name
 	kind         vcs.Kind
+	schema       ConfigSchema
 }
 
 templ newProvider(props newProviderProps) {
@@ -124,6 +125,8 @@ templ newProvider(props newProviderProps) {
 		</div>
 		@form(formProps{
 			action: paths.CreateVCSProvider(props.organization),
+			schema: props.schema,
+			edit:   false,
 			kind:   props.kind,
 		})
 	}

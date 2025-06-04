@@ -38,6 +38,7 @@ type (
 	// factory produces VCS providers
 	factory struct {
 		githubapps *github.Service
+		schemas    map[vcs.Kind]ConfigSchema
 
 		skipTLSVerification bool // toggle skipping verification of VCS host's TLS cert.
 	}
@@ -46,13 +47,14 @@ type (
 		Organization organization.Name `schema:"organization_name,required"`
 		Name         string
 		Kind         vcs.Kind
-
-		Config
+		Token        *string
+		InstallID    *int64
 	}
 
 	UpdateOptions struct {
-		Token *string
-		Name  string
+		Name      string
+		Token     *string
+		InstallID *int64
 	}
 
 	ListOptions struct {
@@ -62,8 +64,12 @@ type (
 )
 
 func (f *factory) newProvider(opts CreateOptions) (*VCSProvider, error) {
-	if opts.Token == nil && opts.Installation == nil {
-		return nil, errors.New("must specify either token or github app installation ID")
+	schema, ok := f.schemas[opts.Kind]
+	if !ok {
+		return nil, errors.New("schema not found")
+	}
+	if err := opts.Config.validate(); err != nil {
+		return nil, err
 	}
 	provider := &VCSProvider{
 		ID:                  resource.NewTfeID(resource.VCSProviderKind),
@@ -123,12 +129,11 @@ func (t *VCSProvider) NewClient() (vcs.Client, error) {
 }
 
 func (t *VCSProvider) Update(opts UpdateOptions) error {
-	t.Name = opts.Name
-	if opts.Token != nil {
-		if err := t.setToken(*opts.Token); err != nil {
-			return err
-		}
+	if err := opts.Config.validate(); err != nil {
+		return err
 	}
+	t.Name = opts.Name
+	t.Config = opts.Config
 	return nil
 }
 
@@ -147,12 +152,4 @@ func (t *VCSProvider) LogValue() slog.Value {
 		attrs = append(attrs, slog.String("token", "****"))
 	}
 	return slog.GroupValue(attrs...)
-}
-
-func (t *VCSProvider) setToken(token string) error {
-	if token == "" {
-		return fmt.Errorf("token: %w", internal.ErrEmptyValue)
-	}
-	t.Token = &token
-	return nil
 }

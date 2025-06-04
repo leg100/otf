@@ -54,9 +54,16 @@ func (h *webHandlers) new(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	schema, ok := h.schemas[params.Kind]
+	if !ok {
+		html.Error(w, "schema not found", http.StatusUnprocessableEntity)
+		return
+	}
+
 	props := newProviderProps{
 		organization: params.Organization,
 		kind:         params.Kind,
+		schema:       schema,
 	}
 	html.Render(newProvider(props), w, r)
 }

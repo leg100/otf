@@ -5,18 +5,18 @@ package vcsprovider
 
 //lint:file-ignore SA4006 This context is only used if a nested component is present.
 
-import (
-	"iter"
-	"time"
+import "github.com/a-h/templ"
+import templruntime "github.com/a-h/templ/runtime"
 
-	"github.com/a-h/templ"
-	templruntime "github.com/a-h/templ/runtime"
+import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/components/paths"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/vcs"
+	"iter"
+	"time"
 )
 
 type listProps struct {
@@ -386,6 +386,7 @@ func edit(provider *VCSProvider) templ.Component {
 type newProviderProps struct {
 	organization organization.Name
 	kind         vcs.Kind
+	schema       ConfigSchema
 }
 
 func newProvider(props newProviderProps) templ.Component {
@@ -428,7 +429,7 @@ func newProvider(props newProviderProps) templ.Component {
 			var templ_7745c5c3_Var19 string
 			templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(props.kind)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/vcsprovider/view.templ`, Line: 123, Col: 24}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/vcsprovider/view.templ`, Line: 124, Col: 24}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 			if templ_7745c5c3_Err != nil {
@@ -440,6 +441,8 @@ func newProvider(props newProviderProps) templ.Component {
 			}
 			templ_7745c5c3_Err = form(formProps{
 				action: paths.CreateVCSProvider(props.organization),
+				schema: props.schema,
+				edit:   false,
 				kind:   props.kind,
 			}).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
@@ -507,7 +510,7 @@ func form(props formProps) templ.Component {
 		var templ_7745c5c3_Var22 string
 		templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.JoinStringErrs(props.name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/vcsprovider/view.templ`, Line: 150, Col: 22}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/vcsprovider/view.templ`, Line: 153, Col: 22}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var22))
 		if templ_7745c5c3_Err != nil {
@@ -540,24 +543,24 @@ func form(props formProps) templ.Component {
 		}
 		if props.schema.ListInstallations != nil {
 
-			installsResult, err := props.schema.ListInstallations(ctx)
+			result, err := props.schema.ListInstallations(ctx)
 			if err != nil {
 				return err
 			}
-			if len(installsResult.Results) > 0 {
+			if len(result.Results) > 0 {
 				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "<div class=\"field\"><label for=\"install_id\">Installation</label> <select class=\"select w-48\" name=\"install_id\" id=\"select-install-id\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				for name, id := range installsResult.Results {
+				for _, install := range result.Results {
 					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, "<option value=\"")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var23 string
-					templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinStringErrs(id)
+					templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinStringErrs(install.ID)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/vcsprovider/view.templ`, Line: 182, Col: 25}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/vcsprovider/view.templ`, Line: 185, Col: 33}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var23))
 					if templ_7745c5c3_Err != nil {
@@ -567,7 +570,7 @@ func form(props formProps) templ.Component {
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					if id == props.config.Installation {
+					if install.ID == props.config.InstallationID {
 						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, " selected")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
@@ -578,9 +581,9 @@ func form(props formProps) templ.Component {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var24 string
-					templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinStringErrs(name)
+					templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinStringErrs(install.String())
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/vcsprovider/view.templ`, Line: 183, Col: 14}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/vcsprovider/view.templ`, Line: 186, Col: 26}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var24))
 					if templ_7745c5c3_Err != nil {
@@ -600,7 +603,7 @@ func form(props formProps) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				var templ_7745c5c3_Var25 templ.SafeURL = installsResult.InstallationLink
+				var templ_7745c5c3_Var25 templ.SafeURL = result.InstallationLink
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var25)))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -624,7 +627,7 @@ func form(props formProps) templ.Component {
 			var templ_7745c5c3_Var26 string
 			templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.JoinStringErrs(string(props.kind))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/vcsprovider/view.templ`, Line: 197, Col: 72}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/vcsprovider/view.templ`, Line: 200, Col: 72}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var26))
 			if templ_7745c5c3_Err != nil {
