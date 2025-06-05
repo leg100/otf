@@ -25,6 +25,9 @@ type (
 		ListPullRequestFiles(ctx context.Context, repo string, pull int) ([]string, error)
 		// GetCommit retrieves commit from the repo with the given git ref
 		GetCommit(ctx context.Context, repo, ref string) (Commit, error)
+		// String provides a human meaningful description of the client to
+		// distinguish it from other kinds of client
+		String() string
 	}
 
 	// NewTokenClientOptions are options for creating a client using a personal

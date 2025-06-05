@@ -2,6 +2,7 @@ package vcsprovider
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -16,6 +17,7 @@ type pgdb struct {
 	// provides access to generated SQL queries
 	*sql.DB
 	*factory
+	schemas map[vcs.Kind]ConfigSchema
 }
 
 func (db *pgdb) create(ctx context.Context, provider *VCSProvider) error {
@@ -165,27 +167,33 @@ func (db *pgdb) scan(row pgx.CollectableRow) (*VCSProvider, error) {
 	if err != nil {
 		return nil, err
 	}
-	opts := CreateOptions{
-		Organization: m.OrganizationName,
-		Name:         m.Name,
-		Kind:         m.VCSKind,
-		Config: Config{
-			Token: m.Token,
-		},
+	cfg := Config{
+		Token: m.Token,
 	}
 	if m.InstallID != nil {
-		opts.Installation = &Installation{
+		cfg.Installation = &Installation{
 			ID:           *m.InstallID,
 			AppID:        *m.InstallAppID,
 			Username:     m.InstallUsername,
 			Organization: m.InstallOrganization,
 		}
 	}
-	provider, err := db.newProvider(opts)
+	schema, ok := db.schemas[m.VCSKind]
+	if !ok {
+		return nil, errors.New("schema not found")
+	}
+	client, err := schema.NewClient(cfg)
 	if err != nil {
 		return nil, err
 	}
-	provider.ID = m.VCSProviderID
-	provider.CreatedAt = m.CreatedAt
-	return provider, nil
+	provider := VCSProvider{
+		ID:           m.VCSProviderID,
+		CreatedAt:    m.CreatedAt,
+		Organization: m.OrganizationName,
+		Name:         m.Name,
+		Kind:         m.VCSKind,
+		Client:       client,
+		Hostname:     schema.Hostname,
+	}
+	return &provider, nil
 }

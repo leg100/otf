@@ -1,9 +1,10 @@
 package vcs
 
 const (
-	ForgejoKind Kind = "forgejo"
-	GithubKind  Kind = "github"
-	GitlabKind  Kind = "gitlab"
+	ForgejoKind     Kind = "forgejo"
+	GithubTokenKind Kind = "github-token"
+	GithubAppKind   Kind = "github-app"
+	GitlabKind      Kind = "gitlab"
 )
 
 // Kind of vcs hosting provider

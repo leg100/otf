@@ -136,7 +136,7 @@ func (s *Service) publishModule(ctx context.Context, organization organization.N
 		if err != nil {
 			return err
 		}
-		client, err = s.vcsproviders.GetVCSClient(ctx, opts.VCSProviderID)
+		client, err = s.vcsproviders.Get(ctx, opts.VCSProviderID)
 		if err != nil {
 			return fmt.Errorf("retreving vcs client config: %w", err)
 		}

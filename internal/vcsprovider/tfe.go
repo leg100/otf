@@ -100,10 +100,8 @@ func (a *tfe) createOAuthClient(w http.ResponseWriter, r *http.Request) {
 	oauthClient, err := a.Create(r.Context(), CreateOptions{
 		Name:         *params.Name,
 		Organization: pathParams.Organization,
-		Config: Config{
-			Token: params.OAuthToken,
-		},
-		Kind: vcs.GithubKind,
+		Token:        params.OAuthToken,
+		Kind:         vcs.GithubTokenKind,
 	})
 	if err != nil {
 		tfeapi.Error(w, err)

@@ -68,22 +68,13 @@ func NewService(ctx context.Context, opts Options) *Service {
 
 // Connect an OTF resource to a VCS repo.
 func (s *Service) Connect(ctx context.Context, opts ConnectOptions) (*Connection, error) {
-	// check vcs provider is valid
-	provider, err := s.vcsproviders.Get(ctx, opts.VCSProviderID)
-	if err != nil {
-		return nil, fmt.Errorf("retrieving vcs provider: %w", err)
-	}
-
-	err = s.db.Tx(ctx, func(ctx context.Context) error {
-		// github app vcs provider does not require a repohook to be created
-		if provider.GithubApp == nil {
-			_, err := s.repohooks.CreateRepohook(ctx, repohooks.CreateRepohookOptions{
-				VCSProviderID: opts.VCSProviderID,
-				RepoPath:      opts.RepoPath,
-			})
-			if err != nil {
-				return fmt.Errorf("creating webhook: %w", err)
-			}
+	err := s.db.Tx(ctx, func(ctx context.Context) error {
+		_, err := s.repohooks.CreateRepohook(ctx, repohooks.CreateRepohookOptions{
+			VCSProviderID: opts.VCSProviderID,
+			RepoPath:      opts.RepoPath,
+		})
+		if err != nil {
+			return fmt.Errorf("creating webhook: %w", err)
 		}
 		return s.db.createConnection(ctx, opts)
 	})

@@ -170,7 +170,8 @@ templ form(props formProps) {
 				></textarea>
 			</div>
 		}
-		if props.schema.ListInstallations != nil {
+		<!-- User cannot edit installation -->
+		if !props.edit && props.schema.ListInstallations != nil {
 			{{
 					result, err := props.schema.ListInstallations(ctx)
 					if err != nil {
@@ -182,7 +183,7 @@ templ form(props formProps) {
 					<label for="install_id">Installation</label>
 					<select class="select w-48" name="install_id" id="select-install-id">
 						for _, install := range result.Results {
-							<option value={ install.ID } selected?={ install.ID == props.config.InstallationID }>
+							<option value={ install.ID }>
 								{ install.String() }
 							</option>
 						}
@@ -204,12 +205,9 @@ templ form(props formProps) {
 
 templ VCSIcon(provider *VCSProvider) {
 	switch provider.Kind {
-		case vcs.GithubKind:
+		case vcs.GithubTokenKind, vcs.GithubAppKind:
 			@components.GithubIcon()
 		case vcs.GitlabKind:
 			@components.GitlabIcon()
-	}
-	if provider.GithubApp != nil {
-		@components.GithubIcon()
 	}
 }

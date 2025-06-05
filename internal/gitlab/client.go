@@ -80,6 +80,10 @@ func NewOAuthClient(cfg authenticator.OAuthConfig, token *oauth2.Token) (authent
 	})
 }
 
+func (g *Client) String() string {
+	return "gitlab"
+}
+
 func (g *Client) GetCurrentUser(ctx context.Context) (user.Username, error) {
 	guser, _, err := g.client.Users.CurrentUser()
 	if err != nil {

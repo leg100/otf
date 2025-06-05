@@ -12,6 +12,7 @@ import (
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/vcs"
+	"github.com/leg100/otf/internal/vcsprovider"
 	"github.com/leg100/otf/internal/workspace"
 )
 
@@ -47,7 +48,7 @@ type (
 	}
 
 	reporterVCSClient interface {
-		GetVCSClient(ctx context.Context, providerID resource.TfeID) (vcs.Client, error)
+		Get(ctx context.Context, providerID resource.TfeID) (*vcsprovider.VCSProvider, error)
 	}
 
 	reporterRunClient interface {
@@ -101,7 +102,7 @@ func (r *Reporter) handleRun(ctx context.Context, event *Event) error {
 		return fmt.Errorf("workspace not connected to repo: %s", ws.ID)
 	}
 
-	client, err := r.VCS.GetVCSClient(ctx, ws.Connection.VCSProviderID)
+	client, err := r.VCS.Get(ctx, ws.Connection.VCSProviderID)
 	if err != nil {
 		return fmt.Errorf("retrieving vcs client: %w", err)
 	}

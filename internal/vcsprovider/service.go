@@ -7,7 +7,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
-	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
@@ -24,7 +23,6 @@ type (
 		web               *webHandlers
 		api               *tfe
 		beforeDeleteHooks []func(context.Context, *VCSProvider) error
-		githubapps        *github.Service
 		schemas           map[vcs.Kind]ConfigSchema
 
 		*internal.HostnameService
@@ -38,10 +36,6 @@ type (
 		logr.Logger
 		vcs.Subscriber
 
-		GithubAppService    *github.Service
-		ForgejoHostname     string
-		GithubHostname      string
-		GitlabHostname      string
 		SkipTLSVerification bool
 		Authorizer          *authz.Authorizer
 	}
@@ -49,14 +43,12 @@ type (
 
 func NewService(opts Options) *Service {
 	factory := factory{
-		githubapps:          opts.GithubAppService,
 		skipTLSVerification: opts.SkipTLSVerification,
 	}
 	svc := Service{
 		Logger:          opts.Logger,
 		HostnameService: opts.HostnameService,
 		Authorizer:      opts.Authorizer,
-		githubapps:      opts.GithubAppService,
 		factory:         &factory,
 		db: &pgdb{
 			DB:      opts.DB,
@@ -111,7 +103,7 @@ func (a *Service) Create(ctx context.Context, opts CreateOptions) (*VCSProvider,
 		return nil, err
 	}
 
-	provider, err := a.newProvider(opts)
+	provider, err := a.newProvider(ctx, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -213,14 +205,6 @@ func (a *Service) Get(ctx context.Context, id resource.TfeID) (*VCSProvider, err
 	a.V(9).Info("retrieved vcs provider", "provider", provider, "subject", subject)
 
 	return provider, nil
-}
-
-func (a *Service) GetVCSClient(ctx context.Context, providerID resource.TfeID) (vcs.Client, error) {
-	provider, err := a.Get(ctx, providerID)
-	if err != nil {
-		return nil, err
-	}
-	return provider.NewClient()
 }
 
 func (a *Service) Delete(ctx context.Context, id resource.TfeID) (*VCSProvider, error) {

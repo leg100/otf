@@ -7,38 +7,28 @@ import (
 
 	"github.com/a-h/templ"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/vcs"
 )
 
 type ConfigSchema struct {
-	WantsHostname   bool
-	DefaultHostname string
-	WantsToken      bool
+	Hostname   string
+	WantsToken bool
 	// TokenDescription is a helpful description of what is expected of the
 	// token, e.g. what permissions it should possess.
-	TokenDescription string
+	TokenDescription  string
+	WantsInstallation bool
 	// ListInstallations retrieves a list of installations.
 	ListInstallations func(context.Context) (ListInstallationsResult, error)
+	// GetInstallation retrieves an installation.
+	GetInstallation func(context.Context, int64) (Installation, error)
+	// NewClient constructs a vcs.client implementation.
+	NewClient func(Config) (vcs.Client, error)
 }
 
 type Config struct {
 	Token               *string
 	Installation        *Installation
 	SkipTLSVerification bool
-}
-
-func (c Config) validate() error {
-	// Either token or installation must be set but not both
-	if c.Token == nil && c.Installation == nil {
-		return errors.New("must set one of token or installation")
-	}
-	if c.Token != nil && c.Installation != nil {
-		return errors.New("cannot set both a token and an installation")
-	}
-	// If token is set it cannot be empty
-	if c.Token != nil && *c.Token == "" {
-		return fmt.Errorf("token: %w", internal.ErrEmptyValue)
-	}
-	return nil
 }
 
 type ListInstallationsResult struct {

@@ -73,15 +73,11 @@ func (s *Service) CreateRepohook(ctx context.Context, opts CreateRepohookOptions
 	if err != nil {
 		return uuid.UUID{}, fmt.Errorf("retrieving vcs provider: %w", err)
 	}
-	if vcsProvider.GithubApp != nil {
+	if vcsProvider.Kind == vcs.GithubAppKind {
 		// github apps don't need a webhook created on each repo.
 		return uuid.UUID{}, nil
 	}
-	client, err := s.vcsproviders.GetVCSClient(ctx, opts.VCSProviderID)
-	if err != nil {
-		return uuid.UUID{}, fmt.Errorf("retrieving vcs client: %w", err)
-	}
-	_, err = client.GetRepository(ctx, opts.RepoPath)
+	_, err = vcsProvider.GetRepository(ctx, opts.RepoPath)
 	if err != nil {
 		return uuid.UUID{}, fmt.Errorf("checking repository exists: %w", err)
 	}
@@ -101,7 +97,7 @@ func (s *Service) CreateRepohook(ctx context.Context, opts CreateRepohookOptions
 		if err != nil {
 			return fmt.Errorf("getting or creating webhook: %w", err)
 		}
-		if err := s.sync(ctx, client, hook); err != nil {
+		if err := s.sync(ctx, vcsProvider, hook); err != nil {
 			return fmt.Errorf("synchronising webhook: %w", err)
 		}
 		return nil
@@ -169,7 +165,7 @@ func (s *Service) deleteRepohook(ctx context.Context, repohook *hook) error {
 	if err := s.db.deleteHook(ctx, repohook.id); err != nil {
 		return fmt.Errorf("deleting webhook from db: %w", err)
 	}
-	client, err := s.vcsproviders.GetVCSClient(ctx, repohook.vcsProviderID)
+	client, err := s.vcsproviders.Get(ctx, repohook.vcsProviderID)
 	if err != nil {
 		return fmt.Errorf("retrieving vcs client from db: %w", err)
 	}

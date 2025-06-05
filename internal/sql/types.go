@@ -21,8 +21,6 @@ var tableTypes = []string{
 	"teams[]",
 	"github_apps",
 	"github_apps[]",
-	"github_app_installs",
-	"github_app_installs[]",
 	"agent_pools",
 	"agent_pools[]",
 	"state_version_outputs",

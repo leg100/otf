@@ -64,8 +64,6 @@ type (
 	webVCSProvidersClient interface {
 		Get(ctx context.Context, providerID resource.TfeID) (*vcsprovider.VCSProvider, error)
 		List(context.Context, organization.Name) ([]*vcsprovider.VCSProvider, error)
-
-		GetVCSClient(ctx context.Context, providerID resource.TfeID) (vcs.Client, error)
 	}
 
 	webAuthorizer interface {
@@ -626,7 +624,7 @@ func (h *webHandlers) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Reque
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	client, err := h.vcsproviders.GetVCSClient(r.Context(), params.VCSProviderID)
+	client, err := h.vcsproviders.Get(r.Context(), params.VCSProviderID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return

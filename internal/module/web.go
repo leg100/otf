@@ -51,7 +51,6 @@ type (
 	vcsprovidersClient interface {
 		Get(context.Context, resource.TfeID) (*vcsprovider.VCSProvider, error)
 		List(context.Context, organization.Name) ([]*vcsprovider.VCSProvider, error)
-		GetVCSClient(ctx context.Context, providerID resource.TfeID) (vcs.Client, error)
 	}
 )
 
@@ -185,7 +184,7 @@ func (h *webHandlers) connect(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	client, err := h.vcsproviders.GetVCSClient(r.Context(), params.VCSProviderID)
+	client, err := h.vcsproviders.Get(r.Context(), params.VCSProviderID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return

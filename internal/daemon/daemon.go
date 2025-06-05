@@ -173,10 +173,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		DB:                  db,
 		Responder:           responder,
 		HostnameService:     hostnameService,
-		GithubAppService:    githubAppService,
-		ForgejoHostname:     cfg.ForgejoHostname,
-		GithubHostname:      cfg.GithubHostname,
-		GitlabHostname:      cfg.GitlabHostname,
 		SkipTLSVerification: cfg.SkipTLSVerification,
 		Subscriber:          vcsEventBroker,
 	})
@@ -190,7 +186,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		VCSEventBroker:      vcsEventBroker,
 	})
 	repoService.RegisterCloudHandler(vcs.ForgejoKind, forgejo.HandleEvent)
-	repoService.RegisterCloudHandler(vcs.GithubKind, github.HandleEvent)
+	repoService.RegisterCloudHandler(vcs.GithubTokenKind, github.HandleEvent)
 	repoService.RegisterCloudHandler(vcs.GitlabKind, gitlab.HandleEvent)
 
 	connectionService := connections.NewService(ctx, connections.Options{
@@ -298,14 +294,14 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	// github token provider
 	//
 	// TODO: create new type "github-token"
-	vcsProviderService.RegisterSchema(vcs.GithubKind, vcsprovider.ConfigSchema{
-		WantsHostname: true,
-		WantsToken:    true,
+	vcsProviderService.RegisterSchema(vcs.GithubTokenKind, vcsprovider.ConfigSchema{
+		Hostname:   cfg.GithubHostname,
+		WantsToken: true,
 	})
 
 	// github app provider
-	vcsProviderService.RegisterSchema(vcs.GithubKind, vcsprovider.ConfigSchema{
-		WantsHostname: true,
+	vcsProviderService.RegisterSchema(vcs.GithubTokenKind, vcsprovider.ConfigSchema{
+		Hostname: cfg.GithubHostname,
 		ListInstallations: func(ctx context.Context) (vcsprovider.ListInstallationsResult, error) {
 			app, err := githubAppService.GetApp(ctx)
 			if err != nil {
@@ -328,14 +324,14 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 
 	// forgejo provider
 	vcsProviderService.RegisterSchema(vcs.ForgejoKind, vcsprovider.ConfigSchema{
-		WantsHostname: true,
-		WantsToken:    true,
+		Hostname:   cfg.ForgejoHostname,
+		WantsToken: true,
 	})
 
 	// gitlab provider
 	vcsProviderService.RegisterSchema(vcs.GitlabKind, vcsprovider.ConfigSchema{
-		WantsHostname: true,
-		WantsToken:    true,
+		Hostname:   cfg.GitlabHostname,
+		WantsToken: true,
 	})
 
 	runner, err := runner.NewServerRunner(runner.ServerRunnerOptions{
@@ -365,7 +361,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 				ClientConstructor: github.NewOAuthClient,
 				OAuthConfig: authenticator.OAuthConfig{
 					Hostname:     cfg.GithubHostname,
-					Name:         string(vcs.GithubKind),
+					Name:         string(vcs.GithubTokenKind),
 					Endpoint:     github.OAuthEndpoint,
 					Scopes:       github.OAuthScopes,
 					ClientID:     cfg.GithubClientID,

@@ -13,6 +13,7 @@ import (
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/vcs"
+	"github.com/leg100/otf/internal/vcsprovider"
 	"github.com/leg100/otf/internal/workspace"
 )
 
@@ -42,7 +43,7 @@ type (
 	}
 
 	factoryVCSClient interface {
-		GetVCSClient(ctx context.Context, providerID resource.TfeID) (vcs.Client, error)
+		Get(ctx context.Context, providerID resource.TfeID) (*vcsprovider.VCSProvider, error)
 	}
 
 	factoryReleasesClient interface {
@@ -142,7 +143,7 @@ func (f *factory) NewRun(ctx context.Context, workspaceID resource.TfeID, opts C
 // createConfigVersionFromVCS creates a config version from the vcs repo
 // connected to the workspace using the contents of the vcs repo.
 func (f *factory) createConfigVersionFromVCS(ctx context.Context, ws *workspace.Workspace) (*configversion.ConfigurationVersion, error) {
-	client, err := f.vcs.GetVCSClient(ctx, ws.Connection.VCSProviderID)
+	client, err := f.vcs.Get(ctx, ws.Connection.VCSProviderID)
 	if err != nil {
 		return nil, err
 	}

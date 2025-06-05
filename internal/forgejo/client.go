@@ -44,6 +44,10 @@ func NewTokenClient(opts vcs.NewTokenClientOptions) (vcs.Client, error) {
 	return &Client{client: rv}, nil
 }
 
+func (g *Client) String() string {
+	return "forgejo"
+}
+
 func (c *Client) ListRepositories(ctx context.Context, opts vcs.ListRepositoriesOptions) ([]string, error) {
 	found := map[string]time.Time{}
 
