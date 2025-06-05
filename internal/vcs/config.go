@@ -1,13 +1,9 @@
-package vcsprovider
+package vcs
 
 import (
 	"context"
-	"errors"
-	"fmt"
 
 	"github.com/a-h/templ"
-	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/vcs"
 )
 
 type ConfigSchema struct {
@@ -21,8 +17,8 @@ type ConfigSchema struct {
 	ListInstallations func(context.Context) (ListInstallationsResult, error)
 	// GetInstallation retrieves an installation.
 	GetInstallation func(context.Context, int64) (Installation, error)
-	// NewClient constructs a vcs.client implementation.
-	NewClient func(Config) (vcs.Client, error)
+	// NewClient constructs a client implementation.
+	NewClient func(Config) (Client, error)
 }
 
 type Config struct {
@@ -51,29 +47,4 @@ func (i Installation) String() string {
 		return "org/" + *i.Organization
 	}
 	return "user/" + *i.Username
-}
-
-func (i Installation) validate() error {
-	// IDs cannot be zero
-	if i.ID == 0 {
-		return errors.New("install ID cannot be zero")
-	}
-	if i.AppID == 0 {
-		return errors.New("install app ID cannot be zero")
-	}
-	// Either token or installation must be set but not both
-	if i.Username == nil && i.Organization == nil {
-		return errors.New("must set one of token or installation")
-	}
-	if i.Username != nil && i.Organization != nil {
-		return errors.New("cannot set both a token and an installation")
-	}
-	// Neither username nor organization, if set, can be empty
-	if i.Username != nil && *i.Username == "" {
-		return fmt.Errorf("install username: %w", internal.ErrEmptyValue)
-	}
-	if i.Organization != nil && *i.Organization == "" {
-		return fmt.Errorf("install organization: %w", internal.ErrEmptyValue)
-	}
-	return nil
 }

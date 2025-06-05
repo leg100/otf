@@ -35,6 +35,7 @@ type (
 		GithubHostname      string
 		SkipTLSVerification bool
 		Authorizer          *authz.Authorizer
+		VCSRegistry         *vcs.Service
 	}
 )
 
@@ -52,6 +53,8 @@ func NewService(opts Options) *Service {
 		GithubSkipTLS:   opts.SkipTLSVerification,
 		svc:             &svc,
 	}
+	// Register client providers
+	opts.VCSRegistry.RegisterSchema(vcs.GithubAppKind, vcs.ConfigSchema{})
 	return &svc
 }
 
