@@ -133,11 +133,10 @@ templ newProvider(props newProviderProps) {
 
 type formProps struct {
 	action templ.SafeURL
-	schema ConfigSchema
+	kind   ProviderKind
 	name   string
 	config Config
 	edit   bool
-	kind   Kind
 }
 
 templ form(props formProps) {

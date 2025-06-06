@@ -21,7 +21,7 @@ type webHandlers struct {
 	*internal.HostnameService
 
 	client  webClient
-	schemas map[Kind]ConfigSchema
+	schemas map[Kind]ProviderKind
 }
 
 type webClient interface {

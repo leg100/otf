@@ -8,7 +8,7 @@ type (
 	Client interface {
 		// ListRepositories lists repositories accessible to the current user.
 		ListRepositories(ctx context.Context, opts ListRepositoriesOptions) ([]string, error)
-		GetRepository(ctx context.Context, identifier string) (Repository, error)
+		GetDefaultBranch(ctx context.Context, identifier string) (string, error)
 		// GetRepoTarball retrieves a .tar.gz tarball of a git repository
 		GetRepoTarball(ctx context.Context, opts GetRepoTarballOptions) ([]byte, string, error)
 		// CreateWebhook creates a webhook on the cloud provider, returning the
@@ -90,11 +90,6 @@ type (
 		Status      Status
 		TargetURL   string
 		Description string
-	}
-
-	Repository struct {
-		Path          string
-		DefaultBranch string
 	}
 
 	Commit struct {

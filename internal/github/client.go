@@ -163,20 +163,17 @@ func (g *Client) GetCurrentUser(ctx context.Context) (user.Username, error) {
 	return user.NewUsername(usernameStr)
 }
 
-func (g *Client) GetRepository(ctx context.Context, identifier string) (vcs.Repository, error) {
+func (g *Client) GetDefaultBranch(ctx context.Context, identifier string) (string, error) {
 	owner, name, found := strings.Cut(identifier, "/")
 	if !found {
-		return vcs.Repository{}, fmt.Errorf("malformed identifier: %s", identifier)
+		return "", fmt.Errorf("malformed identifier: %s", identifier)
 	}
 	repo, _, err := g.client.Repositories.Get(ctx, owner, name)
 	if err != nil {
-		return vcs.Repository{}, err
+		return "", err
 	}
 
-	return vcs.Repository{
-		Path:          identifier,
-		DefaultBranch: repo.GetDefaultBranch(),
-	}, nil
+	return repo.GetDefaultBranch(), nil
 }
 
 // ListRepositories lists repositories belonging to the authenticated entity: if

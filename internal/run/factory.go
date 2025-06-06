@@ -147,13 +147,13 @@ func (f *factory) createConfigVersionFromVCS(ctx context.Context, ws *workspace.
 	if err != nil {
 		return nil, err
 	}
-	repo, err := client.GetRepository(ctx, ws.Connection.Repo)
+	defaultBranch, err := client.GetDefaultBranch(ctx, ws.Connection.Repo)
 	if err != nil {
 		return nil, fmt.Errorf("retrieving repository info: %w", err)
 	}
 	branch := ws.Connection.Branch
 	if branch == "" {
-		branch = repo.DefaultBranch
+		branch = defaultBranch
 	}
 	tarball, ref, err := client.GetRepoTarball(ctx, vcs.GetRepoTarballOptions{
 		Repo: ws.Connection.Repo,
@@ -173,7 +173,7 @@ func (f *factory) createConfigVersionFromVCS(ctx context.Context, ws *workspace.
 			CommitURL:       commit.URL,
 			Repo:            ws.Connection.Repo,
 			IsPullRequest:   false,
-			OnDefaultBranch: branch == repo.DefaultBranch,
+			OnDefaultBranch: branch == defaultBranch,
 			SenderUsername:  commit.Author.Username,
 			SenderAvatarURL: commit.Author.AvatarURL,
 			SenderHTMLURL:   commit.Author.ProfileURL,

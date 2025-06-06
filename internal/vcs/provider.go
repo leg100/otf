@@ -19,25 +19,16 @@ type (
 		Name         string
 		CreatedAt    time.Time
 		Organization organization.Name
-
-		// TODO: this should not be part of the vcs provider
-		Hostname string // hostname of github/gitlab etc
-
-		Kind Kind // github/gitlab etc.
-
+		Kind         ProviderKind
 		// Config for constructing a client
 		Config
 		// Client is the actual client for itneracting with the VCS host.
 		Client
-
-		// TODO: this should not be part of the vcs provider
-		skipTLSVerification bool // toggle skipping verification of VCS host's TLS cert.
 	}
 
 	// factory produces providers
 	factory struct {
-		schemas             map[Kind]ConfigSchema
-		skipTLSVerification bool // toggle skipping verification of VCS host's TLS cert.
+		kinds map[Kind]ProviderKind
 	}
 
 	CreateOptions struct {
@@ -60,36 +51,34 @@ type (
 )
 
 func (f *factory) newProvider(ctx context.Context, opts CreateOptions) (*Provider, error) {
-	provider := &Provider{
-		ID:                  resource.NewTfeID(resource.VCSProviderKind),
-		Name:                opts.Name,
-		CreatedAt:           internal.CurrentTimestamp(nil),
-		Organization:        opts.Organization,
-		Kind:                opts.Kind,
-		skipTLSVerification: f.skipTLSVerification,
-	}
-	schema, ok := f.schemas[opts.Kind]
+	kind, ok := f.kinds[opts.Kind]
 	if !ok {
-		return nil, errors.New("schema not found")
+		return nil, errors.New("provider kind not found")
 	}
-	provider.Hostname = schema.Hostname
+	provider := &Provider{
+		ID:           resource.NewTfeID(resource.VCSProviderKind),
+		Name:         opts.Name,
+		CreatedAt:    internal.CurrentTimestamp(nil),
+		Organization: opts.Organization,
+		Kind:         kind,
+	}
 	var cfg Config
-	if schema.WantsInstallation {
+	if kind.InstallationKind != nil {
 		if opts.InstallID == nil {
 			return nil, errors.New("install ID required for client")
 		}
-		install, err := schema.GetInstallation(ctx, *opts.InstallID)
+		install, err := kind.InstallationKind.GetInstallation(ctx, *opts.InstallID)
 		if err != nil {
 			return nil, err
 		}
 		cfg = Config{Installation: &install}
-	} else if schema.WantsToken {
+	} else if kind.TokenKind != nil {
 		if opts.Token == nil {
 			return nil, errors.New("token required for client")
 		}
 		cfg = Config{Token: opts.Token}
 	}
-	client, err := schema.NewClient(cfg)
+	client, err := kind.NewClient(ctx, cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -101,7 +90,7 @@ func (f *factory) newProvider(ctx context.Context, opts CreateOptions) (*Provide
 // name if set; otherwise a name is constructed using both the underlying cloud
 // kind and the auth kind.
 func (t *Provider) String() string {
-	return string(t.Kind)
+	return t.Kind.Name
 }
 
 func (t *Provider) Update(opts UpdateOptions) error {
@@ -122,7 +111,7 @@ func (t *Provider) LogValue() slog.Value {
 		slog.String("id", t.ID.String()),
 		slog.Any("organization", t.Organization),
 		slog.String("name", t.String()),
-		slog.String("kind", string(t.Kind)),
+		slog.String("kind", t.Kind.Name),
 	}
 	return slog.GroupValue(attrs...)
 }

@@ -73,13 +73,10 @@ func (s *Service) CreateRepohook(ctx context.Context, opts CreateRepohookOptions
 	if err != nil {
 		return uuid.UUID{}, fmt.Errorf("retrieving vcs provider: %w", err)
 	}
+	// TODO: refactor: ProviderKind should state whether it needs a repohook.
 	if vcsProvider.Kind == vcs.GithubAppKind {
 		// github apps don't need a webhook created on each repo.
 		return uuid.UUID{}, nil
-	}
-	_, err = vcsProvider.GetRepository(ctx, opts.RepoPath)
-	if err != nil {
-		return uuid.UUID{}, fmt.Errorf("checking repository exists: %w", err)
 	}
 	hook, err := newRepohook(newRepohookOptions{
 		repoPath:        opts.RepoPath,

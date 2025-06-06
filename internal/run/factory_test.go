@@ -205,8 +205,8 @@ func (f *fakeFactoryCloudClient) GetRepoTarball(context.Context, vcs.GetRepoTarb
 	return nil, "", nil
 }
 
-func (f *fakeFactoryCloudClient) GetRepository(context.Context, string) (vcs.Repository, error) {
-	return vcs.Repository{}, nil
+func (f *fakeFactoryCloudClient) GetDefaultBranch(context.Context, string) (string, error) {
+	return "", nil
 }
 
 func (f *fakeFactoryCloudClient) GetCommit(context.Context, string, string) (vcs.Commit, error) {

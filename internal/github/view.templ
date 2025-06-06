@@ -4,6 +4,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/components/paths"
+	"net/url"
 	"strconv"
 )
 
@@ -177,4 +178,15 @@ type deleteMessageProps struct {
 }
 
 templ deleteMessage(props deleteMessageProps) {
+}
+
+templ tokenDescription(hostname string) {
+	{{
+		u := &url.URL{
+			Scheme: "https",
+			Host:   hostname,
+			Path:   "/settings/tokens",
+		}
+	}}
+	Create a <a class="link" href={ templ.SafeURL(u.String()) }>personal access token</a> with the <span class="font-bold">repo</span> scope.
 }

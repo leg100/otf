@@ -9,6 +9,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
+	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/vcs"
@@ -53,8 +54,31 @@ func NewService(opts Options) *Service {
 		GithubSkipTLS:   opts.SkipTLSVerification,
 		svc:             &svc,
 	}
-	// Register client providers
-	opts.VCSRegistry.RegisterSchema(vcs.GithubAppKind, vcs.ConfigSchema{})
+	provider := provider{
+		service:             &svc,
+		db:                  svc.db,
+		hostname:            opts.GithubHostname,
+		skipTLSVerification: opts.SkipTLSVerification,
+	}
+	// Register providers
+	opts.VCSRegistry.RegisterSchema(vcs.GithubAppKind, vcs.ProviderKind{
+		Kind:             GithubAppKind,
+		Name:             "GitHub (App)",
+		Icon:             components.GithubIcon(),
+		Hostname:         opts.GithubHostname,
+		InstallationKind: &provider,
+		NewClient:        provider.NewClient,
+	})
+	opts.VCSRegistry.RegisterSchema(vcs.GithubTokenKind, vcs.ProviderKind{
+		Kind:     GithubTokenKind,
+		Name:     "GitHub (Token)",
+		Icon:     components.GithubIcon(),
+		Hostname: opts.GithubHostname,
+		TokenKind: &vcs.TokenKind{
+			Description: tokenDescription(opts.GithubHostname),
+		},
+		NewClient: provider.NewClient,
+	})
 	return &svc
 }
 

@@ -16,7 +16,7 @@ type pgdb struct {
 	// provides access to generated SQL queries
 	*sql.DB
 	*factory
-	schemas map[Kind]ConfigSchema
+	schemas map[Kind]ProviderKind
 }
 
 func (db *pgdb) create(ctx context.Context, provider *Provider) error {

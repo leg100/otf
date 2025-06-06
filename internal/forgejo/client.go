@@ -154,21 +154,17 @@ func (c *Client) findOrgReposOwned(found map[string]time.Time) error {
 	return nil
 }
 
-func (c *Client) GetRepository(ctx context.Context, identifier string) (vcs.Repository, error) {
+func (c *Client) GetDefaultBranch(ctx context.Context, identifier string) (string, error) {
 	parts := strings.Split(identifier, "/")
 	if len(parts) != 2 {
-		return vcs.Repository{}, fmt.Errorf("identifier '%s' must be in the form 'owner/repo'", identifier)
+		return "", fmt.Errorf("identifier '%s' must be in the form 'owner/repo'", identifier)
 	}
 	owner, reponame := parts[0], parts[1]
 	repo, _, err := c.client.GetRepo(owner, reponame)
 	if err != nil {
-		return vcs.Repository{}, err
+		return "", err
 	}
-
-	return vcs.Repository{
-		Path:          repo.FullName,
-		DefaultBranch: repo.DefaultBranch,
-	}, nil
+	return repo.DefaultBranch, nil
 }
 
 // map from otf/vcs event names to forgejo event names

@@ -23,7 +23,7 @@ type (
 		web               *webHandlers
 		api               *tfe
 		beforeDeleteHooks []func(context.Context, *VCSProvider) error
-		schemas           map[vcs.Kind]ConfigSchema
+		kinds             map[vcs.Kind]ConfigSchema
 
 		*internal.HostnameService
 		*factory
@@ -54,7 +54,7 @@ func NewService(opts Options) *Service {
 			DB:      opts.DB,
 			factory: &factory,
 		},
-		schemas: make(map[vcs.Kind]ConfigSchema),
+		kinds: make(map[vcs.Kind]ConfigSchema),
 	}
 	svc.web = &webHandlers{
 		HostnameService: opts.HostnameService,
@@ -89,7 +89,7 @@ func NewService(opts Options) *Service {
 }
 
 func (a *Service) RegisterSchema(kind vcs.Kind, schema ConfigSchema) {
-	a.schemas[kind] = schema
+	a.kinds[kind] = schema
 }
 
 func (a *Service) AddHandlers(r *mux.Router) {
