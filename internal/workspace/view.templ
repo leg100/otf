@@ -376,7 +376,7 @@ type editProps struct {
 	assigned           []perm
 	unassigned         []*team.Team
 	roles              []authz.Role
-	vcsProvider        vcs.Provider
+	vcsProvider        *vcs.Provider
 	engines            engineSelectorProps
 	unassignedTags     []string
 	canUpdateWorkspace bool
