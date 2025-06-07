@@ -5,25 +5,24 @@ package module
 
 //lint:file-ignore SA4006 This context is only used if a nested component is present.
 
-import "github.com/a-h/templ"
-import templruntime "github.com/a-h/templ/runtime"
-
 import (
+	"html/template"
+	"slices"
+	"strings"
+
+	"github.com/a-h/templ"
+	templruntime "github.com/a-h/templ/runtime"
 	"github.com/leg100/otf/internal/connections"
 	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/components/paths"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/vcs"
-	"github.com/leg100/otf/internal/vcsprovider"
-	"html/template"
-	"slices"
-	"strings"
 )
 
 type newViewProps struct {
 	organization organization.Name
-	providers    []*vcsprovider.VCSProvider
+	providers    []*vcs.Provider
 }
 
 func newView(props newViewProps) templ.Component {
@@ -145,7 +144,7 @@ func selectVCSProviderAction(vcsProviderID resource.TfeID) templ.Component {
 
 type connectProps struct {
 	repos    []string
-	provider *vcsprovider.VCSProvider
+	provider *vcs.Provider
 }
 
 func connect(props connectProps) templ.Component {
@@ -254,7 +253,7 @@ func connect(props connectProps) templ.Component {
 }
 
 type repoSelector struct {
-	provider *vcsprovider.VCSProvider
+	provider *vcs.Provider
 }
 
 func (s repoSelector) action(repo string) templ.Component {

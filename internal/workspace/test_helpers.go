@@ -14,7 +14,6 @@ import (
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/vcs"
-	"github.com/leg100/otf/internal/vcsprovider"
 	"github.com/stretchr/testify/require"
 )
 
@@ -112,15 +111,15 @@ func (f *FakeService) UnsetPermission(ctx context.Context, workspaceID, teamID r
 }
 
 type fakeVCSProviderService struct {
-	providers []*vcsprovider.VCSProvider
+	providers []*vcs.Provider
 	repos     []string
 }
 
-func (f *fakeVCSProviderService) Get(ctx context.Context, providerID resource.TfeID) (*vcsprovider.VCSProvider, error) {
+func (f *fakeVCSProviderService) Get(ctx context.Context, providerID resource.TfeID) (*vcs.Provider, error) {
 	return f.providers[0], nil
 }
 
-func (f *fakeVCSProviderService) List(context.Context, organization.Name) ([]*vcsprovider.VCSProvider, error) {
+func (f *fakeVCSProviderService) List(context.Context, organization.Name) ([]*vcs.Provider, error) {
 	return f.providers, nil
 }
 

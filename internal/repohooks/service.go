@@ -12,7 +12,6 @@ import (
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/vcs"
-	"github.com/leg100/otf/internal/vcsprovider"
 )
 
 type (
@@ -141,7 +140,7 @@ func (s *Service) deleteOrganizationRepohooks(ctx context.Context, org *organiza
 	return nil
 }
 
-func (s *Service) deleteProviderRepohooks(ctx context.Context, provider *vcsprovider.VCSProvider) error {
+func (s *Service) deleteProviderRepohooks(ctx context.Context, provider *vcs.Provider) error {
 	hooks, err := s.db.listHooks(ctx)
 	if err != nil {
 		return err

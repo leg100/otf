@@ -7,13 +7,12 @@ import (
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/vcs"
-	"github.com/leg100/otf/internal/vcsprovider"
 )
 
 type fakeService struct {
 	mod       *Module
 	tarball   []byte
-	vcsprovs  []*vcsprovider.VCSProvider
+	vcsprovs  []*vcs.Provider
 	repos     []string
 	hostname  string
 	providers []string
@@ -42,11 +41,11 @@ func (f *fakeService) listProviders(context.Context, organization.Name) ([]strin
 	return f.providers, nil
 }
 
-func (f *fakeService) Get(context.Context, resource.TfeID) (*vcsprovider.VCSProvider, error) {
+func (f *fakeService) Get(context.Context, resource.TfeID) (*vcs.Provider, error) {
 	return f.vcsprovs[0], nil
 }
 
-func (f *fakeService) List(context.Context, organization.Name) ([]*vcsprovider.VCSProvider, error) {
+func (f *fakeService) List(context.Context, organization.Name) ([]*vcs.Provider, error) {
 	return f.vcsprovs, nil
 }
 

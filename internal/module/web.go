@@ -15,7 +15,6 @@ import (
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/vcs"
-	"github.com/leg100/otf/internal/vcsprovider"
 )
 
 type (
@@ -49,8 +48,8 @@ type (
 
 	// vcsprovidersClient provides web handlers with access to vcs providers
 	vcsprovidersClient interface {
-		Get(context.Context, resource.TfeID) (*vcsprovider.VCSProvider, error)
-		List(context.Context, organization.Name) ([]*vcsprovider.VCSProvider, error)
+		Get(context.Context, resource.TfeID) (*vcs.Provider, error)
+		List(context.Context, organization.Name) ([]*vcs.Provider, error)
 	}
 )
 

@@ -209,7 +209,7 @@ func (s *testDaemon) waitRunStatus(t *testing.T, ctx context.Context, runID reso
 	return nil
 }
 
-func (s *testDaemon) createVCSProvider(t *testing.T, ctx context.Context, org *organization.Organization) *vcsprovider.VCSProvider {
+func (s *testDaemon) createVCSProvider(t *testing.T, ctx context.Context, org *organization.Organization) *vcs.Provider {
 	t.Helper()
 
 	if org == nil {

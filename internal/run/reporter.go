@@ -12,7 +12,6 @@ import (
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/vcs"
-	"github.com/leg100/otf/internal/vcsprovider"
 	"github.com/leg100/otf/internal/workspace"
 )
 
@@ -48,7 +47,7 @@ type (
 	}
 
 	reporterVCSClient interface {
-		Get(ctx context.Context, providerID resource.TfeID) (*vcsprovider.VCSProvider, error)
+		Get(ctx context.Context, providerID resource.TfeID) (*vcs.Provider, error)
 	}
 
 	reporterRunClient interface {
