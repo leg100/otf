@@ -76,15 +76,15 @@ func (h *handlers) repohookHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	h.V(2).Info("received vcs event", "repohook_id", opts.ID, "repo", hook.repoPath, "cloud", hook.cloud)
 
-	// look up cloud-specific handler for event
-	cloudHandler, ok := h.cloudHandlers.Get(hook.cloud)
-	if !ok {
+	// look up vcs kind for hook
+	kind, err := h.GetKind(hook.cloud)
+	if err != nil {
 		h.Error(nil, "no event unmarshaler found for event", "repohook_id", opts.ID, "repo", hook.repoPath, "cloud", hook.cloud)
 		http.Error(w, "no event unmarshaler found for event", http.StatusNotFound)
 		return
 	}
-	// handle event
-	payload, err := cloudHandler(r, hook.secret)
+	// handle event using vcs kind's event handler
+	payload, err := kind.EventHandler(r, hook.secret)
 	// either ignore the event, return an error, or publish the event onwards
 	var ignore vcs.ErrIgnoreEvent
 	if errors.As(err, &ignore) {

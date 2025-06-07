@@ -2,12 +2,12 @@ package vcs
 
 import (
 	"context"
-	"sync"
 
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
+	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
@@ -24,8 +24,6 @@ type (
 		api               *tfe
 		beforeDeleteHooks []func(context.Context, *Provider) error
 
-		mu sync.Mutex
-
 		*internal.HostnameService
 		*factory
 		*kindDB
@@ -37,13 +35,14 @@ type (
 		*tfeapi.Responder
 		logr.Logger
 
-		SkipTLSVerification bool
-		Authorizer          *authz.Authorizer
+		ConfigVersionService *configversion.Service
+		SkipTLSVerification  bool
+		Authorizer           *authz.Authorizer
 	}
 )
 
 func NewService(opts Options) *Service {
-	kindDB := newKindDB()
+	kindDB := newKindDB(opts.ConfigVersionService)
 	factory := factory{kinds: kindDB}
 	svc := Service{
 		Logger:          opts.Logger,

@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/a-h/templ"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/engine"
@@ -195,6 +196,10 @@ func (f *fakeFactoryConfigurationVersionService) Create(ctx context.Context, wor
 
 func (f *fakeFactoryConfigurationVersionService) UploadConfig(context.Context, resource.TfeID, []byte) error {
 	return nil
+}
+
+func (f *fakeFactoryConfigurationVersionService) GetSourceIcon(source configversion.Source) templ.Component {
+	return templ.Raw("")
 }
 
 func (f *fakeFactoryVCSProviderService) Get(context.Context, resource.TfeID) (*vcs.Provider, error) {

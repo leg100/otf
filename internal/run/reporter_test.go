@@ -58,12 +58,12 @@ func TestReporter_HandleRun(t *testing.T) {
 		},
 		{
 			name:  "skip UI-triggered run",
-			event: &Event{ID: testutils.ParseID(t, "run-123"), Source: SourceUI},
+			event: &Event{ID: testutils.ParseID(t, "run-123"), Source: configversion.SourceUI},
 			want:  nil,
 		},
 		{
 			name:  "skip API-triggered run",
-			event: &Event{ID: testutils.ParseID(t, "run-123"), Source: SourceAPI},
+			event: &Event{ID: testutils.ParseID(t, "run-123"), Source: configversion.SourceAPI},
 			want:  nil,
 		},
 	}

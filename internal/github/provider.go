@@ -8,8 +8,8 @@ import (
 )
 
 const (
-	TokenKind vcs.KindID = "github-token"
-	AppKind   vcs.KindID = "github-app"
+	TokenKindID vcs.KindID = "github-token"
+	AppKindID   vcs.KindID = "github-app"
 )
 
 type provider struct {
@@ -32,7 +32,7 @@ func registerProviders(
 		skipTLSVerification: skipTLSVerification,
 	}
 	vcsService.RegisterKind(vcs.Kind{
-		ID:               AppKind,
+		ID:               AppKindID,
 		Name:             "GitHub (App)",
 		Icon:             Icon(),
 		Hostname:         hostname,
@@ -42,7 +42,7 @@ func registerProviders(
 		SkipRepohook: true,
 	})
 	vcsService.RegisterKind(vcs.Kind{
-		ID:       TokenKind,
+		ID:       TokenKindID,
 		Name:     "GitHub (Token)",
 		Icon:     Icon(),
 		Hostname: hostname,

@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/a-h/templ"
+	"github.com/leg100/otf/internal/configversion"
 	"golang.org/x/exp/maps"
 )
 
@@ -82,20 +83,26 @@ func (i Installation) String() string {
 
 // kindDB is a database of sources and their icons
 type kindDB struct {
-	mu    sync.Mutex
-	kinds map[KindID]Kind
+	mu            sync.Mutex
+	kinds         map[KindID]Kind
+	configService *configversion.Service
 }
 
-func newKindDB() *kindDB {
+func newKindDB(configService *configversion.Service) *kindDB {
 	return &kindDB{
-		kinds: make(map[KindID]Kind),
+		kinds:         make(map[KindID]Kind),
+		configService: configService,
 	}
 }
 
 func (db *kindDB) RegisterKind(kind Kind) {
 	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	db.kinds[kind.ID] = kind
-	db.mu.Unlock()
+	// Also register its icon to be rendered on the UI next to runs triggered
+	// by this kind.
+	db.configService.RegisterSourceIcon(configversion.Source(kind.ID), IconWrapper(kind.ID, kind.Icon))
 }
 
 func (db *kindDB) GetKind(id KindID) (Kind, error) {

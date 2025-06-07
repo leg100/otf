@@ -72,7 +72,7 @@ type (
 )
 
 func NewService(opts Options) *Service {
-	db := &pgdb{opts.DB}
+	db := &pgdb{opts.DB, opts.ConfigVersionService}
 	svc := Service{
 		Logger:     opts.Logger,
 		workspaces: opts.WorkspaceService,

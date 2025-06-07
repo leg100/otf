@@ -153,13 +153,24 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		return nil, err
 	}
 
+	configService := configversion.NewService(configversion.Options{
+		Logger:        logger,
+		Authorizer:    authorizer,
+		DB:            db,
+		Responder:     responder,
+		Cache:         cache,
+		Signer:        signer,
+		MaxConfigSize: cfg.MaxConfigSize,
+	})
+
 	vcsService := vcs.NewService(vcs.Options{
-		Logger:              logger,
-		Authorizer:          authorizer,
-		DB:                  db,
-		Responder:           responder,
-		HostnameService:     hostnameService,
-		SkipTLSVerification: cfg.SkipTLSVerification,
+		Logger:               logger,
+		Authorizer:           authorizer,
+		DB:                   db,
+		Responder:            responder,
+		HostnameService:      hostnameService,
+		ConfigVersionService: configService,
+		SkipTLSVerification:  cfg.SkipTLSVerification,
 	})
 
 	vcsEventBroker := &vcs.Broker{}
@@ -185,7 +196,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		VCSEventBroker:      vcsEventBroker,
 	})
 	repoService.RegisterCloudHandler(forgejo.KindID, forgejo.HandleEvent)
-	repoService.RegisterCloudHandler(github.TokenKind, github.HandleEvent)
+	repoService.RegisterCloudHandler(github.TokenKindID, github.HandleEvent)
 	repoService.RegisterCloudHandler(gitlab.KindID, gitlab.HandleEvent)
 
 	connectionService := connections.NewService(ctx, connections.Options{
@@ -214,15 +225,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		VCSProviderService:  vcsService,
 		DefaultEngine:       cfg.DefaultEngine,
 		EngineService:       engineService,
-	})
-	configService := configversion.NewService(configversion.Options{
-		Logger:        logger,
-		Authorizer:    authorizer,
-		DB:            db,
-		Responder:     responder,
-		Cache:         cache,
-		Signer:        signer,
-		MaxConfigSize: cfg.MaxConfigSize,
 	})
 
 	logsService := logs.NewService(logs.Options{
@@ -326,7 +328,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 				ClientConstructor: github.NewOAuthClient,
 				OAuthConfig: authenticator.OAuthConfig{
 					Hostname:     cfg.GithubHostname,
-					Name:         string(vcs.GithubTokenKind),
+					Name:         string(github.TokenKindID),
 					Endpoint:     github.OAuthEndpoint,
 					Scopes:       github.OAuthScopes,
 					ClientID:     cfg.GithubClientID,
@@ -337,7 +339,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 				ClientConstructor: gitlab.NewOAuthClient,
 				OAuthConfig: authenticator.OAuthConfig{
 					Hostname:     cfg.GitlabHostname,
-					Name:         string(vcs.GitlabKind),
+					Name:         string(gitlab.KindID),
 					Endpoint:     gitlab.OAuthEndpoint,
 					Scopes:       gitlab.OAuthScopes,
 					ClientID:     cfg.GitlabClientID,

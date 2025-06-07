@@ -3,7 +3,6 @@ package run
 import (
 	"context"
 	"fmt"
-	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/components/paths"
 	"github.com/leg100/otf/internal/logs"
@@ -95,7 +94,7 @@ templ (t table) Row(run *Run) {
 					</span>
 				}
 				<div class="flex gap-2 items-center">
-					@source(run)
+					@run.SourceIcon
 					if run.IngressAttributes != nil {
 						<div class="badge badge-secondary badge-soft badge-sm font-mono">
 							<svg
@@ -349,18 +348,6 @@ templ resourceReport(report *Report) {
 	<div class="font-mono text-md" id="resource-summary">
 		<span class="text-green-700">+{ report.Additions }</span><span class="text-blue-700">~{ report.Changes }</span><span class="text-red-700">-{ report.Destructions }</span>
 	</div>
-}
-
-templ source(run *Run) {
-	switch run.Source {
-		case configversion.SourceAPI:
-		case configversion.SourceTerraform:
-		case SourceGithub:
-			<img class="h-5" id="run-trigger-github" title="run triggered via github" src={ components.AssetPath(ctx, "/static/images/github_icon.svg") }/>
-		case SourceGitlab:
-			<img class="h-5" id="run-trigger-gitlab" title="run triggered via gitlab" src={ components.AssetPath(ctx, "/static/images/gitlab_icon.svg") }/>
-		case configversion.SourceUI:
-	}
 }
 
 var phaseBadges = map[PhaseStatus]string{
