@@ -97,11 +97,15 @@ func TestNewModule(t *testing.T) {
 
 func TestConnect(t *testing.T) {
 	h := newTestWebHandlers(t,
-		withVCSProviders(&vcs.Provider{}),
-		withRepos(
-			vcs.NewTestModuleRepo("aws", "vpc"),
-			vcs.NewTestModuleRepo("aws", "s3"),
-		),
+		withVCSProvider(&vcs.Provider{
+			Client: &fakeModulesCloudClient{
+				repos: []string{
+					vcs.NewTestModuleRepo("aws", "vpc"),
+					vcs.NewTestModuleRepo("aws", "s3"),
+				},
+			},
+		}),
+		withRepos(),
 	)
 
 	q := "/?organization_name=acme-corp&vcs_provider_id=vcs-123"
@@ -167,6 +171,12 @@ func withMod(mod *Module) testWebOption {
 func withTarball(tarball []byte) testWebOption {
 	return func(svc *fakeService) {
 		svc.tarball = tarball
+	}
+}
+
+func withVCSProvider(vcsprov *vcs.Provider) testWebOption {
+	return func(svc *fakeService) {
+		svc.vcsprov = vcsprov
 	}
 }
 

@@ -12,6 +12,7 @@ import (
 type fakeService struct {
 	mod       *Module
 	tarball   []byte
+	vcsprov   *vcs.Provider
 	vcsprovs  []*vcs.Provider
 	repos     []string
 	hostname  string
@@ -42,15 +43,11 @@ func (f *fakeService) listProviders(context.Context, organization.Name) ([]strin
 }
 
 func (f *fakeService) Get(context.Context, resource.TfeID) (*vcs.Provider, error) {
-	return f.vcsprovs[0], nil
+	return f.vcsprov, nil
 }
 
 func (f *fakeService) List(context.Context, organization.Name) ([]*vcs.Provider, error) {
 	return f.vcsprovs, nil
-}
-
-func (f *fakeService) GetVCSClient(ctx context.Context, providerID resource.TfeID) (vcs.Client, error) {
-	return &fakeModulesCloudClient{repos: f.repos}, nil
 }
 
 func (f *fakeService) GetModuleInfo(context.Context, resource.TfeID) (*TerraformModule, error) {

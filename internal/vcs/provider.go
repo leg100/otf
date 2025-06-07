@@ -86,10 +86,11 @@ func (f *factory) newProvider(ctx context.Context, opts CreateOptions) (*Provide
 	return provider, nil
 }
 
-// String provides a human meaningful description of the vcs provider, using the
-// name if set; otherwise a name is constructed using both the underlying cloud
-// kind and the auth kind.
+// String provides a human meaningful description of the vcs provider.
 func (t *Provider) String() string {
+	if t.Name != "" {
+		return t.Name
+	}
 	return t.Kind.Name
 }
 

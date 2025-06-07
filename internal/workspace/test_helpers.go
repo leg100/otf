@@ -111,20 +111,16 @@ func (f *FakeService) UnsetPermission(ctx context.Context, workspaceID, teamID r
 }
 
 type fakeVCSProviderService struct {
+	provider  *vcs.Provider
 	providers []*vcs.Provider
-	repos     []string
 }
 
 func (f *fakeVCSProviderService) Get(ctx context.Context, providerID resource.TfeID) (*vcs.Provider, error) {
-	return f.providers[0], nil
+	return f.provider, nil
 }
 
 func (f *fakeVCSProviderService) List(context.Context, organization.Name) ([]*vcs.Provider, error) {
 	return f.providers, nil
-}
-
-func (f *fakeVCSProviderService) GetVCSClient(ctx context.Context, providerID resource.TfeID) (vcs.Client, error) {
-	return &fakeVCSClient{repos: f.repos}, nil
 }
 
 type fakeVCSClient struct {

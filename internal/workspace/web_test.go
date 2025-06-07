@@ -198,7 +198,9 @@ func TestEditWorkspaceHandler(t *testing.T) {
 				},
 				teams: &fakeTeamService{teams: tt.teams},
 				vcsproviders: &fakeVCSProviderService{
-					providers: []*vcs.Provider{{}},
+					provider: &vcs.Provider{
+						Name: "test-provider",
+					},
 				},
 				releases: &fakeReleasesService{},
 			}
@@ -389,15 +391,16 @@ func TestListWorkspaceReposHandler(t *testing.T) {
 	app := &webHandlers{
 		client: &FakeService{Workspaces: []*Workspace{ws}},
 		vcsproviders: &fakeVCSProviderService{
-			providers: []*vcs.Provider{
-				{},
-			},
-			repos: []string{
-				vcs.NewTestRepo(),
-				vcs.NewTestRepo(),
-				vcs.NewTestRepo(),
-				vcs.NewTestRepo(),
-				vcs.NewTestRepo(),
+			provider: &vcs.Provider{
+				Client: &fakeVCSClient{
+					repos: []string{
+						vcs.NewTestRepo(),
+						vcs.NewTestRepo(),
+						vcs.NewTestRepo(),
+						vcs.NewTestRepo(),
+						vcs.NewTestRepo(),
+					},
+				},
 			},
 		},
 	}
