@@ -197,8 +197,10 @@ func (f *fakeFactoryConfigurationVersionService) UploadConfig(context.Context, r
 	return nil
 }
 
-func (f *fakeFactoryVCSProviderService) GetVCSClient(context.Context, resource.TfeID) (vcs.Client, error) {
-	return &fakeFactoryCloudClient{}, nil
+func (f *fakeFactoryVCSProviderService) Get(context.Context, resource.TfeID) (*vcs.Provider, error) {
+	return &vcs.Provider{
+		Client: &fakeFactoryCloudClient{},
+	}, nil
 }
 
 func (f *fakeFactoryCloudClient) GetRepoTarball(context.Context, vcs.GetRepoTarballOptions) ([]byte, string, error) {

@@ -147,13 +147,6 @@ func NewOAuthClient(cfg authenticator.OAuthConfig, token *oauth2.Token) (authent
 	})
 }
 
-func (g *Client) String() string {
-	if g.iat {
-		return "github (app)"
-	}
-	return "github (token)"
-}
-
 func (g *Client) GetCurrentUser(ctx context.Context) (user.Username, error) {
 	guser, _, err := g.client.Users.Get(ctx, "")
 	if err != nil {
