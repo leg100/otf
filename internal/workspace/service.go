@@ -16,7 +16,7 @@ import (
 	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/user"
-	"github.com/leg100/otf/internal/vcsprovider"
+	"github.com/leg100/otf/internal/vcs"
 )
 
 type (
@@ -46,7 +46,7 @@ type (
 		logr.Logger
 
 		OrganizationService *organization.Service
-		VCSProviderService  *vcsprovider.Service
+		VCSProviderService  *vcs.Service
 		TeamService         *team.Service
 		UserService         *user.Service
 		ConnectionService   *connections.Service

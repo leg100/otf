@@ -18,7 +18,6 @@ import (
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/vcs"
-	"github.com/leg100/otf/internal/vcsprovider"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/net/html"
@@ -199,7 +198,9 @@ func TestEditWorkspaceHandler(t *testing.T) {
 				},
 				teams: &fakeTeamService{teams: tt.teams},
 				vcsproviders: &fakeVCSProviderService{
-					providers: []*vcsprovider.VCSProvider{{}},
+					provider: &vcs.Provider{
+						Name: "test-provider",
+					},
 				},
 				releases: &fakeReleasesService{},
 			}
@@ -369,7 +370,7 @@ func TestListWorkspaceProvidersHandler(t *testing.T) {
 	app := &webHandlers{
 		client: &FakeService{Workspaces: []*Workspace{ws}},
 		vcsproviders: &fakeVCSProviderService{
-			providers: []*vcsprovider.VCSProvider{
+			providers: []*vcs.Provider{
 				{},
 				{},
 				{},
@@ -390,15 +391,16 @@ func TestListWorkspaceReposHandler(t *testing.T) {
 	app := &webHandlers{
 		client: &FakeService{Workspaces: []*Workspace{ws}},
 		vcsproviders: &fakeVCSProviderService{
-			providers: []*vcsprovider.VCSProvider{
-				{},
-			},
-			repos: []string{
-				vcs.NewTestRepo(),
-				vcs.NewTestRepo(),
-				vcs.NewTestRepo(),
-				vcs.NewTestRepo(),
-				vcs.NewTestRepo(),
+			provider: &vcs.Provider{
+				Client: &fakeVCSClient{
+					repos: []string{
+						vcs.NewTestRepo(),
+						vcs.NewTestRepo(),
+						vcs.NewTestRepo(),
+						vcs.NewTestRepo(),
+						vcs.NewTestRepo(),
+					},
+				},
 			},
 		},
 	}

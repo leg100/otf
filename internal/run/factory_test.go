@@ -197,16 +197,18 @@ func (f *fakeFactoryConfigurationVersionService) UploadConfig(context.Context, r
 	return nil
 }
 
-func (f *fakeFactoryVCSProviderService) GetVCSClient(context.Context, resource.TfeID) (vcs.Client, error) {
-	return &fakeFactoryCloudClient{}, nil
+func (f *fakeFactoryVCSProviderService) Get(context.Context, resource.TfeID) (*vcs.Provider, error) {
+	return &vcs.Provider{
+		Client: &fakeFactoryCloudClient{},
+	}, nil
 }
 
 func (f *fakeFactoryCloudClient) GetRepoTarball(context.Context, vcs.GetRepoTarballOptions) ([]byte, string, error) {
 	return nil, "", nil
 }
 
-func (f *fakeFactoryCloudClient) GetRepository(context.Context, string) (vcs.Repository, error) {
-	return vcs.Repository{}, nil
+func (f *fakeFactoryCloudClient) GetDefaultBranch(context.Context, string) (string, error) {
+	return "", nil
 }
 
 func (f *fakeFactoryCloudClient) GetCommit(context.Context, string, string) (vcs.Commit, error) {

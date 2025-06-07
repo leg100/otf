@@ -30,7 +30,6 @@ import (
 	otfuser "github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/variable"
 	"github.com/leg100/otf/internal/vcs"
-	"github.com/leg100/otf/internal/vcsprovider"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/require"
 )
@@ -209,18 +208,18 @@ func (s *testDaemon) waitRunStatus(t *testing.T, ctx context.Context, runID reso
 	return nil
 }
 
-func (s *testDaemon) createVCSProvider(t *testing.T, ctx context.Context, org *organization.Organization) *vcsprovider.VCSProvider {
+func (s *testDaemon) createVCSProvider(t *testing.T, ctx context.Context, org *organization.Organization) *vcs.Provider {
 	t.Helper()
 
 	if org == nil {
 		org = s.createOrganization(t, ctx)
 	}
 
-	provider, err := s.VCSProviders.Create(ctx, vcsprovider.CreateOptions{
+	provider, err := s.VCSProviders.Create(ctx, vcs.CreateOptions{
 		Organization: org.Name,
 		// tests require a legitimate cloud name to avoid invalid foreign
 		// key error upon insert/update
-		Kind:  vcs.KindPtr(vcs.GithubKind),
+		Kind:  vcs.GithubTokenKind,
 		Token: internal.String(uuid.NewString()),
 	})
 	require.NoError(t, err)

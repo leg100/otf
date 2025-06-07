@@ -27,7 +27,7 @@ func TestGetUser(t *testing.T) {
 	assert.Equal(t, want, got)
 }
 
-func TestGetRepository(t *testing.T) {
+func TestGetDefaultBranch(t *testing.T) {
 	ctx := context.Background()
 	want, err := os.ReadFile("../testdata/github.tar.gz")
 	require.NoError(t, err)
@@ -37,11 +37,10 @@ func TestGetRepository(t *testing.T) {
 		WithArchive(want),
 	)
 
-	got, err := client.GetRepository(ctx, "acme/terraform")
+	got, err := client.GetDefaultBranch(ctx, "acme/terraform")
 	require.NoError(t, err)
 
-	assert.Equal(t, "acme/terraform", got.Path)
-	assert.Equal(t, "master", got.DefaultBranch)
+	assert.Equal(t, "master", got)
 }
 
 func TestGetRepoTarball(t *testing.T) {

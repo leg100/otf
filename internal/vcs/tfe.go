@@ -1,4 +1,4 @@
-package vcsprovider
+package vcs
 
 import (
 	"errors"
@@ -11,7 +11,6 @@ import (
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/tfeapi"
-	"github.com/leg100/otf/internal/vcs"
 )
 
 const (
@@ -101,7 +100,7 @@ func (a *tfe) createOAuthClient(w http.ResponseWriter, r *http.Request) {
 		Name:         *params.Name,
 		Organization: pathParams.Organization,
 		Token:        params.OAuthToken,
-		Kind:         vcs.KindPtr(vcs.GithubKind),
+		Kind:         GithubTokenKind,
 	})
 	if err != nil {
 		tfeapi.Error(w, err)
@@ -165,7 +164,7 @@ func (a *tfe) deleteOAuthClient(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (a *tfe) convert(from *VCSProvider) *TFEOAuthClient {
+func (a *tfe) convert(from *Provider) *TFEOAuthClient {
 	to := &TFEOAuthClient{
 		ID:        from.ID,
 		CreatedAt: from.CreatedAt,

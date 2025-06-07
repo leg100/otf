@@ -14,7 +14,7 @@ import (
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/leg100/otf/internal/user"
-	"github.com/leg100/otf/internal/vcsprovider"
+	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/require"
@@ -228,9 +228,10 @@ func TestIntegration_GithubApp_Event(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	provider, err := daemon.VCSProviders.Create(ctx, vcsprovider.CreateOptions{
-		Organization:       org.Name,
-		GithubAppInstallID: internal.Int64(42997659),
+	provider, err := daemon.VCSProviders.Create(ctx, vcs.CreateOptions{
+		Organization: org.Name,
+		Kind:         vcs.GithubAppKind,
+		InstallID:    internal.Int64(42997659),
 	})
 	require.NoError(t, err)
 

@@ -1,4 +1,4 @@
-package vcsprovider
+package vcs
 
 import (
 	"time"

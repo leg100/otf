@@ -18,7 +18,6 @@ import (
 	"github.com/leg100/otf/internal/disco"
 	"github.com/leg100/otf/internal/engine"
 	"github.com/leg100/otf/internal/forgejo"
-	"github.com/leg100/otf/internal/ghapphandler"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/gitlab"
 	"github.com/leg100/otf/internal/http"
@@ -40,7 +39,6 @@ import (
 	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/variable"
 	"github.com/leg100/otf/internal/vcs"
-	"github.com/leg100/otf/internal/vcsprovider"
 	"github.com/leg100/otf/internal/workspace"
 	"golang.org/x/sync/errgroup"
 )
@@ -61,7 +59,7 @@ type (
 		State         *state.Service
 		Configs       *configversion.Service
 		Modules       *module.Service
-		VCSProviders  *vcsprovider.Service
+		VCSProviders  *vcs.Service
 		Tokens        *tokens.Service
 		Teams         *team.Service
 		Users         *user.Service
@@ -155,47 +153,45 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		return nil, err
 	}
 
-	githubAppService := github.NewService(github.Options{
-		Logger:              logger,
-		Authorizer:          authorizer,
-		DB:                  db,
-		HostnameService:     hostnameService,
-		GithubHostname:      cfg.GithubHostname,
-		SkipTLSVerification: cfg.SkipTLSVerification,
-	})
-
-	vcsEventBroker := &vcs.Broker{}
-
-	vcsProviderService := vcsprovider.NewService(vcsprovider.Options{
+	vcsService := vcs.NewService(vcs.Options{
 		Logger:              logger,
 		Authorizer:          authorizer,
 		DB:                  db,
 		Responder:           responder,
 		HostnameService:     hostnameService,
-		GithubAppService:    githubAppService,
-		ForgejoHostname:     cfg.ForgejoHostname,
-		GithubHostname:      cfg.GithubHostname,
-		GitlabHostname:      cfg.GitlabHostname,
 		SkipTLSVerification: cfg.SkipTLSVerification,
-		Subscriber:          vcsEventBroker,
 	})
+
+	vcsEventBroker := &vcs.Broker{}
+
+	githubAppService := github.NewService(github.Options{
+		Logger:              logger,
+		Authorizer:          authorizer,
+		DB:                  db,
+		HostnameService:     hostnameService,
+		VCSService:          vcsService,
+		GithubHostname:      cfg.GithubHostname,
+		SkipTLSVerification: cfg.SkipTLSVerification,
+		VCSEventBroker:      vcsEventBroker,
+	})
+
 	repoService := repohooks.NewService(ctx, repohooks.Options{
 		Logger:              logger,
 		DB:                  db,
 		HostnameService:     hostnameService,
 		OrganizationService: orgService,
-		VCSProviderService:  vcsProviderService,
+		VCSProviderService:  vcsService,
 		GithubAppService:    githubAppService,
 		VCSEventBroker:      vcsEventBroker,
 	})
 	repoService.RegisterCloudHandler(vcs.ForgejoKind, forgejo.HandleEvent)
-	repoService.RegisterCloudHandler(vcs.GithubKind, github.HandleEvent)
+	repoService.RegisterCloudHandler(vcs.GithubTokenKind, github.HandleEvent)
 	repoService.RegisterCloudHandler(vcs.GitlabKind, gitlab.HandleEvent)
 
 	connectionService := connections.NewService(ctx, connections.Options{
 		Logger:             logger,
 		DB:                 db,
-		VCSProviderService: vcsProviderService,
+		VCSProviderService: vcsService,
 		RepoHooksService:   repoService,
 	})
 	engineService := engine.NewService(engine.Options{
@@ -215,7 +211,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		TeamService:         teamService,
 		UserService:         userService,
 		OrganizationService: orgService,
-		VCSProviderService:  vcsProviderService,
+		VCSProviderService:  vcsService,
 		DefaultEngine:       cfg.DefaultEngine,
 		EngineService:       engineService,
 	})
@@ -247,7 +243,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		WorkspaceService:     workspaceService,
 		LogsService:          logsService,
 		ConfigVersionService: configService,
-		VCSProviderService:   vcsProviderService,
+		VCSProviderService:   vcsService,
 		Cache:                cache,
 		VCSEventSubscriber:   vcsEventBroker,
 		Signer:               signer,
@@ -259,7 +255,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Authorizer:         authorizer,
 		DB:                 db,
 		HostnameService:    hostnameService,
-		VCSProviderService: vcsProviderService,
+		VCSProviderService: vcsService,
 		Signer:             signer,
 		ConnectionsService: connectionService,
 		RepohookService:    repoService,
@@ -294,6 +290,15 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Listener:         listener,
 	})
 
+	(&forgejo.Provider{
+		Hostname:            cfg.ForgejoHostname,
+		SkipTLSVerification: cfg.SkipTLSVerification,
+	}).Register(vcsService)
+	(&gitlab.Provider{
+		Hostname:            cfg.GitlabHostname,
+		SkipTLSVerification: cfg.SkipTLSVerification,
+	}).Register(vcsService)
+
 	runner, err := runner.NewServerRunner(runner.ServerRunnerOptions{
 		Logger:     logger,
 		Config:     cfg.RunnerConfig,
@@ -321,7 +326,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 				ClientConstructor: github.NewOAuthClient,
 				OAuthConfig: authenticator.OAuthConfig{
 					Hostname:     cfg.GithubHostname,
-					Name:         string(vcs.GithubKind),
+					Name:         string(vcs.GithubTokenKind),
 					Endpoint:     github.OAuthEndpoint,
 					Scopes:       github.OAuthScopes,
 					ClientID:     cfg.GithubClientID,
@@ -362,7 +367,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		stateService,
 		orgService,
 		variableService,
-		vcsProviderService,
+		vcsService,
 		moduleService,
 		runService,
 		logsService,
@@ -377,14 +382,14 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		githubAppService,
 		runnerService,
 		disco.Service{},
-		&ghapphandler.Handler{
-			Logger:       logger,
-			Publisher:    vcsEventBroker,
-			GithubApps:   githubAppService,
-			VCSProviders: vcsProviderService,
-		},
 		&api.Handlers{},
 		&tfeapi.Handlers{},
+		&github.AppEventHandler{
+			Logger:     logger,
+			Publisher:  vcsEventBroker,
+			GithubApps: githubAppService,
+			VCSService: vcsService,
+		},
 	}
 
 	return &Daemon{
@@ -401,7 +406,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		State:         stateService,
 		Configs:       configService,
 		Modules:       moduleService,
-		VCSProviders:  vcsProviderService,
+		VCSProviders:  vcsService,
 		Tokens:        tokensService,
 		Teams:         teamService,
 		Users:         userService,

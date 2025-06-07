@@ -249,8 +249,10 @@ type fakeSpawnerVCSProviderClient struct {
 	pullFiles []string
 }
 
-func (f *fakeSpawnerVCSProviderClient) GetVCSClient(context.Context, resource.TfeID) (vcs.Client, error) {
-	return &fakeSpawnerCloudClient{pullFiles: f.pullFiles}, nil
+func (f *fakeSpawnerVCSProviderClient) Get(context.Context, resource.TfeID) (*vcs.Provider, error) {
+	return &vcs.Provider{
+		Client: &fakeSpawnerCloudClient{pullFiles: f.pullFiles},
+	}, nil
 }
 
 type fakeSpawnerCloudClient struct {

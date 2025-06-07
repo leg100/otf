@@ -16,7 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestGetRepository(t *testing.T) {
+func TestGetDefaultBranch(t *testing.T) {
 	ctx := context.Background()
 	want, err := os.ReadFile("../testdata/forgejo.tar.gz")
 	require.NoError(t, err)
@@ -30,17 +30,16 @@ func TestGetRepository(t *testing.T) {
 		WithArchive(want),
 	)
 
-	got, err := client.GetRepository(ctx, "acme/test")
+	got, err := client.GetDefaultBranch(ctx, "acme/test")
 	require.NoError(t, err)
 
-	assert.Equal(t, "acme/test", got.Path)
-	assert.Equal(t, "main", got.DefaultBranch)
+	assert.Equal(t, "main", got)
 
-	got, err = client.GetRepository(ctx, "acme/nonexistent-repo")
+	got, err = client.GetDefaultBranch(ctx, "acme/nonexistent-repo")
 	require.Error(t, err)
 	require.Zero(t, got)
 
-	got, err = client.GetRepository(ctx, "nonexistent-org/test")
+	got, err = client.GetDefaultBranch(ctx, "nonexistent-org/test")
 	require.Error(t, err)
 	require.Zero(t, got)
 }

@@ -12,7 +12,6 @@ import (
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/vcs"
-	"github.com/leg100/otf/internal/vcsprovider"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -83,8 +82,8 @@ func TestGetModule(t *testing.T) {
 
 func TestNewModule(t *testing.T) {
 	h := newTestWebHandlers(t, withVCSProviders(
-		&vcsprovider.VCSProvider{},
-		&vcsprovider.VCSProvider{},
+		&vcs.Provider{},
+		&vcs.Provider{},
 	))
 
 	q := "/?organization_name=acme-corp"
@@ -98,11 +97,15 @@ func TestNewModule(t *testing.T) {
 
 func TestConnect(t *testing.T) {
 	h := newTestWebHandlers(t,
-		withVCSProviders(&vcsprovider.VCSProvider{}),
-		withRepos(
-			vcs.NewTestModuleRepo("aws", "vpc"),
-			vcs.NewTestModuleRepo("aws", "s3"),
-		),
+		withVCSProvider(&vcs.Provider{
+			Client: &fakeModulesCloudClient{
+				repos: []string{
+					vcs.NewTestModuleRepo("aws", "vpc"),
+					vcs.NewTestModuleRepo("aws", "s3"),
+				},
+			},
+		}),
+		withRepos(),
 	)
 
 	q := "/?organization_name=acme-corp&vcs_provider_id=vcs-123"
@@ -171,7 +174,13 @@ func withTarball(tarball []byte) testWebOption {
 	}
 }
 
-func withVCSProviders(vcsprovs ...*vcsprovider.VCSProvider) testWebOption {
+func withVCSProvider(vcsprov *vcs.Provider) testWebOption {
+	return func(svc *fakeService) {
+		svc.vcsprov = vcsprov
+	}
+}
+
+func withVCSProviders(vcsprovs ...*vcs.Provider) testWebOption {
 	return func(svc *fakeService) {
 		svc.vcsprovs = vcsprovs
 	}
