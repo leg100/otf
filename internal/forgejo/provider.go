@@ -6,7 +6,7 @@ import (
 	"github.com/leg100/otf/internal/vcs"
 )
 
-const Kind vcs.Kind = "forgejo"
+const KindID vcs.KindID = "forgejo"
 
 type Provider struct {
 	Hostname            string
@@ -14,14 +14,15 @@ type Provider struct {
 }
 
 func (p *Provider) Register(vcsService *vcs.Service) {
-	vcsService.RegisterKind(vcs.ProviderKind{
-		Kind: Kind,
+	vcsService.RegisterKind(vcs.Kind{
+		ID:   KindID,
 		Name: "Forgejo",
 		Icon: Icon(),
 		TokenKind: &vcs.TokenKind{
 			Description: tokenDescription(p.Hostname),
 		},
-		Hostname: p.Hostname,
+		Hostname:     p.Hostname,
+		EventHandler: HandleEvent,
 		NewClient: func(ctx context.Context, cfg vcs.Config) (vcs.Client, error) {
 			return NewTokenClient(vcs.NewTokenClientOptions{
 				Token:               *cfg.Token,

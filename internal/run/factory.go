@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/a-h/templ"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/engine"
@@ -39,6 +40,7 @@ type (
 		Get(ctx context.Context, id resource.TfeID) (*configversion.ConfigurationVersion, error)
 		GetLatest(ctx context.Context, workspaceID resource.TfeID) (*configversion.ConfigurationVersion, error)
 		UploadConfig(ctx context.Context, id resource.TfeID, config []byte) error
+		GetSourceIcon(source configversion.Source) templ.Component
 	}
 
 	factoryVCSClient interface {
@@ -110,8 +112,10 @@ func (f *factory) NewRun(ctx context.Context, workspaceID resource.TfeID, opts C
 	run.updateStatus(runstatus.Pending, opts.now)
 
 	if run.Source == "" {
-		run.Source = SourceAPI
+		run.Source = configversion.SourceAPI
 	}
+	run.SourceIcon = f.configs.GetSourceIcon(run.Source)
+
 	if opts.TerraformVersion != nil {
 		run.EngineVersion = *opts.TerraformVersion
 	}

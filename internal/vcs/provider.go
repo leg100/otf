@@ -19,7 +19,7 @@ type (
 		Name         string
 		CreatedAt    time.Time
 		Organization organization.Name
-		Kind         ProviderKind
+		Kind         Kind
 		// Config for constructing a client
 		Config
 		// Client is the actual client for itneracting with the VCS host.
@@ -28,13 +28,13 @@ type (
 
 	// factory produces providers
 	factory struct {
-		kinds map[Kind]ProviderKind
+		kinds *kindDB
 	}
 
 	CreateOptions struct {
 		Organization organization.Name `schema:"organization_name,required"`
 		Name         string
-		Kind         Kind
+		KindID       KindID
 		Token        *string
 		InstallID    *int64
 	}
@@ -51,9 +51,9 @@ type (
 )
 
 func (f *factory) newProvider(ctx context.Context, opts CreateOptions) (*Provider, error) {
-	kind, ok := f.kinds[opts.Kind]
-	if !ok {
-		return nil, errors.New("provider kind not found")
+	kind, err := f.kinds.GetKind(opts.KindID)
+	if err != nil {
+		return nil, err
 	}
 	provider := &Provider{
 		ID:           resource.NewTfeID(resource.VCSProviderKind),

@@ -7,11 +7,52 @@ import (
 	"github.com/leg100/otf/internal/vcs"
 )
 
+const (
+	TokenKind vcs.KindID = "github-token"
+	AppKind   vcs.KindID = "github-app"
+)
+
 type provider struct {
 	db                  *pgdb
 	hostname            string
 	service             *Service
 	skipTLSVerification bool
+}
+
+func registerProviders(
+	svc *Service,
+	vcsService *vcs.Service,
+	hostname string,
+	skipTLSVerification bool,
+) {
+	provider := &provider{
+		service:             svc,
+		db:                  svc.db,
+		hostname:            hostname,
+		skipTLSVerification: skipTLSVerification,
+	}
+	vcsService.RegisterKind(vcs.Kind{
+		ID:               AppKind,
+		Name:             "GitHub (App)",
+		Icon:             Icon(),
+		Hostname:         hostname,
+		InstallationKind: provider,
+		NewClient:        provider.NewClient,
+		// Github apps don't need webhooks on repositories.
+		SkipRepohook: true,
+	})
+	vcsService.RegisterKind(vcs.Kind{
+		ID:       TokenKind,
+		Name:     "GitHub (Token)",
+		Icon:     Icon(),
+		Hostname: hostname,
+		TokenKind: &vcs.TokenKind{
+			Description: tokenDescription(hostname),
+		},
+		NewClient: provider.NewClient,
+		// Github token kind vcs providers can be created via the TFE API.
+		TFEServiceProvider: vcs.ServiceProviderGithub,
+	})
 }
 
 func (p *provider) NewClient(ctx context.Context, cfg vcs.Config) (vcs.Client, error) {

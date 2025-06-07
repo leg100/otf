@@ -158,7 +158,7 @@ type hookModel struct {
 	VCSProviderID resource.TfeID `db:"vcs_provider_id"`
 	Secret        string         `db:"secret"`
 	RepoPath      string         `db:"repo_path"`
-	VCSKind       vcs.Kind       `db:"vcs_kind"`
+	VCSKind       vcs.KindID     `db:"vcs_kind"`
 }
 
 // fromRow creates a hook from a database row

@@ -24,10 +24,10 @@ type (
 		cloudID       *string   // cloud's hook ID; populated following synchronisation
 		vcsProviderID resource.TfeID
 
-		secret   string   // secret token
-		repoPath string   // repo identifier: <repo_owner>/<repo_name>
-		cloud    vcs.Kind // origin of events
-		endpoint string   // OTF URL that receives events
+		secret   string     // secret token
+		repoPath string     // repo identifier: <repo_owner>/<repo_name>
+		cloud    vcs.KindID // origin of events
+		endpoint string     // OTF URL that receives events
 	}
 
 	newRepohookOptions struct {
@@ -35,7 +35,7 @@ type (
 		vcsProviderID resource.TfeID
 		secret        *string
 		repoPath      string
-		cloud         vcs.Kind
+		cloud         vcs.KindID
 		cloudID       *string // cloud's webhook id
 
 		// for building endpoint URL

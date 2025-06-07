@@ -77,7 +77,7 @@ func (a *tfe) createRun(w http.ResponseWriter, r *http.Request) {
 		TargetAddrs:      params.TargetAddrs,
 		ReplaceAddrs:     params.ReplaceAddrs,
 		PlanOnly:         params.PlanOnly,
-		Source:           SourceAPI,
+		Source:           configversion.SourceAPI,
 		AllowEmptyApply:  params.AllowEmptyApply,
 		TerraformVersion: params.TerraformVersion,
 	}
@@ -85,7 +85,7 @@ func (a *tfe) createRun(w http.ResponseWriter, r *http.Request) {
 		opts.ConfigurationVersionID = &params.ConfigurationVersion.ID
 	}
 	if tfeapi.IsTerraformCLI(r) {
-		opts.Source = SourceTerraform
+		opts.Source = configversion.SourceTerraform
 	}
 	opts.Variables = make([]Variable, len(params.Variables))
 	for i, from := range params.Variables {
@@ -137,7 +137,7 @@ func (a *tfe) listRuns(w http.ResponseWriter, r *http.Request) {
 	// convert comma-separated list of statuses to []RunStatus
 	statuses := internal.FromStringCSV[runstatus.Status](params.Status)
 	// convert comma-separated list of sources to []RunSource
-	sources := internal.FromStringCSV[Source](params.Source)
+	sources := internal.FromStringCSV[configversion.Source](params.Source)
 	// split operations CSV
 	operations := internal.SplitCSV(params.Operation)
 	var planOnly *bool

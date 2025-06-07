@@ -2,7 +2,6 @@ package vcs
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -15,7 +14,7 @@ import (
 type pgdb struct {
 	// provides access to generated SQL queries
 	*sql.DB
-	kinds map[Kind]ProviderKind
+	kinds *kindDB
 }
 
 func (db *pgdb) create(ctx context.Context, provider *Provider) error {
@@ -149,7 +148,7 @@ func (db *pgdb) scan(ctx context.Context) func(row pgx.CollectableRow) (*Provide
 			Token               *string
 			CreatedAt           time.Time `db:"created_at"`
 			Name                string
-			VCSKind             Kind              `db:"vcs_kind"`
+			VCSKind             KindID            `db:"vcs_kind"`
 			OrganizationName    organization.Name `db:"organization_name"`
 			InstallAppID        *int64            `db:"install_app_id"`
 			InstallID           *int64            `db:"install_id"`
@@ -172,9 +171,9 @@ func (db *pgdb) scan(ctx context.Context) func(row pgx.CollectableRow) (*Provide
 				Organization: m.InstallOrganization,
 			}
 		}
-		kind, ok := db.kinds[m.VCSKind]
-		if !ok {
-			return nil, errors.New("kind not found")
+		kind, err := db.kinds.GetKind(m.VCSKind)
+		if err != nil {
+			return nil, err
 		}
 		client, err := kind.NewClient(ctx, cfg)
 		if err != nil {

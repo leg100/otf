@@ -21,7 +21,8 @@ import (
 
 // pgdb is a database of runs on postgres
 type pgdb struct {
-	*sql.DB // provides access to generated SQL queries
+	*sql.DB       // provides access to generated SQL queries
+	configService *configversion.Service
 }
 
 // CreateRun persists a Run to the DB.
@@ -215,7 +216,7 @@ LEFT JOIN (
 WHERE runs.run_id = $1
 FOR UPDATE OF runs, plans, applies
 `, runID)
-			run, err := sql.CollectOneRow(row, scan)
+			run, err := sql.CollectOneRow(row, db.scan)
 			if err != nil {
 				return nil, err
 			}
@@ -469,7 +470,7 @@ OFFSET $10::int
 		sql.GetLimit(opts.PageOptions),
 		sql.GetOffset(opts.PageOptions),
 	)
-	items, err := sql.CollectRows(rows, scan)
+	items, err := sql.CollectRows(rows, db.scan)
 	if err != nil {
 		return nil, fmt.Errorf("querying runs: %w", err)
 	}
@@ -582,7 +583,7 @@ LEFT JOIN (
 WHERE runs.run_id = $1
 `,
 		runID)
-	return sql.CollectOneRow(rows, scan)
+	return sql.CollectOneRow(rows, db.scan)
 }
 
 // SetPlanFile writes a plan file to the db
@@ -678,7 +679,7 @@ INSERT INTO phase_status_timestamps (
 	return err
 }
 
-func scan(row pgx.CollectableRow) (*Run, error) {
+func (db *pgdb) scan(row pgx.CollectableRow) (*Run, error) {
 	type (
 		statusTimestampModel struct {
 			RunID     resource.TfeID `db:"run_id"`
@@ -712,7 +713,7 @@ func scan(row pgx.CollectableRow) (*Run, error) {
 			AllowEmptyApply        bool                                  `db:"allow_empty_apply"`
 			AutoApply              bool                                  `db:"auto_apply"`
 			PlanOnly               bool                                  `db:"plan_only"`
-			Source                 Source                                `db:"source"`
+			Source                 configversion.Source                  `db:"source"`
 			Status                 runstatus.Status                      `db:"status"`
 			PlanStatus             PhaseStatus                           `db:"plan_status"`
 			ApplyStatus            PhaseStatus                           `db:"apply_status"`
@@ -753,6 +754,7 @@ func scan(row pgx.CollectableRow) (*Run, error) {
 		AutoApply:              m.AutoApply,
 		PlanOnly:               m.PlanOnly,
 		Source:                 m.Source,
+		SourceIcon:             db.configService.GetSourceIcon(m.Source),
 		Status:                 m.Status,
 		WorkspaceID:            m.WorkspaceID,
 		ConfigurationVersionID: m.ConfigurationVersionID,

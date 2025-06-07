@@ -6,7 +6,7 @@ import (
 	"github.com/leg100/otf/internal/vcs"
 )
 
-const Kind vcs.Kind = "gitlab"
+const KindID vcs.KindID = "gitlab"
 
 type Provider struct {
 	Hostname            string
@@ -14,8 +14,8 @@ type Provider struct {
 }
 
 func (p *Provider) Register(vcsService *vcs.Service) {
-	vcsService.RegisterKind(vcs.ProviderKind{
-		Kind: Kind,
+	vcsService.RegisterKind(vcs.Kind{
+		ID:   KindID,
 		Name: "GitLab",
 		Icon: Icon(),
 		TokenKind: &vcs.TokenKind{

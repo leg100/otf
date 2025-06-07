@@ -77,7 +77,7 @@ func (s *Service) CreateRepohook(ctx context.Context, opts CreateRepohookOptions
 	}
 	hook, err := newRepohook(newRepohookOptions{
 		repoPath:        opts.RepoPath,
-		cloud:           vcsProvider.Kind.Kind,
+		cloud:           vcsProvider.Kind.ID,
 		vcsProviderID:   vcsProvider.ID,
 		HostnameService: s.HostnameService,
 	})
@@ -102,7 +102,7 @@ func (s *Service) CreateRepohook(ctx context.Context, opts CreateRepohookOptions
 	return hook.id, nil
 }
 
-func (s *Service) RegisterCloudHandler(kind vcs.Kind, h EventUnmarshaler) {
+func (s *Service) RegisterCloudHandler(kind vcs.KindID, h EventUnmarshaler) {
 	s.handlers.cloudHandlers.Set(kind, h)
 }
 

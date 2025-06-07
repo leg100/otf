@@ -17,6 +17,7 @@ type (
 	Service struct {
 		logr.Logger
 		*authz.Authorizer
+		*sourceIconDB
 
 		db     *pgdb
 		cache  internal.Cache
@@ -39,8 +40,9 @@ type (
 
 func NewService(opts Options) *Service {
 	svc := Service{
-		Logger:     opts.Logger,
-		Authorizer: opts.Authorizer,
+		Logger:       opts.Logger,
+		Authorizer:   opts.Authorizer,
+		sourceIconDB: newSourceIconDB(),
 	}
 	svc.db = &pgdb{opts.DB}
 	svc.cache = opts.Cache

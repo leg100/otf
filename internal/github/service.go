@@ -54,33 +54,8 @@ func NewService(opts Options) *Service {
 		GithubSkipTLS:   opts.SkipTLSVerification,
 		svc:             &svc,
 	}
-	provider := provider{
-		service:             &svc,
-		db:                  svc.db,
-		hostname:            opts.GithubHostname,
-		skipTLSVerification: opts.SkipTLSVerification,
-	}
-	// Register providers
-	opts.VCSService.RegisterKind(vcs.ProviderKind{
-		Kind:             GithubAppKind,
-		Name:             "GitHub (App)",
-		Icon:             Icon(),
-		Hostname:         opts.GithubHostname,
-		InstallationKind: &provider,
-		NewClient:        provider.NewClient,
-		// Github apps don't need webhooks on repositories.
-		SkipRepohook: true,
-	})
-	opts.VCSService.RegisterKind(vcs.ProviderKind{
-		Kind:     GithubTokenKind,
-		Name:     "GitHub (Token)",
-		Icon:     Icon(),
-		Hostname: opts.GithubHostname,
-		TokenKind: &vcs.TokenKind{
-			Description: tokenDescription(opts.GithubHostname),
-		},
-		NewClient: provider.NewClient,
-	})
+	registerProviders(&svc, opts.VCSService, opts.GithubHostname, opts.SkipTLSVerification)
+
 	// delete github app vcs providers when the app is uninstalled
 	opts.VCSEventBroker.Subscribe(func(event vcs.Event) {
 		// ignore events other than uninstallation events

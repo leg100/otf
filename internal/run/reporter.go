@@ -79,7 +79,7 @@ func (r *Reporter) Start(ctx context.Context) error {
 
 func (r *Reporter) handleRun(ctx context.Context, event *Event) error {
 	// Skip runs triggered via the UI or API
-	if event.Source == SourceUI || event.Source == SourceAPI {
+	if event.Source == configversion.SourceUI || event.Source == configversion.SourceAPI {
 		return nil
 	}
 

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/resource"
 )
 
@@ -52,10 +53,8 @@ type (
 	}
 
 	EventPayload struct {
-		RepoPath string
-
-		VCSKind Kind
-
+		RepoPath      string
+		Source        configversion.Source
 		Type          EventType
 		Action        Action
 		Tag           string
@@ -82,7 +81,7 @@ type (
 )
 
 func (e EventPayload) Validate() error {
-	if e.VCSKind == "" {
+	if e.Source == "" {
 		return errors.New("event missing vcs kind")
 	}
 	if e.Type == "" {

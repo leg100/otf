@@ -184,9 +184,9 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		GithubAppService:    githubAppService,
 		VCSEventBroker:      vcsEventBroker,
 	})
-	repoService.RegisterCloudHandler(vcs.ForgejoKind, forgejo.HandleEvent)
-	repoService.RegisterCloudHandler(vcs.GithubTokenKind, github.HandleEvent)
-	repoService.RegisterCloudHandler(vcs.GitlabKind, gitlab.HandleEvent)
+	repoService.RegisterCloudHandler(forgejo.KindID, forgejo.HandleEvent)
+	repoService.RegisterCloudHandler(github.TokenKind, github.HandleEvent)
+	repoService.RegisterCloudHandler(gitlab.KindID, gitlab.HandleEvent)
 
 	connectionService := connections.NewService(ctx, connections.Options{
 		Logger:             logger,

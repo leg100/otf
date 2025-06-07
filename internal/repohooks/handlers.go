@@ -24,10 +24,12 @@ type (
 	handlers struct {
 		logr.Logger
 		vcs.Publisher
+		*vcs.Service
 
-		cloudHandlers *internal.SafeMap[vcs.Kind, EventUnmarshaler]
+		cloudHandlers *internal.SafeMap[vcs.KindID, EventUnmarshaler]
 
 		handlerDB
+		vcsKindDB
 	}
 
 	// EventUnmarshaler validates the request using the secret and unmarshals
@@ -40,6 +42,10 @@ type (
 	handlerDB interface {
 		getHookByID(context.Context, uuid.UUID) (*hook, error)
 	}
+
+	vcsKindDB interface {
+		GetKind(id vcs.KindID) (vcs.Kind, error)
+	}
 )
 
 func newHandler(logger logr.Logger, publisher vcs.Publisher, db handlerDB) *handlers {
@@ -47,7 +53,7 @@ func newHandler(logger logr.Logger, publisher vcs.Publisher, db handlerDB) *hand
 		Logger:        logger,
 		Publisher:     publisher,
 		handlerDB:     db,
-		cloudHandlers: internal.NewSafeMap[vcs.Kind, EventUnmarshaler](),
+		cloudHandlers: internal.NewSafeMap[vcs.KindID, EventUnmarshaler](),
 	}
 }
 

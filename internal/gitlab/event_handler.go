@@ -10,9 +10,12 @@ import (
 	"strings"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/vcs"
 	gitlab "gitlab.com/gitlab-org/api/client-go"
 )
+
+const Source configversion.Source = "gitlab"
 
 func HandleEvent(r *http.Request, secret string) (*vcs.EventPayload, error) {
 	if token := r.Header.Get("X-Gitlab-Token"); token != secret {
@@ -38,7 +41,7 @@ func HandleEvent(r *http.Request, secret string) (*vcs.EventPayload, error) {
 	}
 
 	// convert gitlab event to an OTF event
-	to := vcs.EventPayload{VCSKind: vcs.GitlabKind}
+	to := vcs.EventPayload{Source: Source}
 	switch event := rawEvent.(type) {
 	case *gitlab.PushEvent:
 		to.Type = vcs.EventTypePush

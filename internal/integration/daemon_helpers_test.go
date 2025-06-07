@@ -219,8 +219,8 @@ func (s *testDaemon) createVCSProvider(t *testing.T, ctx context.Context, org *o
 		Organization: org.Name,
 		// tests require a legitimate cloud name to avoid invalid foreign
 		// key error upon insert/update
-		Kind:  vcs.GithubTokenKind,
-		Token: internal.String(uuid.NewString()),
+		KindID: vcs.GithubTokenKind,
+		Token:  internal.String(uuid.NewString()),
 	})
 	require.NoError(t, err)
 	return provider

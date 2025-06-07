@@ -211,18 +211,10 @@ func (s *Spawner) handleWithError(logger logr.Logger, event vcs.Event) error {
 				SenderHTMLURL:     event.SenderHTMLURL,
 				Tag:               event.Tag,
 			},
+			Source: event.Source,
 		}
-		runOpts := CreateOptions{}
-		switch event.VCSKind {
-		case vcs.GithubTokenKind:
-			cvOpts.Source = configversion.SourceGithub
-			runOpts.Source = SourceGithub
-		case vcs.GitlabKind:
-			cvOpts.Source = configversion.SourceGitlab
-			runOpts.Source = SourceGitlab
-		case vcs.ForgejoKind:
-			cvOpts.Source = configversion.SourceForgejo
-			runOpts.Source = SourceForgejo
+		runOpts := CreateOptions{
+			Source: event.Source,
 		}
 		cv, err := s.configs.Create(ctx, ws.ID, cvOpts)
 		if err != nil {

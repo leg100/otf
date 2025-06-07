@@ -2,7 +2,6 @@ package vcs
 
 import (
 	"context"
-	"maps"
 	"net/http"
 	"strings"
 
@@ -20,8 +19,7 @@ import (
 type webHandlers struct {
 	*internal.HostnameService
 
-	client  webClient
-	schemas map[Kind]ProviderKind
+	client webClient
 }
 
 type webClient interface {
@@ -30,6 +28,8 @@ type webClient interface {
 	Get(ctx context.Context, id resource.TfeID) (*Provider, error)
 	List(ctx context.Context, organization organization.Name) ([]*Provider, error)
 	Delete(ctx context.Context, id resource.TfeID) (*Provider, error)
+	GetKind(id KindID) (Kind, error)
+	GetKindIDs() []KindID
 }
 
 func (h *webHandlers) addHandlers(r *mux.Router) {
@@ -46,15 +46,15 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 func (h *webHandlers) new(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		Organization organization.Name `schema:"organization_name,required"`
-		Kind         Kind              `schema:"kind,required"`
+		KindID       KindID            `schema:"kind,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	kind, ok := h.schemas[params.Kind]
-	if !ok {
+	kind, err := h.client.GetKind(params.KindID)
+	if err != nil {
 		html.Error(w, "schema not found", http.StatusUnprocessableEntity)
 		return
 	}
@@ -138,7 +138,7 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 	props := listProps{
 		organization: params.Organization,
 		providers:    resource.NewPage(providers, params.PageOptions, nil),
-		kinds:        maps.Keys(h.schemas),
+		kinds:        h.client.GetKindIDs(),
 	}
 	html.Render(list(props), w, r)
 }

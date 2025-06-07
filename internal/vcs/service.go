@@ -2,6 +2,7 @@ package vcs
 
 import (
 	"context"
+	"sync"
 
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
@@ -22,10 +23,12 @@ type (
 		web               *webHandlers
 		api               *tfe
 		beforeDeleteHooks []func(context.Context, *Provider) error
-		kinds             map[Kind]ProviderKind
+
+		mu sync.Mutex
 
 		*internal.HostnameService
 		*factory
+		*kindDB
 	}
 
 	Options struct {
@@ -40,8 +43,8 @@ type (
 )
 
 func NewService(opts Options) *Service {
-	kinds := make(map[Kind]ProviderKind)
-	factory := factory{kinds: kinds}
+	kindDB := newKindDB()
+	factory := factory{kinds: kindDB}
 	svc := Service{
 		Logger:          opts.Logger,
 		HostnameService: opts.HostnameService,
@@ -49,9 +52,9 @@ func NewService(opts Options) *Service {
 		factory:         &factory,
 		db: &pgdb{
 			DB:    opts.DB,
-			kinds: kinds,
+			kinds: kindDB,
 		},
-		kinds: kinds,
+		kindDB: kindDB,
 	}
 	svc.web = &webHandlers{
 		HostnameService: opts.HostnameService,
@@ -62,10 +65,6 @@ func NewService(opts Options) *Service {
 		Responder: opts.Responder,
 	}
 	return &svc
-}
-
-func (a *Service) RegisterKind(kind ProviderKind) {
-	a.kinds[kind.Kind] = kind
 }
 
 func (a *Service) AddHandlers(r *mux.Router) {

@@ -22,14 +22,14 @@ func Test_newHook(t *testing.T) {
 			name: "default",
 			opts: newRepohookOptions{
 				id:              &id,
-				cloud:           vcs.GithubTokenKind,
+				cloud:           vcs.KindID("test"),
 				secret:          internal.String("top-secret"),
 				HostnameService: internal.NewHostnameService("fakehost.org"),
 			},
 			want: &hook{
 				id:       id,
 				secret:   "top-secret",
-				cloud:    vcs.GithubTokenKind,
+				cloud:    vcs.KindID("test"),
 				endpoint: "https://fakehost.org/webhooks/vcs/" + id.String(),
 			},
 		},

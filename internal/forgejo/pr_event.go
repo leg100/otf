@@ -5,8 +5,11 @@ import (
 	"fmt"
 
 	"codeberg.org/mvdkleijn/forgejo-sdk/forgejo/v2"
+	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/vcs"
 )
+
+const Source configversion.Source = "forgejo"
 
 type PullRequestEvent struct {
 	Action      string              `json:"action"`
@@ -41,7 +44,7 @@ func handlePullRequestEvent(b []byte) (*vcs.EventPayload, error) {
 	}
 
 	// convert forgejo push event to an OTF event
-	to := vcs.EventPayload{VCSKind: vcs.ForgejoKind, Type: vcs.EventTypePull}
+	to := vcs.EventPayload{Source: Source, Type: vcs.EventTypePull}
 	to.RepoPath = event.Repository.FullName
 	to.Branch = event.PullRequest.Head.Name
 	to.CommitSHA = event.CommitID
