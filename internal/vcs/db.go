@@ -114,11 +114,6 @@ WHERE v.vcs_provider_id = $1
 	return sql.CollectOneRow(rows, db.scan(ctx))
 }
 
-func (db *pgdb) list(ctx context.Context) ([]*Provider, error) {
-	rows := db.Query(ctx, `SELECT * FROM vcs_providers`)
-	return sql.CollectRows(rows, db.scan(ctx))
-}
-
 func (db *pgdb) listByOrganization(ctx context.Context, organization organization.Name) ([]*Provider, error) {
 	rows := db.Query(ctx, `
 SELECT *
@@ -128,11 +123,11 @@ WHERE v.organization_name = $1
 	return sql.CollectRows(rows, db.scan(ctx))
 }
 
-func (db *pgdb) listByGithubAppInstall(ctx context.Context, installID int64) ([]*Provider, error) {
+func (db *pgdb) listByInstall(ctx context.Context, installID int64) ([]*Provider, error) {
 	rows := db.Query(ctx, `
 SELECT *
 FROM vcs_providers v
-WHERE gi.install_id = $1
+WHERE v.install_id = $1
 `, installID)
 	return sql.CollectRows(rows, db.scan(ctx))
 }

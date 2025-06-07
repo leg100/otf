@@ -36,6 +36,7 @@ type (
 		SkipTLSVerification bool
 		Authorizer          *authz.Authorizer
 		VCSService          *vcs.Service
+		VCSEventBroker      *vcs.Broker
 	}
 )
 
@@ -79,6 +80,27 @@ func NewService(opts Options) *Service {
 			Description: tokenDescription(opts.GithubHostname),
 		},
 		NewClient: provider.NewClient,
+	})
+	// delete github app vcs providers when the app is uninstalled
+	opts.VCSEventBroker.Subscribe(func(event vcs.Event) {
+		// ignore events other than uninstallation events
+		if event.Type != vcs.EventTypeInstallation || event.Action != vcs.ActionDeleted {
+			return
+		}
+		// create user with unlimited permissions
+		user := &authz.Superuser{Username: "vcs-provider-service"}
+		ctx := authz.AddSubjectToContext(context.Background(), user)
+		// list all vcsproviders using the app install
+		providers, err := opts.VCSService.ListByInstall(ctx, *event.GithubAppInstallID)
+		if err != nil {
+			return
+		}
+		// and delete them
+		for _, prov := range providers {
+			if _, err = opts.VCSService.Delete(ctx, prov.ID); err != nil {
+				return
+			}
+		}
 	})
 	return &svc
 }

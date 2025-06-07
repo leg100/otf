@@ -18,7 +18,6 @@ import (
 	"github.com/leg100/otf/internal/disco"
 	"github.com/leg100/otf/internal/engine"
 	"github.com/leg100/otf/internal/forgejo"
-	"github.com/leg100/otf/internal/ghapphandler"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/gitlab"
 	"github.com/leg100/otf/internal/http"
@@ -154,8 +153,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		return nil, err
 	}
 
-	vcsEventBroker := &vcs.Broker{}
-
 	vcsService := vcs.NewService(vcs.Options{
 		Logger:              logger,
 		Authorizer:          authorizer,
@@ -163,8 +160,9 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Responder:           responder,
 		HostnameService:     hostnameService,
 		SkipTLSVerification: cfg.SkipTLSVerification,
-		Subscriber:          vcsEventBroker,
 	})
+
+	vcsEventBroker := &vcs.Broker{}
 
 	githubAppService := github.NewService(github.Options{
 		Logger:              logger,
@@ -174,6 +172,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		VCSService:          vcsService,
 		GithubHostname:      cfg.GithubHostname,
 		SkipTLSVerification: cfg.SkipTLSVerification,
+		VCSEventBroker:      vcsEventBroker,
 	})
 
 	repoService := repohooks.NewService(ctx, repohooks.Options{
@@ -383,14 +382,14 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		githubAppService,
 		runnerService,
 		disco.Service{},
-		&ghapphandler.Handler{
-			Logger:       logger,
-			Publisher:    vcsEventBroker,
-			GithubApps:   githubAppService,
-			VCSProviders: vcsService,
-		},
 		&api.Handlers{},
 		&tfeapi.Handlers{},
+		&github.AppEventHandler{
+			Logger:     logger,
+			Publisher:  vcsEventBroker,
+			GithubApps: githubAppService,
+			VCSService: vcsService,
+		},
 	}
 
 	return &Daemon{

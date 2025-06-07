@@ -33,7 +33,6 @@ type (
 		*sql.DB
 		*tfeapi.Responder
 		logr.Logger
-		Subscriber
 
 		SkipTLSVerification bool
 		Authorizer          *authz.Authorizer
@@ -62,27 +61,6 @@ func NewService(opts Options) *Service {
 		Service:   &svc,
 		Responder: opts.Responder,
 	}
-	// delete vcs providers when a github app is uninstalled
-	opts.Subscribe(func(event Event) {
-		// ignore events other than uninstallation events
-		if event.Type != EventTypeInstallation || event.Action != ActionDeleted {
-			return
-		}
-		// create user with unlimited permissions
-		user := &authz.Superuser{Username: "vcs-provider-service"}
-		ctx := authz.AddSubjectToContext(context.Background(), user)
-		// list all vcsproviders using the app install
-		providers, err := svc.ListVCSProvidersByGithubAppInstall(ctx, *event.GithubAppInstallID)
-		if err != nil {
-			return
-		}
-		// and delete them
-		for _, prov := range providers {
-			if _, err = svc.Delete(ctx, prov.ID); err != nil {
-				return
-			}
-		}
-	})
 	return &svc
 }
 
@@ -156,19 +134,17 @@ func (a *Service) List(ctx context.Context, organization organization.Name) ([]*
 	return providers, nil
 }
 
-// ListVCSProvidersByGithubAppInstall is unauthenticated: only for internal use.
-func (a *Service) ListVCSProvidersByGithubAppInstall(ctx context.Context, installID int64) ([]*Provider, error) {
+func (a *Service) ListByInstall(ctx context.Context, installID int64) ([]*Provider, error) {
 	subject, err := authz.SubjectFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
-
-	providers, err := a.db.listByGithubAppInstall(ctx, installID)
+	providers, err := a.db.listByInstall(ctx, installID)
 	if err != nil {
-		a.Error(err, "listing github app installation vcs providers", "subject", subject, "install", installID)
+		a.Error(err, "listing vcs providers by install", "subject", subject, "install_id", installID)
 		return nil, err
 	}
-	a.V(9).Info("listed github app installation vcs providers", "count", len(providers), "subject", subject, "install", installID)
+	a.V(9).Info("listed vcs providers by install", "count", len(providers), "subject", subject, "install_id", installID)
 	return providers, nil
 }
 
