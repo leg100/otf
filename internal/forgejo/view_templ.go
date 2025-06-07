@@ -64,7 +64,7 @@ func tokenDescription(hostname string) templ.Component {
 		u := &url.URL{
 			Scheme: "https",
 			Host:   hostname,
-			Path:   "/settings/tokens",
+			Path:   "/user/settings/applications",
 		}
 		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "Create a <a class=\"link\" href=\"")
 		if templ_7745c5c3_Err != nil {
@@ -75,7 +75,7 @@ func tokenDescription(hostname string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "\">personal access token</a> with the <span class=\"font-bold\">repo</span> scope.")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "\">personal access token</a> with the permissions <span class=\"bold\">repository read and write</span> and <span class=\"bold\">user read</span>.")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
