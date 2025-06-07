@@ -9,7 +9,6 @@ import (
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/semver"
 	"github.com/leg100/otf/internal/vcs"
-	"github.com/leg100/otf/internal/vcsprovider"
 )
 
 type (
@@ -18,7 +17,7 @@ type (
 		logr.Logger
 
 		modules      *Service
-		vcsproviders *vcsprovider.Service
+		vcsproviders *vcs.Service
 	}
 )
 

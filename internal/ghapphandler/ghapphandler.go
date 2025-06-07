@@ -10,14 +10,13 @@ import (
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/vcs"
-	"github.com/leg100/otf/internal/vcsprovider"
 )
 
 type Handler struct {
 	logr.Logger
 	vcs.Publisher
 
-	VCSProviders *vcsprovider.Service
+	VCSProviders *vcs.Service
 	GithubApps   *github.Service
 }
 

@@ -354,7 +354,7 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	var provider *vcsprovider.VCSProvider
+	var provider *vcs.Provider
 	if workspace.Connection != nil {
 		provider, err = h.vcsproviders.Get(r.Context(), workspace.Connection.VCSProviderID)
 		if err != nil {

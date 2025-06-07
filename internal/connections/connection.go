@@ -10,7 +10,7 @@ import (
 	"github.com/leg100/otf/internal/repohooks"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/vcsprovider"
+	"github.com/leg100/otf/internal/vcs"
 )
 
 type (
@@ -43,7 +43,7 @@ type (
 		logr.Logger
 		*sql.DB
 
-		VCSProviderService *vcsprovider.Service
+		VCSProviderService *vcs.Service
 		RepoHooksService   *repohooks.Service
 	}
 
@@ -53,7 +53,7 @@ type (
 		*db
 
 		repohooks    *repohooks.Service
-		vcsproviders *vcsprovider.Service
+		vcsproviders *vcs.Service
 	}
 )
 

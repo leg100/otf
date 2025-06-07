@@ -41,19 +41,18 @@ type (
 )
 
 func NewService(opts Options) *Service {
-	factory := factory{
-		skipTLSVerification: opts.SkipTLSVerification,
-	}
+	kinds := make(map[Kind]ProviderKind)
+	factory := factory{kinds: kinds}
 	svc := Service{
 		Logger:          opts.Logger,
 		HostnameService: opts.HostnameService,
 		Authorizer:      opts.Authorizer,
 		factory:         &factory,
 		db: &pgdb{
-			DB:      opts.DB,
-			factory: &factory,
+			DB:    opts.DB,
+			kinds: kinds,
 		},
-		kinds: make(map[Kind]ProviderKind),
+		kinds: kinds,
 	}
 	svc.web = &webHandlers{
 		HostnameService: opts.HostnameService,

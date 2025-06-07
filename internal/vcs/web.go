@@ -53,7 +53,7 @@ func (h *webHandlers) new(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	schema, ok := h.schemas[params.Kind]
+	kind, ok := h.schemas[params.Kind]
 	if !ok {
 		html.Error(w, "schema not found", http.StatusUnprocessableEntity)
 		return
@@ -61,8 +61,7 @@ func (h *webHandlers) new(w http.ResponseWriter, r *http.Request) {
 
 	props := newProviderProps{
 		organization: params.Organization,
-		kind:         params.Kind,
-		schema:       schema,
+		kind:         kind,
 	}
 	html.Render(newProvider(props), w, r)
 }
@@ -161,7 +160,7 @@ func (h *webHandlers) delete(w http.ResponseWriter, r *http.Request) {
 }
 
 func RepoURL(provider *Provider, repo string) templ.SafeURL {
-	b := urlbuilder.New("https", provider.Hostname)
+	b := urlbuilder.New("https", provider.Kind.Hostname)
 	for segment := range strings.SplitSeq(repo, "/") {
 		b.Path(segment)
 	}

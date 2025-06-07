@@ -36,7 +36,7 @@ type (
 		GithubHostname      string
 		SkipTLSVerification bool
 		Authorizer          *authz.Authorizer
-		VCSRegistry         *vcs.Service
+		VCSService          *vcs.Service
 	}
 )
 
@@ -61,15 +61,17 @@ func NewService(opts Options) *Service {
 		skipTLSVerification: opts.SkipTLSVerification,
 	}
 	// Register providers
-	opts.VCSRegistry.RegisterSchema(vcs.GithubAppKind, vcs.ProviderKind{
+	opts.VCSService.RegisterSchema(vcs.GithubAppKind, vcs.ProviderKind{
 		Kind:             GithubAppKind,
 		Name:             "GitHub (App)",
 		Icon:             components.GithubIcon(),
 		Hostname:         opts.GithubHostname,
 		InstallationKind: &provider,
 		NewClient:        provider.NewClient,
+		// Github apps don't need webhooks on repositories.
+		SkipRepohook: true,
 	})
-	opts.VCSRegistry.RegisterSchema(vcs.GithubTokenKind, vcs.ProviderKind{
+	opts.VCSService.RegisterSchema(vcs.GithubTokenKind, vcs.ProviderKind{
 		Kind:     GithubTokenKind,
 		Name:     "GitHub (Token)",
 		Icon:     components.GithubIcon(),

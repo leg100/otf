@@ -23,14 +23,14 @@ type (
 		*handlers     // handles incoming vcs events
 		*synchroniser // synchronise hooks
 
-		vcsproviders *vcsprovider.Service
+		vcsproviders *vcs.Service
 	}
 
 	Options struct {
 		logr.Logger
 
 		OrganizationService *organization.Service
-		VCSProviderService  *vcsprovider.Service
+		VCSProviderService  *vcs.Service
 		GithubAppService    *github.Service
 		VCSEventBroker      *vcs.Broker
 
@@ -73,14 +73,12 @@ func (s *Service) CreateRepohook(ctx context.Context, opts CreateRepohookOptions
 	if err != nil {
 		return uuid.UUID{}, fmt.Errorf("retrieving vcs provider: %w", err)
 	}
-	// TODO: refactor: ProviderKind should state whether it needs a repohook.
-	if vcsProvider.Kind == vcs.GithubAppKind {
-		// github apps don't need a webhook created on each repo.
+	if vcsProvider.Kind.SkipRepohook {
 		return uuid.UUID{}, nil
 	}
 	hook, err := newRepohook(newRepohookOptions{
 		repoPath:        opts.RepoPath,
-		cloud:           vcsProvider.Kind,
+		cloud:           vcsProvider.Kind.Kind,
 		vcsProviderID:   vcsProvider.ID,
 		HostnameService: s.HostnameService,
 	})

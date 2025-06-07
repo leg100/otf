@@ -21,7 +21,6 @@ import (
 	"github.com/leg100/otf/internal/tokens"
 	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/vcs"
-	"github.com/leg100/otf/internal/vcsprovider"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/leg100/surl/v2"
 )
@@ -29,7 +28,7 @@ import (
 type (
 	// Alias services so they don't conflict when nested together in struct
 	ConfigurationVersionService configversion.Service
-	VCSProviderService          vcsprovider.Service
+	VCSProviderService          vcs.Service
 
 	Service struct {
 		logr.Logger
@@ -59,7 +58,7 @@ type (
 		OrganizationService  *organization.Service
 		ConfigVersionService *configversion.Service
 		EngineService        *engine.Service
-		VCSProviderService   *vcsprovider.Service
+		VCSProviderService   *vcs.Service
 		TokensService        *tokens.Service
 		LogsService          *logs.Service
 

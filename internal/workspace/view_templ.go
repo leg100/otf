@@ -5,13 +5,13 @@ package workspace
 
 //lint:file-ignore SA4006 This context is only used if a nested component is present.
 
-import "github.com/a-h/templ"
-import templruntime "github.com/a-h/templ/runtime"
-
 import (
 	"context"
 	"encoding/json"
 	"fmt"
+
+	"github.com/a-h/templ"
+	templruntime "github.com/a-h/templ/runtime"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/connections"
@@ -21,7 +21,7 @@ import (
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/team"
-	"github.com/leg100/otf/internal/vcsprovider"
+	"github.com/leg100/otf/internal/vcs"
 )
 
 func new(organization organization.Name) templ.Component {
@@ -452,7 +452,7 @@ func listActions(organization organization.Name, canCreate bool) templ.Component
 type getProps struct {
 	ws                 *Workspace
 	lockInfo           lockInfo
-	vcsProvider        *vcsprovider.VCSProvider
+	vcsProvider        *vcs.Provider
 	canApply           bool
 	canAddTags         bool
 	canRemoveTags      bool
@@ -620,7 +620,7 @@ func get(props getProps) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = vcsprovider.VCSIcon(props.vcsProvider).Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = props.vcsProvider.Kind.Icon.Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -628,7 +628,7 @@ func get(props getProps) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				var templ_7745c5c3_Var29 templ.SafeURL = vcsprovider.RepoURL(props.vcsProvider, props.ws.Connection.Repo)
+				var templ_7745c5c3_Var29 templ.SafeURL = vcs.RepoURL(props.vcsProvider, props.ws.Connection.Repo)
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var29)))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -967,7 +967,7 @@ type editProps struct {
 	assigned           []perm
 	unassigned         []*team.Team
 	roles              []authz.Role
-	vcsProvider        *vcsprovider.VCSProvider
+	vcsProvider        *vcs.Provider
 	engines            engineSelectorProps
 	unassignedTags     []string
 	canUpdateWorkspace bool
@@ -2095,7 +2095,7 @@ func editPermissions(props editProps) templ.Component {
 	})
 }
 
-func listVCSProviders(ws *Workspace, providers []*vcsprovider.VCSProvider) templ.Component {
+func listVCSProviders(ws *Workspace, providers []*vcs.Provider) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -2156,7 +2156,7 @@ func listVCSProviders(ws *Workspace, providers []*vcsprovider.VCSProvider) templ
 				return templ_7745c5c3_Err
 			}
 			templ_7745c5c3_Err = components.UnpaginatedTable(
-				&vcsprovider.Table{
+				&vcs.Table{
 					Actions: vcsProviderSelector{workspaceID: ws.ID}.action,
 				},
 				providers,

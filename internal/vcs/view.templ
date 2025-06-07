@@ -107,8 +107,7 @@ templ edit(provider *Provider) {
 
 type newProviderProps struct {
 	organization organization.Name
-	kind         Kind
-	schema       ConfigSchema
+	kind         ProviderKind
 }
 
 templ newProvider(props newProviderProps) {
@@ -116,17 +115,16 @@ templ newProvider(props newProviderProps) {
 		Title:        "new vcs provider",
 		Organization: props.organization,
 		Breadcrumbs: []components.Breadcrumb{
-			{Name: "New " + internal.Title(string(props.kind)) + " VCS Provider"},
+			{Name: "New " + props.kind.Name + " VCS Provider"},
 		},
 	}) {
 		<div>
-			Create a { props.kind } VCS provider.
+			Create a { props.kind.Name } VCS provider.
 		</div>
 		@form(formProps{
 			action: paths.CreateVCSProvider(props.organization),
-			schema: props.schema,
-			edit:   false,
 			kind:   props.kind,
+			edit:   false,
 		})
 	}
 }
@@ -152,7 +150,7 @@ templ form(props formProps) {
 			/>
 			<span class="description">An optional display name for your VCS provider.</span>
 		</div>
-		if props.schema.WantsToken {
+		if props.kind.TokenKind != nil {
 			<div class="field">
 				<label for="token">Token</label>
 				<textarea
@@ -166,12 +164,15 @@ templ form(props formProps) {
 						required
 					}
 				></textarea>
+				<span class="description">
+					@props.kind.TokenKind.Description
+				</span>
 			</div>
 		}
 		<!-- User cannot edit installation -->
-		if !props.edit && props.schema.ListInstallations != nil {
+		if !props.edit && props.kind.InstallationKind != nil {
 			{{
-					result, err := props.schema.ListInstallations(ctx)
+					result, err := props.kind.InstallationKind.ListInstallations(ctx)
 					if err != nil {
 						return err
 					}
@@ -196,16 +197,7 @@ templ form(props formProps) {
 			<button class="btn w-32">Update</button>
 		} else {
 			<button class="btn w-32">Create</button>
-			<input type="hidden" name="kind" id="kind" value={ string(props.kind) }/>
+			<input type="hidden" name="kind" id="kind" value={ string(props.kind.Kind) }/>
 		}
 	</form>
-}
-
-templ VCSIcon(provider *Provider) {
-	switch provider.Kind {
-		case GithubTokenKind, GithubAppKind:
-			@components.GithubIcon()
-		case GitlabKind:
-			@components.GitlabIcon()
-	}
 }

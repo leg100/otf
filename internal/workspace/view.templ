@@ -13,7 +13,7 @@ import (
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/team"
-	"github.com/leg100/otf/internal/vcsprovider"
+	"github.com/leg100/otf/internal/vcs"
 )
 
 templ new(organization organization.Name) {
@@ -156,7 +156,7 @@ templ listActions(organization organization.Name, canCreate bool) {
 type getProps struct {
 	ws                 *Workspace
 	lockInfo           lockInfo
-	vcsProvider        *vcsprovider.VCSProvider
+	vcsProvider        *vcs.Provider
 	canApply           bool
 	canAddTags         bool
 	canRemoveTags      bool
@@ -242,10 +242,10 @@ templ get(props getProps) {
 					<div class="flex flex-col gap-2">
 						<h4 class="font-bold text-sm">VCS</h4>
 						<div class="flex gap-2 items-center">
-							@vcsprovider.VCSIcon(props.vcsProvider)
+							@props.vcsProvider.Kind.Icon
 							<a
 								class="text-sm"
-								href={ vcsprovider.RepoURL(props.vcsProvider, props.ws.Connection.Repo) }
+								href={ vcs.RepoURL(props.vcsProvider, props.ws.Connection.Repo) }
 								title="Go to repo homepage"
 							>
 								{ props.ws.Connection.Repo }
@@ -376,7 +376,7 @@ type editProps struct {
 	assigned           []perm
 	unassigned         []*team.Team
 	roles              []authz.Role
-	vcsProvider        *vcsprovider.VCSProvider
+	vcsProvider        vcs.Provider
 	engines            engineSelectorProps
 	unassignedTags     []string
 	canUpdateWorkspace bool
@@ -736,7 +736,7 @@ templ editPermissions(props editProps) {
 	</div>
 }
 
-templ listVCSProviders(ws *Workspace, providers []*vcsprovider.VCSProvider) {
+templ listVCSProviders(ws *Workspace, providers []*vcs.Provider) {
 	{{
 	layoutProps := components.LayoutProps{
 		Title:        "list vcs providers | " + ws.ID.String(),
@@ -752,7 +752,7 @@ templ listVCSProviders(ws *Workspace, providers []*vcsprovider.VCSProvider) {
 		@connections.Steps(connections.ConnectStep)
 		<div>Select a <a class="underline" href={ paths.VCSProviders(ws.Organization) }>VCS provider</a> to connect this workspace to a repository.</div>
 		@components.UnpaginatedTable(
-			&vcsprovider.Table{
+			&vcs.Table{
 				Actions: vcsProviderSelector{workspaceID: ws.ID}.action,
 			},
 			providers,

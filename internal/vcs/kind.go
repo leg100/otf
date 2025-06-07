@@ -35,6 +35,8 @@ type ProviderKind struct {
 	InstallationKind InstallationKind
 	// NewClient constructs a client implementation.
 	NewClient func(context.Context, Config) (Client, error)
+	// SkipRepohook if true skips the creation of a repository-level webhook.
+	SkipRepohook bool
 }
 
 type TokenKind struct {

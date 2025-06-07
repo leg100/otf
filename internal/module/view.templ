@@ -6,6 +6,7 @@ import (
 	"github.com/leg100/otf/internal/http/html/components/paths"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/vcsprovider"
 	"html/template"
 	"slices"
@@ -32,7 +33,7 @@ templ newView(props newViewProps) {
 			Choose a VCS provider that hosts your module source code.
 		</div>
 		@components.UnpaginatedTable(
-			&vcsprovider.Table{Actions: selectVCSProviderAction},
+			&vcs.Table{Actions: selectVCSProviderAction},
 			props.providers,
 			"providers",
 		)
