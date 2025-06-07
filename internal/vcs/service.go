@@ -64,8 +64,8 @@ func NewService(opts Options) *Service {
 	return &svc
 }
 
-func (a *Service) RegisterSchema(kind Kind, schema ProviderKind) {
-	a.kinds[kind] = schema
+func (a *Service) RegisterKind(kind ProviderKind) {
+	a.kinds[kind.Kind] = kind
 }
 
 func (a *Service) AddHandlers(r *mux.Router) {

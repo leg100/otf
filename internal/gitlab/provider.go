@@ -14,7 +14,7 @@ type Provider struct {
 }
 
 func (p *Provider) Register(vcsService *vcs.Service) {
-	vcsService.RegisterSchema(Kind, vcs.ProviderKind{
+	vcsService.RegisterKind(vcs.ProviderKind{
 		Kind: Kind,
 		Name: "GitLab",
 		Icon: Icon(),

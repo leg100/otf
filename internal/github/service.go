@@ -61,7 +61,7 @@ func NewService(opts Options) *Service {
 		skipTLSVerification: opts.SkipTLSVerification,
 	}
 	// Register providers
-	opts.VCSService.RegisterSchema(vcs.GithubAppKind, vcs.ProviderKind{
+	opts.VCSService.RegisterKind(vcs.ProviderKind{
 		Kind:             GithubAppKind,
 		Name:             "GitHub (App)",
 		Icon:             Icon(),
@@ -71,7 +71,7 @@ func NewService(opts Options) *Service {
 		// Github apps don't need webhooks on repositories.
 		SkipRepohook: true,
 	})
-	opts.VCSService.RegisterSchema(vcs.GithubTokenKind, vcs.ProviderKind{
+	opts.VCSService.RegisterKind(vcs.ProviderKind{
 		Kind:     GithubTokenKind,
 		Name:     "GitHub (Token)",
 		Icon:     Icon(),
