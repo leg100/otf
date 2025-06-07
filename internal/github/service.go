@@ -9,7 +9,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
-	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/vcs"
@@ -64,7 +63,7 @@ func NewService(opts Options) *Service {
 	opts.VCSService.RegisterSchema(vcs.GithubAppKind, vcs.ProviderKind{
 		Kind:             GithubAppKind,
 		Name:             "GitHub (App)",
-		Icon:             components.GithubIcon(),
+		Icon:             Icon(),
 		Hostname:         opts.GithubHostname,
 		InstallationKind: &provider,
 		NewClient:        provider.NewClient,
@@ -74,7 +73,7 @@ func NewService(opts Options) *Service {
 	opts.VCSService.RegisterSchema(vcs.GithubTokenKind, vcs.ProviderKind{
 		Kind:     GithubTokenKind,
 		Name:     "GitHub (Token)",
-		Icon:     components.GithubIcon(),
+		Icon:     Icon(),
 		Hostname: opts.GithubHostname,
 		TokenKind: &vcs.TokenKind{
 			Description: tokenDescription(opts.GithubHostname),

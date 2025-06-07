@@ -171,7 +171,7 @@ type fakeReporterVCSProviderService struct {
 	got chan vcs.SetStatusOptions
 }
 
-func (f *fakeReporterVCSProviderService) GetVCSClient(context.Context, resource.TfeID) (vcs.Client, error) {
+func (f *fakeReporterVCSProviderService) Get(context.Context, resource.TfeID) (vcs.Client, error) {
 	return &fakeReporterCloudClient{got: f.got}, nil
 }
 

@@ -6,7 +6,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/vcs"
-	"github.com/leg100/otf/internal/vcsprovider"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -17,10 +16,10 @@ func TestVCSProvider(t *testing.T) {
 	t.Run("create", func(t *testing.T) {
 		svc, org, ctx := setup(t)
 
-		_, err := svc.VCSProviders.Create(ctx, vcsprovider.CreateOptions{
+		_, err := svc.VCSProviders.Create(ctx, vcs.CreateOptions{
 			Organization: org.Name,
 			Token:        internal.String(uuid.NewString()),
-			Kind:         vcs.KindPtr(vcs.GithubTokenKind),
+			Kind:         vcs.GithubTokenKind,
 		})
 		require.NoError(t, err)
 	})
