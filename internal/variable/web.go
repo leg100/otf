@@ -200,7 +200,7 @@ func (h *web) listWorkspaceVariables(w http.ResponseWriter, r *http.Request) {
 				return 1
 			} else if a.set == nil && b.set != nil {
 				return -1
-			} else {
+			} else if a.set != nil && b.set != nil {
 				// both belong to set; sort by set's name
 				if a.set.Name > b.set.Name {
 					return 1
