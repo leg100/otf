@@ -27,13 +27,15 @@ func Test_repohookHandler(t *testing.T) {
 	handler := newHandler(
 		logr.Discard(),
 		broker,
+		&fakeVCSKindDB{
+			handler: func(*http.Request, string) (*vcs.EventPayload, error) {
+				return &vcs.EventPayload{}, nil
+			},
+		},
 		&fakeHandlerDB{
 			hook: hook,
 		},
 	)
-	handler.cloudHandlers.Set(vcs.KindID("test"), func(*http.Request, string) (*vcs.EventPayload, error) {
-		return &vcs.EventPayload{}, nil
-	})
 
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest("POST", "/?webhook_id=158c758a-7090-11ed-a843-d398c839c7ad", nil)
@@ -53,6 +55,9 @@ type (
 	fakeHandlerDB struct {
 		hook *hook
 	}
+	fakeVCSKindDB struct {
+		handler func(*http.Request, string) (*vcs.EventPayload, error)
+	}
 	fakeBroker struct {
 		got vcs.Event
 	}
@@ -63,3 +68,9 @@ func (db *fakeHandlerDB) getHookByID(context.Context, uuid.UUID) (*hook, error) 
 }
 
 func (f *fakeBroker) Publish(got vcs.Event) { f.got = got }
+
+func (db *fakeVCSKindDB) GetKind(id vcs.KindID) (vcs.Kind, error) {
+	return vcs.Kind{
+		EventHandler: db.handler,
+	}, nil
+}

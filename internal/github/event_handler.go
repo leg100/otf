@@ -7,11 +7,8 @@ import (
 	"strings"
 
 	"github.com/google/go-github/v65/github"
-	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/vcs"
 )
-
-const Source configversion.Source = "github"
 
 func HandleEvent(r *http.Request, secret string) (*vcs.EventPayload, error) {
 	payload, err := github.ValidatePayload(r, []byte(secret))
@@ -24,7 +21,7 @@ func HandleEvent(r *http.Request, secret string) (*vcs.EventPayload, error) {
 	}
 
 	// convert github event to an OTF event
-	to := vcs.EventPayload{Source: Source}
+	var to vcs.EventPayload
 	switch event := raw.(type) {
 	case *github.PushEvent:
 		to.RepoPath = event.GetRepo().GetFullName()

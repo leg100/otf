@@ -211,10 +211,10 @@ func (s *Spawner) handleWithError(logger logr.Logger, event vcs.Event) error {
 				SenderHTMLURL:     event.SenderHTMLURL,
 				Tag:               event.Tag,
 			},
-			Source: event.Source,
+			Source: configversion.Source(event.EventHeader.KindID),
 		}
 		runOpts := CreateOptions{
-			Source: event.Source,
+			Source: configversion.Source(event.EventHeader.KindID),
 		}
 		cv, err := s.configs.Create(ctx, ws.ID, cvOpts)
 		if err != nil {

@@ -22,7 +22,6 @@ func TestEventHandler(t *testing.T) {
 			"Push Hook",
 			"./testdata/push.json",
 			&vcs.EventPayload{
-				Source:        Source,
 				Type:          vcs.EventTypePush,
 				RepoPath:      "mike/diaspora",
 				Branch:        "master",
@@ -44,7 +43,6 @@ func TestEventHandler(t *testing.T) {
 			"Merge Request Hook",
 			"./testdata/merge_opened.json",
 			&vcs.EventPayload{
-				Source:            Source,
 				Type:              vcs.EventTypePull,
 				Action:            vcs.ActionCreated,
 				RepoPath:          "leg100/otf-workspaces",
@@ -65,7 +63,6 @@ func TestEventHandler(t *testing.T) {
 			"Merge Request Hook",
 			"./testdata/merge_updated.json",
 			&vcs.EventPayload{
-				Source:            Source,
 				Type:              vcs.EventTypePull,
 				Action:            vcs.ActionUpdated,
 				RepoPath:          "leg100/otf-workspaces",
@@ -86,7 +83,6 @@ func TestEventHandler(t *testing.T) {
 			"Tag Push Hook",
 			"./testdata/tag_created.json",
 			&vcs.EventPayload{
-				Source:          Source,
 				Type:            vcs.EventTypeTag,
 				Action:          vcs.ActionCreated,
 				RepoPath:        "leg100/otf-workspaces",
@@ -104,7 +100,6 @@ func TestEventHandler(t *testing.T) {
 			"Tag Push Hook",
 			"./testdata/tag_deleted.json",
 			&vcs.EventPayload{
-				Source:          Source,
 				Type:            vcs.EventTypeTag,
 				Action:          vcs.ActionDeleted,
 				RepoPath:        "leg100/otf-workspaces",

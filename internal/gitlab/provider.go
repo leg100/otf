@@ -21,7 +21,8 @@ func (p *Provider) Register(vcsService *vcs.Service) {
 		TokenKind: &vcs.TokenKind{
 			Description: tokenDescription(p.Hostname),
 		},
-		Hostname: p.Hostname,
+		Hostname:     p.Hostname,
+		EventHandler: HandleEvent,
 		NewClient: func(ctx context.Context, cfg vcs.Config) (vcs.Client, error) {
 			return NewTokenClient(vcs.NewTokenClientOptions{
 				Token:               *cfg.Token,

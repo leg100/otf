@@ -44,7 +44,6 @@ func TestEventHandler(t *testing.T) {
 			body:      "./testdata/test_delivery.json",
 			sig:       genSigForFile("./testdata/test_delivery.json", secret),
 			want: &vcs.EventPayload{
-				Source:          "forgejo",
 				Type:            vcs.EventTypePush,
 				RepoPath:        "tf/thing",
 				Branch:          "main",
@@ -65,7 +64,6 @@ func TestEventHandler(t *testing.T) {
 			body:      "./testdata/add_tag.json",
 			sig:       genSigForFile("./testdata/add_tag.json", secret),
 			want: &vcs.EventPayload{
-				Source:          "forgejo",
 				Type:            vcs.EventTypeTag,
 				RepoPath:        "tf/thing",
 				Tag:             "test",
@@ -86,7 +84,6 @@ func TestEventHandler(t *testing.T) {
 			body:      "./testdata/delete_tag.json",
 			sig:       genSigForFile("./testdata/delete_tag.json", secret),
 			want: &vcs.EventPayload{
-				Source:          "forgejo",
 				Type:            vcs.EventTypeTag,
 				RepoPath:        "tf/thing",
 				Tag:             "test",
@@ -107,7 +104,6 @@ func TestEventHandler(t *testing.T) {
 			body:      "./testdata/pr_opened.json",
 			sig:       genSigForFile("./testdata/pr_opened.json", secret),
 			want: &vcs.EventPayload{
-				Source:            "forgejo",
 				Type:              vcs.EventTypePull,
 				RepoPath:          "tf/thing",
 				PullRequestTitle:  "test",
@@ -138,7 +134,6 @@ func TestEventHandler(t *testing.T) {
 			body:      "./testdata/pr_closed.json",
 			sig:       genSigForFile("./testdata/pr_closed.json", secret),
 			want: &vcs.EventPayload{
-				Source:            "forgejo",
 				Type:              vcs.EventTypePull,
 				RepoPath:          "tf/thing",
 				PullRequestTitle:  "test",
@@ -162,7 +157,6 @@ func TestEventHandler(t *testing.T) {
 			body:      "./testdata/pr_merged.json",
 			sig:       genSigForFile("./testdata/pr_merged.json", secret),
 			want: &vcs.EventPayload{
-				Source:            "forgejo",
 				Type:              vcs.EventTypePull,
 				RepoPath:          "tf/thing",
 				PullRequestTitle:  "test",

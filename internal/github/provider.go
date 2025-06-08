@@ -49,7 +49,8 @@ func registerProviders(
 		TokenKind: &vcs.TokenKind{
 			Description: tokenDescription(hostname),
 		},
-		NewClient: provider.NewClient,
+		NewClient:    provider.NewClient,
+		EventHandler: HandleEvent,
 		// Github token kind vcs providers can be created via the TFE API.
 		TFEServiceProvider: vcs.ServiceProviderGithub,
 	})

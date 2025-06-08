@@ -29,7 +29,7 @@ type (
 		logr.Logger
 
 		OrganizationService *organization.Service
-		VCSProviderService  *vcs.Service
+		VCSService          *vcs.Service
 		GithubAppService    *github.Service
 		VCSEventBroker      *vcs.Broker
 
@@ -47,11 +47,12 @@ func NewService(ctx context.Context, opts Options) *Service {
 	db := &db{opts.DB, opts.HostnameService}
 	svc := &Service{
 		Logger:       opts.Logger,
-		vcsproviders: opts.VCSProviderService,
+		vcsproviders: opts.VCSService,
 		db:           db,
 		handlers: newHandler(
 			opts.Logger,
 			opts.VCSEventBroker,
+			opts.VCSService,
 			db,
 		),
 		synchroniser: &synchroniser{Logger: opts.Logger, syncdb: db},
@@ -60,7 +61,7 @@ func NewService(ctx context.Context, opts Options) *Service {
 	// necessary for the deletion of webhooks from VCS repos. Hence we need to
 	// first delete webhooks that reference the VCS provider before the VCS
 	// provider is deleted.
-	opts.VCSProviderService.BeforeDeleteVCSProvider(svc.deleteProviderRepohooks)
+	opts.VCSService.BeforeDeleteVCSProvider(svc.deleteProviderRepohooks)
 	// Delete webhooks prior to the deletion of organizations. Deleting
 	// organizations cascades deletion of VCS providers (see above).
 	opts.OrganizationService.BeforeDeleteOrganization(svc.deleteOrganizationRepohooks)
@@ -100,10 +101,6 @@ func (s *Service) CreateRepohook(ctx context.Context, opts CreateRepohookOptions
 		return uuid.UUID{}, err
 	}
 	return hook.id, nil
-}
-
-func (s *Service) RegisterCloudHandler(kind vcs.KindID, h EventUnmarshaler) {
-	s.handlers.cloudHandlers.Set(kind, h)
 }
 
 func (s *Service) DeleteUnreferencedRepohooks(ctx context.Context) error {

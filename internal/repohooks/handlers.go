@@ -9,7 +9,6 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/vcs"
 )
@@ -26,8 +25,6 @@ type (
 		vcs.Publisher
 		*vcs.Service
 
-		cloudHandlers *internal.SafeMap[vcs.KindID, EventUnmarshaler]
-
 		handlerDB
 		vcsKindDB
 	}
@@ -42,18 +39,23 @@ type (
 	handlerDB interface {
 		getHookByID(context.Context, uuid.UUID) (*hook, error)
 	}
-
+	// vcsKindDB is a database of vcs kinds
 	vcsKindDB interface {
 		GetKind(id vcs.KindID) (vcs.Kind, error)
 	}
 )
 
-func newHandler(logger logr.Logger, publisher vcs.Publisher, db handlerDB) *handlers {
+func newHandler(
+	logger logr.Logger,
+	publisher vcs.Publisher,
+	vcsKindDB vcsKindDB,
+	handlerDB handlerDB,
+) *handlers {
 	return &handlers{
-		Logger:        logger,
-		Publisher:     publisher,
-		handlerDB:     db,
-		cloudHandlers: internal.NewSafeMap[vcs.KindID, EventUnmarshaler](),
+		Logger:    logger,
+		Publisher: publisher,
+		vcsKindDB: vcsKindDB,
+		handlerDB: handlerDB,
 	}
 }
 
@@ -96,7 +98,10 @@ func (h *handlers) repohookHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.Publish(vcs.Event{
-		EventHeader:  vcs.EventHeader{VCSProviderID: hook.vcsProviderID},
+		EventHeader: vcs.EventHeader{
+			VCSProviderID: hook.vcsProviderID,
+			KindID:        kind.ID,
+		},
 		EventPayload: *payload,
 	})
 }
