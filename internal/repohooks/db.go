@@ -172,7 +172,7 @@ func (db *db) scan(row pgx.CollectableRow) (*hook, error) {
 		vcsProviderID:   model.VCSProviderID,
 		secret:          &model.Secret,
 		repoPath:        model.RepoPath,
-		cloud:           model.VCSKind,
+		vcsKindID:       model.VCSKind,
 		HostnameService: db.HostnameService,
 		cloudID:         model.VCSID,
 	}

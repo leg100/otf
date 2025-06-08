@@ -18,7 +18,7 @@ import (
 func Test_repohookHandler(t *testing.T) {
 	hook, err := newRepohook(newRepohookOptions{
 		vcsProviderID:   testutils.ParseID(t, "vcs-123"),
-		cloud:           vcs.KindID("test"),
+		vcsKindID:       vcs.KindID("test"),
 		HostnameService: internal.NewHostnameService("fakehost.org"),
 	})
 	require.NoError(t, err)

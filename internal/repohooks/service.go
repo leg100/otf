@@ -78,7 +78,7 @@ func (s *Service) CreateRepohook(ctx context.Context, opts CreateRepohookOptions
 	}
 	hook, err := newRepohook(newRepohookOptions{
 		repoPath:        opts.RepoPath,
-		cloud:           vcsProvider.Kind.ID,
+		vcsKindID:       vcsProvider.Kind.ID,
 		vcsProviderID:   vcsProvider.ID,
 		HostnameService: s.HostnameService,
 	})
@@ -165,9 +165,9 @@ func (s *Service) deleteRepohook(ctx context.Context, repohook *hook) error {
 		ID:   *repohook.cloudID,
 	})
 	if err != nil {
-		s.Error(err, "deleting webhook", "repo", repohook.repoPath, "cloud", repohook.cloud)
+		s.Error(err, "deleting webhook", "repo", repohook.repoPath, "cloud", repohook.vcsKindID)
 	} else {
-		s.V(0).Info("deleted webhook", "repo", repohook.repoPath, "cloud", repohook.cloud)
+		s.V(0).Info("deleted webhook", "repo", repohook.repoPath, "cloud", repohook.vcsKindID)
 	}
 	// Failure to delete the webhook from the cloud provider is not deemed a
 	// fatal error.

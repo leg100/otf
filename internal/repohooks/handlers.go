@@ -13,10 +13,8 @@ import (
 	"github.com/leg100/otf/internal/vcs"
 )
 
-const (
-	// handlerPrefix is the URL path prefix for endpoints receiving vcs events
-	handlerPrefix = "/webhooks/vcs"
-)
+// handlerPrefix is the URL path prefix for endpoints receiving vcs events
+const handlerPrefix = "/webhooks/vcs"
 
 type (
 	// handlers handle VCS events triggered by webhooks
@@ -76,12 +74,12 @@ func (h *handlers) repohookHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
-	h.V(2).Info("received vcs event", "repohook_id", opts.ID, "repo", hook.repoPath, "cloud", hook.cloud)
+	h.V(2).Info("received vcs event", "repohook_id", opts.ID, "repo", hook.repoPath, "cloud", hook.vcsKindID)
 
 	// look up vcs kind for hook
-	kind, err := h.GetKind(hook.cloud)
+	kind, err := h.GetKind(hook.vcsKindID)
 	if err != nil {
-		h.Error(nil, "no event unmarshaler found for event", "repohook_id", opts.ID, "repo", hook.repoPath, "cloud", hook.cloud)
+		h.Error(nil, "no event unmarshaler found for event", "repohook_id", opts.ID, "repo", hook.repoPath, "cloud", hook.vcsKindID)
 		http.Error(w, "no event unmarshaler found for event", http.StatusNotFound)
 		return
 	}
@@ -90,10 +88,10 @@ func (h *handlers) repohookHandler(w http.ResponseWriter, r *http.Request) {
 	// either ignore the event, return an error, or publish the event onwards
 	var ignore vcs.ErrIgnoreEvent
 	if errors.As(err, &ignore) {
-		h.V(2).Info("ignoring event: "+err.Error(), "repohook_id", opts.ID, "repo", hook.repoPath, "cloud", hook.cloud)
+		h.V(2).Info("ignoring event: "+err.Error(), "repohook_id", opts.ID, "repo", hook.repoPath, "cloud", hook.vcsKindID)
 		return
 	} else if err != nil {
-		h.Error(err, "handling vcs event", "repohook_id", opts.ID, "repo", hook.repoPath, "cloud", hook.cloud)
+		h.Error(err, "handling vcs event", "repohook_id", opts.ID, "repo", hook.repoPath, "cloud", hook.vcsKindID)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
