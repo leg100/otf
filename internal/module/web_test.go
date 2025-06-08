@@ -7,6 +7,7 @@ import (
 
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/connections"
+	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
@@ -82,8 +83,8 @@ func TestGetModule(t *testing.T) {
 
 func TestNewModule(t *testing.T) {
 	h := newTestWebHandlers(t, withVCSProviders(
-		&vcs.Provider{},
-		&vcs.Provider{},
+		&vcs.Provider{Kind: vcs.Kind{Icon: github.Icon()}},
+		&vcs.Provider{Kind: vcs.Kind{Icon: github.Icon()}},
 	))
 
 	q := "/?organization_name=acme-corp"
