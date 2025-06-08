@@ -152,7 +152,7 @@ func (a *Service) ListInstallations(ctx context.Context) ([]*Installation, error
 	return to, nil
 }
 
-func (a *Service) GetInstallCredentials(ctx context.Context, installID int64) (*InstallCredentials, error) {
+func (a *Service) GetInstallation(ctx context.Context, installID int64) (*Installation, error) {
 	app, err := a.db.get(ctx)
 	if err != nil {
 		return nil, err
@@ -165,22 +165,7 @@ func (a *Service) GetInstallCredentials(ctx context.Context, installID int64) (*
 	if err != nil {
 		return nil, err
 	}
-	creds := InstallCredentials{
-		ID: installID,
-		AppCredentials: AppCredentials{
-			ID:         app.ID,
-			PrivateKey: app.PrivateKey,
-		},
-	}
-	switch install.GetTargetType() {
-	case "Organization":
-		creds.Organization = install.GetAccount().Login
-	case "User":
-		creds.User = install.GetAccount().Login
-	default:
-		return nil, fmt.Errorf("unexpected target type: %s", install.GetTargetType())
-	}
-	return &creds, nil
+	return &Installation{Installation: install}, nil
 }
 
 func (a *Service) DeleteInstallation(ctx context.Context, installID int64) error {

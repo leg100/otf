@@ -84,17 +84,17 @@ func (p *provider) NewClient(ctx context.Context, cfg vcs.Config) (vcs.Client, e
 }
 
 func (p *provider) GetInstallation(ctx context.Context, id int64) (vcs.Installation, error) {
-	creds, err := p.service.GetInstallCredentials(ctx, id)
+	install, err := p.service.GetInstallation(ctx, id)
 	if err != nil {
 		return vcs.Installation{}, err
 	}
-	install := vcs.Installation{
-		ID:           creds.ID,
-		AppID:        int64(creds.AppCredentials.ID),
-		Organization: creds.Organization,
-		Username:     creds.User,
+	vcsInstall := vcs.Installation{
+		ID:           *install.ID,
+		AppID:        int64(*install.AppID),
+		Organization: install.Organization(),
+		Username:     install.Username(),
 	}
-	return install, nil
+	return vcsInstall, nil
 }
 
 func (p *provider) ListInstallations(ctx context.Context) (vcs.ListInstallationsResult, error) {
@@ -106,12 +106,18 @@ func (p *provider) ListInstallations(ctx context.Context) (vcs.ListInstallations
 	if err != nil {
 		return vcs.ListInstallationsResult{}, err
 	}
-	m := make(map[string]int64, len(installs))
-	for _, install := range installs {
-		m[install.String()] = *install.ID
+	vcsInstalls := make([]vcs.Installation, len(installs))
+	for i, install := range installs {
+		vcsInstalls[i] = vcs.Installation{
+			ID:           *install.ID,
+			AppID:        *install.AppID,
+			Username:     install.Username(),
+			Organization: install.Organization(),
+		}
 	}
 	result := vcs.ListInstallationsResult{
 		InstallationLink: templ.SafeURL(app.NewInstallURL(p.hostname)),
+		Results:          vcsInstalls,
 	}
 	return result, nil
 }

@@ -27,9 +27,9 @@ templ list(props listProps) {
 			To connect workspaces and publish modules, OTF needs access to your version control system (VCS) provider. Use this page to create and list access to VCS providers.
 		</div>
 		<div class="flex flex-col gap-4 mt-4">
-			for kind := range props.kinds {
+			for _, kind := range props.kinds {
 				<form action={ paths.NewVCSProvider(props.organization) } method="GET">
-					<button class="btn">New { kind } VCS Provider</button>
+					<button class="btn">New { internal.Title(string(kind)) } VCS Provider</button>
 					<input type="hidden" name="kind" id="kind" value={ kind }/>
 				</form>
 			}
@@ -114,11 +114,11 @@ templ newProvider(props newProviderProps) {
 		Title:        "new vcs provider",
 		Organization: props.organization,
 		Breadcrumbs: []components.Breadcrumb{
-			{Name: "New " + props.kind.Name + " VCS Provider"},
+			{Name: "New " + internal.Title(string(props.kind.ID)) + " VCS Provider"},
 		},
 	}) {
 		<div>
-			Create a { props.kind.Name } VCS provider.
+			Create a { internal.Title(string(props.kind.ID)) } VCS provider.
 		</div>
 		@form(formProps{
 			action: paths.CreateVCSProvider(props.organization),

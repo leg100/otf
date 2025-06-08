@@ -12,3 +12,19 @@ func (i *Installation) String() string {
 	}
 	return "user/" + i.GetAccount().GetLogin()
 }
+
+func (i *Installation) Organization() *string {
+	if i.GetAccount().GetType() == "Organization" {
+		org := i.GetAccount().GetLogin()
+		return &org
+	}
+	return nil
+}
+
+func (i *Installation) Username() *string {
+	if i.GetAccount().GetType() == "User" {
+		username := i.GetAccount().GetLogin()
+		return &username
+	}
+	return nil
+}

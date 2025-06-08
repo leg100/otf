@@ -34,9 +34,9 @@ type (
 	CreateOptions struct {
 		Organization organization.Name `schema:"organization_name,required"`
 		Name         string
-		KindID       KindID
+		KindID       KindID `schema:"kind,required"`
 		Token        *string
-		InstallID    *int64
+		InstallID    *int64 `schema:"install_id,required"`
 	}
 
 	UpdateOptions struct {

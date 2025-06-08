@@ -23,7 +23,7 @@ func (db *pgdb) create(ctx context.Context, provider *Provider) error {
 		"token":        provider.Token,
 		"created_at":   provider.CreatedAt,
 		"name":         provider.Name,
-		"vcs_kind":     provider.Kind,
+		"vcs_kind":     provider.Kind.ID,
 		"organization": provider.Organization,
 	}
 	if provider.Installation != nil {
@@ -40,22 +40,22 @@ INSERT INTO vcs_providers (
     created_at,
     name,
     vcs_kind,
-    organization_name
+    organization_name,
     install_app_id,
     install_id,
     install_username,
-    install_organization,
+    install_organization
 ) VALUES (
 	@id,
 	@token,
 	@created_at,
 	@name,
 	@vcs_kind,
-	@organization
+	@organization,
     @install_app_id,
     @install_id,
     @install_username,
-    @install_organization,
+    @install_organization
 )`, args)
 	return err
 }
