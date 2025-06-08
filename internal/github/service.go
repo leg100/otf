@@ -54,7 +54,7 @@ func NewService(opts Options) *Service {
 		GithubSkipTLS:   opts.SkipTLSVerification,
 		svc:             &svc,
 	}
-	registerProviders(&svc, opts.VCSService, opts.GithubHostname, opts.SkipTLSVerification)
+	registerVCSKinds(&svc, opts.VCSService, opts.GithubHostname, opts.SkipTLSVerification)
 
 	// delete github app vcs providers when the app is uninstalled
 	opts.VCSEventBroker.Subscribe(func(event vcs.Event) {

@@ -19,7 +19,7 @@ type provider struct {
 	skipTLSVerification bool
 }
 
-func registerProviders(
+func registerVCSKinds(
 	svc *Service,
 	vcsService *vcs.Service,
 	hostname string,
@@ -34,6 +34,7 @@ func registerProviders(
 	vcsService.RegisterKind(vcs.Kind{
 		ID:               AppKindID,
 		Name:             "GitHub (App)",
+		Source:           "github",
 		Icon:             Icon(),
 		Hostname:         hostname,
 		InstallationKind: provider,
@@ -44,6 +45,7 @@ func registerProviders(
 	vcsService.RegisterKind(vcs.Kind{
 		ID:       TokenKindID,
 		Name:     "GitHub (Token)",
+		Source:   "github",
 		Icon:     Icon(),
 		Hostname: hostname,
 		TokenKind: &vcs.TokenKind{

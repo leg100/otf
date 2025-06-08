@@ -15,12 +15,17 @@ import (
 type KindID string
 
 type Kind struct {
-	// ID distinguishes this kind from other kinds
+	// ID distinguishes this kind from other kinds. NOTE: This must have first
+	// been inserted into the vcs_kinds table via a database migration.
 	ID KindID
 	// Name provides a human meaningful identification of this provider kind.
 	Name string
 	// Hostname is the hostname of the VCS host, not including scheme or path.
 	Hostname string
+	// Source identifies the origin of terraform configurations coming from a
+	// vcs repo belonging to this kind. If not set then the KindID is used as
+	// the source.
+	Source configversion.Source
 	// Icon renders a icon distinguishing the VCS host kind.
 	Icon templ.Component
 	// TokenKind provides info about the token the provider expects. Mutually
@@ -43,6 +48,13 @@ type Kind struct {
 	//
 	// https://developer.hashicorp.com/terraform/cloud-docs/api-docs/oauth-clients#request-body
 	TFEServiceProvider TFEServiceProviderType
+}
+
+func (k Kind) GetSource() configversion.Source {
+	if k.Source != "" {
+		return k.Source
+	}
+	return configversion.Source(k.ID)
 }
 
 type TokenKind struct {
@@ -102,7 +114,7 @@ func (db *kindDB) RegisterKind(kind Kind) {
 	db.kinds[kind.ID] = kind
 	// Also register its icon to be rendered on the UI next to runs triggered
 	// by this kind.
-	db.configService.RegisterSourceIcon(configversion.Source(kind.ID), IconWrapper(kind.ID, kind.Icon))
+	db.configService.RegisterSourceIcon(kind.GetSource(), IconWrapper(kind.ID, kind.Icon))
 }
 
 func (db *kindDB) GetKind(id KindID) (Kind, error) {
