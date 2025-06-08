@@ -16,17 +16,20 @@ type (
 	Options struct {
 		logr.Logger
 
-		*internal.HostnameService
-
+		HostnameService      *internal.HostnameService
 		UserService          userService
 		TokensService        *tokens.Service
-		OpaqueHandlerConfigs []OpaqueHandlerConfig
 		IDTokenHandlerConfig OIDCConfig
 		SkipTLSVerification  bool
 	}
 
-	service struct {
-		clients []*OAuthClient
+	Service struct {
+		logr.Logger
+
+		HostnameService *internal.HostnameService
+		UserService     userService
+		TokensService   *tokens.Service
+		clients         []*OAuthClient
 	}
 
 	userService interface {
@@ -38,28 +41,8 @@ type (
 // NewAuthenticatorService constructs a service for logging users onto
 // the system. Supports multiple clients: zero or more clients that support an
 // opaque token, and one client that supports IDToken/OIDC.
-func NewAuthenticatorService(ctx context.Context, opts Options) (*service, error) {
-	svc := service{}
-	// Construct clients with opaque token handlers
-	for _, cfg := range opts.OpaqueHandlerConfigs {
-		if cfg.ClientID == "" && cfg.ClientSecret == "" {
-			// skip creating OAuth client when creds are unspecified
-			continue
-		}
-		cfg.SkipTLSVerification = opts.SkipTLSVerification
-		client, err := newOAuthClient(
-			&opaqueHandler{cfg},
-			opts.HostnameService,
-			opts.TokensService,
-			opts.UserService,
-			cfg.OAuthConfig,
-		)
-		if err != nil {
-			return nil, err
-		}
-		svc.clients = append(svc.clients, client)
-		opts.V(0).Info("activated OAuth client", "name", cfg.Name, "hostname", cfg.Hostname)
-	}
+func NewAuthenticatorService(ctx context.Context, opts Options) (*Service, error) {
+	svc := Service{}
 	// Construct client with OIDC IDToken handler
 	if opts.IDTokenHandlerConfig.ClientID == "" && opts.IDTokenHandlerConfig.ClientSecret == "" {
 		// skip creating OIDC authenticator when creds are unspecified
@@ -82,6 +65,7 @@ func NewAuthenticatorService(ctx context.Context, opts Options) (*service, error
 			ClientSecret:        opts.IDTokenHandlerConfig.ClientSecret,
 			Name:                opts.IDTokenHandlerConfig.Name,
 			SkipTLSVerification: opts.SkipTLSVerification,
+			Icon:                oidcIcon(),
 		},
 	)
 	if err != nil {
@@ -92,13 +76,35 @@ func NewAuthenticatorService(ctx context.Context, opts Options) (*service, error
 	return &svc, nil
 }
 
-func (a *service) AddHandlers(r *mux.Router) {
+func (a *Service) AddHandlers(r *mux.Router) {
 	for _, authenticator := range a.clients {
 		authenticator.addHandlers(r)
 	}
 	r.HandleFunc("/login", a.loginHandler)
 }
 
-func (a *service) loginHandler(w http.ResponseWriter, r *http.Request) {
+func (a *Service) RegisterOAuthClient(cfg OpaqueHandlerConfig) error {
+	// Construct clients with opaque token handlers
+	if cfg.ClientID == "" && cfg.ClientSecret == "" {
+		// skip creating OAuth client when creds are unspecified
+		return nil
+	}
+	client, err := newOAuthClient(
+		&opaqueHandler{cfg},
+		a.HostnameService,
+		a.TokensService,
+		a.UserService,
+		cfg.OAuthConfig,
+	)
+	if err != nil {
+		return err
+	}
+	a.clients = append(a.clients, client)
+	a.V(0).Info("activated OAuth client", "name", cfg.Name, "hostname", cfg.Hostname)
+
+	return nil
+}
+
+func (a *Service) loginHandler(w http.ResponseWriter, r *http.Request) {
 	html.Render(login(a.clients), w, r)
 }

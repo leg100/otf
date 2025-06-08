@@ -8,26 +8,21 @@ import (
 
 const KindID vcs.KindID = "gitlab"
 
-type Provider struct {
-	Hostname            string
-	SkipTLSVerification bool
-}
-
-func (p *Provider) Register(vcsService *vcs.Service) {
+func RegisterVCSKind(vcsService *vcs.Service, hostname string, skipTLSVerification bool) {
 	vcsService.RegisterKind(vcs.Kind{
 		ID:   KindID,
 		Name: "GitLab",
 		Icon: Icon(),
 		TokenKind: &vcs.TokenKind{
-			Description: tokenDescription(p.Hostname),
+			Description: tokenDescription(hostname),
 		},
-		Hostname:     p.Hostname,
+		Hostname:     hostname,
 		EventHandler: HandleEvent,
 		NewClient: func(ctx context.Context, cfg vcs.Config) (vcs.Client, error) {
 			return NewTokenClient(vcs.NewTokenClientOptions{
 				Token:               *cfg.Token,
-				Hostname:            p.Hostname,
-				SkipTLSVerification: p.SkipTLSVerification,
+				Hostname:            hostname,
+				SkipTLSVerification: skipTLSVerification,
 			})
 		},
 	})

@@ -277,7 +277,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		WorkspaceService: workspaceService,
 		RunClient:        runService,
 	})
-
 	runnerService := runner.NewService(runner.ServiceOptions{
 		Logger:           logger,
 		Authorizer:       authorizer,
@@ -288,15 +287,51 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		TokensService:    tokensService,
 		Listener:         listener,
 	})
+	authenticatorService, err := authenticator.NewAuthenticatorService(ctx, authenticator.Options{
+		Logger:               logger,
+		HostnameService:      hostnameService,
+		TokensService:        tokensService,
+		UserService:          userService,
+		IDTokenHandlerConfig: cfg.OIDC,
+		SkipTLSVerification:  cfg.SkipTLSVerification,
+	})
+	if err != nil {
+		return nil, err
+	}
 
-	(&forgejo.Provider{
-		Hostname:            cfg.ForgejoHostname,
-		SkipTLSVerification: cfg.SkipTLSVerification,
-	}).Register(vcsService)
-	(&gitlab.Provider{
-		Hostname:            cfg.GitlabHostname,
-		SkipTLSVerification: cfg.SkipTLSVerification,
-	}).Register(vcsService)
+	// Forgejo registrations
+	forgejo.RegisterVCSKind(
+		vcsService,
+		cfg.ForgejoHostname,
+		cfg.SkipTLSVerification,
+	)
+
+	// Gitlab registrations
+	gitlab.RegisterVCSKind(
+		vcsService,
+		cfg.GitlabHostname,
+		cfg.SkipTLSVerification,
+	)
+	err = gitlab.RegisterOAuthHandler(
+		authenticatorService,
+		cfg.GitlabHostname,
+		cfg.GitlabClientID,
+		cfg.GitlabClientSecret,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("registering gitlab oauth client: %w", err)
+	}
+
+	// Github registrations
+	err = github.RegisterOAuthHandler(
+		authenticatorService,
+		cfg.GithubHostname,
+		cfg.GithubClientID,
+		cfg.GithubClientSecret,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("registering github oauth client: %w", err)
+	}
 
 	runner, err := runner.NewServerRunner(runner.ServerRunnerOptions{
 		Logger:     logger,
@@ -310,42 +345,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Logs:       logsService,
 		Jobs:       runnerService,
 		Server:     hostnameService,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	authenticatorService, err := authenticator.NewAuthenticatorService(ctx, authenticator.Options{
-		Logger:          logger,
-		HostnameService: hostnameService,
-		TokensService:   tokensService,
-		UserService:     userService,
-		OpaqueHandlerConfigs: []authenticator.OpaqueHandlerConfig{
-			{
-				ClientConstructor: github.NewOAuthClient,
-				OAuthConfig: authenticator.OAuthConfig{
-					Hostname:     cfg.GithubHostname,
-					Name:         string(github.TokenKindID),
-					Endpoint:     github.OAuthEndpoint,
-					Scopes:       github.OAuthScopes,
-					ClientID:     cfg.GithubClientID,
-					ClientSecret: cfg.GithubClientSecret,
-				},
-			},
-			{
-				ClientConstructor: gitlab.NewOAuthClient,
-				OAuthConfig: authenticator.OAuthConfig{
-					Hostname:     cfg.GitlabHostname,
-					Name:         string(gitlab.KindID),
-					Endpoint:     gitlab.OAuthEndpoint,
-					Scopes:       gitlab.OAuthScopes,
-					ClientID:     cfg.GitlabClientID,
-					ClientSecret: cfg.GitlabClientSecret,
-				},
-			},
-		},
-		IDTokenHandlerConfig: cfg.OIDC,
-		SkipTLSVerification:  cfg.SkipTLSVerification,
 	})
 	if err != nil {
 		return nil, err
