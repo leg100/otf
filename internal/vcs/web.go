@@ -29,7 +29,7 @@ type webClient interface {
 	List(ctx context.Context, organization organization.Name) ([]*Provider, error)
 	Delete(ctx context.Context, id resource.TfeID) (*Provider, error)
 	GetKind(id KindID) (Kind, error)
-	GetKindIDs() []KindID
+	GetKinds() []Kind
 }
 
 func (h *webHandlers) addHandlers(r *mux.Router) {
@@ -138,7 +138,7 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 	props := listProps{
 		organization: params.Organization,
 		providers:    resource.NewPage(providers, params.PageOptions, nil),
-		kinds:        h.client.GetKindIDs(),
+		kinds:        h.client.GetKinds(),
 	}
 	html.Render(list(props), w, r)
 }

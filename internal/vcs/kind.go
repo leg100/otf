@@ -140,9 +140,9 @@ func (db *kindDB) GetKindByTFEServiceProviderType(sp TFEServiceProviderType) (Ki
 	return Kind{}, fmt.Errorf("no such vcs provider kind with TFE service provider type exists: %s", sp)
 }
 
-func (db *kindDB) GetKindIDs() []KindID {
+func (db *kindDB) GetKinds() []Kind {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
-	return maps.Keys(db.kinds)
+	return maps.Values(db.kinds)
 }

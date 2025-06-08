@@ -12,7 +12,7 @@ import (
 type listProps struct {
 	organization organization.Name
 	providers    *resource.Page[*Provider]
-	kinds        []KindID
+	kinds        []Kind
 }
 
 templ list(props listProps) {
@@ -26,11 +26,14 @@ templ list(props listProps) {
 		<div class="text-base-content/60 text-sm">
 			To connect workspaces and publish modules, OTF needs access to your version control system (VCS) provider. Use this page to create and list access to VCS providers.
 		</div>
-		<div class="flex flex-col gap-4 mt-4">
+		<div class="flex flex-wrap gap-4 mt-4">
 			for _, kind := range props.kinds {
 				<form action={ paths.NewVCSProvider(props.organization) } method="GET">
-					<button class="btn">New { internal.Title(string(kind)) } VCS Provider</button>
-					<input type="hidden" name="kind" id="kind" value={ kind }/>
+					<button class="btn">
+						@kind.Icon
+						New { internal.Title(string(kind.ID)) } Provider
+					</button>
+					<input type="hidden" name="kind" id="kind" value={ kind.ID }/>
 				</form>
 			}
 		</div>
@@ -58,7 +61,10 @@ templ (t Table) Header() {
 templ (t Table) Row(provider *Provider) {
 	<tr id={ "item-vcsprovider-" + provider.String() }>
 		<td>
-			{ provider.String() }
+			<div class="flex gap-2 items-center">
+				@provider.Kind.Icon
+				{ provider.String() }
+			</div>
 		</td>
 		<td>
 			@components.Identifier(provider.ID)
