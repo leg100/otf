@@ -71,7 +71,7 @@ FROM vcs_providers v
 WHERE v.vcs_provider_id = $1
 FOR UPDATE OF v
 `, id)
-			return sql.CollectOneRow(rows, db.scan(ctx))
+			return db.scanOne(ctx, rows)
 		},
 		fn,
 		func(ctx context.Context, provider *Provider) error {
@@ -110,7 +110,7 @@ FROM vcs_providers v
 WHERE v.vcs_provider_id = $1
 `, id)
 
-	return sql.CollectOneRow(rows, db.scan(ctx))
+	return db.scanOne(ctx, rows)
 }
 
 func (db *pgdb) listByOrganization(ctx context.Context, organization organization.Name) ([]*Provider, error) {
@@ -119,7 +119,7 @@ SELECT *
 FROM vcs_providers v
 WHERE v.organization_name = $1
 `, organization)
-	return sql.CollectRows(rows, db.scan(ctx))
+	return db.scanMany(ctx, rows)
 }
 
 func (db *pgdb) listByInstall(ctx context.Context, installID int64) ([]*Provider, error) {
@@ -128,7 +128,7 @@ SELECT *
 FROM vcs_providers v
 WHERE v.install_id = $1
 `, installID)
-	return sql.CollectRows(rows, db.scan(ctx))
+	return db.scanMany(ctx, rows)
 }
 
 func (db *pgdb) delete(ctx context.Context, id resource.TfeID) error {
@@ -140,53 +140,68 @@ WHERE vcs_provider_id = $1
 	return err
 }
 
-func (db *pgdb) scan(ctx context.Context) func(row pgx.CollectableRow) (*Provider, error) {
-	return func(row pgx.CollectableRow) (*Provider, error) {
-		// model represents a database row for a vcs provider
-		type model struct {
-			VCSProviderID       resource.TfeID `db:"vcs_provider_id"`
-			Token               *string
-			CreatedAt           time.Time `db:"created_at"`
-			Name                string
-			VCSKind             KindID            `db:"vcs_kind"`
-			OrganizationName    organization.Name `db:"organization_name"`
-			InstallAppID        *int64            `db:"install_app_id"`
-			InstallID           *int64            `db:"install_id"`
-			InstallUsername     *string           `db:"install_username"`
-			InstallOrganization *string           `db:"install_organization"`
-		}
+// model represents a database row for a vcs provider
+type model struct {
+	VCSProviderID       resource.TfeID `db:"vcs_provider_id"`
+	Token               *string
+	CreatedAt           time.Time `db:"created_at"`
+	Name                string
+	VCSKind             KindID            `db:"vcs_kind"`
+	OrganizationName    organization.Name `db:"organization_name"`
+	InstallAppID        *int64            `db:"install_app_id"`
+	InstallID           *int64            `db:"install_id"`
+	InstallUsername     *string           `db:"install_username"`
+	InstallOrganization *string           `db:"install_organization"`
+}
 
-		m, err := pgx.RowToStructByName[model](row)
-		if err != nil {
-			return nil, err
-		}
-		cfg := Config{
-			Token: m.Token,
-		}
-		if m.InstallID != nil {
-			cfg.Installation = &Installation{
-				ID:           *m.InstallID,
-				AppID:        *m.InstallAppID,
-				Username:     m.InstallUsername,
-				Organization: m.InstallOrganization,
-			}
-		}
-		kind, err := db.kinds.GetKind(m.VCSKind)
-		if err != nil {
-			return nil, err
-		}
-		client, err := kind.NewClient(ctx, cfg)
-		if err != nil {
-			return nil, err
-		}
-		provider := Provider{
-			ID:           m.VCSProviderID,
-			CreatedAt:    m.CreatedAt,
-			Organization: m.OrganizationName,
-			Name:         m.Name,
-			Kind:         kind,
-			Client:       client,
-		}
-		return &provider, nil
+func (db *pgdb) scanOne(ctx context.Context, row pgx.Rows) (*Provider, error) {
+	model, err := sql.CollectOneRow(row, pgx.RowToStructByName[model])
+	if err != nil {
+		return nil, err
 	}
+	return db.toProvider(ctx, model)
+}
+
+func (db *pgdb) scanMany(ctx context.Context, row pgx.Rows) ([]*Provider, error) {
+	models, err := sql.CollectRows(row, pgx.RowToStructByName[model])
+	if err != nil {
+		return nil, err
+	}
+	providers := make([]*Provider, len(models))
+	for i, m := range models {
+		providers[i], err = db.toProvider(ctx, m)
+	}
+	return providers, nil
+}
+
+func (db *pgdb) toProvider(ctx context.Context, m model) (*Provider, error) {
+	cfg := Config{
+		Token: m.Token,
+	}
+	if m.InstallID != nil {
+		cfg.Installation = &Installation{
+			ID:           *m.InstallID,
+			AppID:        *m.InstallAppID,
+			Username:     m.InstallUsername,
+			Organization: m.InstallOrganization,
+		}
+	}
+	kind, err := db.kinds.GetKind(m.VCSKind)
+	if err != nil {
+		return nil, err
+	}
+	client, err := kind.NewClient(ctx, cfg)
+	if err != nil {
+		return nil, err
+	}
+	provider := Provider{
+		ID:           m.VCSProviderID,
+		CreatedAt:    m.CreatedAt,
+		Organization: m.OrganizationName,
+		Name:         m.Name,
+		Kind:         kind,
+		Client:       client,
+		Config:       cfg,
+	}
+	return &provider, nil
 }

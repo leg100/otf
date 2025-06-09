@@ -37,7 +37,7 @@ func TestIntegration_VCSProviderTokenUI(t *testing.T) {
 		require.NoError(t, err)
 		screenshot(t, page, "vcs_providers_list")
 		// click 'New Github VCS Provider' button
-		err = page.Locator(`//button[text()='New Github VCS Provider (Personal Token)']`).Click()
+		err = page.Locator(`//button[text()='New Github-Token Provider']`).Click()
 		require.NoError(t, err)
 		screenshot(t, page, "new_github_vcs_provider_form")
 
@@ -172,7 +172,7 @@ func TestIntegration_VCSProviderAppUI(t *testing.T) {
 		screenshot(t, page, "vcs_provider_list_including_github_app")
 		// click button for creating a new vcs provider with a github app
 		err = page.GetByRole("button").Filter(playwright.LocatorFilterOptions{
-			HasText: "New Github VCS Provider (App)",
+			HasText: "New Github-App Provider",
 		}).Click()
 		require.NoError(t, err)
 

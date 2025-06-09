@@ -13,7 +13,7 @@ import (
 )
 
 type (
-	// Provider is a client for interacting with a VCS host.
+	// Provider is an identifiable client for interacting with a VCS host.
 	Provider struct {
 		ID           resource.TfeID
 		Name         string
@@ -22,7 +22,7 @@ type (
 		Kind         Kind
 		// Config for constructing a client
 		Config
-		// Client is the actual client for itneracting with the VCS host.
+		// Client is the actual client for interacting with the VCS host.
 		Client
 	}
 
@@ -62,7 +62,6 @@ func (f *factory) newProvider(ctx context.Context, opts CreateOptions) (*Provide
 		Organization: opts.Organization,
 		Kind:         kind,
 	}
-	var cfg Config
 	if kind.InstallationKind != nil {
 		if opts.InstallID == nil {
 			return nil, errors.New("install ID required for client")
@@ -71,14 +70,16 @@ func (f *factory) newProvider(ctx context.Context, opts CreateOptions) (*Provide
 		if err != nil {
 			return nil, err
 		}
-		cfg = Config{Installation: &install}
+		provider.Config = Config{Installation: &install}
 	} else if kind.TokenKind != nil {
 		if opts.Token == nil {
 			return nil, errors.New("token required for client")
 		}
-		cfg = Config{Token: opts.Token}
+		provider.Config = Config{Token: opts.Token}
+	} else {
+		return nil, errors.New("an installation or a token must be specified")
 	}
-	client, err := kind.NewClient(ctx, cfg)
+	client, err := kind.NewClient(ctx, provider.Config)
 	if err != nil {
 		return nil, err
 	}
@@ -113,6 +114,10 @@ func (t *Provider) LogValue() slog.Value {
 		slog.Any("organization", t.Organization),
 		slog.String("name", t.String()),
 		slog.String("kind", t.Kind.Name),
+	}
+	if t.Installation != nil {
+		attrs = append(attrs, slog.Int64("install_id", t.Installation.ID))
+		attrs = append(attrs, slog.Int64("install_app_id", t.Installation.AppID))
 	}
 	return slog.GroupValue(attrs...)
 }

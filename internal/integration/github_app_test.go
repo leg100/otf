@@ -196,12 +196,15 @@ func TestIntegration_GithubAppNewUI(t *testing.T) {
 func TestIntegration_GithubApp_Event(t *testing.T) {
 	integrationTest(t)
 
+	// create an OTF daemon with a fake github backend, and serve up a repo and
+	// its contents via tarball.
 	daemon, org, ctx := setup(t, withGithubOptions(
 		github.WithRepo("leg100/otf-workspaces"),
 		github.WithArchive(testutils.ReadFile(t, "../testdata/github.tar.gz")),
 		github.WithHandler("/api/v3/app/installations/42997659", func(w http.ResponseWriter, r *http.Request) {
 			out, err := json.Marshal(&gogithub.Installation{
 				ID:         internal.Int64(42997659),
+				AppID:      internal.Int64(123),
 				Account:    &gogithub.User{Login: internal.String("leg100")},
 				TargetType: internal.String("User"),
 			})
@@ -218,9 +221,8 @@ func TestIntegration_GithubApp_Event(t *testing.T) {
 	))
 	// creating a github app requires site-admin role
 	ctx = authz.AddSubjectToContext(ctx, &user.SiteAdmin)
-	// create an OTF daemon with a fake github backend, and serve up a repo and
-	// its contents via tarball.
 	_, err := daemon.GithubApp.CreateApp(ctx, github.CreateAppOptions{
+		AppID: 123,
 		// any key will do, the stub github server won't actually authenticate it.
 		PrivateKey:    string(testutils.ReadFile(t, "./fixtures/key.pem")),
 		Slug:          "test-app",
