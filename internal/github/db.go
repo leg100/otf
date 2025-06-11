@@ -46,11 +46,13 @@ func (db *appDB) get(ctx context.Context) (*App, error) {
 		PrivateKey    string  `db:"private_key"`
 		Organization  *string `db:"organization"`
 	}
+
 	rows := db.Query(ctx, `SELECT * FROM github_apps`)
 	m, err := sql.CollectOneRow(rows, pgx.RowToAddrOfStructByName[model])
 	if err != nil {
 		return nil, err
 	}
+
 	client, err := NewClient(ClientOptions{
 		Hostname:            db.hostname,
 		SkipTLSVerification: db.skipTLSVerification,
@@ -59,6 +61,10 @@ func (db *appDB) get(ctx context.Context) (*App, error) {
 			PrivateKey: m.PrivateKey,
 		},
 	})
+	if err != nil {
+		return nil, err
+	}
+
 	return &App{
 		ID:            m.ID,
 		Slug:          m.Slug,

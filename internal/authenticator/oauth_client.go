@@ -51,6 +51,8 @@ type (
 
 	// OAuthConfig is configuration for constructing an OAuth client
 	OAuthConfig struct {
+		// Name of oauth client. Should be a lowercase string because it is used
+		// in URL paths.
 		Name                string
 		Hostname            string
 		ClientID            string

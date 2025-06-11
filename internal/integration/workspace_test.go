@@ -51,7 +51,7 @@ func TestWorkspace(t *testing.T) {
 	t.Run("create connected workspace", func(t *testing.T) {
 		daemon, org, ctx := setup(t, withGithubOption(github.WithRepo("test/dummy")))
 
-		vcsprov := daemon.createVCSProvider(t, ctx, org)
+		vcsprov := daemon.createVCSProvider(t, ctx, org, nil)
 		ws, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
 			Name:         internal.String(uuid.NewString()),
 			Organization: &org.Name,
@@ -81,7 +81,7 @@ func TestWorkspace(t *testing.T) {
 	t.Run("deleting connected workspace also deletes webhook", func(t *testing.T) {
 		svc, org, ctx := setup(t, withGithubOption(github.WithRepo("test/dummy")))
 
-		vcsprov := svc.createVCSProvider(t, ctx, org)
+		vcsprov := svc.createVCSProvider(t, ctx, org, nil)
 		ws, err := svc.Workspaces.Create(ctx, workspace.CreateOptions{
 			Name:         internal.String(uuid.NewString()),
 			Organization: &org.Name,
@@ -108,7 +108,7 @@ func TestWorkspace(t *testing.T) {
 		svc, org, ctx := setup(t, withGithubOption(github.WithRepo("test/dummy")))
 
 		ws := svc.createWorkspace(t, ctx, org)
-		vcsprov := svc.createVCSProvider(t, ctx, org)
+		vcsprov := svc.createVCSProvider(t, ctx, org, nil)
 
 		got, err := svc.Connections.Connect(ctx, connections.ConnectOptions{
 			VCSProviderID: vcsprov.ID,

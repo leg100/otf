@@ -24,7 +24,7 @@ func TestConnectRepoE2E(t *testing.T) {
 		withGithubOption(github.WithArchive(testutils.ReadFile(t, "../testdata/github.tar.gz"))),
 	)
 	// create vcs provider for authenticating to github backend
-	provider := daemon.createVCSProvider(t, ctx, org)
+	provider := daemon.createVCSProvider(t, ctx, org, nil)
 
 	browser.New(t, ctx, func(page playwright.Page) {
 		createWorkspace(t, page, daemon.System.Hostname(), org.Name, "my-test-workspace")

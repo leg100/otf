@@ -17,17 +17,19 @@ func RegisterOAuthHandler(
 	authenticatorService *authenticator.Service,
 	hostname string,
 	clientID, clientSecret string,
+	skipTLSVerification bool,
 ) error {
 	return authenticatorService.RegisterOAuthClient(authenticator.OpaqueHandlerConfig{
 		ClientConstructor: NewOAuthClient,
 		OAuthConfig: authenticator.OAuthConfig{
-			Name:         "Github",
-			Hostname:     hostname,
-			Endpoint:     OAuthEndpoint,
-			Scopes:       OAuthScopes,
-			ClientID:     clientID,
-			ClientSecret: clientSecret,
-			Icon:         Icon(),
+			Name:                "github",
+			Hostname:            hostname,
+			Endpoint:            OAuthEndpoint,
+			Scopes:              OAuthScopes,
+			ClientID:            clientID,
+			ClientSecret:        clientSecret,
+			Icon:                Icon(),
+			SkipTLSVerification: skipTLSVerification,
 		},
 	})
 }

@@ -90,7 +90,7 @@ func TestIntegration_VCSProviderTokenUI(t *testing.T) {
 		err = page.Locator(`//button[text()='Update']`).Click()
 		require.NoError(t, err)
 
-		err = expect.Locator(page.GetByRole("alert")).ToHaveText(`updated provider: GitHub (Token)`)
+		err = expect.Locator(page.GetByRole("alert")).ToHaveText(`updated provider: Github-Token`)
 		require.NoError(t, err)
 
 		// delete token
@@ -100,7 +100,7 @@ func TestIntegration_VCSProviderTokenUI(t *testing.T) {
 		err = page.Locator(`//button[@id='delete-vcs-provider-button']`).Click()
 		require.NoError(t, err)
 
-		err = expect.Locator(page.GetByRole("alert")).ToHaveText(`deleted provider: GitHub (Token)`)
+		err = expect.Locator(page.GetByRole("alert")).ToHaveText(`deleted provider: Github-Token`)
 		require.NoError(t, err)
 	})
 }

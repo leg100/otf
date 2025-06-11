@@ -44,7 +44,7 @@ func TestIntegration_MinimumPermissions(t *testing.T) {
 	require.NoError(t, err)
 
 	// Guest should be able to get a provider
-	provider := svc.createVCSProvider(t, ctx, org)
+	provider := svc.createVCSProvider(t, ctx, org, nil)
 	_, err = svc.VCSProviders.Get(guestCtx, provider.ID)
 	require.NoError(t, err)
 }

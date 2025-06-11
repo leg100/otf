@@ -24,7 +24,7 @@ func TestIntegration_AllowCLIApply(t *testing.T) {
 		github.WithArchive(testutils.ReadFile(t, "../testdata/github.tar.gz")),
 	))
 
-	vcsProvider := daemon.createVCSProvider(t, ctx, org)
+	vcsProvider := daemon.createVCSProvider(t, ctx, org, nil)
 	ws, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
 		Name:         internal.String("connected-workspace"),
 		Organization: &org.Name,

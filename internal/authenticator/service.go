@@ -42,7 +42,12 @@ type (
 // the system. Supports multiple clients: zero or more clients that support an
 // opaque token, and one client that supports IDToken/OIDC.
 func NewAuthenticatorService(ctx context.Context, opts Options) (*Service, error) {
-	svc := Service{}
+	svc := Service{
+		Logger:          opts.Logger,
+		HostnameService: opts.HostnameService,
+		UserService:     opts.UserService,
+		TokensService:   opts.TokensService,
+	}
 	// Construct client with OIDC IDToken handler
 	if opts.IDTokenHandlerConfig.ClientID == "" && opts.IDTokenHandlerConfig.ClientSecret == "" {
 		// skip creating OIDC authenticator when creds are unspecified

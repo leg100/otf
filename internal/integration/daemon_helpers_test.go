@@ -208,20 +208,23 @@ func (s *testDaemon) waitRunStatus(t *testing.T, ctx context.Context, runID reso
 	return nil
 }
 
-func (s *testDaemon) createVCSProvider(t *testing.T, ctx context.Context, org *organization.Organization) *vcs.Provider {
+func (s *testDaemon) createVCSProvider(t *testing.T, ctx context.Context, org *organization.Organization, createOptions *vcs.CreateOptions) *vcs.Provider {
 	t.Helper()
 
 	if org == nil {
 		org = s.createOrganization(t, ctx)
 	}
 
-	provider, err := s.VCSProviders.Create(ctx, vcs.CreateOptions{
+	opts := vcs.CreateOptions{
 		Organization: org.Name,
-		// tests require a legitimate cloud name to avoid invalid foreign
-		// key error upon insert/update
-		KindID: github.TokenKindID,
-		Token:  internal.String(uuid.NewString()),
-	})
+		KindID:       github.TokenKindID,
+		Token:        internal.String(uuid.NewString()),
+	}
+	if createOptions != nil {
+		opts.Name = createOptions.Name
+	}
+
+	provider, err := s.VCSProviders.Create(ctx, opts)
 	require.NoError(t, err)
 	return provider
 }

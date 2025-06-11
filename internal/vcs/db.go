@@ -118,6 +118,7 @@ func (db *pgdb) listByOrganization(ctx context.Context, organization organizatio
 SELECT *
 FROM vcs_providers v
 WHERE v.organization_name = $1
+ORDER BY v.name
 `, organization)
 	return db.scanMany(ctx, rows)
 }
@@ -127,6 +128,7 @@ func (db *pgdb) listByInstall(ctx context.Context, installID int64) ([]*Provider
 SELECT *
 FROM vcs_providers v
 WHERE v.install_id = $1
+ORDER BY v.name
 `, installID)
 	return db.scanMany(ctx, rows)
 }
@@ -163,13 +165,18 @@ func (db *pgdb) scanOne(ctx context.Context, row pgx.Rows) (*Provider, error) {
 }
 
 func (db *pgdb) scanMany(ctx context.Context, row pgx.Rows) ([]*Provider, error) {
+	// convert to models
 	models, err := sql.CollectRows(row, pgx.RowToStructByName[model])
 	if err != nil {
 		return nil, err
 	}
+	// convert models to providers
 	providers := make([]*Provider, len(models))
 	for i, m := range models {
 		providers[i], err = db.toProvider(ctx, m)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return providers, nil
 }

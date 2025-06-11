@@ -256,10 +256,12 @@ func TestIntegration_GithubApp_Event(t *testing.T) {
 		github.WithArchive(testutils.ReadFile(t, "../testdata/github.tar.gz")),
 		github.WithHandler("/api/v3/app/installations/42997659", func(w http.ResponseWriter, r *http.Request) {
 			out, err := json.Marshal(&gogithub.Installation{
-				ID:         internal.Int64(42997659),
-				AppID:      internal.Int64(123),
-				Account:    &gogithub.User{Login: internal.String("leg100")},
-				TargetType: internal.String("User"),
+				ID:    internal.Int64(42997659),
+				AppID: internal.Int64(123),
+				Account: &gogithub.User{
+					Login: internal.String("leg100"),
+					Type:  internal.String("User"),
+				},
 			})
 			require.NoError(t, err)
 			w.Header().Add("Content-Type", "application/json")

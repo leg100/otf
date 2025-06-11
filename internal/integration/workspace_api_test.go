@@ -79,7 +79,7 @@ func TestIntegration_WorkspaceAPI_CreateConnected(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	provider := daemon.createVCSProvider(t, ctx, org)
+	provider := daemon.createVCSProvider(t, ctx, org, nil)
 
 	oauth, err := client.OAuthClients.Create(ctx, org.Name.String(), tfe.OAuthClientCreateOptions{
 		OAuthToken:      provider.Token,

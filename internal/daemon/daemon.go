@@ -317,6 +317,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		cfg.GitlabHostname,
 		cfg.GitlabClientID,
 		cfg.GitlabClientSecret,
+		cfg.SkipTLSVerification,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("registering gitlab oauth client: %w", err)
@@ -328,6 +329,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		cfg.GithubHostname,
 		cfg.GithubClientID,
 		cfg.GithubClientSecret,
+		cfg.SkipTLSVerification,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("registering github oauth client: %w", err)

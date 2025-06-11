@@ -26,7 +26,7 @@ type Kind struct {
 	ID KindID
 	// Hostname is the hostname of the VCS host, not including scheme or path.
 	Hostname string
-	// Icon renders a icon distinguishing the VCS host kind.
+	// Icon renders an icon distinguishing the VCS host kind.
 	Icon templ.Component
 	// TokenKind provides info about the token the provider expects. Mutually
 	// exclusive with InstallationKind.
