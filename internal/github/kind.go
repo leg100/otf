@@ -11,7 +11,7 @@ const (
 	AppKindID   vcs.KindID = "github-app"
 )
 
-type providerKind struct {
+type kindProvider struct {
 	db                  *appDB
 	hostname            string
 	service             *Service
@@ -24,7 +24,7 @@ func registerVCSKinds(
 	hostname string,
 	skipTLSVerification bool,
 ) {
-	provider := &providerKind{
+	provider := &kindProvider{
 		service:             svc,
 		db:                  svc.db,
 		hostname:            hostname,
@@ -53,7 +53,7 @@ func registerVCSKinds(
 	})
 }
 
-func (p *providerKind) NewClient(ctx context.Context, cfg vcs.Config) (vcs.Client, error) {
+func (p *kindProvider) NewClient(ctx context.Context, cfg vcs.Config) (vcs.Client, error) {
 	opts := ClientOptions{
 		Hostname:            p.hostname,
 		SkipTLSVerification: p.skipTLSVerification,
@@ -78,6 +78,6 @@ func (p *providerKind) NewClient(ctx context.Context, cfg vcs.Config) (vcs.Clien
 	return NewClient(opts)
 }
 
-func (p *providerKind) GetApp(ctx context.Context) (vcs.App, error) {
+func (p *kindProvider) GetApp(ctx context.Context) (vcs.App, error) {
 	return p.service.GetApp(ctx)
 }
