@@ -10,6 +10,8 @@ import (
 )
 
 type (
+	// App is a Github App. Includes a client for interacting with Github
+	// authenticated as the app.
 	App struct {
 		ID            AppID  `db:"github_app_id"` // github's app id
 		Slug          string // github's "slug" name
@@ -25,12 +27,13 @@ type (
 	}
 
 	CreateAppOptions struct {
-		AppID         int64
-		WebhookSecret string
-		PrivateKey    string
-		Slug          string
-		Organization  *string
-		Hostname      string
+		AppID               int64
+		WebhookSecret       string
+		PrivateKey          string
+		Slug                string
+		Organization        *string
+		Hostname            string
+		SkipTLSVerification bool
 	}
 )
 
@@ -44,9 +47,8 @@ func newApp(opts CreateAppOptions) (*App, error) {
 	}
 
 	client, err := NewClient(ClientOptions{
-		Hostname: opts.Hostname,
-		// TODO: toggle depending upon options passed in
-		SkipTLSVerification: true,
+		Hostname:            opts.Hostname,
+		SkipTLSVerification: opts.SkipTLSVerification,
 		AppCredentials: &AppCredentials{
 			ID:         app.ID,
 			PrivateKey: app.PrivateKey,

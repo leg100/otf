@@ -6,11 +6,9 @@ import (
 	"github.com/leg100/otf/internal/vcs"
 )
 
-const KindID vcs.KindID = "gitlab"
-
 func RegisterVCSKind(vcsService *vcs.Service, hostname string, skipTLSVerification bool) {
 	vcsService.RegisterKind(vcs.Kind{
-		ID:   KindID,
+		ID:   vcs.KindID("gitlab"),
 		Icon: Icon(),
 		TokenKind: &vcs.TokenKind{
 			Description: tokenDescription(hostname),
