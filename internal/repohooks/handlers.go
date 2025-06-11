@@ -98,7 +98,7 @@ func (h *handlers) repohookHandler(w http.ResponseWriter, r *http.Request) {
 	h.Publish(vcs.Event{
 		EventHeader: vcs.EventHeader{
 			VCSProviderID: hook.vcsProviderID,
-			Source:        kind.GetSource(),
+			Source:        kind.Source(),
 		},
 		EventPayload: *payload,
 	})

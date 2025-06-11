@@ -9,7 +9,6 @@ import (
 func RegisterVCSKind(vcsService *vcs.Service, hostname string, skipTLSVerification bool) {
 	vcsService.RegisterKind(vcs.Kind{
 		ID:   vcs.KindID("forgejo"),
-		Name: "Forgejo",
 		Icon: Icon(),
 		TokenKind: &vcs.TokenKind{
 			Description: tokenDescription(hostname),

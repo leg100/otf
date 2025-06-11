@@ -15,6 +15,7 @@ import (
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/vcs"
 )
 
 const (
@@ -40,7 +41,7 @@ type webClient interface {
 	GetApp(ctx context.Context) (*App, error)
 	DeleteApp(ctx context.Context) error
 
-	ListInstallations(ctx context.Context) ([]*Installation, error)
+	ListInstallations(ctx context.Context) ([]vcs.Installation, error)
 	DeleteInstallation(ctx context.Context, installID int64) error
 }
 
@@ -104,18 +105,20 @@ func (h *webHandlers) new(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
+	var installs []vcs.Installation
 	app, err := h.svc.GetApp(r.Context())
 	if errors.Is(err, internal.ErrResourceNotFound) {
 		// app not found, which is ok.
 	} else if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
-	}
-
-	installs, err := h.svc.ListInstallations(r.Context())
-	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+	} else {
+		// App found, now get installs
+		installs, err = h.svc.ListInstallations(r.Context())
+		if err != nil {
+			html.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 	}
 
 	props := getAppsProps{
@@ -183,11 +186,7 @@ func (h *webHandlers) delete(w http.ResponseWriter, r *http.Request) {
 	}
 	// render a small templated flash message
 	buf := new(bytes.Buffer)
-	props := deleteMessageProps{
-		githubHostname: h.GithubHostname,
-		app:            app,
-	}
-	if err := deleteMessage(props).Render(r.Context(), buf); err != nil {
+	if err := deleteMessage(app).Render(r.Context(), buf); err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

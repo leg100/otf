@@ -14,26 +14,26 @@ import (
 // KindID of vcs hosting provider
 type KindID string
 
+// Kind is a kind of vcs provider. Each kind represents a particular VCS hosting
+// provider (e.g. github), and a way of interacting with the provider, including
+// authentication, event handling. Typically there is one kind per VCS hosting
+// provider, but providers sometimes offer more than one of interacting with it,
+// e.g. GitHub uses both personal access tokens and a GitHub 'app' which is
+// 'installed' via a private key.
 type Kind struct {
 	// ID distinguishes this kind from other kinds. NOTE: This must have first
 	// been inserted into the vcs_kinds table via a database migration.
 	ID KindID
-	// Name provides a human meaningful identification of this provider kind.
-	Name string
 	// Hostname is the hostname of the VCS host, not including scheme or path.
 	Hostname string
-	// Source identifies the origin of terraform configurations coming from a
-	// vcs repo belonging to this kind. If not set then the KindID is used as
-	// the source.
-	Source configversion.Source
 	// Icon renders a icon distinguishing the VCS host kind.
 	Icon templ.Component
 	// TokenKind provides info about the token the provider expects. Mutually
 	// exclusive with InstallationKind.
 	TokenKind *TokenKind
-	// InstallationKind provides info about installations for this ProviderKind.
+	// AppKind provides info about installations for this ProviderKind.
 	// Mutually exclusive with TokenKind.
-	InstallationKind InstallationKind
+	AppKind AppKind
 	// NewClient constructs a client implementation.
 	NewClient func(context.Context, Config) (Client, error)
 	// EventHandler handles incoming events from the VCS host before relaying
@@ -50,10 +50,7 @@ type Kind struct {
 	TFEServiceProvider TFEServiceProviderType
 }
 
-func (k Kind) GetSource() configversion.Source {
-	if k.Source != "" {
-		return k.Source
-	}
+func (k Kind) Source() configversion.Source {
 	return configversion.Source(k.ID)
 }
 
@@ -63,37 +60,21 @@ type TokenKind struct {
 	Description templ.Component
 }
 
-type InstallationKind interface {
+type AppKind interface {
+	GetApp(context.Context) (App, error)
+}
+
+type App interface {
 	// ListInstallations retrieves a list of installations.
-	ListInstallations(context.Context) (ListInstallationsResult, error)
+	ListInstallations(context.Context) ([]Installation, error)
 	// GetInstallation retrieves an installation by its ID.
 	GetInstallation(context.Context, int64) (Installation, error)
-}
-
-type ListInstallationsResult struct {
 	// InstallationLink is a link to the site where a user can create an
 	// installation.
-	InstallationLink templ.SafeURL
-	// Results is a map of IDs of existing installations keyed by a human
-	// meaningful name.
-	Results []Installation
+	InstallationLink() templ.SafeURL
 }
 
-type Installation struct {
-	ID           int64
-	AppID        int64
-	Username     *string
-	Organization *string
-}
-
-func (i Installation) String() string {
-	if i.Organization != nil {
-		return "org/" + *i.Organization
-	}
-	return "user/" + *i.Username
-}
-
-// kindDB is a database of sources and their icons
+// kindDB is a database of vcs provider kinds
 type kindDB struct {
 	mu            sync.Mutex
 	kinds         map[KindID]Kind
@@ -114,7 +95,7 @@ func (db *kindDB) RegisterKind(kind Kind) {
 	db.kinds[kind.ID] = kind
 	// Also register its icon to be rendered on the UI next to runs triggered
 	// by this kind.
-	db.configService.RegisterSourceIcon(kind.GetSource(), IconWrapper(kind.ID, kind.Icon))
+	db.configService.RegisterSourceIcon(kind.Source(), IconWrapper(kind.ID, kind.Icon))
 }
 
 func (db *kindDB) GetKind(id KindID) (Kind, error) {

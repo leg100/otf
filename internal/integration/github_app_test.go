@@ -20,9 +20,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestIntegration_GithubAppNewUI demonstrates creation of a github app via the
-// UI.
-func TestIntegration_GithubAppNewUI(t *testing.T) {
+// TestIntegration_GithubAppsUI tests management of github apps via the UI.
+func TestIntegration_GithubAppsUI(t *testing.T) {
 	integrationTest(t)
 
 	// creating a github app requires site-admin role
@@ -95,9 +94,11 @@ func TestIntegration_GithubAppNewUI(t *testing.T) {
 				require.NoError(t, err)
 
 				screenshot(t, page, "empty_github_app_page")
+
 				// go to page for creating a new github app
 				err = page.Locator("//a[@id='new-github-app-link']").Click()
 				require.NoError(t, err)
+
 				screenshot(t, page, "new_github_app")
 
 				if tt.public {
@@ -117,6 +118,7 @@ func TestIntegration_GithubAppNewUI(t *testing.T) {
 
 				err = expect.Locator(page.GetByText("success")).ToBeVisible()
 				require.NoError(t, err)
+
 			})
 		})
 	}
@@ -155,7 +157,11 @@ func TestIntegration_GithubAppNewUI(t *testing.T) {
 
 			err = expect.Locator(page.Locator(`//tr[@id='item-github-app']//td[1]`)).ToHaveText("my-otf-app")
 			require.NoError(t, err)
+
 			screenshot(t, page, "github_app_created")
+
+			err = expect.Locator(page.GetByRole("alert")).ToHaveText(`created github app: my-otf-app`)
+			require.NoError(t, err)
 		})
 	})
 
@@ -165,8 +171,12 @@ func TestIntegration_GithubAppNewUI(t *testing.T) {
 			w.Header().Add("Content-Type", "application/json")
 			out, err := json.Marshal([]*gogithub.Installation{
 				{
-					ID:      internal.Int64(123),
-					Account: &gogithub.User{Login: internal.String("leg100")},
+					ID:    internal.Int64(123),
+					AppID: internal.Int64(123),
+					Account: &gogithub.User{
+						Login: internal.String("leg100"),
+						Type:  internal.String("User"),
+					},
 				},
 			})
 			require.NoError(t, err)
@@ -186,7 +196,50 @@ func TestIntegration_GithubAppNewUI(t *testing.T) {
 
 			err = expect.Locator(page.Locator(`//div[@id='installations']//tbody//td[1]//a`)).ToContainText("user/leg100")
 			require.NoError(t, err)
+
 			screenshot(t, page, "github_app_install_list")
+		})
+	})
+
+	// demonstrate removing a github app via the UI
+	t.Run("delete github app", func(t *testing.T) {
+		handler := github.WithHandler("/api/v3/app/installations", func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Add("Content-Type", "application/json")
+			out, err := json.Marshal([]*gogithub.Installation{
+				{
+					ID:    internal.Int64(123),
+					AppID: internal.Int64(123),
+					Account: &gogithub.User{
+						Login: internal.String("leg100"),
+						Type:  internal.String("User"),
+					},
+				},
+			})
+			require.NoError(t, err)
+			w.Write(out)
+		})
+		daemon, _, _ := setup(t, withGithubOption(handler))
+
+		_, err := daemon.GithubApp.CreateApp(ctx, github.CreateAppOptions{
+			AppID:      123,
+			Slug:       "my-otf-app",
+			PrivateKey: string(testutils.ReadFile(t, "./fixtures/key.pem")),
+			Hostname:   "github.com",
+		})
+		require.NoError(t, err)
+
+		browser.New(t, ctx, func(page playwright.Page) {
+			_, err = page.Goto(daemon.System.URL("/app/github-apps"))
+			require.NoError(t, err)
+
+			err = expect.Locator(page.Locator(`//tr[@id='item-github-app']//td[1]`)).ToHaveText("my-otf-app")
+			require.NoError(t, err)
+
+			err = page.Locator(`//tr[@id='item-github-app']//button[@id='delete-button']`).Click()
+			require.NoError(t, err)
+
+			err = expect.Locator(page.GetByRole("alert")).ToHaveText(`Deleted GitHub app my-otf-app from OTF. You still need to delete the app in GitHub.`)
+			require.NoError(t, err)
 		})
 	})
 }

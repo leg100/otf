@@ -3,7 +3,6 @@ package github
 import (
 	"context"
 
-	"github.com/a-h/templ"
 	"github.com/leg100/otf/internal/vcs"
 )
 
@@ -13,7 +12,7 @@ const (
 )
 
 type provider struct {
-	db                  *pgdb
+	db                  *appDB
 	hostname            string
 	service             *Service
 	skipTLSVerification bool
@@ -32,20 +31,16 @@ func registerVCSKinds(
 		skipTLSVerification: skipTLSVerification,
 	}
 	vcsService.RegisterKind(vcs.Kind{
-		ID:               AppKindID,
-		Name:             "GitHub (App)",
-		Source:           "github",
-		Icon:             Icon(),
-		Hostname:         hostname,
-		InstallationKind: provider,
-		NewClient:        provider.NewClient,
+		ID:        AppKindID,
+		Icon:      Icon(),
+		Hostname:  hostname,
+		AppKind:   provider,
+		NewClient: provider.NewClient,
 		// Github apps don't need webhooks on repositories.
 		SkipRepohook: true,
 	})
 	vcsService.RegisterKind(vcs.Kind{
 		ID:       TokenKindID,
-		Name:     "GitHub (Token)",
-		Source:   "github",
 		Icon:     Icon(),
 		Hostname: hostname,
 		TokenKind: &vcs.TokenKind{
@@ -83,41 +78,6 @@ func (p *provider) NewClient(ctx context.Context, cfg vcs.Config) (vcs.Client, e
 	return NewClient(opts)
 }
 
-func (p *provider) GetInstallation(ctx context.Context, id int64) (vcs.Installation, error) {
-	install, err := p.service.GetInstallation(ctx, id)
-	if err != nil {
-		return vcs.Installation{}, err
-	}
-	vcsInstall := vcs.Installation{
-		ID:           *install.ID,
-		AppID:        int64(*install.AppID),
-		Organization: install.Organization(),
-		Username:     install.Username(),
-	}
-	return vcsInstall, nil
-}
-
-func (p *provider) ListInstallations(ctx context.Context) (vcs.ListInstallationsResult, error) {
-	app, err := p.service.GetApp(ctx)
-	if err != nil {
-		return vcs.ListInstallationsResult{}, err
-	}
-	installs, err := p.service.ListInstallations(ctx)
-	if err != nil {
-		return vcs.ListInstallationsResult{}, err
-	}
-	vcsInstalls := make([]vcs.Installation, len(installs))
-	for i, install := range installs {
-		vcsInstalls[i] = vcs.Installation{
-			ID:           *install.ID,
-			AppID:        *install.AppID,
-			Username:     install.Username(),
-			Organization: install.Organization(),
-		}
-	}
-	result := vcs.ListInstallationsResult{
-		InstallationLink: templ.SafeURL(app.NewInstallURL(p.hostname)),
-		Results:          vcsInstalls,
-	}
-	return result, nil
+func (p *provider) GetApp(ctx context.Context) (vcs.App, error) {
+	return p.service.GetApp(ctx)
 }

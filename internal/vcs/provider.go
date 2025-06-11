@@ -19,7 +19,8 @@ type (
 		Name         string
 		CreatedAt    time.Time
 		Organization organization.Name
-		Kind         Kind
+		// The kind of provider
+		Kind
 		// Config for constructing a client
 		Config
 		// Client is the actual client for interacting with the VCS host.
@@ -36,7 +37,7 @@ type (
 		Name         string
 		KindID       KindID `schema:"kind,required"`
 		Token        *string
-		InstallID    *int64 `schema:"install_id,required"`
+		InstallID    *int64 `schema:"install_id"`
 	}
 
 	UpdateOptions struct {
@@ -62,11 +63,15 @@ func (f *factory) newProvider(ctx context.Context, opts CreateOptions) (*Provide
 		Organization: opts.Organization,
 		Kind:         kind,
 	}
-	if kind.InstallationKind != nil {
+	if kind.AppKind != nil {
 		if opts.InstallID == nil {
 			return nil, errors.New("install ID required for client")
 		}
-		install, err := kind.InstallationKind.GetInstallation(ctx, *opts.InstallID)
+		app, err := kind.AppKind.GetApp(ctx)
+		if err != nil {
+			return nil, err
+		}
+		install, err := app.GetInstallation(ctx, *opts.InstallID)
 		if err != nil {
 			return nil, err
 		}
@@ -92,7 +97,7 @@ func (t *Provider) String() string {
 	if t.Name != "" {
 		return t.Name
 	}
-	return t.Kind.Name
+	return internal.Title(string(t.Kind.ID))
 }
 
 func (t *Provider) Update(opts UpdateOptions) error {
@@ -113,7 +118,7 @@ func (t *Provider) LogValue() slog.Value {
 		slog.String("id", t.ID.String()),
 		slog.Any("organization", t.Organization),
 		slog.String("name", t.String()),
-		slog.String("kind", t.Kind.Name),
+		slog.String("kind", string(t.Kind.ID)),
 	}
 	if t.Installation != nil {
 		attrs = append(attrs, slog.Int64("install_id", t.Installation.ID))

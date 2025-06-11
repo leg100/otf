@@ -51,7 +51,7 @@ func TestIntegration_VCSProviderTokenUI(t *testing.T) {
 		}).Click()
 		require.NoError(t, err)
 
-		err = expect.Locator(page.GetByRole("alert")).ToHaveText(`created provider: github (token)`)
+		err = expect.Locator(page.GetByRole("alert")).ToHaveText(`created provider: Github-Token`)
 		require.NoError(t, err)
 
 		screenshot(t, page, "vcs_provider_created_github_pat_provider")
@@ -90,7 +90,7 @@ func TestIntegration_VCSProviderTokenUI(t *testing.T) {
 		err = page.Locator(`//button[text()='Update']`).Click()
 		require.NoError(t, err)
 
-		err = expect.Locator(page.GetByRole("alert")).ToHaveText(`updated provider: github (token)`)
+		err = expect.Locator(page.GetByRole("alert")).ToHaveText(`updated provider: GitHub (Token)`)
 		require.NoError(t, err)
 
 		// delete token
@@ -100,7 +100,7 @@ func TestIntegration_VCSProviderTokenUI(t *testing.T) {
 		err = page.Locator(`//button[@id='delete-vcs-provider-button']`).Click()
 		require.NoError(t, err)
 
-		err = expect.Locator(page.GetByRole("alert")).ToHaveText(`deleted provider: github (token)`)
+		err = expect.Locator(page.GetByRole("alert")).ToHaveText(`deleted provider: GitHub (Token)`)
 		require.NoError(t, err)
 	})
 }
@@ -113,9 +113,12 @@ func TestIntegration_VCSProviderAppUI(t *testing.T) {
 	// create github stub server and return its hostname.
 	githubHostname := func(t *testing.T) string {
 		install := &gogithub.Installation{
-			ID:         internal.Int64(123),
-			Account:    &gogithub.User{Login: internal.String("leg100")},
-			TargetType: internal.String("User"),
+			ID:    internal.Int64(123),
+			AppID: internal.Int64(456),
+			Account: &gogithub.User{
+				Login: internal.String("leg100"),
+				Type:  internal.String("User"),
+			},
 		}
 		mux := http.NewServeMux()
 		mux.HandleFunc("/api/v3/app/installations", func(w http.ResponseWriter, r *http.Request) {
@@ -153,7 +156,7 @@ func TestIntegration_VCSProviderAppUI(t *testing.T) {
 
 	// create app
 	_, err := daemon.GithubApp.CreateApp(ctx, github.CreateAppOptions{
-		AppID:      123,
+		AppID:      456,
 		Slug:       "otf-123",
 		PrivateKey: string(testutils.ReadFile(t, "./fixtures/key.pem")),
 	})
@@ -170,6 +173,7 @@ func TestIntegration_VCSProviderAppUI(t *testing.T) {
 		require.NoError(t, err)
 
 		screenshot(t, page, "vcs_provider_list_including_github_app")
+
 		// click button for creating a new vcs provider with a github app
 		err = page.GetByRole("button").Filter(playwright.LocatorFilterOptions{
 			HasText: "New Github-App Provider",
@@ -183,7 +187,7 @@ func TestIntegration_VCSProviderAppUI(t *testing.T) {
 		err = page.GetByRole("button").Filter(playwright.LocatorFilterOptions{HasText: "Create"}).Click()
 		require.NoError(t, err)
 
-		err = expect.Locator(page.GetByRole("alert")).ToHaveText(`created provider: github (app)`)
+		err = expect.Locator(page.GetByRole("alert")).ToHaveText(`created provider: Github-App`)
 		require.NoError(t, err)
 	})
 }

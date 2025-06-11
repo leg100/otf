@@ -11,7 +11,6 @@ const KindID vcs.KindID = "gitlab"
 func RegisterVCSKind(vcsService *vcs.Service, hostname string, skipTLSVerification bool) {
 	vcsService.RegisterKind(vcs.Kind{
 		ID:   KindID,
-		Name: "GitLab",
 		Icon: Icon(),
 		TokenKind: &vcs.TokenKind{
 			Description: tokenDescription(hostname),

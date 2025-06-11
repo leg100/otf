@@ -1,6 +1,7 @@
 package vcs
 
 import (
+	"errors"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/components/paths"
@@ -61,8 +62,8 @@ templ (t Table) Header() {
 templ (t Table) Row(provider *Provider) {
 	<tr id={ "item-vcsprovider-" + provider.String() }>
 		<td>
-			<div class="flex gap-2 items-center">
-				@provider.Kind.Icon
+			<div class="flex gap-2">
+				@provider.Icon
 				{ provider.String() }
 			</div>
 		</td>
@@ -92,13 +93,13 @@ templ edit(provider *Provider) {
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "VCS Providers", Link: paths.VCSProviders(provider.Organization)},
 			{Name: provider.String()},
-			{Name: "Settings"},
+			{Name: "settings"},
 		},
 	}) {
 		@form(formProps{
-			edit:   true,
-			action: paths.UpdateVCSProvider(provider.ID),
-			kind:   provider.Kind,
+			provider: provider,
+			edit:     true,
+			action:   paths.UpdateVCSProvider(provider.ID),
 		})
 		<hr class="my-4"/>
 		<h3 class="font-semibold text-lg mb-2">Advanced</h3>
@@ -120,91 +121,118 @@ templ newProvider(props newProviderProps) {
 		Title:        "new vcs provider",
 		Organization: props.organization,
 		Breadcrumbs: []components.Breadcrumb{
-			{Name: "New " + internal.Title(string(props.kind.ID)) + " VCS Provider"},
+			{Name: "New VCS Provider"},
 		},
 	}) {
-		<div>
-			Create a { internal.Title(string(props.kind.ID)) } VCS provider.
-		</div>
 		@form(formProps{
-			action: paths.CreateVCSProvider(props.organization),
-			kind:   props.kind,
-			edit:   false,
+			provider: &Provider{Kind: props.kind},
+			action:   paths.CreateVCSProvider(props.organization),
+			edit:     false,
 		})
 	}
 }
 
 type formProps struct {
-	action templ.SafeURL
-	kind   Kind
-	name   string
-	config Config
-	edit   bool
+	provider *Provider
+	action   templ.SafeURL
+	edit     bool
 }
 
 templ form(props formProps) {
-	<form class="flex flex-col gap-5" action={ props.action } method="POST">
-		<div class="field">
-			<label for="name">Name</label>
-			<input
-				class="input w-64"
-				type="text"
-				name="name"
-				id="name"
-				value={ props.name }
-			/>
-			<span class="description">An optional display name for your VCS provider.</span>
-		</div>
-		if props.kind.TokenKind != nil {
-			<div class="field">
-				<label for="token">Token</label>
-				<textarea
-					class="input w-96"
-					rows="3"
-					name="token"
-					id="token"
-					if props.edit {
-						placeholder="*****"
-					} else {
-						required
-					}
-				></textarea>
-				<span class="description">
-					@props.kind.TokenKind.Description
-				</span>
-			</div>
-		}
-		<!-- User cannot edit installation -->
-		if !props.edit && props.kind.InstallationKind != nil {
-			{{
-					result, err := props.kind.InstallationKind.ListInstallations(ctx)
-					if err != nil {
-						return err
-					}
-			}}
-			if len(result.Results) > 0 {
-				<div class="field">
-					<label for="install_id">Installation</label>
-					<select class="select w-48" name="install_id" id="select-install-id">
-						for _, install := range result.Results {
-							<option value={ install.ID }>
-								{ install.String() }
-							</option>
-						}
-					</select>
-					<span class="description">Select an installation.</span>
-				</div>
-			} else {
-				<span>No installations found. Install it <a class="underline" href={ result.InstallationLink }>first</a>.</span>
+	<div class="mb-2 flex gap-2">
+		@props.provider.Icon
+		<span class="">{ internal.Title(string(props.provider.Kind.ID)) }</span>
+	</div>
+	{{
+		var (
+			app                 App
+			showCreateAppNotice bool
+			err                 error
+		)
+		if props.provider.AppKind != nil {
+			app, err = props.provider.AppKind.GetApp(ctx)
+			if errors.Is(err, internal.ErrResourceNotFound) {
+				showCreateAppNotice = true
+			} else if err != nil {
+				return err
 			}
 		}
-		if props.edit {
-			<button class="btn w-32">Update</button>
-		} else {
-			<button class="btn w-32">Create</button>
-			<input type="hidden" name="kind" id="kind" value={ string(props.kind.ID) }/>
-		}
-	</form>
+	}}
+	if showCreateAppNotice {
+		<span>
+			Application not yet created. Create one <a class="link" href={ paths.NewGithubApp() }>here</a>.
+		</span>
+	} else {
+		<form class="flex flex-col gap-5" action={ props.action } method="POST">
+			<div class="field">
+				<label for="name">Name</label>
+				<input
+					class="input w-64"
+					type="text"
+					name="name"
+					id="name"
+					value={ props.provider.String() }
+				/>
+				<span class="description">An optional display name for your VCS provider.</span>
+			</div>
+			if props.provider.TokenKind != nil {
+				<div class="field">
+					<label for="token">Token</label>
+					<textarea
+						class="input w-96"
+						rows="3"
+						name="token"
+						id="token"
+						if props.edit {
+							placeholder="*****"
+						} else {
+							required
+						}
+					></textarea>
+					<span class="description">
+						@props.provider.TokenKind.Description
+					</span>
+				</div>
+			}
+			if app != nil {
+				if props.edit {
+					<!-- User cannot edit installation -->
+					<div class="field">
+						<label for="install_id">Installation</label>
+						<input class="input" type="text" readonly disabled name="install_id" id="install-id" value={ props.provider.Installation.ID }/>
+					</div>
+				} else {
+					{{
+						installations, err := app.ListInstallations(ctx)
+						if err != nil {
+							return err
+						}
+					}}
+					if len(installations) > 0 {
+						<div class="field">
+							<label for="install_id">Installation</label>
+							<select class="select w-48" name="install_id" id="select-install-id">
+								for _, install := range installations {
+									<option value={ install.ID }>
+										{ install.String() }
+									</option>
+								}
+							</select>
+							<span class="description">Select an installation.</span>
+						</div>
+					} else {
+						<span>No installations found. Install it <a class="underline" href={ app.InstallationLink() }>first</a>.</span>
+					}
+				}
+			}
+			if props.edit {
+				<button class="btn w-32">Update</button>
+			} else {
+				<button class="btn w-32">Create</button>
+				<input type="hidden" name="kind" id="kind" value={ string(props.provider.Kind.ID) }/>
+			}
+		</form>
+	}
 }
 
 templ IconWrapper(id KindID, icon templ.Component) {

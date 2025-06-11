@@ -1,8 +1,11 @@
 package github
 
 import (
+	"context"
 	"fmt"
 
+	"github.com/a-h/templ"
+	"github.com/leg100/otf/internal/vcs"
 	"golang.org/x/exp/slog"
 )
 
@@ -16,6 +19,9 @@ type (
 		// Organization is the name of the *github* organization that owns the
 		// app. If the app is owned by a user then this is nil.
 		Organization *string `db:"organization"`
+		Hostname     string
+
+		*Client
 	}
 
 	CreateAppOptions struct {
@@ -24,17 +30,34 @@ type (
 		PrivateKey    string
 		Slug          string
 		Organization  *string
+		Hostname      string
 	}
 )
 
-func newApp(opts CreateAppOptions) *App {
-	return &App{
+func newApp(opts CreateAppOptions) (*App, error) {
+	app := &App{
 		ID:            AppID(opts.AppID),
 		Slug:          opts.Slug,
 		WebhookSecret: opts.WebhookSecret,
 		PrivateKey:    opts.PrivateKey,
 		Organization:  opts.Organization,
 	}
+
+	client, err := NewClient(ClientOptions{
+		Hostname: opts.Hostname,
+		// TODO: toggle depending upon options passed in
+		SkipTLSVerification: true,
+		AppCredentials: &AppCredentials{
+			ID:         app.ID,
+			PrivateKey: app.PrivateKey,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+	app.Client = client
+
+	return app, nil
 }
 
 func (a *App) String() string { return a.Slug }
@@ -49,6 +72,10 @@ func (a *App) NewInstallURL(hostname string) string {
 	return "https://" + hostname + "/apps/" + a.Slug + "/installations/new"
 }
 
+func (a *App) InstallationLink() templ.SafeURL {
+	return templ.SafeURL(a.NewInstallURL(a.Hostname))
+}
+
 // LogValue implements slog.LogValuer.
 func (a *App) LogValue() slog.Value {
 	return slog.GroupValue(
@@ -58,10 +85,51 @@ func (a *App) LogValue() slog.Value {
 }
 
 // AdvancedURL returns the URL for the "advanced" settings on github
-func (a *App) AdvancedURL(hostname string) string {
+func (a *App) AdvancedURL() templ.SafeURL {
 	path := fmt.Sprintf("/settings/apps/%s/advanced", a.Slug)
 	if a.Organization != nil {
 		path = fmt.Sprintf("/organizations/%s%s", *a.Organization, path)
 	}
-	return fmt.Sprintf("https://%s%s", hostname, path)
+	return templ.SafeURL(fmt.Sprintf("https://%s%s", a.Hostname, path))
+}
+
+// ListInstallations lists installations of the currently authenticated app.
+func (a *App) ListInstallations(ctx context.Context) ([]vcs.Installation, error) {
+	installs, resp, err := a.client.Apps.ListInstallations(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	to := make([]vcs.Installation, len(installs))
+	for i, install := range installs {
+		var err error
+		to[i], err = vcs.NewInstallation(install)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return to, err
+}
+
+func (a *App) GetInstallation(ctx context.Context, installID int64) (vcs.Installation, error) {
+	install, resp, err := a.client.Apps.GetInstallation(ctx, installID)
+	if err != nil {
+		return vcs.Installation{}, err
+	}
+	defer resp.Body.Close()
+
+	return vcs.NewInstallation(install)
+}
+
+// DeleteInstallation deletes an installation of a github app with the given
+// installation ID.
+func (a *App) DeleteInstallation(ctx context.Context, installID int64) error {
+	resp, err := a.client.Apps.DeleteInstallation(ctx, installID)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	return err
 }

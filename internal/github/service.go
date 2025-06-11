@@ -2,7 +2,6 @@ package github
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/go-logr/logr"
@@ -20,9 +19,7 @@ type (
 		logr.Logger
 		*authz.Authorizer
 
-		GithubHostname string
-
-		db  *pgdb
+		db  *appDB
 		web *webHandlers
 	}
 
@@ -42,10 +39,13 @@ type (
 
 func NewService(opts Options) *Service {
 	svc := Service{
-		Logger:         opts.Logger,
-		GithubHostname: opts.GithubHostname,
-		Authorizer:     opts.Authorizer,
-		db:             &pgdb{opts.DB},
+		Logger:     opts.Logger,
+		Authorizer: opts.Authorizer,
+		db: &appDB{
+			DB:                  opts.DB,
+			hostname:            opts.GithubHostname,
+			skipTLSVerification: opts.SkipTLSVerification,
+		},
 	}
 	svc.web = &webHandlers{
 		authorizer:      opts.Authorizer,
@@ -90,7 +90,11 @@ func (a *Service) CreateApp(ctx context.Context, opts CreateAppOptions) (*App, e
 		return nil, err
 	}
 
-	app := newApp(opts)
+	app, err := newApp(opts)
+	if err != nil {
+		a.Error(err, "creating github app", "app", app, "subject", subject)
+		return nil, err
+	}
 
 	if err := a.db.create(ctx, app); err != nil {
 		a.Error(err, "creating github app", "app", app, "subject", subject)
@@ -130,42 +134,20 @@ func (a *Service) DeleteApp(ctx context.Context) error {
 	return nil
 }
 
-func (a *Service) ListInstallations(ctx context.Context) ([]*Installation, error) {
+func (a *Service) ListInstallations(ctx context.Context) ([]vcs.Installation, error) {
 	app, err := a.db.get(ctx)
-	if errors.Is(err, internal.ErrResourceNotFound) {
-		return nil, nil
-	} else if err != nil {
-		return nil, fmt.Errorf("retrieving github app: %w", err)
-	}
-	client, err := a.newClient(app)
 	if err != nil {
 		return nil, err
 	}
-	from, err := client.ListInstallations(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("listing github app installs: %w", err)
-	}
-	to := make([]*Installation, len(from))
-	for i, f := range from {
-		to[i] = &Installation{Installation: f}
-	}
-	return to, nil
+	return app.ListInstallations(ctx)
 }
 
-func (a *Service) GetInstallation(ctx context.Context, installID int64) (*Installation, error) {
+func (a *Service) GetInstallation(ctx context.Context, installID int64) (vcs.Installation, error) {
 	app, err := a.db.get(ctx)
 	if err != nil {
-		return nil, err
+		return vcs.Installation{}, fmt.Errorf("retrieving github app: %w", err)
 	}
-	client, err := a.newClient(app)
-	if err != nil {
-		return nil, err
-	}
-	install, err := client.GetInstallation(ctx, installID)
-	if err != nil {
-		return nil, err
-	}
-	return &Installation{Installation: install}, nil
+	return app.GetInstallation(ctx, installID)
 }
 
 func (a *Service) DeleteInstallation(ctx context.Context, installID int64) error {
@@ -173,23 +155,5 @@ func (a *Service) DeleteInstallation(ctx context.Context, installID int64) error
 	if err != nil {
 		return err
 	}
-	client, err := a.newClient(app)
-	if err != nil {
-		return err
-	}
-	if err := client.DeleteInstallation(ctx, installID); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (a *Service) newClient(app *App) (*Client, error) {
-	return NewClient(ClientOptions{
-		Hostname:            a.GithubHostname,
-		SkipTLSVerification: true,
-		AppCredentials: &AppCredentials{
-			ID:         app.ID,
-			PrivateKey: app.PrivateKey,
-		},
-	})
+	return app.DeleteInstallation(ctx, installID)
 }
