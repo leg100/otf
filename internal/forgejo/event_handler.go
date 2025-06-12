@@ -13,8 +13,8 @@ import (
 )
 
 const (
-	httpHeaderSignature = "X-Forgejo-Signature"
-	httpHeaderEvent     = "X-Forgejo-Event"
+	httpHeaderSignature = "X-Gitea-Signature"
+	httpHeaderEvent     = "X-Gitea-Event"
 )
 
 func HandleEvent(r *http.Request, secret string) (*vcs.EventPayload, error) {
