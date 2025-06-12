@@ -191,7 +191,7 @@ live/tailwind:
 # watch for any js or css change in the assets/ folder, then reload the browser via templ proxy.
 live/sync_assets:
 	go run github.com/air-verse/air@v1.61.7 \
-	--build.cmd "templ generate --notify-proxy" \
+	--build.cmd "go tool templ generate --notify-proxy" \
 	--build.bin "true" \
 	--build.delay "100" \
 	--build.include_dir "internal/http/html/static" \
