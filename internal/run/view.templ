@@ -94,7 +94,7 @@ templ (t table) Row(run *Run) {
 					</span>
 				}
 				<div class="flex gap-2 items-center">
-					@source(run)
+					@run.SourceIcon
 					if run.IngressAttributes != nil {
 						<div class="badge badge-secondary badge-soft badge-sm font-mono">
 							<svg
@@ -348,33 +348,6 @@ templ resourceReport(report *Report) {
 	<div class="font-mono text-md" id="resource-summary">
 		<span class="text-green-700">+{ report.Additions }</span><span class="text-blue-700">~{ report.Changes }</span><span class="text-red-700">-{ report.Destructions }</span>
 	</div>
-}
-
-templ source(run *Run) {
-	switch run.Source {
-		case SourceAPI:
-			<div title="run triggered via the API">
-				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
-					<path stroke-linecap="round" stroke-linejoin="round" d="M8.25 3v1.5M4.5 8.25H3m18 0h-1.5M4.5 12H3m18 0h-1.5m-15 3.75H3m18 0h-1.5M8.25 19.5V21M12 3v1.5m0 15V21m3.75-18v1.5m0 15V21m-9-1.5h10.5a2.25 2.25 0 0 0 2.25-2.25V6.75a2.25 2.25 0 0 0-2.25-2.25H6.75A2.25 2.25 0 0 0 4.5 6.75v10.5a2.25 2.25 0 0 0 2.25 2.25Zm.75-12h9v9h-9v-9Z"></path>
-				</svg>
-			</div>
-		case SourceTerraform:
-			<div title="run triggered via the CLI">
-				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
-					<path stroke-linecap="round" stroke-linejoin="round" d="m6.75 7.5 3 2.25-3 2.25m4.5 0h3m-9 8.25h13.5A2.25 2.25 0 0 0 21 18V6a2.25 2.25 0 0 0-2.25-2.25H5.25A2.25 2.25 0 0 0 3 6v12a2.25 2.25 0 0 0 2.25 2.25Z"></path>
-				</svg>
-			</div>
-		case SourceGithub:
-			<img class="h-5" id="run-trigger-github" title="run triggered via github" src={ components.AssetPath(ctx, "/static/images/github_icon.svg") }/>
-		case SourceGitlab:
-			<img class="h-5" id="run-trigger-gitlab" title="run triggered via gitlab" src={ components.AssetPath(ctx, "/static/images/gitlab_icon.svg") }/>
-		case SourceUI:
-			<div title="run triggered via the UI" id="run-trigger-ui">
-				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
-					<path stroke-linecap="round" stroke-linejoin="round" d="M6 20.25h12m-7.5-3v3m3-3v3m-10.125-3h17.25c.621 0 1.125-.504 1.125-1.125V4.875c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125Z"></path>
-				</svg>
-			</div>
-	}
 }
 
 var phaseBadges = map[PhaseStatus]string{

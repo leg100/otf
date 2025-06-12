@@ -80,8 +80,7 @@ func NewClient(cfg ClientOptions) (*Client, error) {
 	var (
 		tripper = http.DefaultTransport
 		err     error
-
-		iat bool
+		iat     bool
 	)
 	if cfg.SkipTLSVerification {
 		tripper = otfhttp.InsecureTransport
@@ -156,20 +155,17 @@ func (g *Client) GetCurrentUser(ctx context.Context) (user.Username, error) {
 	return user.NewUsername(usernameStr)
 }
 
-func (g *Client) GetRepository(ctx context.Context, identifier string) (vcs.Repository, error) {
+func (g *Client) GetDefaultBranch(ctx context.Context, identifier string) (string, error) {
 	owner, name, found := strings.Cut(identifier, "/")
 	if !found {
-		return vcs.Repository{}, fmt.Errorf("malformed identifier: %s", identifier)
+		return "", fmt.Errorf("malformed identifier: %s", identifier)
 	}
 	repo, _, err := g.client.Repositories.Get(ctx, owner, name)
 	if err != nil {
-		return vcs.Repository{}, err
+		return "", err
 	}
 
-	return vcs.Repository{
-		Path:          identifier,
-		DefaultBranch: repo.GetDefaultBranch(),
-	}, nil
+	return repo.GetDefaultBranch(), nil
 }
 
 // ListRepositories lists repositories belonging to the authenticated entity: if
@@ -547,36 +543,4 @@ func (g *Client) GetCommit(ctx context.Context, repo, ref string) (vcs.Commit, e
 			ProfileURL: commit.GetAuthor().GetHTMLURL(),
 		},
 	}, nil
-}
-
-// ListInstallations lists installations of the currently authenticated app.
-func (g *Client) ListInstallations(ctx context.Context) ([]*github.Installation, error) {
-	installs, resp, err := g.client.Apps.ListInstallations(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	return installs, err
-}
-
-func (g *Client) GetInstallation(ctx context.Context, installID int64) (*github.Installation, error) {
-	install, resp, err := g.client.Apps.GetInstallation(ctx, installID)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	return install, err
-}
-
-// DeleteInstallation deletes an installation of a github app with the given
-// installation ID.
-func (g *Client) DeleteInstallation(ctx context.Context, installID int64) error {
-	resp, err := g.client.Apps.DeleteInstallation(ctx, installID)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	return err
 }

@@ -21,7 +21,7 @@ func HandleEvent(r *http.Request, secret string) (*vcs.EventPayload, error) {
 	}
 
 	// convert github event to an OTF event
-	to := vcs.EventPayload{VCSKind: vcs.GithubKind}
+	var to vcs.EventPayload
 	switch event := raw.(type) {
 	case *github.PushEvent:
 		to.RepoPath = event.GetRepo().GetFullName()

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/resource"
 )
 
@@ -48,14 +49,15 @@ type (
 	}
 
 	EventHeader struct {
+		// ID of vcs provider that generated this event.
+		// event.
 		VCSProviderID resource.TfeID
+		// Source of vcs provider kind that generated this event.
+		Source configversion.Source
 	}
 
 	EventPayload struct {
-		RepoPath string
-
-		VCSKind Kind
-
+		RepoPath      string
 		Type          EventType
 		Action        Action
 		Tag           string
@@ -82,9 +84,6 @@ type (
 )
 
 func (e EventPayload) Validate() error {
-	if e.VCSKind == "" {
-		return errors.New("event missing vcs kind")
-	}
 	if e.Type == "" {
 		return errors.New("event missing event type")
 	}

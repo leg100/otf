@@ -1,4 +1,4 @@
-package vcsprovider
+package vcs
 
 import (
 	"errors"
@@ -11,7 +11,6 @@ import (
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/tfeapi"
-	"github.com/leg100/otf/internal/vcs"
 )
 
 const (
@@ -53,10 +52,14 @@ func (a *tfe) createOAuthClient(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, &internal.ErrMissingParameter{Parameter: "oauth-token-string"})
 		return
 	}
-	if params.ServiceProvider == nil {
+	if params.ServiceProvider == nil || *params.ServiceProvider == "" {
 		tfeapi.Error(w, &internal.ErrMissingParameter{Parameter: "service-provider"})
 		return
 	}
+
+	// TODO: these are required yet they are not used. Check that the TFE
+	// integration tests have any requirement on these parameters and if not
+	// then remove.
 	if params.APIURL == nil {
 		tfeapi.Error(w, &internal.ErrMissingParameter{Parameter: "api-url"})
 		return
@@ -79,16 +82,10 @@ func (a *tfe) createOAuthClient(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, errors.New("secret parameter is unsupported"))
 		return
 	}
-	if *params.ServiceProvider != ServiceProviderGithub {
+
+	kind, err := a.Service.GetKindByTFEServiceProviderType(*params.ServiceProvider)
+	if err != nil {
 		tfeapi.Error(w, fmt.Errorf("service-provider=%s is unsupported", string(*params.ServiceProvider)))
-		return
-	}
-	if *params.APIURL != GithubAPIURL {
-		tfeapi.Error(w, fmt.Errorf("only api-url=%s is supported", GithubAPIURL))
-		return
-	}
-	if *params.HTTPURL != GithubHTTPURL {
-		tfeapi.Error(w, fmt.Errorf("only http-url=%s is supported", string(*params.HTTPURL)))
 		return
 	}
 
@@ -101,7 +98,7 @@ func (a *tfe) createOAuthClient(w http.ResponseWriter, r *http.Request) {
 		Name:         *params.Name,
 		Organization: pathParams.Organization,
 		Token:        params.OAuthToken,
-		Kind:         vcs.KindPtr(vcs.GithubKind),
+		KindID:       kind.ID,
 	})
 	if err != nil {
 		tfeapi.Error(w, err)
@@ -165,7 +162,7 @@ func (a *tfe) deleteOAuthClient(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (a *tfe) convert(from *VCSProvider) *TFEOAuthClient {
+func (a *tfe) convert(from *Provider) *TFEOAuthClient {
 	to := &TFEOAuthClient{
 		ID:        from.ID,
 		CreatedAt: from.CreatedAt,

@@ -25,7 +25,7 @@ func TestGithubPullRequest(t *testing.T) {
 		github.WithPullRequest("2", "/nomatch.tf", "/foo/bar/match.tf"),
 	))
 
-	provider := daemon.createVCSProvider(t, ctx, org)
+	provider := daemon.createVCSProvider(t, ctx, org, nil)
 	ws, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
 		Name:            internal.String("dev"),
 		Organization:    &org.Name,

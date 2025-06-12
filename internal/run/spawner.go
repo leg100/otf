@@ -38,7 +38,7 @@ type (
 	}
 
 	spawnerVCSClient interface {
-		GetVCSClient(ctx context.Context, providerID resource.TfeID) (vcs.Client, error)
+		Get(ctx context.Context, providerID resource.TfeID) (*vcs.Provider, error)
 	}
 
 	spawnerRunClient interface {
@@ -145,7 +145,7 @@ func (s *Spawner) handleWithError(logger logr.Logger, event vcs.Event) error {
 	workspaces = workspaces[:n]
 
 	// fetch tarball
-	client, err := s.vcs.GetVCSClient(ctx, event.VCSProviderID)
+	client, err := s.vcs.Get(ctx, event.VCSProviderID)
 	if err != nil {
 		return err
 	}
@@ -211,18 +211,10 @@ func (s *Spawner) handleWithError(logger logr.Logger, event vcs.Event) error {
 				SenderHTMLURL:     event.SenderHTMLURL,
 				Tag:               event.Tag,
 			},
+			Source: event.EventHeader.Source,
 		}
-		runOpts := CreateOptions{}
-		switch event.VCSKind {
-		case vcs.GithubKind:
-			cvOpts.Source = configversion.SourceGithub
-			runOpts.Source = SourceGithub
-		case vcs.GitlabKind:
-			cvOpts.Source = configversion.SourceGitlab
-			runOpts.Source = SourceGitlab
-		case vcs.ForgejoKind:
-			cvOpts.Source = configversion.SourceForgejo
-			runOpts.Source = SourceForgejo
+		runOpts := CreateOptions{
+			Source: event.EventHeader.Source,
 		}
 		cv, err := s.configs.Create(ctx, ws.ID, cvOpts)
 		if err != nil {

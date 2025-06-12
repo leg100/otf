@@ -28,7 +28,7 @@ func TestModuleE2E(t *testing.T) {
 		github.WithArchive(testutils.ReadFile(t, "./fixtures/github.module.tar.gz")),
 	))
 	// create vcs provider for module to authenticate to github backend
-	provider := svc.createVCSProvider(t, ctx, org)
+	provider := svc.createVCSProvider(t, ctx, org, nil)
 
 	var moduleURL string // captures url for module page
 

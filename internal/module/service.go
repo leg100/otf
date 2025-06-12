@@ -16,7 +16,6 @@ import (
 	"github.com/leg100/otf/internal/semver"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/vcs"
-	"github.com/leg100/otf/internal/vcsprovider"
 	"github.com/leg100/surl/v2"
 )
 
@@ -30,7 +29,7 @@ type (
 
 		api          *api
 		web          *webHandlers
-		vcsproviders *vcsprovider.Service
+		vcsproviders *vcs.Service
 		connections  *connections.Service
 	}
 
@@ -43,7 +42,7 @@ type (
 
 		Authorizer         *authz.Authorizer
 		RepohookService    *repohooks.Service
-		VCSProviderService *vcsprovider.Service
+		VCSProviderService *vcs.Service
 		ConnectionsService *connections.Service
 		VCSEventSubscriber vcs.Subscriber
 	}
@@ -136,7 +135,7 @@ func (s *Service) publishModule(ctx context.Context, organization organization.N
 		if err != nil {
 			return err
 		}
-		client, err = s.vcsproviders.GetVCSClient(ctx, opts.VCSProviderID)
+		client, err = s.vcsproviders.Get(ctx, opts.VCSProviderID)
 		if err != nil {
 			return fmt.Errorf("retreving vcs client config: %w", err)
 		}

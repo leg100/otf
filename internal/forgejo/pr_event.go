@@ -40,8 +40,8 @@ func handlePullRequestEvent(b []byte) (*vcs.EventPayload, error) {
 		return nil, err
 	}
 
-	// convert forgejo push event to an OTF event
-	to := vcs.EventPayload{VCSKind: vcs.ForgejoKind, Type: vcs.EventTypePull}
+	// convert forgejo PR event to an OTF event
+	to := vcs.EventPayload{Type: vcs.EventTypePull}
 	to.RepoPath = event.Repository.FullName
 	to.Branch = event.PullRequest.Head.Name
 	to.CommitSHA = event.CommitID

@@ -14,6 +14,7 @@ import (
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/leg100/otf/internal/user"
+	"github.com/leg100/otf/internal/vcs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -34,9 +35,9 @@ func TestWebHandlers_get(t *testing.T) {
 		HostnameService: internal.NewHostnameService("example.com"),
 		svc: &fakeService{
 			app: &App{},
-			installs: []*Installation{{
-				Installation: &github.Installation{ID: internal.Int64(123)},
-			}},
+			installs: []vcs.Installation{
+				{ID: 123, Username: internal.String("bob")},
+			},
 		},
 	}
 
@@ -106,7 +107,7 @@ func TestWebHandlers_deleteInstall(t *testing.T) {
 
 type fakeService struct {
 	app      *App
-	installs []*Installation
+	installs []vcs.Installation
 }
 
 func (f *fakeService) CreateApp(context.Context, CreateAppOptions) (*App, error) {
@@ -121,7 +122,7 @@ func (f *fakeService) DeleteApp(context.Context) error {
 	return nil
 }
 
-func (f *fakeService) ListInstallations(context.Context) ([]*Installation, error) {
+func (f *fakeService) ListInstallations(context.Context) ([]vcs.Installation, error) {
 	return f.installs, nil
 }
 

@@ -14,7 +14,7 @@ import (
 	"github.com/leg100/otf/internal/http/html/components/paths"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
-	"github.com/leg100/otf/internal/vcsprovider"
+	"github.com/leg100/otf/internal/vcs"
 	"html/template"
 	"slices"
 	"strings"
@@ -22,7 +22,7 @@ import (
 
 type newViewProps struct {
 	organization organization.Name
-	providers    []*vcsprovider.VCSProvider
+	providers    []*vcs.Provider
 }
 
 func newView(props newViewProps) templ.Component {
@@ -67,7 +67,7 @@ func newView(props newViewProps) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			templ_7745c5c3_Err = components.UnpaginatedTable(
-				&vcsprovider.Table{Actions: selectVCSProviderAction},
+				&vcs.Table{Actions: selectVCSProviderAction},
 				props.providers,
 				"providers",
 			).Render(ctx, templ_7745c5c3_Buffer)
@@ -144,7 +144,7 @@ func selectVCSProviderAction(vcsProviderID resource.TfeID) templ.Component {
 
 type connectProps struct {
 	repos    []string
-	provider *vcsprovider.VCSProvider
+	provider *vcs.Provider
 }
 
 func connect(props connectProps) templ.Component {
@@ -253,7 +253,7 @@ func connect(props connectProps) templ.Component {
 }
 
 type repoSelector struct {
-	provider *vcsprovider.VCSProvider
+	provider *vcs.Provider
 }
 
 func (s repoSelector) action(repo string) templ.Component {

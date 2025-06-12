@@ -14,7 +14,7 @@ func TestRepo(t *testing.T) {
 	t.Run("create multiple connections", func(t *testing.T) {
 		svc, org, ctx := setup(t, withGithubOption(github.WithRepo("test/dummy")))
 
-		vcsprov := svc.createVCSProvider(t, ctx, org)
+		vcsprov := svc.createVCSProvider(t, ctx, org, nil)
 
 		mod1 := svc.createModule(t, ctx, org)
 		_, err := svc.Connections.Connect(ctx, connections.ConnectOptions{

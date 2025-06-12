@@ -7,12 +7,14 @@ import (
 	"github.com/leg100/otf/internal/sql"
 )
 
-// pgdb is a github app database on postgres
-type pgdb struct {
-	*sql.DB // provides access to generated SQL queries
+// appDB is a github app database on postgres
+type appDB struct {
+	*sql.DB
+	hostname            string
+	skipTLSVerification bool
 }
 
-func (db *pgdb) create(ctx context.Context, app *App) error {
+func (db *appDB) create(ctx context.Context, app *App) error {
 	_, err := db.Exec(ctx, `
 INSERT INTO github_apps (
     github_app_id,
@@ -36,23 +38,45 @@ INSERT INTO github_apps (
 	return err
 }
 
-func (db *pgdb) get(ctx context.Context) (*App, error) {
+func (db *appDB) get(ctx context.Context) (*App, error) {
+	type model struct {
+		ID            AppID `db:"github_app_id"`
+		Slug          string
+		WebhookSecret string  `db:"webhook_secret"`
+		PrivateKey    string  `db:"private_key"`
+		Organization  *string `db:"organization"`
+	}
+
 	rows := db.Query(ctx, `SELECT * FROM github_apps`)
-	return sql.CollectOneRow(rows, pgx.RowToAddrOfStructByName[App])
+	m, err := sql.CollectOneRow(rows, pgx.RowToAddrOfStructByName[model])
+	if err != nil {
+		return nil, err
+	}
+
+	client, err := NewClient(ClientOptions{
+		Hostname:            db.hostname,
+		SkipTLSVerification: db.skipTLSVerification,
+		AppCredentials: &AppCredentials{
+			ID:         m.ID,
+			PrivateKey: m.PrivateKey,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &App{
+		ID:            m.ID,
+		Slug:          m.Slug,
+		WebhookSecret: m.WebhookSecret,
+		PrivateKey:    m.PrivateKey,
+		Organization:  m.Organization,
+		Client:        client,
+		Hostname:      db.hostname,
+	}, nil
 }
 
-func (db *pgdb) delete(ctx context.Context) error {
-	return db.Lock(ctx, "github_apps", func(ctx context.Context) error {
-		rows := db.Query(ctx, `SELECT * FROM github_apps`)
-		result, err := sql.CollectOneRow(rows, pgx.RowToAddrOfStructByName[App])
-		if err != nil {
-			return err
-		}
-		_, err = db.Exec(ctx, `
-DELETE
-FROM github_apps
-WHERE github_app_id = $1
-`, result.ID)
-		return err
-	})
+func (db *appDB) delete(ctx context.Context) error {
+	_, err := db.Exec(ctx, `DELETE FROM github_apps `)
+	return err
 }

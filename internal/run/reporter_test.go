@@ -58,12 +58,12 @@ func TestReporter_HandleRun(t *testing.T) {
 		},
 		{
 			name:  "skip UI-triggered run",
-			event: &Event{ID: testutils.ParseID(t, "run-123"), Source: SourceUI},
+			event: &Event{ID: testutils.ParseID(t, "run-123"), Source: configversion.SourceUI},
 			want:  nil,
 		},
 		{
 			name:  "skip API-triggered run",
-			event: &Event{ID: testutils.ParseID(t, "run-123"), Source: SourceAPI},
+			event: &Event{ID: testutils.ParseID(t, "run-123"), Source: configversion.SourceAPI},
 			want:  nil,
 		},
 	}
@@ -171,8 +171,10 @@ type fakeReporterVCSProviderService struct {
 	got chan vcs.SetStatusOptions
 }
 
-func (f *fakeReporterVCSProviderService) GetVCSClient(context.Context, resource.TfeID) (vcs.Client, error) {
-	return &fakeReporterCloudClient{got: f.got}, nil
+func (f *fakeReporterVCSProviderService) Get(context.Context, resource.TfeID) (*vcs.Provider, error) {
+	return &vcs.Provider{
+		Client: &fakeReporterCloudClient{got: f.got},
+	}, nil
 }
 
 type fakeReporterCloudClient struct {

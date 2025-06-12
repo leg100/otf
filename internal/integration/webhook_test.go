@@ -30,7 +30,7 @@ func TestWebhook(t *testing.T) {
 	// webhooks.
 	daemon, org, ctx := setup(t, withGithubOption(github.WithRepo(repo)))
 	// create vcs provider for authenticating to github backend
-	provider := daemon.createVCSProvider(t, ctx, org)
+	provider := daemon.createVCSProvider(t, ctx, org, nil)
 
 	// create and connect first workspace
 	browser.New(t, ctx, func(page playwright.Page) {
@@ -109,7 +109,7 @@ func TestWebhook_Purger(t *testing.T) {
 			// create org, vcs provider, and workspace, and connect the
 			// workspace to create a webhook on github
 			org := daemon.createOrganization(t, ctx)
-			provider := daemon.createVCSProvider(t, ctx, org)
+			provider := daemon.createVCSProvider(t, ctx, org, nil)
 			ws, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
 				Name:         internal.String("workspace-1"),
 				Organization: &org.Name,

@@ -24,10 +24,10 @@ type (
 		cloudID       *string   // cloud's hook ID; populated following synchronisation
 		vcsProviderID resource.TfeID
 
-		secret   string   // secret token
-		repoPath string   // repo identifier: <repo_owner>/<repo_name>
-		cloud    vcs.Kind // origin of events
-		endpoint string   // OTF URL that receives events
+		secret    string     // secret token
+		repoPath  string     // repo identifier: <repo_owner>/<repo_name>
+		vcsKindID vcs.KindID // origin of events
+		endpoint  string     // OTF URL that receives events
 	}
 
 	newRepohookOptions struct {
@@ -35,7 +35,7 @@ type (
 		vcsProviderID resource.TfeID
 		secret        *string
 		repoPath      string
-		cloud         vcs.Kind
+		vcsKindID     vcs.KindID
 		cloudID       *string // cloud's webhook id
 
 		// for building endpoint URL
@@ -46,7 +46,7 @@ type (
 func newRepohook(opts newRepohookOptions) (*hook, error) {
 	hook := hook{
 		repoPath:      opts.repoPath,
-		cloud:         opts.cloud,
+		vcsKindID:     opts.vcsKindID,
 		cloudID:       opts.cloudID,
 		vcsProviderID: opts.vcsProviderID,
 	}
@@ -72,7 +72,7 @@ func (h *hook) LogValue() slog.Value {
 	attrs := []slog.Attr{
 		slog.String("id", h.id.String()),
 		slog.String("vcs_provider_id", h.vcsProviderID.String()),
-		slog.String("vcs_kind", string(h.cloud)),
+		slog.String("vcs_kind", string(h.vcsKindID)),
 		slog.String("repo", h.repoPath),
 		slog.String("endpoint", h.endpoint),
 	}

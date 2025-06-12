@@ -1,12 +1,129 @@
 package vcs
 
-const (
-	ForgejoKind Kind = "forgejo"
-	GithubKind  Kind = "github"
-	GitlabKind  Kind = "gitlab"
+import (
+	"context"
+	"fmt"
+	"net/http"
+	"sync"
+
+	"github.com/a-h/templ"
+	"github.com/leg100/otf/internal/configversion"
+	"golang.org/x/exp/maps"
 )
 
-// Kind of vcs hosting provider
-type Kind string
+// KindID of vcs hosting provider
+type KindID string
 
-func KindPtr(k Kind) *Kind { return &k }
+// Kind is a kind of vcs provider. Each kind represents a particular VCS hosting
+// provider (e.g. github), and a way of interacting with the provider, including
+// authentication, event handling. Typically there is one kind per VCS hosting
+// provider, but providers sometimes offer more than one of interacting with it,
+// e.g. GitHub uses both personal access tokens and a GitHub 'app' which is
+// 'installed' via a private key.
+type Kind struct {
+	// ID distinguishes this kind from other kinds. NOTE: This must have first
+	// been inserted into the vcs_kinds table via a database migration.
+	ID KindID
+	// Hostname is the hostname of the VCS host, not including scheme or path.
+	Hostname string
+	// Icon renders an icon identifying the VCS host kind.
+	Icon templ.Component
+	// TokenKind provides info about the token the provider expects. Mutually
+	// exclusive with AppKind.
+	TokenKind *TokenKind
+	// AppKind provides info about installations for this ProviderKind.
+	// Mutually exclusive with TokenKind.
+	AppKind AppKind
+	// NewClient constructs a client implementation.
+	NewClient func(context.Context, Config) (Client, error)
+	// EventHandler handles incoming events from the VCS host before relaying
+	// them onwards for triggering actions like creating runs etc.
+	EventHandler func(r *http.Request, secret string) (*EventPayload, error)
+	// SkipRepohook if true skips the creation of a repository-level webhook.
+	SkipRepohook bool
+	// TFEServiceProvider optionally registers the kind with the TFE API, permitting vcs
+	// providers of this kind to be created via the TFE API. The value specified
+	// here is the value that should be be provided by API clients via the
+	// "service-provider" attribute:
+	//
+	// https://developer.hashicorp.com/terraform/cloud-docs/api-docs/oauth-clients#request-body
+	TFEServiceProvider TFEServiceProviderType
+}
+
+func (k Kind) Source() configversion.Source {
+	return configversion.Source(k.ID)
+}
+
+type TokenKind struct {
+	// TokenDescription renders a helpful description of what is expected of the
+	// token, e.g. what permissions it should possess.
+	Description templ.Component
+}
+
+type AppKind interface {
+	GetApp(context.Context) (App, error)
+}
+
+type App interface {
+	// ListInstallations retrieves a list of installations.
+	ListInstallations(context.Context) ([]Installation, error)
+	// GetInstallation retrieves an installation by its ID.
+	GetInstallation(context.Context, int64) (Installation, error)
+	// InstallationLink is a link to the site where a user can create an
+	// installation.
+	InstallationLink() templ.SafeURL
+}
+
+// kindDB is a database of vcs provider kinds
+type kindDB struct {
+	mu            sync.Mutex
+	kinds         map[KindID]Kind
+	configService *configversion.Service
+}
+
+func newKindDB(configService *configversion.Service) *kindDB {
+	return &kindDB{
+		kinds:         make(map[KindID]Kind),
+		configService: configService,
+	}
+}
+
+func (db *kindDB) RegisterKind(kind Kind) {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
+	db.kinds[kind.ID] = kind
+	// Also register its icon to be rendered on the UI next to runs triggered
+	// by this kind.
+	db.configService.RegisterSourceIcon(kind.Source(), IconWrapper(kind.ID, kind.Icon))
+}
+
+func (db *kindDB) GetKind(id KindID) (Kind, error) {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
+	kind, ok := db.kinds[id]
+	if !ok {
+		return Kind{}, fmt.Errorf("no such vcs provider kind exists: %s", id)
+	}
+	return kind, nil
+}
+
+func (db *kindDB) GetKindByTFEServiceProviderType(sp TFEServiceProviderType) (Kind, error) {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
+	for _, kind := range db.kinds {
+		if kind.TFEServiceProvider == sp {
+			return kind, nil
+		}
+	}
+	return Kind{}, fmt.Errorf("no such vcs provider kind with TFE service provider type exists: %s", sp)
+}
+
+func (db *kindDB) GetKinds() []Kind {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
+	return maps.Values(db.kinds)
+}

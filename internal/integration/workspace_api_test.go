@@ -15,7 +15,6 @@ import (
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/leg100/otf/internal/vcs"
-	"github.com/leg100/otf/internal/vcsprovider"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -80,12 +79,12 @@ func TestIntegration_WorkspaceAPI_CreateConnected(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	provider := daemon.createVCSProvider(t, ctx, org)
+	provider := daemon.createVCSProvider(t, ctx, org, nil)
 
 	oauth, err := client.OAuthClients.Create(ctx, org.Name.String(), tfe.OAuthClientCreateOptions{
 		OAuthToken:      provider.Token,
-		APIURL:          internal.String(vcsprovider.GithubAPIURL),
-		HTTPURL:         internal.String(vcsprovider.GithubHTTPURL),
+		APIURL:          internal.String(vcs.GithubAPIURL),
+		HTTPURL:         internal.String(vcs.GithubHTTPURL),
 		ServiceProvider: tfe.ServiceProvider(tfe.ServiceProviderGithub),
 	})
 	require.NoError(t, err)

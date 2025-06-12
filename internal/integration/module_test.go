@@ -27,7 +27,7 @@ func TestModule(t *testing.T) {
 	t.Run("create connected module", func(t *testing.T) {
 		svc, org, ctx := setup(t, withGithubOption(github.WithRepo("leg100/terraform-aws-stuff")))
 
-		vcsprov := svc.createVCSProvider(t, ctx, org)
+		vcsprov := svc.createVCSProvider(t, ctx, org, nil)
 
 		mod, err := svc.Modules.PublishModule(ctx, module.PublishOptions{
 			VCSProviderID: vcsprov.ID,

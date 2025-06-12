@@ -11,6 +11,7 @@ import (
 	"github.com/antchfx/htmlquery"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
+	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
@@ -18,7 +19,6 @@ import (
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/vcs"
-	"github.com/leg100/otf/internal/vcsprovider"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/net/html"
@@ -199,7 +199,9 @@ func TestEditWorkspaceHandler(t *testing.T) {
 				},
 				teams: &fakeTeamService{teams: tt.teams},
 				vcsproviders: &fakeVCSProviderService{
-					providers: []*vcsprovider.VCSProvider{{}},
+					provider: &vcs.Provider{
+						Name: "test-provider",
+					},
 				},
 				releases: &fakeReleasesService{},
 			}
@@ -366,13 +368,14 @@ func TestUnlockWorkspace(t *testing.T) {
 func TestListWorkspaceProvidersHandler(t *testing.T) {
 	org1 := organization.NewTestName(t)
 	ws := &Workspace{ID: testutils.ParseID(t, "ws-123"), Organization: org1}
+	provider := &vcs.Provider{Kind: vcs.Kind{Icon: github.Icon()}}
 	app := &webHandlers{
 		client: &FakeService{Workspaces: []*Workspace{ws}},
 		vcsproviders: &fakeVCSProviderService{
-			providers: []*vcsprovider.VCSProvider{
-				{},
-				{},
-				{},
+			providers: []*vcs.Provider{
+				provider,
+				provider,
+				provider,
 			},
 		},
 	}
@@ -390,15 +393,16 @@ func TestListWorkspaceReposHandler(t *testing.T) {
 	app := &webHandlers{
 		client: &FakeService{Workspaces: []*Workspace{ws}},
 		vcsproviders: &fakeVCSProviderService{
-			providers: []*vcsprovider.VCSProvider{
-				{},
-			},
-			repos: []string{
-				vcs.NewTestRepo(),
-				vcs.NewTestRepo(),
-				vcs.NewTestRepo(),
-				vcs.NewTestRepo(),
-				vcs.NewTestRepo(),
+			provider: &vcs.Provider{
+				Client: &fakeVCSClient{
+					repos: []string{
+						vcs.NewTestRepo(),
+						vcs.NewTestRepo(),
+						vcs.NewTestRepo(),
+						vcs.NewTestRepo(),
+						vcs.NewTestRepo(),
+					},
+				},
 			},
 		},
 	}

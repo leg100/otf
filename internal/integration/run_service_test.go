@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"context"
 	"testing"
 
 	"github.com/leg100/otf/internal"
@@ -27,10 +28,7 @@ func TestRunService(t *testing.T) {
 		run, err := svc.Runs.Create(ctx, cv.WorkspaceID, otfrun.CreateOptions{})
 		require.NoError(t, err)
 
-		user, err := user.UserFromContext(ctx)
-		require.NoError(t, err)
-		assert.NotNil(t, run.CreatedBy)
-		assert.Equal(t, user.Username, *run.CreatedBy)
+		assertRunCreatedByCurrentUser(t, ctx, run)
 	})
 
 	t.Run("create run using config from repo", func(t *testing.T) {
@@ -42,7 +40,7 @@ func TestRunService(t *testing.T) {
 			github.WithArchive(testutils.ReadFile(t, "../testdata/github.tar.gz")),
 		))
 		org := daemon.createOrganization(t, ctx)
-		vcsProvider := daemon.createVCSProvider(t, ctx, org)
+		vcsProvider := daemon.createVCSProvider(t, ctx, org, nil)
 		ws, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
 			Name:         internal.String("connected-workspace"),
 			Organization: &org.Name,
@@ -131,12 +129,8 @@ func TestRunService(t *testing.T) {
 		got, err := svc.Runs.Get(ctx, want.ID)
 		require.NoError(t, err)
 
-		assert.Equal(t, want, got)
-
-		user, err := user.UserFromContext(ctx)
-		require.NoError(t, err)
-		assert.NotNil(t, got.CreatedBy)
-		assert.Equal(t, user.Username, *got.CreatedBy)
+		assertEqualRuns(t, want, got)
+		assertRunCreatedByCurrentUser(t, ctx, got)
 	})
 
 	t.Run("list", func(t *testing.T) {
@@ -167,10 +161,10 @@ func TestRunService(t *testing.T) {
 					// may match runs in the db belonging to organizations outside
 					// of this test
 					assert.GreaterOrEqual(t, len(l.Items), 4)
-					assert.Contains(t, l.Items, run1)
-					assert.Contains(t, l.Items, run2)
-					assert.Contains(t, l.Items, run3)
-					assert.Contains(t, l.Items, run4)
+					assertContainsRun(t, l.Items, run1)
+					assertContainsRun(t, l.Items, run2)
+					assertContainsRun(t, l.Items, run3)
+					assertContainsRun(t, l.Items, run4)
 				},
 			},
 			{
@@ -178,8 +172,8 @@ func TestRunService(t *testing.T) {
 				opts: otfrun.ListOptions{Organization: &ws1.Organization},
 				want: func(t *testing.T, l *resource.Page[*otfrun.Run]) {
 					assert.Equal(t, 2, len(l.Items))
-					assert.Contains(t, l.Items, run1)
-					assert.Contains(t, l.Items, run2)
+					assertContainsRun(t, l.Items, run1)
+					assertContainsRun(t, l.Items, run2)
 				},
 			},
 			{
@@ -187,8 +181,8 @@ func TestRunService(t *testing.T) {
 				opts: otfrun.ListOptions{WorkspaceID: &ws1.ID},
 				want: func(t *testing.T, l *resource.Page[*otfrun.Run]) {
 					assert.Equal(t, 2, len(l.Items))
-					assert.Contains(t, l.Items, run1)
-					assert.Contains(t, l.Items, run2)
+					assertContainsRun(t, l.Items, run1)
+					assertContainsRun(t, l.Items, run2)
 				},
 			},
 			{
@@ -196,8 +190,8 @@ func TestRunService(t *testing.T) {
 				opts: otfrun.ListOptions{WorkspaceName: internal.String(ws1.Name), Organization: &ws1.Organization},
 				want: func(t *testing.T, l *resource.Page[*otfrun.Run]) {
 					assert.Equal(t, 2, len(l.Items))
-					assert.Contains(t, l.Items, run1)
-					assert.Contains(t, l.Items, run2)
+					assertContainsRun(t, l.Items, run1)
+					assertContainsRun(t, l.Items, run2)
 				},
 			},
 			{
@@ -205,8 +199,8 @@ func TestRunService(t *testing.T) {
 				opts: otfrun.ListOptions{Organization: &ws1.Organization, Statuses: []runstatus.Status{runstatus.Pending}},
 				want: func(t *testing.T, l *resource.Page[*otfrun.Run]) {
 					assert.Equal(t, 2, len(l.Items))
-					assert.Contains(t, l.Items, run1)
-					assert.Contains(t, l.Items, run2)
+					assertContainsRun(t, l.Items, run1)
+					assertContainsRun(t, l.Items, run2)
 				},
 			},
 			{
@@ -246,4 +240,65 @@ func TestRunService(t *testing.T) {
 			})
 		}
 	})
+}
+
+func assertEqualRuns(t *testing.T, want *otfrun.Run, got *otfrun.Run) {
+	t.Helper()
+
+	assert.Equal(t, want.ID, got.ID)
+	assert.Equal(t, want.CreatedAt, got.CreatedAt)
+	assert.Equal(t, want.UpdatedAt, got.UpdatedAt)
+	assert.Equal(t, want.IsDestroy, got.IsDestroy)
+	assert.Equal(t, want.CancelSignaledAt, got.CancelSignaledAt)
+	assert.Equal(t, want.Message, got.Message)
+	assert.Equal(t, want.Organization, got.Organization)
+	assert.Equal(t, want.Refresh, got.Refresh)
+	assert.Equal(t, want.RefreshOnly, got.RefreshOnly)
+	assert.Equal(t, want.ReplaceAddrs, got.ReplaceAddrs)
+	assert.Equal(t, want.PositionInQueue, got.PositionInQueue)
+	assert.Equal(t, want.TargetAddrs, got.TargetAddrs)
+	assert.Equal(t, want.EngineVersion, got.EngineVersion)
+	assert.Equal(t, want.Engine, got.Engine)
+	assert.Equal(t, want.AllowEmptyApply, got.AllowEmptyApply)
+	assert.Equal(t, want.AutoApply, got.AutoApply)
+	assert.Equal(t, want.PlanOnly, got.PlanOnly)
+	assert.Equal(t, want.Source, got.Source)
+	// Cannot compare source icons because concrete type of templ.Component is
+	// templ.ComponentFunc, which is a function, and functions cannot be
+	// compared.
+	//
+	// assert.Equal(t, want.SourceIcon, got.SourceIcon)
+	assert.Equal(t, want.Status, got.Status)
+	assert.Equal(t, want.WorkspaceID, got.WorkspaceID)
+	assert.Equal(t, want.ConfigurationVersionID, got.ConfigurationVersionID)
+	assert.Equal(t, want.ExecutionMode, got.ExecutionMode)
+	assert.Equal(t, want.Variables, got.Variables)
+	assert.Equal(t, want.Plan, got.Plan)
+	assert.Equal(t, want.Apply, got.Apply)
+	assert.Equal(t, want.StatusTimestamps, got.StatusTimestamps)
+	assert.Equal(t, want.Latest, got.Latest)
+	assert.Equal(t, want.IngressAttributes, got.IngressAttributes)
+	assert.Equal(t, want.CreatedBy, got.CreatedBy)
+	assert.Equal(t, want.CostEstimationEnabled, got.CostEstimationEnabled)
+}
+
+func assertContainsRun(t *testing.T, got []*otfrun.Run, want *otfrun.Run) {
+	t.Helper()
+
+	for _, gotRun := range got {
+		if gotRun.ID == want.ID {
+			assertEqualRuns(t, want, gotRun)
+			return
+		}
+	}
+	t.Errorf("run list %v does not contain run: %v", got, want)
+}
+
+func assertRunCreatedByCurrentUser(t *testing.T, ctx context.Context, got *otfrun.Run) {
+	t.Helper()
+
+	user, err := user.UserFromContext(ctx)
+	require.NoError(t, err)
+	assert.NotNil(t, got.CreatedBy)
+	assert.Equal(t, user.Username, *got.CreatedBy)
 }

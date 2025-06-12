@@ -24,7 +24,7 @@ func TestConnectRepoE2E(t *testing.T) {
 		withGithubOption(github.WithArchive(testutils.ReadFile(t, "../testdata/github.tar.gz"))),
 	)
 	// create vcs provider for authenticating to github backend
-	provider := daemon.createVCSProvider(t, ctx, org)
+	provider := daemon.createVCSProvider(t, ctx, org, nil)
 
 	browser.New(t, ctx, func(page playwright.Page) {
 		createWorkspace(t, page, daemon.System.Hostname(), org.Name, "my-test-workspace")
@@ -56,7 +56,7 @@ func TestConnectRepoE2E(t *testing.T) {
 		err = expect.Locator(page.Locator(`//div[@id='latest-run']//a[@id='vcs-username' and text()='@leg100']`)).ToBeVisible()
 		require.NoError(t, err)
 		// because run was triggered from github, the github icon should be visible.
-		err = expect.Locator(page.Locator(`//div[@id='latest-run']//img[@id='run-trigger-github']`)).ToBeVisible()
+		err = expect.Locator(page.Locator(`//div[@id='latest-run']//*[@id='github-icon']`)).ToBeVisible()
 		require.NoError(t, err)
 
 		// GitHub should receive one pending status update followed by a final
@@ -105,7 +105,7 @@ func TestConnectRepoE2E(t *testing.T) {
 		// delete provider
 		err = page.Locator(`//button[@id='delete-vcs-provider-button']`).Click()
 		require.NoError(t, err)
-		err = expect.Locator(page.GetByRole("alert")).ToHaveText(`deleted provider: github (token)`)
+		err = expect.Locator(page.GetByRole("alert")).ToHaveText(`deleted provider: Github-Token`)
 		require.NoError(t, err)
 	})
 }

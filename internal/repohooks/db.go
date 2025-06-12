@@ -158,7 +158,7 @@ type hookModel struct {
 	VCSProviderID resource.TfeID `db:"vcs_provider_id"`
 	Secret        string         `db:"secret"`
 	RepoPath      string         `db:"repo_path"`
-	VCSKind       vcs.Kind       `db:"vcs_kind"`
+	VCSKind       vcs.KindID     `db:"vcs_kind"`
 }
 
 // fromRow creates a hook from a database row
@@ -172,7 +172,7 @@ func (db *db) scan(row pgx.CollectableRow) (*hook, error) {
 		vcsProviderID:   model.VCSProviderID,
 		secret:          &model.Secret,
 		repoPath:        model.RepoPath,
-		cloud:           model.VCSKind,
+		vcsKindID:       model.VCSKind,
 		HostnameService: db.HostnameService,
 		cloudID:         model.VCSID,
 	}

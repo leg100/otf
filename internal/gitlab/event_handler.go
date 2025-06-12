@@ -38,7 +38,7 @@ func HandleEvent(r *http.Request, secret string) (*vcs.EventPayload, error) {
 	}
 
 	// convert gitlab event to an OTF event
-	to := vcs.EventPayload{VCSKind: vcs.GitlabKind}
+	var to vcs.EventPayload
 	switch event := rawEvent.(type) {
 	case *gitlab.PushEvent:
 		to.Type = vcs.EventTypePush

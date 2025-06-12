@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/a-h/templ"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/engine"
@@ -39,10 +40,11 @@ type (
 		Get(ctx context.Context, id resource.TfeID) (*configversion.ConfigurationVersion, error)
 		GetLatest(ctx context.Context, workspaceID resource.TfeID) (*configversion.ConfigurationVersion, error)
 		UploadConfig(ctx context.Context, id resource.TfeID, config []byte) error
+		GetSourceIcon(source configversion.Source) templ.Component
 	}
 
 	factoryVCSClient interface {
-		GetVCSClient(ctx context.Context, providerID resource.TfeID) (vcs.Client, error)
+		Get(ctx context.Context, providerID resource.TfeID) (*vcs.Provider, error)
 	}
 
 	factoryReleasesClient interface {
@@ -110,8 +112,10 @@ func (f *factory) NewRun(ctx context.Context, workspaceID resource.TfeID, opts C
 	run.updateStatus(runstatus.Pending, opts.now)
 
 	if run.Source == "" {
-		run.Source = SourceAPI
+		run.Source = configversion.SourceAPI
 	}
+	run.SourceIcon = f.configs.GetSourceIcon(run.Source)
+
 	if opts.TerraformVersion != nil {
 		run.EngineVersion = *opts.TerraformVersion
 	}
@@ -142,17 +146,17 @@ func (f *factory) NewRun(ctx context.Context, workspaceID resource.TfeID, opts C
 // createConfigVersionFromVCS creates a config version from the vcs repo
 // connected to the workspace using the contents of the vcs repo.
 func (f *factory) createConfigVersionFromVCS(ctx context.Context, ws *workspace.Workspace) (*configversion.ConfigurationVersion, error) {
-	client, err := f.vcs.GetVCSClient(ctx, ws.Connection.VCSProviderID)
+	client, err := f.vcs.Get(ctx, ws.Connection.VCSProviderID)
 	if err != nil {
 		return nil, err
 	}
-	repo, err := client.GetRepository(ctx, ws.Connection.Repo)
+	defaultBranch, err := client.GetDefaultBranch(ctx, ws.Connection.Repo)
 	if err != nil {
 		return nil, fmt.Errorf("retrieving repository info: %w", err)
 	}
 	branch := ws.Connection.Branch
 	if branch == "" {
-		branch = repo.DefaultBranch
+		branch = defaultBranch
 	}
 	tarball, ref, err := client.GetRepoTarball(ctx, vcs.GetRepoTarballOptions{
 		Repo: ws.Connection.Repo,
@@ -172,7 +176,7 @@ func (f *factory) createConfigVersionFromVCS(ctx context.Context, ws *workspace.
 			CommitURL:       commit.URL,
 			Repo:            ws.Connection.Repo,
 			IsPullRequest:   false,
-			OnDefaultBranch: branch == repo.DefaultBranch,
+			OnDefaultBranch: branch == defaultBranch,
 			SenderUsername:  commit.Author.Username,
 			SenderAvatarURL: commit.Author.AvatarURL,
 			SenderHTMLURL:   commit.Author.ProfileURL,

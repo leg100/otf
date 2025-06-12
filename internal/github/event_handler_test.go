@@ -26,7 +26,6 @@ func TestEventHandler(t *testing.T) {
 			"push",
 			"./testdata/github_push.json",
 			&vcs.EventPayload{
-				VCSKind:         vcs.GithubKind,
 				Type:            vcs.EventTypePush,
 				RepoPath:        "leg100/tfc-workspaces",
 				Branch:          "master",
@@ -46,7 +45,6 @@ func TestEventHandler(t *testing.T) {
 			"push",
 			"./testdata/github_app_push.json",
 			&vcs.EventPayload{
-				VCSKind:            vcs.GithubKind,
 				Type:               vcs.EventTypePush,
 				RepoPath:           "leg100/otf-workspaces",
 				Branch:             "master",
@@ -67,7 +65,6 @@ func TestEventHandler(t *testing.T) {
 			"pull_request",
 			"./testdata/github_pull_opened.json",
 			&vcs.EventPayload{
-				VCSKind:           vcs.GithubKind,
 				Type:              vcs.EventTypePull,
 				RepoPath:          "leg100/otf-workspaces",
 				Branch:            "pr-2",
@@ -89,7 +86,6 @@ func TestEventHandler(t *testing.T) {
 			"pull_request",
 			"./testdata/github_pull_update.json",
 			&vcs.EventPayload{
-				VCSKind:           vcs.GithubKind,
 				Type:              vcs.EventTypePull,
 				RepoPath:          "leg100/otf-workspaces",
 				Branch:            "pr-1",
@@ -111,7 +107,6 @@ func TestEventHandler(t *testing.T) {
 			"push",
 			"./testdata/github_push_tag.json",
 			&vcs.EventPayload{
-				VCSKind:         vcs.GithubKind,
 				Type:            vcs.EventTypeTag,
 				RepoPath:        "leg100/terraform-otf-test",
 				Tag:             "v1.0.0",

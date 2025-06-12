@@ -15,38 +15,19 @@ func TestNewAuthenticatorService(t *testing.T) {
 	opts := Options{
 		Logger:          logr.Discard(),
 		HostnameService: internal.NewHostnameService("fake-host.org"),
-		OpaqueHandlerConfigs: []OpaqueHandlerConfig{
-			{
-				OAuthConfig: OAuthConfig{
-					ClientID:     "id-1",
-					ClientSecret: "secret-1",
-				},
-			},
-			{
-				OAuthConfig: OAuthConfig{
-					ClientID:     "id-2",
-					ClientSecret: "secret-2",
-				},
-			},
-			{
-				// should be skipped
-				OAuthConfig: OAuthConfig{},
-			},
-		},
 	}
-	got, err := NewAuthenticatorService(context.Background(), opts)
+	_, err := NewAuthenticatorService(context.Background(), opts)
 	require.NoError(t, err)
-	assert.Equal(t, 2, len(got.clients))
 }
 
 // TestLoginHandler tests the login page handler, testing for the presence of a
 // login button for each configured cloud.
 func TestLoginHandler(t *testing.T) {
-	svc := &service{}
+	svc := &Service{}
 
 	svc.clients = []*OAuthClient{
-		{OAuthConfig: OAuthConfig{Name: "cloud1"}},
-		{OAuthConfig: OAuthConfig{Name: "cloud2"}},
+		{OAuthConfig: OAuthConfig{Name: "cloud1", Icon: oidcIcon()}},
+		{OAuthConfig: OAuthConfig{Name: "cloud2", Icon: oidcIcon()}},
 	}
 
 	r := httptest.NewRequest("GET", "/?", nil)

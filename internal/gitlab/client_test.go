@@ -29,7 +29,7 @@ func TestClient_GetUser(t *testing.T) {
 	assert.Equal(t, "bobby", got.String())
 }
 
-func TestClient_GetRepository(t *testing.T) {
+func TestClient_GetDefaultBranch(t *testing.T) {
 	mux, client := setup(t)
 
 	mux.HandleFunc("/api/v4/projects/acme%2Fterraform", func(w http.ResponseWriter, r *http.Request) {
@@ -37,11 +37,10 @@ func TestClient_GetRepository(t *testing.T) {
 		fmt.Fprint(w, `{"path_with_namespace":"acme/terraform","default_branch":"master"}`)
 	})
 
-	got, err := client.GetRepository(context.Background(), "acme/terraform")
+	got, err := client.GetDefaultBranch(context.Background(), "acme/terraform")
 	require.NoError(t, err)
 
-	assert.Equal(t, "acme/terraform", got.Path)
-	assert.Equal(t, "master", got.DefaultBranch)
+	assert.Equal(t, "master", got)
 }
 
 func TestClient_ListRepositories(t *testing.T) {

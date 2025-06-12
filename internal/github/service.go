@@ -2,7 +2,6 @@ package github
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/go-logr/logr"
@@ -20,9 +19,7 @@ type (
 		logr.Logger
 		*authz.Authorizer
 
-		GithubHostname string
-
-		db  *pgdb
+		db  *appDB
 		web *webHandlers
 	}
 
@@ -35,15 +32,20 @@ type (
 		GithubHostname      string
 		SkipTLSVerification bool
 		Authorizer          *authz.Authorizer
+		VCSService          *vcs.Service
+		VCSEventBroker      *vcs.Broker
 	}
 )
 
 func NewService(opts Options) *Service {
 	svc := Service{
-		Logger:         opts.Logger,
-		GithubHostname: opts.GithubHostname,
-		Authorizer:     opts.Authorizer,
-		db:             &pgdb{opts.DB},
+		Logger:     opts.Logger,
+		Authorizer: opts.Authorizer,
+		db: &appDB{
+			DB:                  opts.DB,
+			hostname:            opts.GithubHostname,
+			skipTLSVerification: opts.SkipTLSVerification,
+		},
 	}
 	svc.web = &webHandlers{
 		authorizer:      opts.Authorizer,
@@ -52,6 +54,29 @@ func NewService(opts Options) *Service {
 		GithubSkipTLS:   opts.SkipTLSVerification,
 		svc:             &svc,
 	}
+	registerVCSKinds(&svc, opts.VCSService, opts.GithubHostname, opts.SkipTLSVerification)
+
+	// delete github app vcs providers when the app is uninstalled
+	opts.VCSEventBroker.Subscribe(func(event vcs.Event) {
+		// ignore events other than uninstallation events
+		if event.Type != vcs.EventTypeInstallation || event.Action != vcs.ActionDeleted {
+			return
+		}
+		// create user with unlimited permissions
+		user := &authz.Superuser{Username: "vcs-provider-service"}
+		ctx := authz.AddSubjectToContext(context.Background(), user)
+		// list all vcsproviders using the app install
+		providers, err := opts.VCSService.ListByInstall(ctx, *event.GithubAppInstallID)
+		if err != nil {
+			return
+		}
+		// and delete them
+		for _, prov := range providers {
+			if _, err = opts.VCSService.Delete(ctx, prov.ID); err != nil {
+				return
+			}
+		}
+	})
 	return &svc
 }
 
@@ -65,7 +90,11 @@ func (a *Service) CreateApp(ctx context.Context, opts CreateAppOptions) (*App, e
 		return nil, err
 	}
 
-	app := newApp(opts)
+	app, err := newApp(opts)
+	if err != nil {
+		a.Error(err, "creating github app", "app", app, "subject", subject)
+		return nil, err
+	}
 
 	if err := a.db.create(ctx, app); err != nil {
 		a.Error(err, "creating github app", "app", app, "subject", subject)
@@ -105,57 +134,20 @@ func (a *Service) DeleteApp(ctx context.Context) error {
 	return nil
 }
 
-func (a *Service) ListInstallations(ctx context.Context) ([]*Installation, error) {
+func (a *Service) ListInstallations(ctx context.Context) ([]vcs.Installation, error) {
 	app, err := a.db.get(ctx)
-	if errors.Is(err, internal.ErrResourceNotFound) {
-		return nil, nil
-	} else if err != nil {
-		return nil, fmt.Errorf("retrieving github app: %w", err)
-	}
-	client, err := a.newClient(app)
 	if err != nil {
 		return nil, err
 	}
-	from, err := client.ListInstallations(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("listing github app installs: %w", err)
-	}
-	to := make([]*Installation, len(from))
-	for i, f := range from {
-		to[i] = &Installation{Installation: f}
-	}
-	return to, nil
+	return app.ListInstallations(ctx)
 }
 
-func (a *Service) GetInstallCredentials(ctx context.Context, installID int64) (*InstallCredentials, error) {
+func (a *Service) GetInstallation(ctx context.Context, installID int64) (vcs.Installation, error) {
 	app, err := a.db.get(ctx)
 	if err != nil {
-		return nil, err
+		return vcs.Installation{}, fmt.Errorf("retrieving github app: %w", err)
 	}
-	client, err := a.newClient(app)
-	if err != nil {
-		return nil, err
-	}
-	install, err := client.GetInstallation(ctx, installID)
-	if err != nil {
-		return nil, err
-	}
-	creds := InstallCredentials{
-		ID: installID,
-		AppCredentials: AppCredentials{
-			ID:         app.ID,
-			PrivateKey: app.PrivateKey,
-		},
-	}
-	switch install.GetTargetType() {
-	case "Organization":
-		creds.Organization = install.GetAccount().Login
-	case "User":
-		creds.User = install.GetAccount().Login
-	default:
-		return nil, fmt.Errorf("unexpected target type: %s", install.GetTargetType())
-	}
-	return &creds, nil
+	return app.GetInstallation(ctx, installID)
 }
 
 func (a *Service) DeleteInstallation(ctx context.Context, installID int64) error {
@@ -163,23 +155,5 @@ func (a *Service) DeleteInstallation(ctx context.Context, installID int64) error
 	if err != nil {
 		return err
 	}
-	client, err := a.newClient(app)
-	if err != nil {
-		return err
-	}
-	if err := client.DeleteInstallation(ctx, installID); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (a *Service) newClient(app *App) (*Client, error) {
-	return NewClient(ClientOptions{
-		Hostname:            a.GithubHostname,
-		SkipTLSVerification: true,
-		AppCredentials: &AppCredentials{
-			ID:         app.ID,
-			PrivateKey: app.PrivateKey,
-		},
-	})
+	return app.DeleteInstallation(ctx, installID)
 }

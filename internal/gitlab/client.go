@@ -88,16 +88,13 @@ func (g *Client) GetCurrentUser(ctx context.Context) (user.Username, error) {
 	return user.NewUsername(guser.Username)
 }
 
-func (g *Client) GetRepository(ctx context.Context, identifier string) (vcs.Repository, error) {
+func (g *Client) GetDefaultBranch(ctx context.Context, identifier string) (string, error) {
 	proj, _, err := g.client.Projects.GetProject(identifier, nil)
 	if err != nil {
-		return vcs.Repository{}, err
+		return "", err
 	}
 
-	return vcs.Repository{
-		Path:          proj.PathWithNamespace,
-		DefaultBranch: proj.DefaultBranch,
-	}, nil
+	return proj.DefaultBranch, nil
 }
 
 func (g *Client) ListRepositories(ctx context.Context, lopts vcs.ListRepositoriesOptions) ([]string, error) {

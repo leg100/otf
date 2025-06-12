@@ -116,19 +116,6 @@ func TimestamptzPtr(t *time.Time) pgtype.Timestamptz {
 	return pgtype.Timestamptz{}
 }
 
-// ID converts a resource ID into an ID suitable for postgres.
-func ID(s resource.TfeID) pgtype.Text {
-	return pgtype.Text{String: s.String(), Valid: true}
-}
-
-// IDPtr converts a resource ID pointer into an ID suitable for postgres.
-func IDPtr(s *resource.TfeID) pgtype.Text {
-	if s != nil {
-		return pgtype.Text{String: s.String(), Valid: true}
-	}
-	return pgtype.Text{}
-}
-
 // GetOffset calculates the offset for use in SQL queries.
 func GetOffset(opts resource.PageOptions) pgtype.Int4 {
 	opts = opts.Normalize()

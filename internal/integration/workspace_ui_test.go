@@ -205,7 +205,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 			github.WithArchive(testutils.ReadFile(t, "../testdata/github.tar.gz")),
 		))
 		// create vcs provider for authenticating to github backend
-		provider := daemon.createVCSProvider(t, ctx, org)
+		provider := daemon.createVCSProvider(t, ctx, org, nil)
 		// create workspace on which edit settings
 		ws1 := daemon.createWorkspace(t, ctx, org)
 

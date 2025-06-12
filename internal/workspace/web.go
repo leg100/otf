@@ -21,7 +21,6 @@ import (
 	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/vcs"
-	"github.com/leg100/otf/internal/vcsprovider"
 )
 
 const (
@@ -62,10 +61,8 @@ type (
 	}
 
 	webVCSProvidersClient interface {
-		Get(ctx context.Context, providerID resource.TfeID) (*vcsprovider.VCSProvider, error)
-		List(context.Context, organization.Name) ([]*vcsprovider.VCSProvider, error)
-
-		GetVCSClient(ctx context.Context, providerID resource.TfeID) (vcs.Client, error)
+		Get(ctx context.Context, providerID resource.TfeID) (*vcs.Provider, error)
+		List(context.Context, organization.Name) ([]*vcs.Provider, error)
 	}
 
 	webAuthorizer interface {
@@ -241,7 +238,7 @@ func (h *webHandlers) getWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var provider *vcsprovider.VCSProvider
+	var provider *vcs.Provider
 	if ws.Connection != nil {
 		provider, err = h.vcsproviders.Get(r.Context(), ws.Connection.VCSProviderID)
 		if err != nil {
@@ -356,7 +353,7 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	var provider *vcsprovider.VCSProvider
+	var provider *vcs.Provider
 	if workspace.Connection != nil {
 		provider, err = h.vcsproviders.Get(r.Context(), workspace.Connection.VCSProviderID)
 		if err != nil {
@@ -626,7 +623,7 @@ func (h *webHandlers) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Reque
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	client, err := h.vcsproviders.GetVCSClient(r.Context(), params.VCSProviderID)
+	client, err := h.vcsproviders.Get(r.Context(), params.VCSProviderID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return

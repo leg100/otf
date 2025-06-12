@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/a-h/templ"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
@@ -50,13 +51,16 @@ type (
 
 	// OAuthConfig is configuration for constructing an OAuth client
 	OAuthConfig struct {
+		// Name of oauth client. Should be a lowercase string because it is used
+		// in URL paths.
+		Name                string
 		Hostname            string
 		ClientID            string
 		ClientSecret        string
 		Endpoint            oauth2.Endpoint
 		Scopes              []string
-		Name                string
 		SkipTLSVerification bool
+		Icon                templ.Component
 	}
 )
 
