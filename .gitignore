@@ -17,8 +17,6 @@ google_service_account.json
 # prometheus
 /data
 prometheus.yml
-# modd
-modd.conf
 # logs
 *.log
 # keys,certs

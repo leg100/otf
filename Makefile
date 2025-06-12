@@ -23,21 +23,6 @@ endif
 go-tfe-tests: image compose-up
 	./hack/go-tfe-tests.bash
 
-.PHONY: watch
-watch: tailwind-watch modd
-
-.PHONY: modd
-modd:
-	+modd
-
-.PHONY: tailwind
-tailwind:
-	pnpm exec tailwindcss -i ./internal/http/html/static/css/input.css -o ./internal/http/html/static/css/output.css
-
-.PHONY: tailwind-watch
-tailwind-watch:
-	pnpm exec tailwindcss -i ./internal/http/html/static/css/input.css -o ./internal/http/html/static/css/output.css --watch
-
 .PHONY: test
 test:
 	go test ./...
