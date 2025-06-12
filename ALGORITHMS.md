@@ -29,14 +29,14 @@ The global queue is a queue of run phases awaiting execution by an agent. Accord
 
 Note: the workspace queue is a queue of *runs* whereas the global queue is a queue of *run phases* i.e. plans and applies. In the former the entire run needs to enter a completed state before it is removed which may entail a plan followed by an apply. Whereas in the latter case only the run phase need have entered a completed state before it is removed.
 
-## Agents
+## Runners
 
 Note: this only applies to otf.
 
-Agents execute run phases i.e. plans and applies.
+Runners execute run phases i.e. plans and applies.
 
-By default otfd has 'local' agent embedded in the `otfd` binary. The local agent executes run phases belonging to *any* organization.
+By default otfd has a runner embedded in the `otfd` binary. This runner executes run phases belonging to *any* organization.
 
-Optionally, 'remote' agents can be deployed. They connect to otfd over HTTPS. They authenticate using a token which is created via the Web UI. The token is scoped to an organization, permitting the agent to execute phases belonging to runs in that organization and that organization only.
+Optionally, runners called 'agents' can be deployed. They connect to otfd over HTTPS. They authenticate using a token which is created by the user. The token is scoped to an organization, permitting the agent to execute phases belonging to runs in that organization and that organization only.
 
 Agents can run multiple run phases concurrently. (Note this is different to the TFC agent which executes only one at a time).
