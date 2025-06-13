@@ -75,7 +75,7 @@ func tokenDescription(hostname string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "\">personal access token</a> with the permissions <span class=\"font-bold\">repository read and write</span> and <span class=\"font-bold\">user read</span>.")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "\" target=\"ForgejoTab\">personal access token</a> with the permissions <span class=\"font-bold\">repository read and write</span> and <span class=\"font-bold\">user read</span>.")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

@@ -2,6 +2,7 @@ package run
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -122,8 +123,13 @@ func (f *factory) NewRun(ctx context.Context, workspaceID resource.TfeID, opts C
 	if opts.AllowEmptyApply != nil {
 		run.AllowEmptyApply = *opts.AllowEmptyApply
 	}
-	if user, _ := user.UserFromContext(ctx); user != nil {
-		run.CreatedBy = &user.Username
+	if creator, _ := user.UserFromContext(ctx); creator != nil {
+		run.CreatedBy = creator.Username
+	} else if cv.IngressAttributes != nil {
+		user, err := user.NewUsername(cv.IngressAttributes.SenderUsername)
+		run.CreatedBy = user
+	} else {
+		return nil, errors.New("")
 	}
 	if opts.IsDestroy != nil {
 		run.IsDestroy = *opts.IsDestroy

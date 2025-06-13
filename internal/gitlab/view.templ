@@ -25,8 +25,8 @@ templ tokenDescription(hostname string) {
 		u := &url.URL{
 			Scheme: "https",
 			Host:   hostname,
-			Path:   "/-/profile/personal_access_tokens",
+			Path:   "/-/user_settings/personal_access_tokens",
 		}
 	}}
-	Create a <a class="link" href={ templ.SafeURL(u.String()) }>personal access token</a> with the <span class="font-bold">api</span> scope.
+	Create a <a class="link" href={ templ.SafeURL(u.String()) } target="GitlabTab">personal access token</a> with the <span class="font-bold">api</span> scope.
 }
