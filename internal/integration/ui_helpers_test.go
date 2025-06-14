@@ -130,17 +130,19 @@ func startRunTasks(t *testing.T, page playwright.Page, hostname string, organiza
 	})
 	require.NoError(t, err)
 
-	planWithOptionalApply(t, page, hostname, organization, workspaceName, apply)
+	// wait for page to transition then take screenshot of run page.
+	page.WaitForLoadState()
+	screenshot(t, page, "run_page_started")
+
+	planWithOptionalApply(t, page, hostname, apply)
 }
 
-func planWithOptionalApply(t *testing.T, page playwright.Page, hostname string, organization organization.Name, workspaceName string, apply bool) {
+func planWithOptionalApply(t *testing.T, page playwright.Page, hostname string, apply bool) {
 	t.Helper()
 
 	// confirm plan begins and ends
 	err := expect.Locator(page.Locator(`//*[@id='tailed-plan-logs']`)).ToContainText("Initializing the backend")
 	require.NoError(t, err)
-
-	screenshot(t, page, "run_page_started")
 
 	err = expect.Locator(page.Locator(`//span[@id='plan-status']`)).ToHaveText("finished")
 	require.NoError(t, err)

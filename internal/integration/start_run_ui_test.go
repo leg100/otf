@@ -38,7 +38,7 @@ func TestStartRunUI(t *testing.T) {
 				err = page.Locator(`//button[@id='queue-destroy-plan-button']`).Click()
 				require.NoError(t, err)
 
-				planWithOptionalApply(t, page, svc.System.Hostname(), ws.Organization, ws.Name, true)
+				planWithOptionalApply(t, page, svc.System.Hostname(), true)
 			})
 		})
 	}
