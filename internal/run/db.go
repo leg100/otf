@@ -776,8 +776,8 @@ func (db *pgdb) scan(row pgx.CollectableRow) (*Run, error) {
 		},
 		StatusTimestamps:      make([]StatusTimestamp, len(m.RunStatusTimestamps)),
 		Latest:                m.Latest,
-		CreatedBy:             m.CreatedBy,
 		CostEstimationEnabled: m.CostEstimationEnabled,
+		CreatedBy:             m.CreatedBy,
 	}
 	if m.IngressAttributes != nil {
 		run.IngressAttributes = m.IngressAttributes.ToIngressAttributes()

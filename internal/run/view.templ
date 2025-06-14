@@ -83,13 +83,13 @@ templ (t table) Row(run *Run) {
 		</td>
 		<td>
 			<div class="flex flex-col gap-2">
-				if run.IngressAttributes != nil {
-					<span class="inline-block max-w-[16rem] truncate">
-						<a id="vcs-username" href={ templ.SafeURL(run.IngressAttributes.SenderHTMLURL) }>&commat;{ run.IngressAttributes.SenderUsername }</a>
-					</span>
-				} else if run.CreatedBy != nil {
+				if run.CreatedBy != nil {
 					<span class="inline-block max-w-[16rem] truncate" id="run-created-by">
 						&commat;{ run.CreatedBy.String() }
+					</span>
+				} else if run.IngressAttributes != nil {
+					<span class="inline-block max-w-[16rem] truncate">
+						<a id="vcs-username" href={ templ.SafeURL(run.IngressAttributes.SenderHTMLURL) }>&commat;{ run.IngressAttributes.SenderUsername }</a>
 					</span>
 				}
 				<div class="flex gap-2 items-center">

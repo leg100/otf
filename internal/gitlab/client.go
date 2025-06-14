@@ -296,5 +296,8 @@ func (g *Client) GetCommit(ctx context.Context, repo, ref string) (vcs.Commit, e
 	return vcs.Commit{
 		SHA: commit.ID,
 		URL: commit.WebURL,
+		Author: vcs.CommitAuthor{
+			Username: commit.AuthorName,
+		},
 	}, nil
 }

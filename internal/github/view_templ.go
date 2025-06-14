@@ -630,7 +630,7 @@ func tokenDescription(hostname string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 37, "\">personal access token</a> with the <span class=\"font-bold\">repo</span> scope.")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 37, "\" target=\"GithubTab\">personal access token</a> with the <span class=\"font-bold\">repo</span> scope.")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
