@@ -130,8 +130,6 @@ func startRunTasks(t *testing.T, page playwright.Page, hostname string, organiza
 	})
 	require.NoError(t, err)
 
-	screenshot(t, page, "run_page_started")
-
 	planWithOptionalApply(t, page, hostname, organization, workspaceName, apply)
 }
 
@@ -141,6 +139,8 @@ func planWithOptionalApply(t *testing.T, page playwright.Page, hostname string, 
 	// confirm plan begins and ends
 	err := expect.Locator(page.Locator(`//*[@id='tailed-plan-logs']`)).ToContainText("Initializing the backend")
 	require.NoError(t, err)
+
+	screenshot(t, page, "run_page_started")
 
 	err = expect.Locator(page.Locator(`//span[@id='plan-status']`)).ToHaveText("finished")
 	require.NoError(t, err)
