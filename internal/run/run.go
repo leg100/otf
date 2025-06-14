@@ -79,7 +79,7 @@ type (
 
 		// Username of user who created the run. This is nil if the run was
 		// instead triggered by a VCS event.
-		CreatedBy user.Username
+		CreatedBy *user.Username
 
 		// OTF doesn't support cost estimation but some go-tfe API tests expect
 		// a run to enter the RunCostEstimated state, and this boolean
