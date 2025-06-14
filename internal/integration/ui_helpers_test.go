@@ -130,12 +130,14 @@ func startRunTasks(t *testing.T, page playwright.Page, hostname string, organiza
 	})
 	require.NoError(t, err)
 
+	// wait for page to transition then take screenshot of run page.
+	page.WaitForLoadState()
 	screenshot(t, page, "run_page_started")
 
-	planWithOptionalApply(t, page, hostname, organization, workspaceName, apply)
+	planWithOptionalApply(t, page, hostname, apply)
 }
 
-func planWithOptionalApply(t *testing.T, page playwright.Page, hostname string, organization organization.Name, workspaceName string, apply bool) {
+func planWithOptionalApply(t *testing.T, page playwright.Page, hostname string, apply bool) {
 	t.Helper()
 
 	// confirm plan begins and ends
