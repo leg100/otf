@@ -5,7 +5,9 @@ import (
 	"time"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/configversion/source"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/vcs"
 )
 
 const (
@@ -27,7 +29,7 @@ type (
 		ID                resource.TfeID
 		CreatedAt         time.Time
 		AutoQueueRuns     bool
-		Source            Source
+		Source            source.Source
 		Speculative       bool
 		Status            ConfigurationStatus
 		StatusTimestamps  []StatusTimestamp
@@ -41,7 +43,7 @@ type (
 	CreateOptions struct {
 		AutoQueueRuns *bool
 		Speculative   *bool
-		Source        Source
+		Source        source.Source
 		*IngressAttributes
 	}
 
@@ -79,7 +81,7 @@ type (
 	IngressAttributes struct {
 		Branch                 string
 		CommitSHA              string
-		Repo                   string
+		Repo                   vcs.Repo
 		IsPullRequest          bool
 		OnDefaultBranch        bool
 		ConfigurationVersionID resource.TfeID
@@ -100,7 +102,7 @@ func NewConfigurationVersion(workspaceID resource.TfeID, opts CreateOptions) *Co
 		ID:            resource.NewTfeID(resource.ConfigVersionKind),
 		CreatedAt:     internal.CurrentTimestamp(nil),
 		AutoQueueRuns: DefaultAutoQueueRuns,
-		Source:        DefaultSource,
+		Source:        source.Default,
 		WorkspaceID:   workspaceID,
 	}
 	cv.updateStatus(ConfigurationPending)

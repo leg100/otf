@@ -13,6 +13,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/configversion/source"
 	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/resource"
@@ -70,10 +71,10 @@ func (a *tfe) createConfigurationVersion(w http.ResponseWriter, r *http.Request)
 	opts := CreateOptions{
 		AutoQueueRuns: params.AutoQueueRuns,
 		Speculative:   params.Speculative,
-		Source:        SourceAPI,
+		Source:        source.API,
 	}
 	if tfeapi.IsTerraformCLI(r) {
-		opts.Source = SourceTerraform
+		opts.Source = source.Terraform
 	}
 
 	cv, err := a.Create(r.Context(), workspaceID, opts)

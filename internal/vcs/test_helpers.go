@@ -7,10 +7,10 @@ import (
 	"github.com/leg100/otf/internal"
 )
 
-func NewTestRepo() string {
-	return "repo-owner-" + internal.GenerateRandomString(4) + "/" + "repo-" + internal.GenerateRandomString(4)
+func NewTestRepo() Repo {
+	return Repo{Owner: "repo-owner-" + internal.GenerateRandomString(4), Name: "repo-" + internal.GenerateRandomString(4)}
 }
 
-func NewTestModuleRepo(provider, name string) string {
-	return fmt.Sprintf("%s/terraform-%s-%s", uuid.New(), provider, name)
+func NewTestModuleRepo(provider, name string) Repo {
+	return Repo{Owner: uuid.NewString(), Name: fmt.Sprintf("terraform-%s-%s", provider, name)}
 }

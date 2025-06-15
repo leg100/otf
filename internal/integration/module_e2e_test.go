@@ -54,7 +54,7 @@ func TestModuleE2E(t *testing.T) {
 		screenshot(t, page, "modules_select_repo")
 
 		// connect to first repo in list (there should only be one)
-		err = page.Locator(`//tr[@id='item-repo-` + repo + `']//button[text()='Connect']`).Click()
+		err = page.Locator(`//tr[@id='item-repo-` + repo.String() + `']//button[text()='Connect']`).Click()
 		require.NoError(t, err)
 
 		// flash message indicates success

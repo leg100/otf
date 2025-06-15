@@ -220,7 +220,7 @@ func (h *webHandlers) connect(w http.ResponseWriter, r *http.Request) {
 func (h *webHandlers) publish(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		VCSProviderID resource.TfeID `schema:"vcs_provider_id,required"`
-		Repo          Repo           `schema:"identifier,required"`
+		Repo          vcs.Repo       `schema:"identifier,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -228,7 +228,7 @@ func (h *webHandlers) publish(w http.ResponseWriter, r *http.Request) {
 	}
 
 	module, err := h.client.PublishModule(r.Context(), PublishOptions{
-		Repo:          params.Repo,
+		Repo:          Repo(params.Repo),
 		VCSProviderID: params.VCSProviderID,
 	})
 	if err != nil && errors.Is(err, vcs.ErrInvalidRepo) || errors.Is(err, ErrInvalidModuleRepo) {

@@ -7,7 +7,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
-	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
@@ -35,14 +34,14 @@ type (
 		*tfeapi.Responder
 		logr.Logger
 
-		ConfigVersionService *configversion.Service
-		SkipTLSVerification  bool
-		Authorizer           *authz.Authorizer
+		SourceIconRegistrar SourceIconRegistrar
+		SkipTLSVerification bool
+		Authorizer          *authz.Authorizer
 	}
 )
 
 func NewService(opts Options) *Service {
-	kindDB := newKindDB(opts.ConfigVersionService)
+	kindDB := newKindDB(opts.SourceIconRegistrar)
 	factory := factory{kinds: kindDB}
 	svc := Service{
 		Logger:          opts.Logger,

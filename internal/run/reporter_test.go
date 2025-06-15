@@ -6,6 +6,7 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/configversion"
+	"github.com/leg100/otf/internal/configversion/source"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/testutils"
@@ -37,13 +38,13 @@ func TestReporter_HandleRun(t *testing.T) {
 			cv: &configversion.ConfigurationVersion{
 				IngressAttributes: &configversion.IngressAttributes{
 					CommitSHA: "abc123",
-					Repo:      "leg100/otf",
+					Repo:      vcs.Repo{Owner: "leg100", Name: "otf"},
 				},
 			},
 			want: &vcs.SetStatusOptions{
 				Workspace: "dev",
 				Ref:       "abc123",
-				Repo:      "leg100/otf",
+				Repo:      vcs.Repo{Owner: "leg100", Name: "otf"},
 				Status:    vcs.PendingStatus,
 				TargetURL: "https://otf-host.org/app/runs/run-123",
 			},
@@ -58,12 +59,12 @@ func TestReporter_HandleRun(t *testing.T) {
 		},
 		{
 			name:  "skip UI-triggered run",
-			event: &Event{ID: testutils.ParseID(t, "run-123"), Source: configversion.SourceUI},
+			event: &Event{ID: testutils.ParseID(t, "run-123"), Source: source.UI},
 			want:  nil,
 		},
 		{
 			name:  "skip API-triggered run",
-			event: &Event{ID: testutils.ParseID(t, "run-123"), Source: configversion.SourceAPI},
+			event: &Event{ID: testutils.ParseID(t, "run-123"), Source: source.API},
 			want:  nil,
 		},
 	}
@@ -103,7 +104,7 @@ func TestReporter_DontSetStatusTwice(t *testing.T) {
 	cv := &configversion.ConfigurationVersion{
 		IngressAttributes: &configversion.IngressAttributes{
 			CommitSHA: "abc123",
-			Repo:      "leg100/otf",
+			Repo:      vcs.Repo{Owner: "leg100", Name: "otf"},
 		},
 	}
 
@@ -124,7 +125,7 @@ func TestReporter_DontSetStatusTwice(t *testing.T) {
 	want := vcs.SetStatusOptions{
 		Workspace: "dev",
 		Ref:       "abc123",
-		Repo:      "leg100/otf",
+		Repo:      vcs.Repo{Owner: "leg100", Name: "otf"},
 		Status:    vcs.PendingStatus,
 		TargetURL: "https://otf-host.org/app/runs/run-123",
 	}

@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/antchfx/htmlquery"
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/http/html/paths"
@@ -115,7 +114,7 @@ func TestEditWorkspaceHandler(t *testing.T) {
 	vcsProviderID := resource.NewTfeID(resource.VCSProviderKind)
 	wsConnected := NewTestWorkspace(t, &CreateOptions{
 		ConnectOptions: &ConnectOptions{
-			RepoPath:      internal.String("leg100/otf"),
+			RepoPath:      &vcs.Repo{Owner: "leg100", Name: "terraform"},
 			VCSProviderID: &vcsProviderID,
 		},
 	})
@@ -395,7 +394,7 @@ func TestListWorkspaceReposHandler(t *testing.T) {
 		vcsproviders: &fakeVCSProviderService{
 			provider: &vcs.Provider{
 				Client: &fakeVCSClient{
-					repos: []string{
+					repos: []vcs.Repo{
 						vcs.NewTestRepo(),
 						vcs.NewTestRepo(),
 						vcs.NewTestRepo(),

@@ -8,6 +8,7 @@ import (
 	"github.com/a-h/templ"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/configversion"
+	"github.com/leg100/otf/internal/configversion/source"
 	"github.com/leg100/otf/internal/engine"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
@@ -110,7 +111,7 @@ func TestFactory(t *testing.T) {
 		vcsProviderID := resource.NewTfeID(resource.VCSProviderKind)
 		ws := workspace.NewTestWorkspace(t, &workspace.CreateOptions{
 			ConnectOptions: &workspace.ConnectOptions{
-				RepoPath:      internal.String(""),
+				RepoPath:      &vcs.Repo{},
 				VCSProviderID: &vcsProviderID,
 			},
 		})
@@ -198,7 +199,7 @@ func (f *fakeFactoryConfigurationVersionService) UploadConfig(context.Context, r
 	return nil
 }
 
-func (f *fakeFactoryConfigurationVersionService) GetSourceIcon(source configversion.Source) templ.Component {
+func (f *fakeFactoryConfigurationVersionService) GetSourceIcon(source source.Source) templ.Component {
 	return templ.Raw("")
 }
 
@@ -216,7 +217,7 @@ func (f *fakeFactoryCloudClient) GetDefaultBranch(context.Context, string) (stri
 	return "", nil
 }
 
-func (f *fakeFactoryCloudClient) GetCommit(context.Context, string, string) (vcs.Commit, error) {
+func (f *fakeFactoryCloudClient) GetCommit(context.Context, vcs.Repo, string) (vcs.Commit, error) {
 	return vcs.Commit{}, nil
 }
 

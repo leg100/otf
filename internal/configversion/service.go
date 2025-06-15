@@ -7,6 +7,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
+	"github.com/leg100/otf/internal/configversion/source"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/tfeapi"
@@ -17,7 +18,7 @@ type (
 	Service struct {
 		logr.Logger
 		*authz.Authorizer
-		*sourceIconDB
+		*source.IconDB
 
 		db     *pgdb
 		cache  internal.Cache
@@ -40,9 +41,9 @@ type (
 
 func NewService(opts Options) *Service {
 	svc := Service{
-		Logger:       opts.Logger,
-		Authorizer:   opts.Authorizer,
-		sourceIconDB: newSourceIconDB(),
+		Logger:     opts.Logger,
+		Authorizer: opts.Authorizer,
+		IconDB:     source.NewIconDB(),
 	}
 	svc.db = &pgdb{opts.DB}
 	svc.cache = opts.Cache

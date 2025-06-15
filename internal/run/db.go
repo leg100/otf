@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/configversion"
+	"github.com/leg100/otf/internal/configversion/source"
 	"github.com/leg100/otf/internal/engine"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
@@ -713,7 +714,7 @@ func (db *pgdb) scan(row pgx.CollectableRow) (*Run, error) {
 			AllowEmptyApply        bool                                  `db:"allow_empty_apply"`
 			AutoApply              bool                                  `db:"auto_apply"`
 			PlanOnly               bool                                  `db:"plan_only"`
-			Source                 configversion.Source                  `db:"source"`
+			Source                 source.Source                         `db:"source"`
 			Status                 runstatus.Status                      `db:"status"`
 			PlanStatus             PhaseStatus                           `db:"plan_status"`
 			ApplyStatus            PhaseStatus                           `db:"apply_status"`

@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/leg100/otf/internal/configversion"
+	"github.com/leg100/otf/internal/configversion/source"
 	"github.com/leg100/otf/internal/resource"
 )
 
@@ -53,7 +53,7 @@ type (
 		// event.
 		VCSProviderID resource.TfeID
 		// Source of vcs provider kind that generated this event.
-		Source configversion.Source
+		Source source.Source
 	}
 
 	EventPayload struct {

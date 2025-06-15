@@ -8,6 +8,7 @@ import (
 	"github.com/a-h/templ"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/configversion"
+	"github.com/leg100/otf/internal/configversion/source"
 	"github.com/leg100/otf/internal/engine"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
@@ -40,7 +41,7 @@ type (
 		Get(ctx context.Context, id resource.TfeID) (*configversion.ConfigurationVersion, error)
 		GetLatest(ctx context.Context, workspaceID resource.TfeID) (*configversion.ConfigurationVersion, error)
 		UploadConfig(ctx context.Context, id resource.TfeID, config []byte) error
-		GetSourceIcon(source configversion.Source) templ.Component
+		GetSourceIcon(source source.Source) templ.Component
 	}
 
 	factoryVCSClient interface {
@@ -112,7 +113,7 @@ func (f *factory) NewRun(ctx context.Context, workspaceID resource.TfeID, opts C
 	run.updateStatus(runstatus.Pending, opts.now)
 
 	if run.Source == "" {
-		run.Source = configversion.SourceAPI
+		run.Source = source.API
 	}
 	run.SourceIcon = f.configs.GetSourceIcon(run.Source)
 

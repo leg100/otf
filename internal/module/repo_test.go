@@ -3,25 +3,24 @@ package module
 import (
 	"testing"
 
-	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/vcs"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestRepo_Split(t *testing.T) {
 	tests := []struct {
-		repo         string
+		repo         vcs.Repo
 		wantName     string
 		wantProvider string
 		wantError    error
 	}{
-		{"leg100/terraform-aws-vpc", "vpc", "aws", nil},
-		{"leg100/anything-aws-vpc", "vpc", "aws", nil},
-		{"leg100/terraform-gcp-secrets-manager", "secrets-manager", "gcp", nil},
-		{"not-a-repo", "", "", internal.ErrInvalidRepo},
-		{"leg100/not_a_module_repo", "", "", ErrInvalidModuleRepo},
+		{vcs.Repo{Owner: "leg100", Name: "terraform-aws-vpc"}, "vpc", "aws", nil},
+		{vcs.Repo{Owner: "leg100", Name: "/anything-aws-vpc"}, "vpc", "aws", nil},
+		{vcs.Repo{Owner: "leg100", Name: "/terraform-gcp-secrets-manager"}, "secrets-manager", "gcp", nil},
+		{vcs.Repo{Owner: "leg100", Name: "/not_a_module_repo"}, "", "", ErrInvalidModuleRepo},
 	}
 	for _, tt := range tests {
-		t.Run(tt.repo, func(t *testing.T) {
+		t.Run(tt.repo.String(), func(t *testing.T) {
 			gotName, gotProvider, gotError := Repo(tt.repo).Split()
 			assert.Equal(t, tt.wantName, gotName)
 			assert.Equal(t, tt.wantProvider, gotProvider)

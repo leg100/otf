@@ -93,7 +93,7 @@ func TestIntegration_WorkspaceAPI_CreateConnected(t *testing.T) {
 		Name: internal.String("testing"),
 		VCSRepo: &tfe.VCSRepoOptions{
 			OAuthTokenID: internal.String(oauth.ID),
-			Identifier:   internal.String(repo),
+			Identifier:   internal.String(repo.String()),
 		},
 	})
 	require.NoError(t, err)

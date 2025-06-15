@@ -10,6 +10,7 @@ import (
 	"github.com/a-h/templ"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/configversion"
+	"github.com/leg100/otf/internal/configversion/source"
 	"github.com/leg100/otf/internal/engine"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
@@ -58,7 +59,7 @@ type (
 		AllowEmptyApply        bool                    `jsonapi:"attribute" json:"allow_empty_apply"`
 		AutoApply              bool                    `jsonapi:"attribute" json:"auto_apply"`
 		PlanOnly               bool                    `jsonapi:"attribute" json:"plan_only"`
-		Source                 configversion.Source    `jsonapi:"attribute" json:"source"`
+		Source                 source.Source           `jsonapi:"attribute" json:"source"`
 		SourceIcon             templ.Component         `json:"-"`
 		Status                 runstatus.Status        `jsonapi:"attribute" json:"status"`
 		WorkspaceID            resource.TfeID          `jsonapi:"attribute" json:"workspace_id"`
@@ -111,7 +112,7 @@ type (
 		TargetAddrs            []string
 		ReplaceAddrs           []string
 		AutoApply              *bool
-		Source                 configversion.Source
+		Source                 source.Source
 		TerraformVersion       *string
 		AllowEmptyApply        *bool
 		// PlanOnly specifies if this is a speculative, plan-only run that
@@ -138,7 +139,7 @@ type (
 		// Filter by plan-only runs
 		PlanOnly *bool `schema:"-"`
 		// Filter by sources
-		Sources []configversion.Source
+		Sources []source.Source
 		// Filter by commit SHA that triggered a run
 		CommitSHA *string
 		// Filter by VCS user's username that triggered a run

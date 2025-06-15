@@ -7,8 +7,10 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/configversion/source"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
+	"github.com/leg100/otf/internal/vcs"
 )
 
 type pgdb struct {
@@ -264,7 +266,7 @@ INSERT INTO configuration_version_status_timestamps (
 type IngressAttributesModel struct {
 	Branch                 string
 	CommitSHA              string         `db:"commit_sha"`
-	Repo                   string         `db:"identifier"`
+	Repo                   vcs.Repo       `db:"identifier"`
 	IsPullRequest          bool           `db:"is_pull_request"`
 	OnDefaultBranch        bool           `db:"on_default_branch"`
 	ConfigurationVersionID resource.TfeID `db:"configuration_version_id"`
@@ -302,7 +304,7 @@ func (db *pgdb) scan(row pgx.CollectableRow) (*ConfigurationVersion, error) {
 		ID                resource.TfeID `db:"configuration_version_id"`
 		CreatedAt         time.Time      `db:"created_at"`
 		AutoQueueRuns     bool           `db:"auto_queue_runs"`
-		Source            Source
+		Source            source.Source
 		Speculative       bool
 		Status            ConfigurationStatus
 		StatusTimestamps  []StatusTimestamp       `db:"status_timestamps"`

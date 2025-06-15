@@ -100,7 +100,7 @@ func TestConnect(t *testing.T) {
 	h := newTestWebHandlers(t,
 		withVCSProvider(&vcs.Provider{
 			Client: &fakeModulesCloudClient{
-				repos: []string{
+				repos: []vcs.Repo{
 					vcs.NewTestModuleRepo("aws", "vpc"),
 					vcs.NewTestModuleRepo("aws", "s3"),
 				},

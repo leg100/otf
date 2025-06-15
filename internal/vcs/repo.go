@@ -66,3 +66,20 @@ func (r *Repo) Value() (driver.Value, error) {
 	}
 	return r.String(), nil
 }
+
+func (r Repo) MarshalText() ([]byte, error) {
+	return []byte(r.String()), nil
+}
+
+func (r *Repo) UnmarshalText(text []byte) error {
+	if len(text) == 0 {
+		return nil
+	}
+	s := string(text)
+	repo, err := NewRepoFromString(s)
+	if err != nil {
+		return err
+	}
+	*r = repo
+	return nil
+}

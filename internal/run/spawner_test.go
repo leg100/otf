@@ -264,6 +264,6 @@ func (f *fakeSpawnerCloudClient) GetRepoTarball(context.Context, vcs.GetRepoTarb
 	return nil, "", nil
 }
 
-func (f *fakeSpawnerCloudClient) ListPullRequestFiles(ctx context.Context, repo string, pull int) ([]string, error) {
+func (f *fakeSpawnerCloudClient) ListPullRequestFiles(ctx context.Context, repo vcs.Repo, pull int) ([]string, error) {
 	return f.pullFiles, nil
 }

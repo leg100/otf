@@ -13,6 +13,7 @@ import (
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/user"
+	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -49,14 +50,14 @@ func TestWorkspace(t *testing.T) {
 	})
 
 	t.Run("create connected workspace", func(t *testing.T) {
-		daemon, org, ctx := setup(t, withGithubOption(github.WithRepo("test/dummy")))
+		daemon, org, ctx := setup(t, withGithubOption(github.WithRepo(vcs.Repo{Owner: "test", Name: "dummy"})))
 
 		vcsprov := daemon.createVCSProvider(t, ctx, org, nil)
 		ws, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
 			Name:         internal.String(uuid.NewString()),
 			Organization: &org.Name,
 			ConnectOptions: &workspace.ConnectOptions{
-				RepoPath:      internal.String("test/dummy"),
+				RepoPath:      &vcs.Repo{Owner: "test", Name: "dummy"},
 				VCSProviderID: &vcsprov.ID,
 			},
 		})
@@ -79,14 +80,14 @@ func TestWorkspace(t *testing.T) {
 	})
 
 	t.Run("deleting connected workspace also deletes webhook", func(t *testing.T) {
-		svc, org, ctx := setup(t, withGithubOption(github.WithRepo("test/dummy")))
+		svc, org, ctx := setup(t, withGithubOption(github.WithRepo(vcs.Repo{Owner: "test", Name: "dummy"})))
 
 		vcsprov := svc.createVCSProvider(t, ctx, org, nil)
 		ws, err := svc.Workspaces.Create(ctx, workspace.CreateOptions{
 			Name:         internal.String(uuid.NewString()),
 			Organization: &org.Name,
 			ConnectOptions: &workspace.ConnectOptions{
-				RepoPath:      internal.String("test/dummy"),
+				RepoPath:      &vcs.Repo{Owner: "test", Name: "dummy"},
 				VCSProviderID: &vcsprov.ID,
 			},
 		})
@@ -105,7 +106,7 @@ func TestWorkspace(t *testing.T) {
 	})
 
 	t.Run("connect workspace", func(t *testing.T) {
-		svc, org, ctx := setup(t, withGithubOption(github.WithRepo("test/dummy")))
+		svc, org, ctx := setup(t, withGithubOption(github.WithRepo(vcs.Repo{Owner: "test", Name: "dummy"})))
 
 		ws := svc.createWorkspace(t, ctx, org)
 		vcsprov := svc.createVCSProvider(t, ctx, org, nil)
@@ -113,10 +114,10 @@ func TestWorkspace(t *testing.T) {
 		got, err := svc.Connections.Connect(ctx, connections.ConnectOptions{
 			VCSProviderID: vcsprov.ID,
 			ResourceID:    ws.ID,
-			RepoPath:      "test/dummy",
+			RepoPath:      vcs.Repo{Owner: "test", Name: "dummy"},
 		})
 		require.NoError(t, err)
-		want := &connections.Connection{VCSProviderID: vcsprov.ID, Repo: "test/dummy"}
+		want := &connections.Connection{VCSProviderID: vcsprov.ID, Repo: vcs.Repo{Owner: "test", Name: "dummy"}}
 		assert.Equal(t, want, got)
 
 		t.Run("delete workspace connection", func(t *testing.T) {

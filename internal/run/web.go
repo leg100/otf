@@ -10,7 +10,7 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
-	"github.com/leg100/otf/internal/configversion"
+	"github.com/leg100/otf/internal/configversion/source"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/components"
@@ -100,7 +100,7 @@ func (h *webHandlers) createRun(w http.ResponseWriter, r *http.Request) {
 	run, err := h.runs.Create(r.Context(), params.WorkspaceID, CreateOptions{
 		IsDestroy: internal.Bool(params.Operation == DestroyAllOperation),
 		PlanOnly:  internal.Bool(params.Operation == PlanOnlyOperation),
-		Source:    configversion.SourceUI,
+		Source:    source.UI,
 	})
 	if err != nil {
 		html.FlashError(w, err.Error())
@@ -335,7 +335,7 @@ func (h *webHandlers) retry(w http.ResponseWriter, r *http.Request) {
 		ConfigurationVersionID: &run.ConfigurationVersionID,
 		IsDestroy:              &run.IsDestroy,
 		PlanOnly:               &run.PlanOnly,
-		Source:                 configversion.SourceUI,
+		Source:                 source.UI,
 	})
 	if err != nil {
 		html.FlashError(w, err.Error())

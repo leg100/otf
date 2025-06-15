@@ -6,6 +6,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/testutils"
+	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/assert"
@@ -20,7 +21,7 @@ func TestGithubPullRequest(t *testing.T) {
 	// contents via tarball, and setup a fake pull request with a list of files
 	// it has changed.
 	daemon, org, ctx := setup(t, withGithubOptions(
-		github.WithRepo("leg100/otf-workspaces"),
+		github.WithRepo(vcs.Repo{Owner: "leg100", Name: "otf-workspaces"}),
 		github.WithArchive(testutils.ReadFile(t, "../testdata/github.tar.gz")),
 		github.WithPullRequest("2", "/nomatch.tf", "/foo/bar/match.tf"),
 	))
@@ -32,7 +33,7 @@ func TestGithubPullRequest(t *testing.T) {
 		TriggerPatterns: []string{"/foo/**/*.tf"},
 		ConnectOptions: &workspace.ConnectOptions{
 			VCSProviderID: &provider.ID,
-			RepoPath:      internal.String("leg100/otf-workspaces"),
+			RepoPath:      &vcs.Repo{Owner: "leg100", Name: "otf-workspaces"},
 		},
 	})
 	require.NoError(t, err)
