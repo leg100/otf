@@ -1,5 +1,30 @@
 # Changelog
 
+## [0.3.24](https://github.com/leg100/otf/compare/v0.3.23...v0.3.24) (2025-06-15)
+
+
+### Features
+
+* forgejo provider uses gitea webhooks, for compatibility with both ([#793](https://github.com/leg100/otf/issues/793)) ([9628f8a](https://github.com/leg100/otf/commit/9628f8a3dad6197c66225184f919ae1c4dee63bf)), closes [#792](https://github.com/leg100/otf/issues/792)
+
+
+### Bug Fixes
+
+* allow overriding source for a vcs kind ([40467e7](https://github.com/leg100/otf/commit/40467e7d2a7b70782baf1512b44c34145e34f8ea))
+* **ci:** helm charts copied to wrong dir in otf-charts repo ([94ab37b](https://github.com/leg100/otf/commit/94ab37ba3900dc9788beecb1aad37aaf8af85767))
+* **docs:** lists in forgeyo doc rendering items on same line ([db13b7a](https://github.com/leg100/otf/commit/db13b7a29896bafe145af6361f92466f11f052b3))
+* **ui:** nil panic when two workspace variables have same key ([4a6ed58](https://github.com/leg100/otf/commit/4a6ed58624df505ab96ec619efce667648cd285c))
+* **ui:** various VCS fixes ([#797](https://github.com/leg100/otf/issues/797)) ([99905ce](https://github.com/leg100/otf/commit/99905ceb98fe94d14a0c333665a1d3b97a6fbca0))
+* when copying an ID, copy only the ID, not the &lt;span&gt; tag ([#790](https://github.com/leg100/otf/issues/790)) ([1eb4268](https://github.com/leg100/otf/commit/1eb4268ef05cd3e76c5031b700e1a12817968135))
+
+
+### Miscellaneous
+
+* bump templ ([dd8d027](https://github.com/leg100/otf/commit/dd8d027b6cdfae7a70afce8fef5ae22cc9361972))
+* remove unused modd file watcher ([89c422d](https://github.com/leg100/otf/commit/89c422d9f4f81d7b4eb62cae84f5d2d01e23e34b))
+* update algorithms ([a303feb](https://github.com/leg100/otf/commit/a303feb49eedd2c0f6afb0f6a96d820674e4ed31))
+* update doc screenshots ([#796](https://github.com/leg100/otf/issues/796)) ([0677c07](https://github.com/leg100/otf/commit/0677c0770544f4abb431f077b5406872ed55e290))
+
 ## [0.3.23](https://github.com/leg100/otf/compare/v0.3.22...v0.3.23) (2025-05-26)
 
 
