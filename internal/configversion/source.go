@@ -16,6 +16,8 @@ var (
 // Source is the source or origin of the configuration
 type Source string
 
+func Ptr(s Source) *Source { return &s }
+
 // sourceIconDB is a database of sources and their icons
 type sourceIconDB struct {
 	mu    sync.Mutex
