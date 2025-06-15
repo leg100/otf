@@ -3,6 +3,7 @@ package vcs
 import (
 	"errors"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/components/paths"
 	"github.com/leg100/otf/internal/organization"
@@ -235,11 +236,11 @@ templ form(props formProps) {
 	}
 }
 
-templ IconWrapper(id KindID, icon templ.Component) {
+templ triggerIcon(source configversion.Source, icon templ.Component) {
 	<div
 		class="size-6"
-		id={ "run-trigger-" + string(id) }
-		title={ "run triggered via " + string(id) }
+		id={ "run-trigger-" + string(source) }
+		title={ "run triggered via " + string(source) }
 	>
 		@icon
 	</div>
