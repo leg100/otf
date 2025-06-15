@@ -16,7 +16,7 @@ type db struct {
 func (db *db) createConnection(ctx context.Context, opts ConnectOptions) error {
 	args := pgx.NamedArgs{
 		"vcs_provider_id": opts.VCSProviderID,
-		"repo_path":       sql.String(opts.RepoPath),
+		"repo_path":       opts.RepoPath,
 	}
 
 	switch opts.ResourceID.Kind() {

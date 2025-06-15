@@ -150,7 +150,7 @@ func (f *factory) createConfigVersionFromVCS(ctx context.Context, ws *workspace.
 	if err != nil {
 		return nil, err
 	}
-	defaultBranch, err := client.GetDefaultBranch(ctx, ws.Connection.Repo)
+	defaultBranch, err := client.GetDefaultBranch(ctx, ws.Connection.Repo.String())
 	if err != nil {
 		return nil, fmt.Errorf("retrieving repository info: %w", err)
 	}

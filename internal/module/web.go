@@ -198,7 +198,7 @@ func (h *webHandlers) connect(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	filtered := make([]string, 0, len(results))
+	filtered := make([]vcs.Repo, 0, len(results))
 	for _, res := range results {
 		_, _, err := Repo(res).Split()
 		if err == ErrInvalidModuleRepo {
@@ -231,7 +231,7 @@ func (h *webHandlers) publish(w http.ResponseWriter, r *http.Request) {
 		Repo:          params.Repo,
 		VCSProviderID: params.VCSProviderID,
 	})
-	if err != nil && errors.Is(err, internal.ErrInvalidRepo) || errors.Is(err, ErrInvalidModuleRepo) {
+	if err != nil && errors.Is(err, vcs.ErrInvalidRepo) || errors.Is(err, ErrInvalidModuleRepo) {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	} else if err != nil {

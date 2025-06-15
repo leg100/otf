@@ -27,7 +27,7 @@ type (
 	}
 
 	spawnerWorkspaceClient interface {
-		ListConnectedWorkspaces(ctx context.Context, vcsProviderID resource.TfeID, repoPath string) ([]*workspace.Workspace, error)
+		ListConnectedWorkspaces(ctx context.Context, vcsProviderID resource.TfeID, repoPath vcs.Repo) ([]*workspace.Workspace, error)
 	}
 
 	spawnerConfigClient interface {
@@ -75,7 +75,7 @@ func (s *Spawner) handleWithError(logger logr.Logger, event vcs.Event) error {
 		return nil
 	}
 
-	workspaces, err := s.workspaces.ListConnectedWorkspaces(ctx, event.VCSProviderID, event.RepoPath)
+	workspaces, err := s.workspaces.ListConnectedWorkspaces(ctx, event.VCSProviderID, event.Repo)
 	if err != nil {
 		return err
 	}
@@ -150,7 +150,7 @@ func (s *Spawner) handleWithError(logger logr.Logger, event vcs.Event) error {
 		return err
 	}
 	tarball, _, err := client.GetRepoTarball(ctx, vcs.GetRepoTarballOptions{
-		Repo: event.RepoPath,
+		Repo: event.Repo,
 		Ref:  &event.CommitSHA,
 	})
 	if err != nil {
@@ -170,7 +170,7 @@ func (s *Spawner) handleWithError(logger logr.Logger, event vcs.Event) error {
 			}
 		}
 		if listFiles {
-			paths, err := client.ListPullRequestFiles(ctx, event.RepoPath, event.PullRequestNumber)
+			paths, err := client.ListPullRequestFiles(ctx, event.Repo, event.PullRequestNumber)
 			if err != nil {
 				return fmt.Errorf("retrieving list of files in pull request from cloud provider: %w", err)
 			}

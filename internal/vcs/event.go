@@ -57,7 +57,7 @@ type (
 	}
 
 	EventPayload struct {
-		RepoPath      string
+		Repo          Repo
 		Type          EventType
 		Action        Action
 		Tag           string
@@ -92,8 +92,11 @@ func (e EventPayload) Validate() error {
 	}
 	switch e.Type {
 	case EventTypePush, EventTypePull, EventTypeTag:
-		if e.RepoPath == "" {
-			return errors.New("event missing repo path")
+		if e.Repo.Owner == "" {
+			return errors.New("event missing repo owner")
+		}
+		if e.Repo.Name == "" {
+			return errors.New("event missing repo name")
 		}
 	}
 	return nil

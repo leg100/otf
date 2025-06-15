@@ -44,8 +44,8 @@ func NewTokenClient(opts vcs.NewTokenClientOptions) (vcs.Client, error) {
 	return &Client{client: rv}, nil
 }
 
-func (c *Client) ListRepositories(ctx context.Context, opts vcs.ListRepositoriesOptions) ([]string, error) {
-	found := map[string]time.Time{}
+func (c *Client) ListRepositories(ctx context.Context, opts vcs.ListRepositoriesOptions) ([]vcs.Repo, error) {
+	found := map[vcs.Repo]time.Time{}
 
 	// search for repos the user owns
 	err := c.findReposOwned(found)
@@ -60,11 +60,11 @@ func (c *Client) ListRepositories(ctx context.Context, opts vcs.ListRepositories
 	}
 
 	// sort by updated time (desc)
-	rv := make([]string, 0, len(found))
+	rv := make([]vcs.Repo, 0, len(found))
 	for fullname := range found {
 		rv = append(rv, fullname)
 	}
-	slices.SortFunc(rv, func(A, B string) int {
+	slices.SortFunc(rv, func(A, B vcs.Repo) int {
 		tA := found[A]
 		tB := found[B]
 		return tB.Compare(tA)
@@ -73,7 +73,7 @@ func (c *Client) ListRepositories(ctx context.Context, opts vcs.ListRepositories
 	return rv, nil
 }
 
-func (c *Client) findReposOwned(found map[string]time.Time) error {
+func (c *Client) findReposOwned(found map[vcs.Repo]time.Time) error {
 	opt := forgejo.ListReposOptions{
 		ListOptions: forgejo.ListOptions{
 			Page:     0,
@@ -91,14 +91,14 @@ func (c *Client) findReposOwned(found map[string]time.Time) error {
 		}
 		for _, repo := range repolist {
 			if repo.Permissions.Admin {
-				found[repo.FullName] = repo.Updated
+				found[vcs.Repo{Owner: repo.Owner.UserName, Name: repo.Name}] = repo.Updated
 			}
 		}
 	}
 	return nil
 }
 
-func (c *Client) findOrgReposOwned(found map[string]time.Time) error {
+func (c *Client) findOrgReposOwned(found map[vcs.Repo]time.Time) error {
 	// find all teams the user is a member of (paginated)
 	var teamids []int64
 	userteamsopt := forgejo.ListTeamsOptions{
@@ -142,7 +142,7 @@ func (c *Client) findOrgReposOwned(found map[string]time.Time) error {
 				return err
 			}
 			for _, repo := range rv {
-				found[repo.FullName] = repo.Updated
+				found[vcs.Repo{Owner: repo.Owner.UserName, Name: repo.Name}] = repo.Updated
 			}
 		}
 	}
@@ -199,11 +199,6 @@ func stringSliceToVcs(es []string) ([]vcs.EventType, error) {
 }
 
 func (c *Client) CreateWebhook(ctx context.Context, opts vcs.CreateWebhookOptions) (string, error) {
-	parts := strings.Split(opts.Repo, "/")
-	if len(parts) != 2 {
-		return "", fmt.Errorf("identifier '%s' must be in the form 'owner/repo'", opts.Repo)
-	}
-	owner, reponame := parts[0], parts[1]
 	events, err := vcsOptToStringSlice(opts)
 	if err != nil {
 		return "", err
@@ -218,7 +213,7 @@ func (c *Client) CreateWebhook(ctx context.Context, opts vcs.CreateWebhookOption
 		Events: events,
 		Active: true,
 	}
-	wh, _, err := c.client.CreateRepoHook(owner, reponame, opt)
+	wh, _, err := c.client.CreateRepoHook(opts.Repo.Owner, opts.Repo.Name, opt)
 	if err != nil {
 		return "", err
 	}
@@ -226,11 +221,6 @@ func (c *Client) CreateWebhook(ctx context.Context, opts vcs.CreateWebhookOption
 }
 
 func (c *Client) UpdateWebhook(ctx context.Context, id string, opts vcs.UpdateWebhookOptions) error {
-	parts := strings.Split(opts.Repo, "/")
-	if len(parts) != 2 {
-		return fmt.Errorf("identifier '%s' must be in the form 'owner/repo'", opts.Repo)
-	}
-	owner, reponame := parts[0], parts[1]
 	idint, err := strconv.ParseInt(id, 16, 64)
 	if err != nil {
 		return err
@@ -247,20 +237,15 @@ func (c *Client) UpdateWebhook(ctx context.Context, id string, opts vcs.UpdateWe
 		},
 		Events: events,
 	}
-	_, err = c.client.EditRepoHook(owner, reponame, idint, opt)
+	_, err = c.client.EditRepoHook(opts.Repo.Owner, opts.Repo.Name, idint, opt)
 	return err
 }
 func (c *Client) GetWebhook(ctx context.Context, opts vcs.GetWebhookOptions) (vcs.Webhook, error) {
-	parts := strings.Split(opts.Repo, "/")
-	if len(parts) != 2 {
-		return vcs.Webhook{}, fmt.Errorf("identifier '%s' must be in the form 'owner/repo'", opts.Repo)
-	}
-	owner, reponame := parts[0], parts[1]
 	idint, err := strconv.ParseInt(opts.ID, 16, 64)
 	if err != nil {
 		return vcs.Webhook{}, err
 	}
-	wh, resp, err := c.client.GetRepoHook(owner, reponame, idint)
+	wh, resp, err := c.client.GetRepoHook(opts.Repo.Owner, opts.Repo.Name, idint)
 	if err != nil {
 		if resp != nil && resp.StatusCode == http.StatusNotFound {
 			return vcs.Webhook{}, internal.ErrResourceNotFound
@@ -279,16 +264,11 @@ func (c *Client) GetWebhook(ctx context.Context, opts vcs.GetWebhookOptions) (vc
 	}, nil
 }
 func (c *Client) DeleteWebhook(ctx context.Context, opts vcs.DeleteWebhookOptions) error {
-	parts := strings.Split(opts.Repo, "/")
-	if len(parts) != 2 {
-		return fmt.Errorf("identifier '%s' must be in the form 'owner/repo'", opts.Repo)
-	}
-	owner, reponame := parts[0], parts[1]
 	idint, err := strconv.ParseInt(opts.ID, 16, 64)
 	if err != nil {
 		return err
 	}
-	_, err = c.client.DeleteRepoHook(owner, reponame, idint)
+	_, err = c.client.DeleteRepoHook(opts.Repo.Owner, opts.Repo.Name, idint)
 	return err
 }
 
@@ -322,38 +302,37 @@ func (c *Client) fullyQualifyRef(owner, reponame, ref string) (string, error) {
 }
 
 func (c *Client) GetRepoTarball(ctx context.Context, opts vcs.GetRepoTarballOptions) ([]byte, string, error) {
-	parts := strings.Split(opts.Repo, "/")
-	if len(parts) != 2 {
-		return nil, "", fmt.Errorf("identifier '%s' must be in the form 'owner/repo'", opts.Repo)
-	}
-	owner, reponame := parts[0], parts[1]
-	ref := ""
+	var (
+		owner = opts.Repo.Owner
+		name  = opts.Repo.Name
+		ref   string
+	)
 	if opts.Ref != nil {
 		ref = *opts.Ref
 	}
 	if ref == "" {
 		// nil means default branch
-		repo, _, err := c.client.GetRepo(owner, reponame)
+		repo, _, err := c.client.GetRepo(owner, name)
 		if err != nil {
 			return nil, "", err
 		}
 
 		ref = repo.DefaultBranch
 	}
-	fqref, err := c.fullyQualifyRef(owner, reponame, ref)
+	fqref, err := c.fullyQualifyRef(owner, name, ref)
 	if err != nil {
 		return nil, "", err
 	}
 
-	tarball, _, err := c.client.GetArchive(owner, reponame, ref, forgejo.TarGZArchive)
+	tarball, _, err := c.client.GetArchive(opts.Repo.Owner, opts.Repo.Name, ref, forgejo.TarGZArchive)
 	if err != nil {
-		return nil, "", fmt.Errorf("GetArchive(\"%s\", \"%s\", \"%s\", \"%s\") failed: %v", owner, reponame, ref, forgejo.TarGZArchive, err)
+		return nil, "", fmt.Errorf("GetArchive(\"%s\", \"%s\", \"%s\", \"%s\") failed: %v", owner, name, ref, forgejo.TarGZArchive, err)
 	}
 
 	// Forgejo tarball contents are contained within a top-level directory
 	// named after the repo. We want the tarball without this directory,
 	// so we re-tar the contents without the top-level directory.
-	untarpath, err := os.MkdirTemp("", fmt.Sprintf("forgejo-%s-%s-*", owner, reponame))
+	untarpath, err := os.MkdirTemp("", fmt.Sprintf("forgejo-%s-%s-*", owner, name))
 	if err != nil {
 		return nil, "", err
 	}
@@ -388,28 +367,17 @@ func vcsStateToForgejo(s vcs.Status) forgejo.StatusState {
 	}[s]
 }
 func (c *Client) SetStatus(ctx context.Context, opts vcs.SetStatusOptions) error {
-	parts := strings.Split(opts.Repo, "/")
-	if len(parts) != 2 {
-		return fmt.Errorf("identifier '%s' must be in the form 'owner/repo'", opts.Repo)
-	}
-	owner, reponame := parts[0], parts[1]
 	opt := forgejo.CreateStatusOption{
 		State:       vcsStateToForgejo(opts.Status),
 		TargetURL:   opts.TargetURL,
 		Description: opts.Description,
 		Context:     "otf",
 	}
-	_, _, err := c.client.CreateStatus(owner, reponame, opts.Ref, opt)
+	_, _, err := c.client.CreateStatus(opts.Repo.Owner, opts.Repo.Name, opts.Ref, opt)
 	return err
 }
 
 func (c *Client) ListTags(ctx context.Context, opts vcs.ListTagsOptions) ([]string, error) {
-	parts := strings.Split(opts.Repo, "/")
-	if len(parts) != 2 {
-		return nil, fmt.Errorf("identifier '%s' must be in the form 'owner/repo'", opts.Repo)
-	}
-	owner, reponame := parts[0], parts[1]
-
 	opt := forgejo.ListRepoTagsOptions{
 		ListOptions: forgejo.ListOptions{
 			Page:     0,
@@ -422,7 +390,7 @@ func (c *Client) ListTags(ctx context.Context, opts vcs.ListTagsOptions) ([]stri
 		opt.Page = resp.NextPage
 		var tags []*forgejo.Tag
 		var err error
-		tags, resp, err = c.client.ListRepoTags(owner, reponame, opt)
+		tags, resp, err = c.client.ListRepoTags(opts.Repo.Owner, opts.Repo.Name, opt)
 		if err != nil {
 			return nil, err
 		}
@@ -436,12 +404,7 @@ func (c *Client) ListTags(ctx context.Context, opts vcs.ListTagsOptions) ([]stri
 }
 
 // ListPullRequestFiles returns the paths of files that are modified in the pull request
-func (c *Client) ListPullRequestFiles(ctx context.Context, repo string, pull int) ([]string, error) {
-	parts := strings.Split(repo, "/")
-	if len(parts) != 2 {
-		return nil, fmt.Errorf("identifier '%s' must be in the form 'owner/repo'", repo)
-	}
-	owner, reponame := parts[0], parts[1]
+func (c *Client) ListPullRequestFiles(ctx context.Context, repo vcs.Repo, pull int) ([]string, error) {
 	opt := forgejo.ListPullRequestFilesOptions{
 		ListOptions: forgejo.ListOptions{
 			Page:     0,
@@ -454,7 +417,7 @@ func (c *Client) ListPullRequestFiles(ctx context.Context, repo string, pull int
 		opt.Page = resp.NextPage
 		var files []*forgejo.ChangedFile
 		var err error
-		files, _, err = c.client.ListPullRequestFiles(owner, reponame, int64(pull), opt)
+		files, _, err = c.client.ListPullRequestFiles(repo.Owner, repo.Name, int64(pull), opt)
 		if err != nil {
 			return nil, err
 		}
@@ -466,14 +429,9 @@ func (c *Client) ListPullRequestFiles(ctx context.Context, repo string, pull int
 }
 
 // GetCommit retrieves commit from the repo with the given git ref
-func (c *Client) GetCommit(ctx context.Context, repo, refname string) (vcs.Commit, error) {
+func (c *Client) GetCommit(ctx context.Context, repo vcs.Repo, refname string) (vcs.Commit, error) {
 	rv := vcs.Commit{}
-	parts := strings.Split(repo, "/")
-	if len(parts) != 2 {
-		return rv, fmt.Errorf("identifier '%s' must be in the form 'owner/repo'", repo)
-	}
-	owner, reponame := parts[0], parts[1]
-	refs, _, err := c.client.GetRepoRefs(owner, reponame, refname)
+	refs, _, err := c.client.GetRepoRefs(repo.Owner, repo.Name, refname)
 	if err != nil {
 		return rv, err
 	}
@@ -485,7 +443,7 @@ func (c *Client) GetCommit(ctx context.Context, repo, refname string) (vcs.Commi
 	if ref.Object == nil {
 		return rv, errors.New("ref has no commit")
 	}
-	commit, _, err := c.client.GetSingleCommit(owner, reponame, ref.Object.SHA)
+	commit, _, err := c.client.GetSingleCommit(repo.Owner, repo.Name, ref.Object.SHA)
 	if err != nil {
 		return rv, fmt.Errorf("forgejo.GetSingleCommit failed: %v", err)
 	}

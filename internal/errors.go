@@ -46,8 +46,6 @@ var (
 	ErrRequiredOrg = errors.New("organization is required")
 
 	ErrStatusTimestampNotFound = errors.New("corresponding status timestamp not found")
-
-	ErrInvalidRepo = errors.New("repository path is invalid")
 )
 
 // ForeignKeyError occurs when there is a foreign key violation.

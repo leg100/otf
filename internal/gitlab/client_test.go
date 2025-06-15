@@ -48,13 +48,14 @@ func TestClient_ListRepositories(t *testing.T) {
 
 	mux.HandleFunc("/api/v4/projects", func(w http.ResponseWriter, r *http.Request) {
 		require.Equal(t, "GET", r.Method)
-		fmt.Fprint(w, `[{"path_with_namespace":"acme/terraform"}]`)
+		fmt.Fprint(w, `[{"namespace": {"path": "acme"}, "path":"terraform"}]`)
 	})
 
 	got, err := client.ListRepositories(context.Background(), vcs.ListRepositoriesOptions{})
 	require.NoError(t, err)
 
-	assert.Equal(t, []string{"acme/terraform"}, got)
+	want := vcs.Repo{Owner: "acme", Name: "terraform"}
+	assert.Equal(t, []vcs.Repo{want}, got)
 }
 
 func TestClient_GetRepoTarball(t *testing.T) {
@@ -66,7 +67,7 @@ func TestClient_GetRepoTarball(t *testing.T) {
 	})
 
 	got, ref, err := client.GetRepoTarball(context.Background(), vcs.GetRepoTarballOptions{
-		Repo: "acme/terraform",
+		Repo: vcs.Repo{Owner: "acme", Name: "terraform"},
 	})
 	require.NoError(t, err)
 	assert.Equal(t, "0335fb07bb0244b7a169ee89d15c7703e4aaf7de", ref)
@@ -87,7 +88,7 @@ func TestClient_CreateWebhook(t *testing.T) {
 	})
 
 	got, err := client.CreateWebhook(context.Background(), vcs.CreateWebhookOptions{
-		Repo: "acme/terraform",
+		Repo: vcs.Repo{Owner: "acme", Name: "terraform"},
 	})
 	require.NoError(t, err)
 	assert.Equal(t, "1", got)
@@ -102,7 +103,7 @@ func TestClient_UpdateWebhook(t *testing.T) {
 	})
 
 	err := client.UpdateWebhook(context.Background(), "1", vcs.UpdateWebhookOptions{
-		Repo: "acme/terraform",
+		Repo: vcs.Repo{Owner: "acme", Name: "terraform"},
 	})
 	require.NoError(t, err)
 }
@@ -117,7 +118,7 @@ func TestClient_GetWebhook(t *testing.T) {
 
 	_, err := client.GetWebhook(context.Background(), vcs.GetWebhookOptions{
 		ID:   "1",
-		Repo: "acme/terraform",
+		Repo: vcs.Repo{Owner: "acme", Name: "terraform"},
 	})
 	require.NoError(t, err)
 }
@@ -132,7 +133,7 @@ func TestClient_DeleteWebhook(t *testing.T) {
 
 	err := client.DeleteWebhook(context.Background(), vcs.DeleteWebhookOptions{
 		ID:   "1",
-		Repo: "acme/terraform",
+		Repo: vcs.Repo{Owner: "acme", Name: "terraform"},
 	})
 	require.NoError(t, err)
 }
@@ -145,7 +146,8 @@ func TestClient_ListPullRequestFiles(t *testing.T) {
 		fmt.Fprint(w, `[{"old_path":"main.tf","new_path":"main.tf"},{"old_path":"dev.tf","new_path":"prod.tf"}]`)
 	})
 
-	got, err := client.ListPullRequestFiles(context.Background(), "acme/terraform", 1)
+	repo := vcs.Repo{Owner: "acme", Name: "terraform"}
+	got, err := client.ListPullRequestFiles(context.Background(), repo, 1)
 	require.NoError(t, err)
 	assert.Equal(t, []string{"dev.tf", "main.tf", "prod.tf"}, got)
 }
@@ -158,7 +160,8 @@ func TestClient_GetCommit(t *testing.T) {
 		fmt.Fprint(w, `{"id":"abc123","web_url":"https://gitlab.com/commits/abc123"}`)
 	})
 
-	got, err := client.GetCommit(context.Background(), "acme/terraform", "abc123")
+	repo := vcs.Repo{Owner: "acme", Name: "terraform"}
+	got, err := client.GetCommit(context.Background(), repo, "abc123")
 	require.NoError(t, err)
 	want := vcs.Commit{
 		SHA: "abc123",

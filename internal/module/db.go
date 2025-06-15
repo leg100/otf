@@ -9,6 +9,7 @@ import (
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/semver"
 	"github.com/leg100/otf/internal/sql"
+	"github.com/leg100/otf/internal/vcs"
 )
 
 // pgdb is the registry database on postgres
@@ -147,7 +148,7 @@ WHERE m.module_id = $1
 	return sql.CollectOneRow(rows, db.scanModule)
 }
 
-func (db *pgdb) getModuleByConnection(ctx context.Context, vcsProviderID resource.TfeID, repoPath string) (*Module, error) {
+func (db *pgdb) getModuleByConnection(ctx context.Context, vcsProviderID resource.TfeID, repoPath vcs.Repo) (*Module, error) {
 	rows := db.Query(ctx, `
 SELECT
     m.module_id,

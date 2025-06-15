@@ -143,7 +143,7 @@ func selectVCSProviderAction(vcsProviderID resource.TfeID) templ.Component {
 }
 
 type connectProps struct {
-	repos    []string
+	repos    []vcs.Repo
 	provider *vcs.Provider
 }
 
@@ -256,7 +256,7 @@ type repoSelector struct {
 	provider *vcs.Provider
 }
 
-func (s repoSelector) action(repo string) templ.Component {
+func (s repoSelector) action(repo vcs.Repo) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -304,9 +304,9 @@ func (s repoSelector) action(repo string) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var14 string
-		templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(repo)
+		templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(repo.String())
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/module/view.templ`, Line: 92, Col: 69}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/module/view.templ`, Line: 92, Col: 78}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 		if templ_7745c5c3_Err != nil {
@@ -770,9 +770,9 @@ func get(props getProps) templ.Component {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var35 string
-					templ_7745c5c3_Var35, templ_7745c5c3_Err = templ.JoinStringErrs(props.module.Connection.Repo)
+					templ_7745c5c3_Var35, templ_7745c5c3_Err = templ.JoinStringErrs(props.module.Connection.Repo.String())
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/module/view.templ`, Line: 212, Col: 85}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/module/view.templ`, Line: 212, Col: 94}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var35))
 					if templ_7745c5c3_Err != nil {

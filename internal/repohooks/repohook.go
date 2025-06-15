@@ -25,7 +25,7 @@ type (
 		vcsProviderID resource.TfeID
 
 		secret    string     // secret token
-		repoPath  string     // repo identifier: <repo_owner>/<repo_name>
+		repoPath  vcs.Repo   // repo identifier: <repo_owner>/<repo_name>
 		vcsKindID vcs.KindID // origin of events
 		endpoint  string     // OTF URL that receives events
 	}
@@ -34,7 +34,7 @@ type (
 		id            *uuid.UUID
 		vcsProviderID resource.TfeID
 		secret        *string
-		repoPath      string
+		repoPath      vcs.Repo
 		vcsKindID     vcs.KindID
 		cloudID       *string // cloud's webhook id
 
@@ -73,7 +73,7 @@ func (h *hook) LogValue() slog.Value {
 		slog.String("id", h.id.String()),
 		slog.String("vcs_provider_id", h.vcsProviderID.String()),
 		slog.String("vcs_kind", string(h.vcsKindID)),
-		slog.String("repo", h.repoPath),
+		slog.Any("repo", h.repoPath),
 		slog.String("endpoint", h.endpoint),
 	}
 	if h.cloudID != nil {

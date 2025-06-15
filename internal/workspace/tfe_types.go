@@ -8,6 +8,7 @@ import (
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tfeapi/types"
+	"github.com/leg100/otf/internal/vcs"
 )
 
 var (
@@ -81,7 +82,7 @@ type TFEWorkspaceList struct {
 type TFEVCSRepo struct {
 	Branch            string         `json:"branch"`
 	DisplayIdentifier string         `json:"display-identifier"`
-	Identifier        string         `json:"identifier"`
+	Identifier        vcs.Repo       `json:"identifier"`
 	IngressSubmodules bool           `json:"ingress-submodules"`
 	OAuthTokenID      resource.TfeID `json:"oauth-token-id"`
 	RepositoryHTTPURL string         `json:"repository-http-url"`
@@ -342,7 +343,7 @@ func (opts *TFEWorkspaceUpdateOptions) Validate() error {
 // TFEVCSRepoOptions represents the configuration options of a VCS integration.
 type TFEVCSRepoOptions struct {
 	Branch            *string         `json:"branch,omitempty"`
-	Identifier        *string         `json:"identifier,omitempty"`
+	Identifier        *vcs.Repo       `json:"identifier,omitempty"`
 	IngressSubmodules *bool           `json:"ingress-submodules,omitempty"`
 	OAuthTokenID      *resource.TfeID `json:"oauth-token-id,omitempty"`
 	TagsRegex         *string         `json:"tags-regex,omitempty"`

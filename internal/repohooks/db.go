@@ -157,7 +157,7 @@ type hookModel struct {
 	VCSID         *string        `db:"vcs_id"`
 	VCSProviderID resource.TfeID `db:"vcs_provider_id"`
 	Secret        string         `db:"secret"`
-	RepoPath      string         `db:"repo_path"`
+	RepoPath      vcs.Repo       `db:"repo_path"`
 	VCSKind       vcs.KindID     `db:"vcs_kind"`
 }
 

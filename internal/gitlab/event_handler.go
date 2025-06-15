@@ -42,6 +42,13 @@ func HandleEvent(r *http.Request, secret string) (*vcs.EventPayload, error) {
 	switch event := rawEvent.(type) {
 	case *gitlab.PushEvent:
 		to.Type = vcs.EventTypePush
+
+		repo, err := vcs.NewRepoFromString(event.Project.PathWithNamespace)
+		if err != nil {
+			return nil, err
+		}
+		to.Repo = repo
+
 		branch, found := strings.CutPrefix(event.Ref, "refs/heads/")
 		if !found {
 			return nil, fmt.Errorf("malformed ref: %s", event.Ref)
@@ -51,7 +58,6 @@ func HandleEvent(r *http.Request, secret string) (*vcs.EventPayload, error) {
 		to.CommitSHA = event.After
 		to.CommitURL = event.Project.WebURL + "/commit/" + to.CommitSHA
 		to.DefaultBranch = event.Project.DefaultBranch
-		to.RepoPath = event.Project.PathWithNamespace
 		to.SenderUsername = event.UserUsername
 		to.SenderAvatarURL = event.UserAvatar
 		to.SenderHTMLURL = userURL(origin, event.UserUsername)
@@ -66,6 +72,13 @@ func HandleEvent(r *http.Request, secret string) (*vcs.EventPayload, error) {
 		to.Paths = slices.Compact(to.Paths)
 	case *gitlab.MergeEvent:
 		to.Type = vcs.EventTypePull
+
+		repo, err := vcs.NewRepoFromString(event.Project.PathWithNamespace)
+		if err != nil {
+			return nil, err
+		}
+		to.Repo = repo
+
 		to.Branch = event.ObjectAttributes.SourceBranch
 		switch event.ObjectAttributes.Action {
 		case "open":
@@ -81,12 +94,18 @@ func HandleEvent(r *http.Request, secret string) (*vcs.EventPayload, error) {
 		to.PullRequestURL = event.ObjectAttributes.URL
 		to.PullRequestTitle = event.ObjectAttributes.Title
 		to.DefaultBranch = event.Project.DefaultBranch
-		to.RepoPath = event.Project.PathWithNamespace
 		to.SenderUsername = event.User.Username
 		to.SenderAvatarURL = event.User.AvatarURL
 		to.SenderHTMLURL = userURL(origin, event.User.Username)
 	case *gitlab.TagEvent:
 		to.Type = vcs.EventTypeTag
+
+		repo, err := vcs.NewRepoFromString(event.Project.PathWithNamespace)
+		if err != nil {
+			return nil, err
+		}
+		to.Repo = repo
+
 		tag, err := internal.ParseTagRef(event.Ref)
 		if err != nil {
 			return nil, err
@@ -101,7 +120,6 @@ func HandleEvent(r *http.Request, secret string) (*vcs.EventPayload, error) {
 		} else {
 			to.Action = vcs.ActionDeleted
 		}
-		to.RepoPath = event.Project.PathWithNamespace
 		to.DefaultBranch = event.Project.DefaultBranch
 		to.SenderUsername = event.UserUsername
 		to.SenderAvatarURL = event.UserAvatar

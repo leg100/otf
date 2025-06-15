@@ -20,14 +20,14 @@ type (
 	Connection struct {
 		ModuleID      *resource.TfeID `db:"module_id"`
 		WorkspaceID   *resource.TfeID `db:"workspace_id"`
-		Repo          string
+		Repo          vcs.Repo
 		VCSProviderID resource.TfeID `db:"vcs_provider_id"`
 	}
 
 	ConnectOptions struct {
 		VCSProviderID resource.TfeID // vcs provider of repo
 		ResourceID    resource.TfeID // ID of OTF resource to connect.
-		RepoPath      string
+		RepoPath      vcs.Repo
 	}
 
 	DisconnectOptions struct {
@@ -36,7 +36,7 @@ type (
 
 	SynchroniseOptions struct {
 		VCSProviderID resource.TfeID // vcs provider of repo
-		RepoPath      string
+		RepoPath      vcs.Repo
 	}
 
 	Options struct {

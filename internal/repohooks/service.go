@@ -39,7 +39,7 @@ type (
 
 	CreateRepohookOptions struct {
 		VCSProviderID resource.TfeID // vcs provider of repo
-		RepoPath      string
+		RepoPath      vcs.Repo
 	}
 )
 
