@@ -26,13 +26,13 @@ func TestModule(t *testing.T) {
 	})
 
 	t.Run("create connected module", func(t *testing.T) {
-		svc, org, ctx := setup(t, withGithubOption(github.WithRepo(vcs.Repo{Owner: "leg100", Name: "terraform-aws-stuff"})))
+		svc, org, ctx := setup(t, withGithubOption(github.WithRepo(vcs.NewMustRepo("leg100", "terraform-aws-stuff"))))
 
 		vcsprov := svc.createVCSProvider(t, ctx, org, nil)
 
 		mod, err := svc.Modules.PublishModule(ctx, module.PublishOptions{
 			VCSProviderID: vcsprov.ID,
-			Repo:          module.Repo(vcs.Repo{Owner: "leg100", Name: "terraform-aws-stuff"}),
+			Repo:          module.Repo(vcs.NewMustRepo("leg100", "terraform-aws-stuff")),
 		})
 		require.NoError(t, err)
 

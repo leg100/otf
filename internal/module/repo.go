@@ -13,7 +13,7 @@ import (
 type Repo vcs.Repo
 
 func (r Repo) Split() (name, provider string, err error) {
-	parts := strings.SplitN(r.Name, "-", 3)
+	parts := strings.SplitN(vcs.Repo(r).Name(), "-", 3)
 	if len(parts) < 3 {
 		return "", "", ErrInvalidModuleRepo
 	}

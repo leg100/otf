@@ -120,8 +120,8 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) (*TestServer, *url.UR
 		// SearchRepos
 		srv.mux.HandleFunc("/api/v1/user/repos", func(w http.ResponseWriter, r *http.Request) {
 			repos := []*forgejo.Repository{{
-				Owner:       &forgejo.User{UserName: srv.repo.Owner},
-				Name:        srv.repo.Name,
+				Owner:       &forgejo.User{UserName: srv.repo.Owner()},
+				Name:        srv.repo.Name(),
 				Permissions: &forgejo.Permission{Admin: true},
 				Updated:     time.Now(),
 			}}
@@ -134,8 +134,8 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) (*TestServer, *url.UR
 		// GetRepo
 		srv.mux.HandleFunc("/api/v1/repos/"+srv.repo.String(), func(w http.ResponseWriter, r *http.Request) {
 			repo := &forgejo.Repository{
-				Owner:         &forgejo.User{UserName: srv.repo.Owner},
-				Name:          srv.repo.Name,
+				Owner:         &forgejo.User{UserName: srv.repo.Owner()},
+				Name:          srv.repo.Name(),
 				DefaultBranch: srv.defaultBranch,
 			}
 			out, err := json.Marshal(repo)

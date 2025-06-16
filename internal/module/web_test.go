@@ -101,8 +101,8 @@ func TestConnect(t *testing.T) {
 		withVCSProvider(&vcs.Provider{
 			Client: &fakeModulesCloudClient{
 				repos: []vcs.Repo{
-					vcs.NewTestModuleRepo("aws", "vpc"),
-					vcs.NewTestModuleRepo("aws", "s3"),
+					vcs.NewRandomModuleRepo("aws", "vpc"),
+					vcs.NewRandomModuleRepo("aws", "s3"),
 				},
 			},
 		}),

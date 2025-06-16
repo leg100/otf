@@ -161,9 +161,9 @@ func (h *webHandlers) delete(w http.ResponseWriter, r *http.Request) {
 
 func RepoURL(provider *Provider, repo Repo) templ.SafeURL {
 	b := urlbuilder.New("https", provider.Kind.Hostname)
-	for segment := range strings.SplitSeq(repo.Owner, "/") {
+	for segment := range strings.SplitSeq(repo.owner, "/") {
 		b.Path(segment)
 	}
-	b.Path(repo.Name)
+	b.Path(repo.name)
 	return b.Build()
 }

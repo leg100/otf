@@ -127,8 +127,8 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) (*TestServer, *url.UR
 	srv.mux.HandleFunc("/api/v3/user/repos", func(w http.ResponseWriter, r *http.Request) {
 		repos := []*github.Repository{
 			{
-				Owner:         &github.User{Login: &srv.repo.Owner},
-				Name:          &srv.repo.Name,
+				Owner:         &github.User{Login: internal.String(srv.repo.Owner())},
+				Name:          internal.String(srv.repo.Name()),
 				DefaultBranch: srv.defaultBranch,
 			},
 		}
@@ -150,8 +150,8 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) (*TestServer, *url.UR
 		})
 		srv.mux.HandleFunc("/api/v3/repos/"+srv.repo.String(), func(w http.ResponseWriter, r *http.Request) {
 			repo := &github.Repository{
-				Owner:         &github.User{Login: &srv.repo.Owner},
-				Name:          &srv.repo.Name,
+				Owner:         &github.User{Login: internal.String(srv.repo.Owner())},
+				Name:          internal.String(srv.repo.Name()),
 				DefaultBranch: srv.defaultBranch,
 			}
 			out, err := json.Marshal(repo)

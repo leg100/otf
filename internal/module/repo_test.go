@@ -14,10 +14,10 @@ func TestRepo_Split(t *testing.T) {
 		wantProvider string
 		wantError    error
 	}{
-		{vcs.Repo{Owner: "leg100", Name: "terraform-aws-vpc"}, "vpc", "aws", nil},
-		{vcs.Repo{Owner: "leg100", Name: "/anything-aws-vpc"}, "vpc", "aws", nil},
-		{vcs.Repo{Owner: "leg100", Name: "/terraform-gcp-secrets-manager"}, "secrets-manager", "gcp", nil},
-		{vcs.Repo{Owner: "leg100", Name: "/not_a_module_repo"}, "", "", ErrInvalidModuleRepo},
+		{vcs.NewMustRepo("leg100", "terraform-aws-vpc"), "vpc", "aws", nil},
+		{vcs.NewMustRepo("leg100", "/anything-aws-vpc"), "vpc", "aws", nil},
+		{vcs.NewMustRepo("leg100", "/terraform-gcp-secrets-manager"), "secrets-manager", "gcp", nil},
+		{vcs.NewMustRepo("leg100", "/not_a_module_repo"), "", "", ErrInvalidModuleRepo},
 	}
 	for _, tt := range tests {
 		t.Run(tt.repo.String(), func(t *testing.T) {

@@ -90,14 +90,5 @@ func (e EventPayload) Validate() error {
 	if e.Action == "" {
 		return errors.New("event missing event action")
 	}
-	switch e.Type {
-	case EventTypePush, EventTypePull, EventTypeTag:
-		if e.Repo.Owner == "" {
-			return errors.New("event missing repo owner")
-		}
-		if e.Repo.Name == "" {
-			return errors.New("event missing repo name")
-		}
-	}
 	return nil
 }

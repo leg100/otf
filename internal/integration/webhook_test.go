@@ -24,7 +24,7 @@ import (
 func TestWebhook(t *testing.T) {
 	integrationTest(t)
 
-	repo := vcs.NewTestRepo()
+	repo := vcs.NewRandomRepo()
 
 	// create otf daemon with fake github server, on which to create/delete
 	// webhooks.
@@ -71,7 +71,7 @@ func TestWebhook(t *testing.T) {
 func TestWebhook_Purger(t *testing.T) {
 	integrationTest(t)
 
-	repo := vcs.NewTestRepo()
+	repo := vcs.NewRandomRepo()
 
 	// create an otf daemon with a fake github backend, ready to sign in a user,
 	// serve up a repo and its contents via tarball. And register a callback to

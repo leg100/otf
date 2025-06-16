@@ -112,9 +112,10 @@ func TestWorkspace_GetByName(t *testing.T) {
 func TestEditWorkspaceHandler(t *testing.T) {
 	ws1 := NewTestWorkspace(t, nil)
 	vcsProviderID := resource.NewTfeID(resource.VCSProviderKind)
+	repo := vcs.NewMustRepo("leg100", "terraform")
 	wsConnected := NewTestWorkspace(t, &CreateOptions{
 		ConnectOptions: &ConnectOptions{
-			RepoPath:      &vcs.Repo{Owner: "leg100", Name: "terraform"},
+			RepoPath:      &repo,
 			VCSProviderID: &vcsProviderID,
 		},
 	})
@@ -395,11 +396,11 @@ func TestListWorkspaceReposHandler(t *testing.T) {
 			provider: &vcs.Provider{
 				Client: &fakeVCSClient{
 					repos: []vcs.Repo{
-						vcs.NewTestRepo(),
-						vcs.NewTestRepo(),
-						vcs.NewTestRepo(),
-						vcs.NewTestRepo(),
-						vcs.NewTestRepo(),
+						vcs.NewRandomRepo(),
+						vcs.NewRandomRepo(),
+						vcs.NewRandomRepo(),
+						vcs.NewRandomRepo(),
+						vcs.NewRandomRepo(),
 					},
 				},
 			},

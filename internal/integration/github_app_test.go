@@ -252,7 +252,7 @@ func TestIntegration_GithubApp_Event(t *testing.T) {
 	// create an OTF daemon with a fake github backend, and serve up a repo and
 	// its contents via tarball.
 	daemon, org, ctx := setup(t, withGithubOptions(
-		github.WithRepo(vcs.Repo{Owner: "leg100", Name: "otf-workspaces"}),
+		github.WithRepo(vcs.NewMustRepo("leg100", "otf-workspaces")),
 		github.WithArchive(testutils.ReadFile(t, "../testdata/github.tar.gz")),
 		github.WithHandler("/api/v3/app/installations/42997659", func(w http.ResponseWriter, r *http.Request) {
 			out, err := json.Marshal(&gogithub.Installation{
@@ -298,7 +298,7 @@ func TestIntegration_GithubApp_Event(t *testing.T) {
 		Organization: &org.Name,
 		ConnectOptions: &workspace.ConnectOptions{
 			VCSProviderID: &provider.ID,
-			RepoPath:      &vcs.Repo{Owner: "leg100", Name: "otf-workspaces"},
+			RepoPath:      vcs.RepoPtr(vcs.NewMustRepo("leg100", "otf-workspaces")),
 		},
 	})
 	require.NoError(t, err)

@@ -38,13 +38,13 @@ func TestReporter_HandleRun(t *testing.T) {
 			cv: &configversion.ConfigurationVersion{
 				IngressAttributes: &configversion.IngressAttributes{
 					CommitSHA: "abc123",
-					Repo:      vcs.Repo{Owner: "leg100", Name: "otf"},
+					Repo:      vcs.NewMustRepo("leg100", "otf"),
 				},
 			},
 			want: &vcs.SetStatusOptions{
 				Workspace: "dev",
 				Ref:       "abc123",
-				Repo:      vcs.Repo{Owner: "leg100", Name: "otf"},
+				Repo:      vcs.NewMustRepo("leg100", "otf"),
 				Status:    vcs.PendingStatus,
 				TargetURL: "https://otf-host.org/app/runs/run-123",
 			},
@@ -104,7 +104,7 @@ func TestReporter_DontSetStatusTwice(t *testing.T) {
 	cv := &configversion.ConfigurationVersion{
 		IngressAttributes: &configversion.IngressAttributes{
 			CommitSHA: "abc123",
-			Repo:      vcs.Repo{Owner: "leg100", Name: "otf"},
+			Repo:      vcs.NewMustRepo("leg100", "otf"),
 		},
 	}
 
@@ -125,7 +125,7 @@ func TestReporter_DontSetStatusTwice(t *testing.T) {
 	want := vcs.SetStatusOptions{
 		Workspace: "dev",
 		Ref:       "abc123",
-		Repo:      vcs.Repo{Owner: "leg100", Name: "otf"},
+		Repo:      vcs.NewMustRepo("leg100", "otf"),
 		Status:    vcs.PendingStatus,
 		TargetURL: "https://otf-host.org/app/runs/run-123",
 	}

@@ -117,7 +117,7 @@ func TestNewWorkspace(t *testing.T) {
 				Name:         internal.String("my-workspace"),
 				Organization: &org1,
 				ConnectOptions: &ConnectOptions{
-					RepoPath:      &vcs.Repo{Owner: "leg100", Name: "otf"},
+					RepoPath:      vcs.RepoPtr(vcs.NewMustRepo("leg100", "otf")),
 					VCSProviderID: &vcsProviderID,
 					TagsRegex:     internal.String("{**"),
 				},
@@ -242,7 +242,7 @@ func TestWorkspace_UpdateError(t *testing.T) {
 			opts: UpdateOptions{
 				Name: internal.String("my-workspace"),
 				ConnectOptions: &ConnectOptions{
-					RepoPath:      &vcs.Repo{Owner: "leg100", Name: "otf"},
+					RepoPath:      vcs.RepoPtr(vcs.NewMustRepo("leg100", "otf")),
 					VCSProviderID: &vcsProviderID,
 					TagsRegex:     internal.String("{**"),
 				},
@@ -384,7 +384,7 @@ func TestWorkspace_UpdateConnection(t *testing.T) {
 			opts: UpdateOptions{
 				Name: internal.String("my-workspace"),
 				ConnectOptions: &ConnectOptions{
-					RepoPath:      &vcs.Repo{Owner: "leg100", Name: "otf"},
+					RepoPath:      vcs.RepoPtr(vcs.NewMustRepo("leg100", "otf")),
 					VCSProviderID: &vcsProviderID,
 				},
 			},
@@ -409,14 +409,14 @@ func TestWorkspace_UpdateConnection(t *testing.T) {
 				Name:         "dev",
 				Organization: org1,
 				Connection: &Connection{
-					Repo:          vcs.Repo{Owner: "leg100", Name: "otf"},
+					Repo:          vcs.NewMustRepo("leg100", "otf"),
 					VCSProviderID: testutils.ParseID(t, "vcs-123"),
 				},
 			},
 			opts: UpdateOptions{
 				Name: internal.String("my-workspace"),
 				ConnectOptions: &ConnectOptions{
-					RepoPath: &vcs.Repo{Owner: "leg100", Name: "otf-demo"},
+					RepoPath: vcs.RepoPtr(vcs.NewMustRepo("leg100", "otf-demo")),
 				},
 			},
 		},

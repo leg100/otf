@@ -218,16 +218,13 @@ func (g *Client) ListRepositories(ctx context.Context, opts vcs.ListRepositories
 	}
 	names := make([]vcs.Repo, len(repos))
 	for i, repo := range repos {
-		names[i] = vcs.Repo{
-			Owner: repo.Owner.GetLogin(),
-			Name:  repo.GetName(),
-		}
+		names[i] = vcs.NewMustRepo(repo.Owner.GetLogin(), repo.GetName())
 	}
 	return names, nil
 }
 
 func (g *Client) ListTags(ctx context.Context, opts vcs.ListTagsOptions) ([]string, error) {
-	results, _, err := g.client.Git.ListMatchingRefs(ctx, opts.Repo.Owner, opts.Repo.Name, &github.ReferenceListOptions{
+	results, _, err := g.client.Git.ListMatchingRefs(ctx, opts.Repo.Owner(), opts.Repo.Name(), &github.ReferenceListOptions{
 		Ref: "tags/" + opts.Prefix,
 	})
 	if err != nil {
@@ -256,7 +253,7 @@ func (g *Client) GetRepoTarball(ctx context.Context, opts vcs.GetRepoTarballOpti
 		gopts.Ref = *opts.Ref
 	}
 
-	link, _, err := g.client.Repositories.GetArchiveLink(ctx, opts.Repo.Owner, opts.Repo.Name, github.Tarball, &gopts, maxRedirects)
+	link, _, err := g.client.Repositories.GetArchiveLink(ctx, opts.Repo.Owner(), opts.Repo.Name(), github.Tarball, &gopts, maxRedirects)
 	if err != nil {
 		return nil, "", err
 	}
@@ -276,7 +273,7 @@ func (g *Client) GetRepoTarball(ctx context.Context, opts vcs.GetRepoTarballOpti
 	// <owner>-<repo>-<commit>. We need a tarball without this parent directory,
 	// so we untar it to a temp dir, then tar it up the contents of the parent
 	// directory.
-	untarpath, err := os.MkdirTemp("", fmt.Sprintf("github-%s-%s-*", opts.Repo.Owner, opts.Repo.Name))
+	untarpath, err := os.MkdirTemp("", fmt.Sprintf("github-%s-%s-*", opts.Repo.Owner(), opts.Repo.Name()))
 	if err != nil {
 		return nil, "", err
 	}
@@ -317,7 +314,7 @@ func (g *Client) CreateWebhook(ctx context.Context, opts vcs.CreateWebhookOption
 		}
 	}
 
-	hook, _, err := g.client.Repositories.CreateHook(ctx, opts.Repo.Owner, opts.Repo.Name, &github.Hook{
+	hook, _, err := g.client.Repositories.CreateHook(ctx, opts.Repo.Owner(), opts.Repo.Name(), &github.Hook{
 		Events: events,
 		Config: &github.HookConfig{
 			URL:         &opts.Endpoint,
@@ -348,7 +345,7 @@ func (g *Client) UpdateWebhook(ctx context.Context, id string, opts vcs.UpdateWe
 		}
 	}
 
-	_, _, err = g.client.Repositories.EditHook(ctx, opts.Repo.Owner, opts.Repo.Name, intID, &github.Hook{
+	_, _, err = g.client.Repositories.EditHook(ctx, opts.Repo.Owner(), opts.Repo.Name(), intID, &github.Hook{
 		Events: events,
 		Config: &github.HookConfig{
 			URL:         &opts.Endpoint,
@@ -369,7 +366,7 @@ func (g *Client) GetWebhook(ctx context.Context, opts vcs.GetWebhookOptions) (vc
 		return vcs.Webhook{}, err
 	}
 
-	hook, resp, err := g.client.Repositories.GetHook(ctx, opts.Repo.Owner, opts.Repo.Name, intID)
+	hook, resp, err := g.client.Repositories.GetHook(ctx, opts.Repo.Owner(), opts.Repo.Name(), intID)
 	if err != nil {
 		if resp != nil && resp.StatusCode == http.StatusNotFound {
 			return vcs.Webhook{}, internal.ErrResourceNotFound
@@ -406,7 +403,7 @@ func (g *Client) DeleteWebhook(ctx context.Context, opts vcs.DeleteWebhookOption
 		return err
 	}
 
-	_, err = g.client.Repositories.DeleteHook(ctx, opts.Repo.Owner, opts.Repo.Name, intID)
+	_, err = g.client.Repositories.DeleteHook(ctx, opts.Repo.Owner(), opts.Repo.Name(), intID)
 	return err
 }
 
@@ -425,7 +422,7 @@ func (g *Client) SetStatus(ctx context.Context, opts vcs.SetStatusOptions) error
 		return fmt.Errorf("invalid vcs status: %s", opts.Status)
 	}
 
-	_, _, err := g.client.Repositories.CreateStatus(ctx, opts.Repo.Owner, opts.Repo.Name, opts.Ref, &github.RepoStatus{
+	_, _, err := g.client.Repositories.CreateStatus(ctx, opts.Repo.Owner(), opts.Repo.Name(), opts.Ref, &github.RepoStatus{
 		Context:     internal.String(fmt.Sprintf("otf/%s", opts.Workspace)),
 		TargetURL:   internal.String(opts.TargetURL),
 		Description: internal.String(opts.Description),
@@ -456,7 +453,7 @@ listloop:
 			time.Sleep(attemptDelay)
 			attemptDelay = 2*attemptDelay + 1*time.Second
 
-			pageFiles, resp, err := g.client.PullRequests.ListFiles(ctx, repo.Owner, repo.Name, pull, &opts)
+			pageFiles, resp, err := g.client.PullRequests.ListFiles(ctx, repo.Owner(), repo.Name(), pull, &opts)
 			if err != nil {
 				ghErr, ok := err.(*github.ErrorResponse)
 				if ok && ghErr.Response.StatusCode == 404 {
@@ -486,7 +483,7 @@ listloop:
 }
 
 func (g *Client) GetCommit(ctx context.Context, repo vcs.Repo, ref string) (vcs.Commit, error) {
-	commit, resp, err := g.client.Repositories.GetCommit(ctx, repo.Owner, repo.Name, ref, nil)
+	commit, resp, err := g.client.Repositories.GetCommit(ctx, repo.Owner(), repo.Name(), ref, nil)
 	if err != nil {
 		return vcs.Commit{}, err
 	}

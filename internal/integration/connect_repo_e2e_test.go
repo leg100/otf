@@ -20,7 +20,7 @@ func TestConnectRepoE2E(t *testing.T) {
 	// contents via tarball. And register a callback to test receipt of commit
 	// statuses
 	daemon, org, ctx := setup(t,
-		withGithubOption(github.WithRepo(vcs.Repo{Owner: "leg100", Name: "tfc-workspaces"})),
+		withGithubOption(github.WithRepo(vcs.NewMustRepo("leg100", "tfc-workspaces"))),
 		withGithubOption(github.WithCommit("0335fb07bb0244b7a169ee89d15c7703e4aaf7de")),
 		withGithubOption(github.WithArchive(testutils.ReadFile(t, "../testdata/github.tar.gz"))),
 	)

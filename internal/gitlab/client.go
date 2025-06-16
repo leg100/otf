@@ -113,10 +113,7 @@ func (g *Client) ListRepositories(ctx context.Context, lopts vcs.ListRepositorie
 
 	repos := make([]vcs.Repo, len(projects))
 	for i, proj := range projects {
-		repos[i] = vcs.Repo{
-			Owner: proj.Namespace.Path,
-			Name:  proj.Path,
-		}
+		repos[i] = vcs.NewMustRepo(proj.Namespace.Path, proj.Path)
 	}
 	return repos, nil
 }
@@ -148,7 +145,7 @@ func (g *Client) GetRepoTarball(ctx context.Context, opts vcs.GetRepoTarballOpti
 	// Gitlab tarball contents are contained within a top-level directory
 	// formatted <ref>-<sha>. We want the tarball without this directory,
 	// so we re-tar the contents without the top-level directory.
-	untarpath, err := os.MkdirTemp("", fmt.Sprintf("gitlab-%s-%s-*", opts.Repo.Owner, opts.Repo.Name))
+	untarpath, err := os.MkdirTemp("", fmt.Sprintf("gitlab-%s-%s-*", opts.Repo.Owner(), opts.Repo.Name()))
 	if err != nil {
 		return nil, "", err
 	}

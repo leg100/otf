@@ -89,9 +89,13 @@ func (c *Client) findReposOwned(found map[vcs.Repo]time.Time) error {
 		if err != nil {
 			return err
 		}
-		for _, repo := range repolist {
-			if repo.Permissions.Admin {
-				found[vcs.Repo{Owner: repo.Owner.UserName, Name: repo.Name}] = repo.Updated
+		for _, forgejoRepo := range repolist {
+			if forgejoRepo.Permissions.Admin {
+				repo, err := vcs.NewRepo(forgejoRepo.Owner.UserName, forgejoRepo.Name)
+				if err != nil {
+					return err
+				}
+				found[repo] = forgejoRepo.Updated
 			}
 		}
 	}
@@ -141,8 +145,12 @@ func (c *Client) findOrgReposOwned(found map[vcs.Repo]time.Time) error {
 			if err != nil {
 				return err
 			}
-			for _, repo := range rv {
-				found[vcs.Repo{Owner: repo.Owner.UserName, Name: repo.Name}] = repo.Updated
+			for _, forgejoRepo := range rv {
+				repo, err := vcs.NewRepo(forgejoRepo.Owner.UserName, forgejoRepo.Name)
+				if err != nil {
+					return err
+				}
+				found[repo] = forgejoRepo.Updated
 			}
 		}
 	}
@@ -213,7 +221,7 @@ func (c *Client) CreateWebhook(ctx context.Context, opts vcs.CreateWebhookOption
 		Events: events,
 		Active: true,
 	}
-	wh, _, err := c.client.CreateRepoHook(opts.Repo.Owner, opts.Repo.Name, opt)
+	wh, _, err := c.client.CreateRepoHook(opts.Repo.Owner(), opts.Repo.Name(), opt)
 	if err != nil {
 		return "", err
 	}
@@ -237,7 +245,7 @@ func (c *Client) UpdateWebhook(ctx context.Context, id string, opts vcs.UpdateWe
 		},
 		Events: events,
 	}
-	_, err = c.client.EditRepoHook(opts.Repo.Owner, opts.Repo.Name, idint, opt)
+	_, err = c.client.EditRepoHook(opts.Repo.Owner(), opts.Repo.Name(), idint, opt)
 	return err
 }
 func (c *Client) GetWebhook(ctx context.Context, opts vcs.GetWebhookOptions) (vcs.Webhook, error) {
@@ -245,7 +253,7 @@ func (c *Client) GetWebhook(ctx context.Context, opts vcs.GetWebhookOptions) (vc
 	if err != nil {
 		return vcs.Webhook{}, err
 	}
-	wh, resp, err := c.client.GetRepoHook(opts.Repo.Owner, opts.Repo.Name, idint)
+	wh, resp, err := c.client.GetRepoHook(opts.Repo.Owner(), opts.Repo.Name(), idint)
 	if err != nil {
 		if resp != nil && resp.StatusCode == http.StatusNotFound {
 			return vcs.Webhook{}, internal.ErrResourceNotFound
@@ -268,7 +276,7 @@ func (c *Client) DeleteWebhook(ctx context.Context, opts vcs.DeleteWebhookOption
 	if err != nil {
 		return err
 	}
-	_, err = c.client.DeleteRepoHook(opts.Repo.Owner, opts.Repo.Name, idint)
+	_, err = c.client.DeleteRepoHook(opts.Repo.Owner(), opts.Repo.Name(), idint)
 	return err
 }
 
@@ -303,8 +311,8 @@ func (c *Client) fullyQualifyRef(owner, reponame, ref string) (string, error) {
 
 func (c *Client) GetRepoTarball(ctx context.Context, opts vcs.GetRepoTarballOptions) ([]byte, string, error) {
 	var (
-		owner = opts.Repo.Owner
-		name  = opts.Repo.Name
+		owner = opts.Repo.Owner()
+		name  = opts.Repo.Name()
 		ref   string
 	)
 	if opts.Ref != nil {
@@ -324,7 +332,7 @@ func (c *Client) GetRepoTarball(ctx context.Context, opts vcs.GetRepoTarballOpti
 		return nil, "", err
 	}
 
-	tarball, _, err := c.client.GetArchive(opts.Repo.Owner, opts.Repo.Name, ref, forgejo.TarGZArchive)
+	tarball, _, err := c.client.GetArchive(opts.Repo.Owner(), opts.Repo.Name(), ref, forgejo.TarGZArchive)
 	if err != nil {
 		return nil, "", fmt.Errorf("GetArchive(\"%s\", \"%s\", \"%s\", \"%s\") failed: %v", owner, name, ref, forgejo.TarGZArchive, err)
 	}
@@ -373,7 +381,7 @@ func (c *Client) SetStatus(ctx context.Context, opts vcs.SetStatusOptions) error
 		Description: opts.Description,
 		Context:     "otf",
 	}
-	_, _, err := c.client.CreateStatus(opts.Repo.Owner, opts.Repo.Name, opts.Ref, opt)
+	_, _, err := c.client.CreateStatus(opts.Repo.Owner(), opts.Repo.Name(), opts.Ref, opt)
 	return err
 }
 
@@ -390,7 +398,7 @@ func (c *Client) ListTags(ctx context.Context, opts vcs.ListTagsOptions) ([]stri
 		opt.Page = resp.NextPage
 		var tags []*forgejo.Tag
 		var err error
-		tags, resp, err = c.client.ListRepoTags(opts.Repo.Owner, opts.Repo.Name, opt)
+		tags, resp, err = c.client.ListRepoTags(opts.Repo.Owner(), opts.Repo.Name(), opt)
 		if err != nil {
 			return nil, err
 		}
@@ -417,7 +425,7 @@ func (c *Client) ListPullRequestFiles(ctx context.Context, repo vcs.Repo, pull i
 		opt.Page = resp.NextPage
 		var files []*forgejo.ChangedFile
 		var err error
-		files, _, err = c.client.ListPullRequestFiles(repo.Owner, repo.Name, int64(pull), opt)
+		files, _, err = c.client.ListPullRequestFiles(repo.Owner(), repo.Name(), int64(pull), opt)
 		if err != nil {
 			return nil, err
 		}
@@ -431,7 +439,7 @@ func (c *Client) ListPullRequestFiles(ctx context.Context, repo vcs.Repo, pull i
 // GetCommit retrieves commit from the repo with the given git ref
 func (c *Client) GetCommit(ctx context.Context, repo vcs.Repo, refname string) (vcs.Commit, error) {
 	rv := vcs.Commit{}
-	refs, _, err := c.client.GetRepoRefs(repo.Owner, repo.Name, refname)
+	refs, _, err := c.client.GetRepoRefs(repo.Owner(), repo.Name(), refname)
 	if err != nil {
 		return rv, err
 	}
@@ -443,7 +451,7 @@ func (c *Client) GetCommit(ctx context.Context, repo vcs.Repo, refname string) (
 	if ref.Object == nil {
 		return rv, errors.New("ref has no commit")
 	}
-	commit, _, err := c.client.GetSingleCommit(repo.Owner, repo.Name, ref.Object.SHA)
+	commit, _, err := c.client.GetSingleCommit(repo.Owner(), repo.Name(), ref.Object.SHA)
 	if err != nil {
 		return rv, fmt.Errorf("forgejo.GetSingleCommit failed: %v", err)
 	}
