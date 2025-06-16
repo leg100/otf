@@ -24,7 +24,7 @@ func HandleEvent(r *http.Request, secret string) (*vcs.EventPayload, error) {
 	var to vcs.EventPayload
 	switch event := raw.(type) {
 	case *github.PushEvent:
-		to.Repo = vcs.Repo{Owner: event.GetRepo().Owner.GetLogin(), Name: event.GetRepo().GetName()}
+		to.Repo = vcs.Repo{Owner: event.GetRepo().Owner.GetName(), Name: event.GetRepo().GetName()}
 		to.CommitSHA = event.GetAfter()
 		to.CommitURL = event.GetHeadCommit().GetURL()
 		to.DefaultBranch = event.GetRepo().GetDefaultBranch()

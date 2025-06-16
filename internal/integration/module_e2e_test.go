@@ -86,7 +86,7 @@ func TestModuleE2E(t *testing.T) {
 
 	// generate and send push tag event for v1.0.0
 	pushTpl := testutils.ReadFile(t, "fixtures/github_push_tag.json")
-	push := fmt.Sprintf(string(pushTpl), "v1.0.0", repo)
+	push := fmt.Sprintf(string(pushTpl), "v1.0.0", repo.Name, repo.Owner)
 	svc.SendEvent(t, github.PushEvent, []byte(push))
 
 	workspaceName := "module-test"
