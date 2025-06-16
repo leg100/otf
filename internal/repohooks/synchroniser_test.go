@@ -28,11 +28,11 @@ func TestSynchroniser(t *testing.T) {
 				Endpoint: "fake-host.org/xyz",
 			},
 			got: &hook{
-				cloudID:  internal.String("123"),
+				cloudID:  internal.Ptr("123"),
 				endpoint: "fake-host.org/xyz",
 			},
 			want: &hook{
-				cloudID:  internal.String("123"),
+				cloudID:  internal.Ptr("123"),
 				endpoint: "fake-host.org/xyz",
 			},
 		},
@@ -44,7 +44,7 @@ func TestSynchroniser(t *testing.T) {
 			},
 			want: &hook{
 				endpoint: "fake-host.org/xyz",
-				cloudID:  internal.String("123"),
+				cloudID:  internal.Ptr("123"),
 			},
 		},
 		{
@@ -55,11 +55,11 @@ func TestSynchroniser(t *testing.T) {
 			},
 			got: &hook{
 				endpoint: "fake-host.org/xyz",
-				cloudID:  internal.String("123"),
+				cloudID:  internal.Ptr("123"),
 			},
 			want: &hook{
 				endpoint: "fake-host.org/xyz",
-				cloudID:  internal.String("123"),
+				cloudID:  internal.Ptr("123"),
 			},
 		},
 	}

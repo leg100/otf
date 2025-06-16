@@ -18,13 +18,13 @@ func TestIntegation_TeamService(t *testing.T) {
 		svc, org, ctx := setup(t)
 
 		team, err := svc.Teams.Create(ctx, org.Name, otfteam.CreateTeamOptions{
-			Name: internal.String(uuid.NewString()),
+			Name: internal.Ptr(uuid.NewString()),
 		})
 		require.NoError(t, err)
 
 		t.Run("already exists error", func(t *testing.T) {
 			_, err := svc.Teams.Create(ctx, org.Name, otfteam.CreateTeamOptions{
-				Name: internal.String(team.Name),
+				Name: internal.Ptr(team.Name),
 			})
 			require.Equal(t, internal.ErrResourceAlreadyExists, err)
 		})
@@ -36,9 +36,9 @@ func TestIntegation_TeamService(t *testing.T) {
 
 		_, err := svc.Teams.Update(ctx, team.ID, otfteam.UpdateTeamOptions{
 			OrganizationAccessOptions: otfteam.OrganizationAccessOptions{
-				ManageWorkspaces: internal.Bool(true),
-				ManageVCS:        internal.Bool(true),
-				ManageModules:    internal.Bool(true),
+				ManageWorkspaces: internal.Ptr(true),
+				ManageVCS:        internal.Ptr(true),
+				ManageModules:    internal.Ptr(true),
 			},
 		})
 		require.NoError(t, err)

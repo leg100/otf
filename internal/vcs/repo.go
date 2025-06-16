@@ -26,8 +26,6 @@ func (r Repo) Owner() string { return r.owner }
 // namespace.
 func (r Repo) Name() string { return r.name }
 
-func RepoPtr(r Repo) *Repo { return &r }
-
 func NewRepo(owner, name string) (Repo, error) {
 	if len(owner) == 0 {
 		return Repo{}, errors.New("repo owner cannot be an empty string")

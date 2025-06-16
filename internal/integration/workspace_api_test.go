@@ -83,17 +83,17 @@ func TestIntegration_WorkspaceAPI_CreateConnected(t *testing.T) {
 
 	oauth, err := client.OAuthClients.Create(ctx, org.Name.String(), tfe.OAuthClientCreateOptions{
 		OAuthToken:      provider.Token,
-		APIURL:          internal.String(vcs.GithubAPIURL),
-		HTTPURL:         internal.String(vcs.GithubHTTPURL),
+		APIURL:          internal.Ptr(vcs.GithubAPIURL),
+		HTTPURL:         internal.Ptr(vcs.GithubHTTPURL),
 		ServiceProvider: tfe.ServiceProvider(tfe.ServiceProviderGithub),
 	})
 	require.NoError(t, err)
 
 	ws, err := client.Workspaces.Create(ctx, org.Name.String(), tfe.WorkspaceCreateOptions{
-		Name: internal.String("testing"),
+		Name: internal.Ptr("testing"),
 		VCSRepo: &tfe.VCSRepoOptions{
-			OAuthTokenID: internal.String(oauth.ID),
-			Identifier:   internal.String(repo.String()),
+			OAuthTokenID: internal.Ptr(oauth.ID),
+			Identifier:   internal.Ptr(repo.String()),
 		},
 	})
 	require.NoError(t, err)

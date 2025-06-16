@@ -64,7 +64,7 @@ func (a *CLI) newOrganizationCommand() *cobra.Command {
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			org, err := a.CreateOrganization(cmd.Context(), CreateOptions{
-				Name: internal.String(args[0]),
+				Name: internal.Ptr(args[0]),
 			})
 			if err != nil {
 				return err

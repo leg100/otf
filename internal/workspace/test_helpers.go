@@ -26,7 +26,7 @@ func NewTestWorkspace(t *testing.T, opts *CreateOptions) *Workspace {
 		opts.Organization = &name
 	}
 	if opts.Name == nil {
-		opts.Name = internal.String(uuid.NewString())
+		opts.Name = internal.Ptr(uuid.NewString())
 	}
 
 	factory := &factory{

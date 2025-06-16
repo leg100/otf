@@ -60,7 +60,7 @@ func TestFactory(t *testing.T) {
 			&configversion.ConfigurationVersion{},
 		)
 
-		got, err := f.NewRun(ctx, resource.TfeID{}, CreateOptions{PlanOnly: internal.Bool(true)})
+		got, err := f.NewRun(ctx, resource.TfeID{}, CreateOptions{PlanOnly: internal.Ptr(true)})
 		require.NoError(t, err)
 
 		assert.True(t, got.PlanOnly)
@@ -69,7 +69,7 @@ func TestFactory(t *testing.T) {
 	t.Run("workspace auto-apply", func(t *testing.T) {
 		f := newTestFactory(
 			&organization.Organization{},
-			workspace.NewTestWorkspace(t, &workspace.CreateOptions{AutoApply: internal.Bool(true)}),
+			workspace.NewTestWorkspace(t, &workspace.CreateOptions{AutoApply: internal.Ptr(true)}),
 			&configversion.ConfigurationVersion{},
 		)
 
@@ -87,7 +87,7 @@ func TestFactory(t *testing.T) {
 		)
 
 		got, err := f.NewRun(ctx, resource.TfeID{}, CreateOptions{
-			AutoApply: internal.Bool(true),
+			AutoApply: internal.Ptr(true),
 		})
 		require.NoError(t, err)
 

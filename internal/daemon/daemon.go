@@ -473,7 +473,7 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 			Name:   "reporter",
 			Logger: d.Logger,
 			DB:     d.DB,
-			LockID: internal.Int64(sql.ReporterLockID),
+			LockID: internal.Ptr(sql.ReporterLockID),
 			System: &run.Reporter{
 				Logger:          d.Logger.WithValues("component", "reporter"),
 				VCS:             d.VCSProviders,
@@ -495,7 +495,7 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 			Name:   "timeout",
 			Logger: d.Logger,
 			DB:     d.DB,
-			LockID: internal.Int64(sql.TimeoutLockID),
+			LockID: internal.Ptr(sql.TimeoutLockID),
 			System: &run.Timeout{
 				Logger:                d.Logger.WithValues("component", "timeout"),
 				OverrideCheckInterval: d.OverrideTimeoutCheckInterval,
@@ -508,7 +508,7 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 			Name:   "notifier",
 			Logger: d.Logger,
 			DB:     d.DB,
-			LockID: internal.Int64(sql.NotifierLockID),
+			LockID: internal.Ptr(sql.NotifierLockID),
 			System: notifications.NewNotifier(notifications.NotifierOptions{
 				Logger:             d.Logger,
 				HostnameService:    d.System,
@@ -522,14 +522,14 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 			Name:   "job-allocator",
 			Logger: d.Logger,
 			DB:     d.DB,
-			LockID: internal.Int64(sql.AllocatorLockID),
+			LockID: internal.Ptr(sql.AllocatorLockID),
 			System: d.Runners.NewAllocator(d.Logger),
 		},
 		{
 			Name:   "runner-manager",
 			Logger: d.Logger,
 			DB:     d.DB,
-			LockID: internal.Int64(sql.RunnerManagerLockID),
+			LockID: internal.Ptr(sql.RunnerManagerLockID),
 			System: d.Runners.NewManager(),
 		},
 	}
@@ -546,7 +546,7 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 			Name:   "scheduler",
 			Logger: d.Logger,
 			DB:     d.DB,
-			LockID: internal.Int64(sql.SchedulerLockID),
+			LockID: internal.Ptr(sql.SchedulerLockID),
 			System: run.NewScheduler(run.SchedulerOptions{
 				Logger:          d.Logger,
 				WorkspaceClient: d.Workspaces,

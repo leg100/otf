@@ -30,18 +30,18 @@ func TestIntegration_Agents(t *testing.T) {
 
 	// ws1 is assigned to pool1
 	ws1, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
-		Name:          internal.String("ws-1"),
+		Name:          internal.Ptr("ws-1"),
 		Organization:  &org.Name,
-		ExecutionMode: workspace.ExecutionModePtr(workspace.AgentExecutionMode),
+		ExecutionMode: internal.Ptr(workspace.AgentExecutionMode),
 		AgentPoolID:   &pool1.ID,
 	})
 	require.NoError(t, err)
 
 	// ws2 to assigned to pool2
 	ws2, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
-		Name:          internal.String("ws-2"),
+		Name:          internal.Ptr("ws-2"),
 		Organization:  &org.Name,
-		ExecutionMode: workspace.ExecutionModePtr(workspace.AgentExecutionMode),
+		ExecutionMode: internal.Ptr(workspace.AgentExecutionMode),
 		AgentPoolID:   &pool2.ID,
 	})
 	require.NoError(t, err)

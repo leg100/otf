@@ -167,7 +167,7 @@ WHERE configuration_versions.workspace_id = $1
 	if err != nil {
 		return nil, err
 	}
-	return resource.NewPage(items, opts.PageOptions, internal.Int64(count)), nil
+	return resource.NewPage(items, opts.PageOptions, internal.Ptr(count)), nil
 }
 
 func (db *pgdb) get(ctx context.Context, id resource.ID) (*ConfigurationVersion, error) {

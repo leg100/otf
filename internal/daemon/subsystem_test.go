@@ -29,7 +29,7 @@ func TestSubsystem(t *testing.T) {
 			}
 			if tt.exclusive {
 				sub.DB = &fakeWaitAndLock{}
-				sub.LockID = internal.Int64(123)
+				sub.LockID = internal.Ptr[int64](123)
 			}
 			err := sub.Start(ctx, &errgroup.Group{})
 			require.NoError(t, err)

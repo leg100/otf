@@ -131,10 +131,10 @@ func TestIntegration_GithubAppsUI(t *testing.T) {
 		daemon, _, _ := setup(t,
 			withGithubOption(github.WithHandler("/api/v3/app-manifests/anything/conversions", func(w http.ResponseWriter, r *http.Request) {
 				out, err := json.Marshal(&gogithub.AppConfig{
-					ID:            internal.Int64(123),
-					Slug:          internal.String("my-otf-app"),
-					WebhookSecret: internal.String("top-secret"),
-					PEM:           internal.String(string(testutils.ReadFile(t, "./fixtures/key.pem"))),
+					ID:            internal.Ptr[int64](123),
+					Slug:          internal.Ptr("my-otf-app"),
+					WebhookSecret: internal.Ptr("top-secret"),
+					PEM:           internal.Ptr(string(testutils.ReadFile(t, "./fixtures/key.pem"))),
 					Owner:         &gogithub.User{},
 				})
 				require.NoError(t, err)
@@ -171,11 +171,11 @@ func TestIntegration_GithubAppsUI(t *testing.T) {
 			w.Header().Add("Content-Type", "application/json")
 			out, err := json.Marshal([]*gogithub.Installation{
 				{
-					ID:    internal.Int64(123),
-					AppID: internal.Int64(123),
+					ID:    internal.Ptr[int64](123),
+					AppID: internal.Ptr[int64](123),
 					Account: &gogithub.User{
-						Login: internal.String("leg100"),
-						Type:  internal.String("User"),
+						Login: internal.Ptr("leg100"),
+						Type:  internal.Ptr("User"),
 					},
 				},
 			})
@@ -207,11 +207,11 @@ func TestIntegration_GithubAppsUI(t *testing.T) {
 			w.Header().Add("Content-Type", "application/json")
 			out, err := json.Marshal([]*gogithub.Installation{
 				{
-					ID:    internal.Int64(123),
-					AppID: internal.Int64(123),
+					ID:    internal.Ptr[int64](123),
+					AppID: internal.Ptr[int64](123),
 					Account: &gogithub.User{
-						Login: internal.String("leg100"),
-						Type:  internal.String("User"),
+						Login: internal.Ptr("leg100"),
+						Type:  internal.Ptr("User"),
 					},
 				},
 			})
@@ -256,11 +256,11 @@ func TestIntegration_GithubApp_Event(t *testing.T) {
 		github.WithArchive(testutils.ReadFile(t, "../testdata/github.tar.gz")),
 		github.WithHandler("/api/v3/app/installations/42997659", func(w http.ResponseWriter, r *http.Request) {
 			out, err := json.Marshal(&gogithub.Installation{
-				ID:    internal.Int64(42997659),
-				AppID: internal.Int64(123),
+				ID:    internal.Ptr[int64](42997659),
+				AppID: internal.Ptr[int64](123),
 				Account: &gogithub.User{
-					Login: internal.String("leg100"),
-					Type:  internal.String("User"),
+					Login: internal.Ptr("leg100"),
+					Type:  internal.Ptr("User"),
 				},
 			})
 			require.NoError(t, err)
@@ -288,17 +288,17 @@ func TestIntegration_GithubApp_Event(t *testing.T) {
 	provider, err := daemon.VCSProviders.Create(ctx, vcs.CreateOptions{
 		Organization: org.Name,
 		KindID:       github.AppKindID,
-		InstallID:    internal.Int64(42997659),
+		InstallID:    internal.Ptr[int64](42997659),
 	})
 	require.NoError(t, err)
 
 	// create and connect a workspace to a repo using the app install
 	_, err = daemon.Workspaces.Create(ctx, workspace.CreateOptions{
-		Name:         internal.String("dev"),
+		Name:         internal.Ptr("dev"),
 		Organization: &org.Name,
 		ConnectOptions: &workspace.ConnectOptions{
 			VCSProviderID: &provider.ID,
-			RepoPath:      vcs.RepoPtr(vcs.NewMustRepo("leg100", "otf-workspaces")),
+			RepoPath:      internal.Ptr(vcs.NewMustRepo("leg100", "otf-workspaces")),
 		},
 	})
 	require.NoError(t, err)

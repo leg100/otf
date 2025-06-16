@@ -17,9 +17,9 @@ func TestVariable(t *testing.T) {
 		ws := svc.createWorkspace(t, ctx, nil)
 
 		_, err := svc.Variables.CreateWorkspaceVariable(ctx, ws.ID, variable.CreateVariableOptions{
-			Key:      internal.String("foo"),
-			Value:    internal.String("bar"),
-			Category: variable.VariableCategoryPtr(variable.CategoryTerraform),
+			Key:      internal.Ptr("foo"),
+			Value:    internal.Ptr("bar"),
+			Category: internal.Ptr(variable.CategoryTerraform),
 		})
 		require.NoError(t, err)
 	})
@@ -29,7 +29,7 @@ func TestVariable(t *testing.T) {
 		v := svc.createVariable(t, ctx, nil)
 
 		got, err := svc.Variables.UpdateWorkspaceVariable(ctx, v.ID, variable.UpdateVariableOptions{
-			Value: internal.String("luxembourg"),
+			Value: internal.Ptr("luxembourg"),
 		})
 		require.NoError(t, err)
 

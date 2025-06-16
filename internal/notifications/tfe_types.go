@@ -37,10 +37,6 @@ const (
 	NotificationDestinationTypeMicrosoftTeams TFENotificationDestinationType = "microsoft-teams"
 )
 
-func TFENotificationDestinationPtr(d TFENotificationDestinationType) *TFENotificationDestinationType {
-	return &d
-}
-
 // TFENotificationConfigurationList represents a list of Notification
 // Configurations.
 type TFENotificationConfigurationList struct {

@@ -24,9 +24,9 @@ func TestVariable_UpdateHandler(t *testing.T) {
 		{
 			name: "overwrite everything",
 			existing: CreateVariableOptions{
-				Key:             internal.String("foo"),
-				Value:           internal.String("bar"),
-				Category:        VariableCategoryPtr(CategoryTerraform),
+				Key:             internal.Ptr("foo"),
+				Value:           internal.Ptr("bar"),
+				Category:        internal.Ptr(CategoryTerraform),
 				generateVersion: func() string { return "" },
 			},
 			updated: url.Values{
@@ -47,10 +47,10 @@ func TestVariable_UpdateHandler(t *testing.T) {
 		{
 			name: "disable hcl",
 			existing: CreateVariableOptions{
-				Key:             internal.String("foo"),
-				Value:           internal.String("bar"),
-				Category:        VariableCategoryPtr(CategoryTerraform),
-				HCL:             internal.Bool(true),
+				Key:             internal.Ptr("foo"),
+				Value:           internal.Ptr("bar"),
+				Category:        internal.Ptr(CategoryTerraform),
+				HCL:             internal.Ptr(true),
 				generateVersion: func() string { return "" },
 			},
 			// If the user unchecks the HCL checkbox then no form value is sent
@@ -64,10 +64,10 @@ func TestVariable_UpdateHandler(t *testing.T) {
 		{
 			name: "update sensitive value",
 			existing: CreateVariableOptions{
-				Key:             internal.String("foo"),
-				Value:           internal.String("topsecret"),
-				Category:        VariableCategoryPtr(CategoryTerraform),
-				Sensitive:       internal.Bool(true),
+				Key:             internal.Ptr("foo"),
+				Value:           internal.Ptr("topsecret"),
+				Category:        internal.Ptr(CategoryTerraform),
+				Sensitive:       internal.Ptr(true),
 				generateVersion: func() string { return "" },
 			},
 			updated: url.Values{

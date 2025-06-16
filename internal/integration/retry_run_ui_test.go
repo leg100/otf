@@ -17,7 +17,7 @@ func TestIntegration_RetryRunUI(t *testing.T) {
 	daemon, _, ctx := setup(t)
 	ws := daemon.createWorkspace(t, ctx, nil)
 	cv := daemon.createAndUploadConfigurationVersion(t, ctx, ws, &configversion.CreateOptions{
-		Speculative: internal.Bool(true),
+		Speculative: internal.Ptr(true),
 	})
 	// create a run and wait for it reach planned-and-finished state
 	r := daemon.createRun(t, ctx, ws, cv, nil)

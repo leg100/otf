@@ -319,9 +319,9 @@ func (g *Client) CreateWebhook(ctx context.Context, opts vcs.CreateWebhookOption
 		Config: &github.HookConfig{
 			URL:         &opts.Endpoint,
 			Secret:      &opts.Secret,
-			ContentType: internal.String("json"),
+			ContentType: internal.Ptr("json"),
 		},
-		Active: internal.Bool(true),
+		Active: internal.Ptr(true),
 	})
 	if err != nil {
 		return "", err
@@ -350,9 +350,9 @@ func (g *Client) UpdateWebhook(ctx context.Context, id string, opts vcs.UpdateWe
 		Config: &github.HookConfig{
 			URL:         &opts.Endpoint,
 			Secret:      &opts.Secret,
-			ContentType: internal.String("json"),
+			ContentType: internal.Ptr("json"),
 		},
-		Active: internal.Bool(true),
+		Active: internal.Ptr(true),
 	})
 	if err != nil {
 		return err
@@ -423,10 +423,10 @@ func (g *Client) SetStatus(ctx context.Context, opts vcs.SetStatusOptions) error
 	}
 
 	_, _, err := g.client.Repositories.CreateStatus(ctx, opts.Repo.Owner(), opts.Repo.Name(), opts.Ref, &github.RepoStatus{
-		Context:     internal.String(fmt.Sprintf("otf/%s", opts.Workspace)),
-		TargetURL:   internal.String(opts.TargetURL),
-		Description: internal.String(opts.Description),
-		State:       internal.String(status),
+		Context:     internal.Ptr(fmt.Sprintf("otf/%s", opts.Workspace)),
+		TargetURL:   internal.Ptr(opts.TargetURL),
+		Description: internal.Ptr(opts.Description),
+		State:       internal.Ptr(status),
 	})
 	return err
 }

@@ -14,9 +14,9 @@ func TestValidateName(t *testing.T) {
 		want         error
 	}{
 		{"nil", nil, internal.ErrRequiredName},
-		{"dot", internal.String("."), internal.ErrInvalidName},
-		{"underscore", internal.String("_"), nil},
-		{"acme-corp", internal.String("acme-corp"), nil},
+		{"dot", internal.Ptr("."), internal.ErrInvalidName},
+		{"underscore", internal.Ptr("_"), nil},
+		{"acme-corp", internal.Ptr("acme-corp"), nil},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

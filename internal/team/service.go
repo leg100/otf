@@ -75,7 +75,7 @@ func NewService(opts Options) *Service {
 		// is skipped.
 		ctx = authz.AddSkipAuthz(ctx)
 		_, err := svc.Create(ctx, organization.Name, CreateTeamOptions{
-			Name: internal.String("owners"),
+			Name: internal.Ptr("owners"),
 		})
 		if err != nil {
 			return fmt.Errorf("creating owners team: %w", err)

@@ -503,7 +503,7 @@ AND (($8::text IS NULL) OR ia.sender_username = $8)
 	if err != nil {
 		return nil, fmt.Errorf("counting runs: %w", err)
 	}
-	return resource.NewPage(items, opts.PageOptions, internal.Int64(count)), nil
+	return resource.NewPage(items, opts.PageOptions, internal.Ptr(count)), nil
 }
 
 // get retrieves a run using the get options

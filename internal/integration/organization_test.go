@@ -17,13 +17,13 @@ func TestIntegration_Organization(t *testing.T) {
 	t.Run("create", func(t *testing.T) {
 		svc, _, ctx := setup(t, skipDefaultOrganization())
 		org, err := svc.Organizations.Create(ctx, organization.CreateOptions{
-			Name: internal.String(uuid.NewString()),
+			Name: internal.Ptr(uuid.NewString()),
 		})
 		require.NoError(t, err)
 
 		t.Run("duplicate error", func(t *testing.T) {
 			_, err := svc.Organizations.Create(ctx, organization.CreateOptions{
-				Name: internal.String(org.Name.String()),
+				Name: internal.Ptr(org.Name.String()),
 			})
 			require.Equal(t, internal.ErrResourceAlreadyExists, err)
 		})
@@ -49,7 +49,7 @@ func TestIntegration_Organization(t *testing.T) {
 
 		want := organization.NewTestName(t)
 		updated, err := daemon.Organizations.Update(ctx, org.Name, organization.UpdateOptions{
-			Name: internal.String(want.String()),
+			Name: internal.Ptr(want.String()),
 		})
 		require.NoError(t, err)
 

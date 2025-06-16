@@ -66,7 +66,7 @@ func setup(t *testing.T, opts ...configOption) (*testDaemon, *organization.Organ
 	// Unless test has specified otherwise, disable checking for latest
 	// engine version
 	if cfg.DisableLatestChecker == nil || !*cfg.DisableLatestChecker {
-		cfg.DisableLatestChecker = internal.Bool(true)
+		cfg.DisableLatestChecker = internal.Ptr(true)
 	}
 	// Skip TLS verification for tests because they'll be standing up various
 	// stub TLS servers with self-certified certs.
@@ -155,7 +155,7 @@ func (s *testDaemon) createOrganization(t *testing.T, ctx context.Context) *orga
 	t.Helper()
 
 	org, err := s.Organizations.Create(ctx, organization.CreateOptions{
-		Name: internal.String(internal.GenerateRandomString(4) + "-corp"),
+		Name: internal.Ptr(internal.GenerateRandomString(4) + "-corp"),
 	})
 	require.NoError(t, err)
 	return org
@@ -169,7 +169,7 @@ func (s *testDaemon) createWorkspace(t *testing.T, ctx context.Context, org *org
 	}
 
 	ws, err := s.Workspaces.Create(ctx, workspace.CreateOptions{
-		Name:         internal.String("workspace-" + internal.GenerateRandomString(6)),
+		Name:         internal.Ptr("workspace-" + internal.GenerateRandomString(6)),
 		Organization: &org.Name,
 	})
 	require.NoError(t, err)
@@ -218,7 +218,7 @@ func (s *testDaemon) createVCSProvider(t *testing.T, ctx context.Context, org *o
 	opts := vcs.CreateOptions{
 		Organization: org.Name,
 		KindID:       github.TokenKindID,
-		Token:        internal.String(uuid.NewString()),
+		Token:        internal.Ptr(uuid.NewString()),
 	}
 	if createOptions != nil {
 		opts.Name = createOptions.Name
@@ -288,7 +288,7 @@ func (s *testDaemon) createTeam(t *testing.T, ctx context.Context, org *organiza
 	}
 
 	team, err := s.Teams.Create(ctx, org.Name, team.CreateTeamOptions{
-		Name: internal.String("team-" + internal.GenerateRandomString(4)),
+		Name: internal.Ptr("team-" + internal.GenerateRandomString(4)),
 	})
 	require.NoError(t, err)
 	return team
@@ -353,9 +353,9 @@ func (s *testDaemon) createVariable(t *testing.T, ctx context.Context, ws *works
 	}
 
 	v, err := s.Variables.CreateWorkspaceVariable(ctx, ws.ID, variable.CreateVariableOptions{
-		Key:      internal.String("key-" + internal.GenerateRandomString(4)),
-		Value:    internal.String("val-" + internal.GenerateRandomString(4)),
-		Category: variable.VariableCategoryPtr(variable.CategoryTerraform),
+		Key:      internal.Ptr("key-" + internal.GenerateRandomString(4)),
+		Value:    internal.Ptr("val-" + internal.GenerateRandomString(4)),
+		Category: internal.Ptr(variable.CategoryTerraform),
 	})
 	require.NoError(t, err)
 	return v
@@ -375,7 +375,7 @@ func (s *testDaemon) createStateVersion(t *testing.T, ctx context.Context, ws *w
 		State:       file,
 		WorkspaceID: ws.ID,
 		// serial matches that in ./testdata/terraform.tfstate
-		Serial: internal.Int64(9),
+		Serial: internal.Ptr[int64](9),
 	})
 	require.NoError(t, err)
 	return sv
@@ -414,9 +414,9 @@ func (s *testDaemon) createNotificationConfig(t *testing.T, ctx context.Context,
 
 	nc, err := s.Notifications.Create(ctx, ws.ID, notifications.CreateConfigOptions{
 		DestinationType: notifications.DestinationGeneric,
-		Enabled:         internal.Bool(true),
-		Name:            internal.String(uuid.NewString()),
-		URL:             internal.String("http://example.com"),
+		Enabled:         internal.Ptr(true),
+		Name:            internal.Ptr(uuid.NewString()),
+		URL:             internal.Ptr("http://example.com"),
 	})
 	require.NoError(t, err)
 	return nc

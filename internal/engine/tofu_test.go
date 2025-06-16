@@ -25,7 +25,7 @@ func Test_getLatestVersion(t *testing.T) {
 		}),
 		github.WithDisableTLS(),
 	)
-	got, err := getLatestTofuVersion(context.Background(), internal.String(u.String()))
+	got, err := getLatestTofuVersion(context.Background(), internal.Ptr(u.String()))
 	require.NoError(t, err)
 	assert.Equal(t, "1.9.0", got)
 }

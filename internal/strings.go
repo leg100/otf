@@ -14,13 +14,6 @@ func Title(s string) string {
 	return caser.String(s)
 }
 
-func NewStringFromPtr(s *string) string {
-	if s == nil {
-		return ""
-	}
-	return *s
-}
-
 // SplitCSV splits a string with a comma delimited (a "comma-separated-value").
 // It differs from strings.Split in that if no comma is found an empty slice is
 // returned whereas strings.Split would return a single-element slice containing the

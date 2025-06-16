@@ -114,10 +114,10 @@ func newPagination(opts PageOptions, count int64) *Pagination {
 	pagination.TotalPages = int(math.Max(1, math.Ceil(pages)))
 
 	if opts.PageNumber > 1 {
-		pagination.PreviousPage = internal.Int(opts.PageNumber - 1)
+		pagination.PreviousPage = internal.Ptr(opts.PageNumber - 1)
 	}
 	if opts.PageNumber < pagination.TotalPages {
-		pagination.NextPage = internal.Int(opts.PageNumber + 1)
+		pagination.NextPage = internal.Ptr(opts.PageNumber + 1)
 	}
 
 	return &pagination

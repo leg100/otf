@@ -56,7 +56,7 @@ func (a *teamCLI) teamNewCommand() *cobra.Command {
 				return err
 			}
 			team, err := a.client.Create(cmd.Context(), orgname, CreateTeamOptions{
-				Name: internal.String(args[0]),
+				Name: internal.Ptr(args[0]),
 			})
 			if err != nil {
 				return err

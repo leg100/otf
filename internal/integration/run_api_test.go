@@ -40,7 +40,7 @@ func TestIntegration_RunAPI(t *testing.T) {
 	t.Run("create run using config from repo", func(t *testing.T) {
 		vcsProvider := daemon.createVCSProvider(t, ctx, org, nil)
 		ws, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
-			Name:         internal.String("connected-workspace"),
+			Name:         internal.Ptr("connected-workspace"),
 			Organization: &org.Name,
 			ConnectOptions: &workspace.ConnectOptions{
 				RepoPath:      &repo,

@@ -90,7 +90,7 @@ func (a *tfe) createWorkspace(w http.ResponseWriter, r *http.Request) {
 	}
 	// Always trigger runs if neither trigger patterns nor tags regex are set
 	if len(params.TriggerPatterns) == 0 && (params.VCSRepo == nil || params.VCSRepo.TagsRegex == nil) {
-		opts.AlwaysTrigger = internal.Bool(true)
+		opts.AlwaysTrigger = internal.Ptr(true)
 	}
 	if params.Operations != nil {
 		if params.ExecutionMode != nil {
@@ -99,9 +99,9 @@ func (a *tfe) createWorkspace(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if *params.Operations {
-			opts.ExecutionMode = ExecutionModePtr(RemoteExecutionMode)
+			opts.ExecutionMode = internal.Ptr(RemoteExecutionMode)
 		} else {
-			opts.ExecutionMode = ExecutionModePtr(LocalExecutionMode)
+			opts.ExecutionMode = internal.Ptr(LocalExecutionMode)
 		}
 	}
 	if params.VCSRepo != nil {
@@ -382,7 +382,7 @@ func (a *tfe) updateWorkspace(w http.ResponseWriter, r *http.Request, workspaceI
 	// (b) file-triggers-enabled=true and trigger-prefixes=empty
 	// (b) trigger-prefixes=non-empty and tags-regex=non-nil
 	if (params.FileTriggersEnabled != nil && !*params.FileTriggersEnabled) && (!params.VCSRepo.Set || !params.VCSRepo.Valid || params.VCSRepo.TagsRegex == nil) {
-		opts.AlwaysTrigger = internal.Bool(true)
+		opts.AlwaysTrigger = internal.Ptr(true)
 	}
 
 	if params.VCSRepo.Set {

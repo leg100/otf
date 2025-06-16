@@ -98,8 +98,8 @@ func (h *webHandlers) createRun(w http.ResponseWriter, r *http.Request) {
 	}
 
 	run, err := h.runs.Create(r.Context(), params.WorkspaceID, CreateOptions{
-		IsDestroy: internal.Bool(params.Operation == DestroyAllOperation),
-		PlanOnly:  internal.Bool(params.Operation == PlanOnlyOperation),
+		IsDestroy: internal.Ptr(params.Operation == DestroyAllOperation),
+		PlanOnly:  internal.Ptr(params.Operation == PlanOnlyOperation),
 		Source:    source.UI,
 	})
 	if err != nil {

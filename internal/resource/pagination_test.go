@@ -33,8 +33,8 @@ func TestPagination(t *testing.T) {
 			count: 101,
 			want: &Pagination{
 				CurrentPage:  3,
-				PreviousPage: internal.Int(2),
-				NextPage:     internal.Int(4),
+				PreviousPage: internal.Ptr(2),
+				NextPage:     internal.Ptr(4),
 				TotalCount:   101,
 				TotalPages:   6,
 			},
@@ -84,7 +84,7 @@ func TestNewPage(t *testing.T) {
 					CurrentPage: 1,
 					TotalCount:  101,
 					TotalPages:  6,
-					NextPage:    internal.Int(2),
+					NextPage:    internal.Ptr(2),
 				},
 			},
 		},
@@ -98,8 +98,8 @@ func TestNewPage(t *testing.T) {
 					CurrentPage:  2,
 					TotalCount:   101,
 					TotalPages:   11,
-					PreviousPage: internal.Int(1),
-					NextPage:     internal.Int(3),
+					PreviousPage: internal.Ptr(1),
+					NextPage:     internal.Ptr(3),
 				},
 			},
 		},
@@ -113,7 +113,7 @@ func TestNewPage(t *testing.T) {
 					CurrentPage:  11,
 					TotalCount:   101,
 					TotalPages:   11,
-					PreviousPage: internal.Int(10),
+					PreviousPage: internal.Ptr(10),
 				},
 			},
 		},
@@ -127,14 +127,14 @@ func TestNewPage(t *testing.T) {
 					CurrentPage:  99,
 					TotalCount:   101,
 					TotalPages:   11,
-					PreviousPage: internal.Int(98),
+					PreviousPage: internal.Ptr(98),
 				},
 			},
 		},
 		{
 			"page from database",
 			PageOptions{PageSize: 100, PageNumber: 1},
-			internal.Int64(201),
+			internal.Ptr[int64](201),
 			Page[int]{
 				// note s is now a segment within a larger result set of 201
 				// items.
@@ -143,7 +143,7 @@ func TestNewPage(t *testing.T) {
 					CurrentPage: 1,
 					TotalCount:  201,
 					TotalPages:  3,
-					NextPage:    internal.Int(2),
+					NextPage:    internal.Ptr(2),
 				},
 			},
 		},
@@ -170,7 +170,7 @@ func TestListAll(t *testing.T) {
 		return &Page[foo]{
 			Items: []foo{foo(page)},
 			Pagination: &Pagination{
-				NextPage: internal.Int(page),
+				NextPage: internal.Ptr(page),
 			},
 		}, nil
 	})
@@ -187,7 +187,7 @@ func TestListAll_infinite_pagination(t *testing.T) {
 		return &Page[foo]{
 			Items: []foo{0},
 			Pagination: &Pagination{
-				NextPage: internal.Int(1),
+				NextPage: internal.Ptr(1),
 			},
 		}, nil
 	})

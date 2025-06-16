@@ -102,7 +102,7 @@ func (p *Pool) New(t *testing.T, user context.Context, fn func(playwright.Page))
 
 	// Construct new ctx
 	browserCtx, err := p.browser.NewContext(playwright.BrowserNewContextOptions{
-		IgnoreHttpsErrors: internal.Bool(true),
+		IgnoreHttpsErrors: internal.Ptr(true),
 	})
 	require.NoError(t, err)
 
@@ -160,8 +160,8 @@ func (p *Pool) New(t *testing.T, user context.Context, fn func(playwright.Page))
 			{
 				Name:   "session",
 				Value:  string(token),
-				Domain: internal.String("127.0.0.1"),
-				Path:   internal.String("/"),
+				Domain: internal.Ptr("127.0.0.1"),
+				Path:   internal.Ptr("/"),
 			},
 		})
 		require.NoError(t, err)

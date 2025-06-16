@@ -111,7 +111,7 @@ func TestWebhook_Purger(t *testing.T) {
 			org := daemon.createOrganization(t, ctx)
 			provider := daemon.createVCSProvider(t, ctx, org, nil)
 			ws, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
-				Name:         internal.String("workspace-1"),
+				Name:         internal.Ptr("workspace-1"),
 				Organization: &org.Name,
 				ConnectOptions: &workspace.ConnectOptions{
 					VCSProviderID: &provider.ID,

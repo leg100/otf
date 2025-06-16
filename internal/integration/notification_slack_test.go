@@ -23,9 +23,9 @@ func TestIntegration_NotificationSlack(t *testing.T) {
 	ws := daemon.createWorkspace(t, ctx, nil)
 	_, err := daemon.Notifications.Create(ctx, ws.ID, notifications.CreateConfigOptions{
 		DestinationType: notifications.DestinationSlack,
-		Enabled:         internal.Bool(true),
-		Name:            internal.String("testing"),
-		URL:             internal.String(url),
+		Enabled:         internal.Ptr(true),
+		Name:            internal.Ptr("testing"),
+		URL:             internal.Ptr(url),
 		Triggers: []notifications.Trigger{
 			notifications.TriggerCreated,
 			notifications.TriggerPlanning,

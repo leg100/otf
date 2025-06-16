@@ -27,7 +27,7 @@ func TestPubSubClient_New(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := newPubSubClient(&Config{
-				URL: internal.String(tt.u),
+				URL: internal.Ptr(tt.u),
 			})
 			require.Equal(t, tt.want, err)
 		})

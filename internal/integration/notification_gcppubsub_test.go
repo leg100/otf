@@ -61,9 +61,9 @@ func TestIntegration_NotificationGCPPubSub(t *testing.T) {
 
 	_, err = daemon.Notifications.Create(ctx, ws.ID, notifications.CreateConfigOptions{
 		DestinationType: notifications.DestinationGCPPubSub,
-		Enabled:         internal.Bool(true),
-		Name:            internal.String("testing"),
-		URL:             internal.String("gcppubsub://abc123/" + topic.ID()),
+		Enabled:         internal.Ptr(true),
+		Name:            internal.Ptr("testing"),
+		URL:             internal.Ptr("gcppubsub://abc123/" + topic.ID()),
 		Triggers: []notifications.Trigger{
 			notifications.TriggerCreated,
 			notifications.TriggerPlanning,

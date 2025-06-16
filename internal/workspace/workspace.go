@@ -286,11 +286,6 @@ func (f *factory) NewWorkspace(ctx context.Context, opts CreateOptions) (*Worksp
 	return &ws, nil
 }
 
-// ExecutionModePtr returns a pointer to an execution mode.
-func ExecutionModePtr(m ExecutionMode) *ExecutionMode {
-	return &m
-}
-
 func (ws *Workspace) String() string { return ws.Organization.String() + "/" + ws.Name }
 
 // ExecutionModes returns a list of possible execution modes
@@ -466,7 +461,7 @@ func (ws *Workspace) Update(opts UpdateOptions) (*bool, error) {
 			return nil, errors.New("cannot disconnect an already disconnected workspace")
 		}
 		// workspace is to be disconnected
-		connect = internal.Bool(false)
+		connect = internal.Ptr(false)
 		updated = true
 	}
 	if opts.ConnectOptions != nil {
@@ -475,7 +470,7 @@ func (ws *Workspace) Update(opts UpdateOptions) (*bool, error) {
 			if err := ws.addConnection(opts.ConnectOptions); err != nil {
 				return nil, err
 			}
-			connect = internal.Bool(true)
+			connect = internal.Ptr(true)
 			updated = true
 		} else {
 			// modify existing connection

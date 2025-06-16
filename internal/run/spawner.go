@@ -191,7 +191,7 @@ func (s *Spawner) handleWithError(logger logr.Logger, event vcs.Event) error {
 	for _, ws := range workspaces {
 		cvOpts := configversion.CreateOptions{
 			// pull request events trigger speculative runs
-			Speculative: internal.Bool(event.Type == vcs.EventTypePull),
+			Speculative: internal.Ptr(event.Type == vcs.EventTypePull),
 			IngressAttributes: &configversion.IngressAttributes{
 				// ID     resource.TfeID
 				Branch: event.Branch,

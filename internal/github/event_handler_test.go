@@ -56,7 +56,7 @@ func TestEventHandler(t *testing.T) {
 				SenderUsername:     "leg100",
 				SenderAvatarURL:    "https://avatars.githubusercontent.com/u/75728?v=4",
 				SenderHTMLURL:      "https://github.com/leg100",
-				GithubAppInstallID: internal.Int64(42997659),
+				GithubAppInstallID: internal.Ptr[int64](42997659),
 			},
 			false,
 		},

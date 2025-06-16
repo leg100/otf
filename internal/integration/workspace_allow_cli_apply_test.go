@@ -26,7 +26,7 @@ func TestIntegration_AllowCLIApply(t *testing.T) {
 
 	vcsProvider := daemon.createVCSProvider(t, ctx, org, nil)
 	ws, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
-		Name:         internal.String("connected-workspace"),
+		Name:         internal.Ptr("connected-workspace"),
 		Organization: &org.Name,
 		ConnectOptions: &workspace.ConnectOptions{
 			RepoPath:      &repo,
@@ -44,7 +44,7 @@ func TestIntegration_AllowCLIApply(t *testing.T) {
 
 	_, err = daemon.Workspaces.Update(ctx, ws.ID, workspace.UpdateOptions{
 		ConnectOptions: &workspace.ConnectOptions{
-			AllowCLIApply: internal.Bool(true),
+			AllowCLIApply: internal.Ptr(true),
 		},
 	})
 	require.NoError(t, err)

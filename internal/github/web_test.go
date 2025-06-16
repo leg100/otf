@@ -36,7 +36,7 @@ func TestWebHandlers_get(t *testing.T) {
 		svc: &fakeService{
 			app: &App{},
 			installs: []vcs.Installation{
-				{ID: 123, Username: internal.String("bob")},
+				{ID: 123, Username: internal.Ptr("bob")},
 			},
 		},
 	}
@@ -54,7 +54,7 @@ func TestWebHandlers_exchangeCode(t *testing.T) {
 		mux := http.NewServeMux()
 		mux.HandleFunc("/api/v3/app-manifests/the-code/conversions", func(w http.ResponseWriter, r *http.Request) {
 			out, err := json.Marshal(&github.AppConfig{
-				Slug:  internal.String("my-otf-app"),
+				Slug:  internal.Ptr("my-otf-app"),
 				Owner: &github.User{},
 			})
 			require.NoError(t, err)

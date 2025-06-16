@@ -53,9 +53,9 @@ func Error(w http.ResponseWriter, err error, opts ...ErrorOption) {
 		var missing *internal.ErrMissingParameter
 		if errors.As(err, &missing) {
 			// report missing parameter errors as a 422
-			jsonapiError.Status = internal.Int(http.StatusUnprocessableEntity)
+			jsonapiError.Status = internal.Ptr(http.StatusUnprocessableEntity)
 		} else {
-			jsonapiError.Status = internal.Int(lookupHTTPCode(err))
+			jsonapiError.Status = internal.Ptr(lookupHTTPCode(err))
 		}
 	}
 	jsonapiError.Title = http.StatusText(*jsonapiError.Status)

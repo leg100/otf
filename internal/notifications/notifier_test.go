@@ -31,29 +31,29 @@ func TestNotifier_handleRun(t *testing.T) {
 		WorkspaceID: ws1,
 	}}
 	disabledConfig := &Config{
-		URL:         internal.String(""),
+		URL:         internal.Ptr(""),
 		WorkspaceID: ws1,
 		Triggers:    []Trigger{TriggerPlanning},
 	}
 	enabledConfig := &Config{
-		URL:         internal.String(""),
+		URL:         internal.Ptr(""),
 		WorkspaceID: ws1,
 		Enabled:     true,
 		Triggers:    []Trigger{TriggerPlanning},
 	}
 	configWithNoTriggers := &Config{
-		URL:         internal.String(""),
+		URL:         internal.Ptr(""),
 		Enabled:     true,
 		WorkspaceID: ws1,
 	}
 	configWithDifferentTriggers := &Config{
-		URL:         internal.String(""),
+		URL:         internal.Ptr(""),
 		Enabled:     true,
 		WorkspaceID: ws1,
 		Triggers:    []Trigger{TriggerApplying},
 	}
 	configForDifferentWorkspace := &Config{
-		URL:         internal.String(""),
+		URL:         internal.Ptr(""),
 		WorkspaceID: ws2,
 		Enabled:     true,
 		Triggers:    []Trigger{TriggerPlanning},

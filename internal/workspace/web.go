@@ -491,7 +491,7 @@ func (h *webHandlers) updateWorkspace(w http.ResponseWriter, r *http.Request) {
 		}
 		switch params.VCSTriggerStrategy {
 		case VCSTriggerAlways:
-			opts.AlwaysTrigger = internal.Bool(true)
+			opts.AlwaysTrigger = internal.Ptr(true)
 		case VCSTriggerPatterns:
 			err := json.Unmarshal([]byte(params.TriggerPatternsJSON), &opts.TriggerPatterns)
 			if err != nil {

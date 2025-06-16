@@ -74,7 +74,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 		for i := range 101 {
 			// create workspaces workspaces-{1-101}
 			ws, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
-				Name:         internal.String(fmt.Sprintf("workspace-%d", i+1)),
+				Name:         internal.Ptr(fmt.Sprintf("workspace-%d", i+1)),
 				Organization: &org.Name,
 			})
 			require.NoError(t, err)

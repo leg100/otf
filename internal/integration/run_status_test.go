@@ -22,9 +22,9 @@ func TestIntegration_RunStatus(t *testing.T) {
 	// Create a workspace with auto-apply enabled
 	daemon, org, ctx := setup(t)
 	ws, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
-		Name:         internal.String(t.Name()),
+		Name:         internal.Ptr(t.Name()),
 		Organization: &org.Name,
-		AutoApply:    internal.Bool(true),
+		AutoApply:    internal.Ptr(true),
 	})
 	require.NoError(t, err)
 

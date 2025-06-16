@@ -113,11 +113,11 @@ func TestIntegration_VCSProviderAppUI(t *testing.T) {
 	// create github stub server and return its hostname.
 	githubHostname := func(t *testing.T) string {
 		install := &gogithub.Installation{
-			ID:    internal.Int64(123),
-			AppID: internal.Int64(456),
+			ID:    internal.Ptr[int64](123),
+			AppID: internal.Ptr[int64](456),
 			Account: &gogithub.User{
-				Login: internal.String("leg100"),
-				Type:  internal.String("User"),
+				Login: internal.Ptr("leg100"),
+				Type:  internal.Ptr("User"),
 			},
 		}
 		mux := http.NewServeMux()
@@ -135,7 +135,7 @@ func TestIntegration_VCSProviderAppUI(t *testing.T) {
 		})
 		mux.HandleFunc("/api/v3/installation/repositories", func(w http.ResponseWriter, r *http.Request) {
 			out, err := json.Marshal(&gogithub.ListRepositories{
-				Repositories: []*gogithub.Repository{{FullName: internal.String("leg100/otf-workspaces")}},
+				Repositories: []*gogithub.Repository{{FullName: internal.Ptr("leg100/otf-workspaces")}},
 			})
 			require.NoError(t, err)
 			w.Header().Add("Content-Type", "application/json")

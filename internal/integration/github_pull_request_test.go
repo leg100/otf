@@ -28,12 +28,12 @@ func TestGithubPullRequest(t *testing.T) {
 
 	provider := daemon.createVCSProvider(t, ctx, org, nil)
 	ws, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
-		Name:            internal.String("dev"),
+		Name:            internal.Ptr("dev"),
 		Organization:    &org.Name,
 		TriggerPatterns: []string{"/foo/**/*.tf"},
 		ConnectOptions: &workspace.ConnectOptions{
 			VCSProviderID: &provider.ID,
-			RepoPath:      vcs.RepoPtr(vcs.NewMustRepo("leg100", "otf-workspaces")),
+			RepoPath:      internal.Ptr(vcs.NewMustRepo("leg100", "otf-workspaces")),
 		},
 	})
 	require.NoError(t, err)
