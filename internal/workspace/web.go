@@ -642,7 +642,7 @@ func (h *webHandlers) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Reque
 func (h *webHandlers) connect(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		WorkspaceID   resource.TfeID  `schema:"workspace_id,required"`
-		RepoPath      *string         `schema:"identifier,required"`
+		RepoPath      *vcs.Repo       `schema:"identifier,required"`
 		VCSProviderID *resource.TfeID `schema:"vcs_provider_id,required"`
 	}
 	if err := decode.All(&params, r); err != nil {

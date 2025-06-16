@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/leg100/otf/internal/configversion"
+	"github.com/leg100/otf/internal/configversion/source"
 	"github.com/leg100/otf/internal/resource"
 )
 
@@ -53,11 +53,11 @@ type (
 		// event.
 		VCSProviderID resource.TfeID
 		// Source of vcs provider kind that generated this event.
-		Source configversion.Source
+		Source source.Source
 	}
 
 	EventPayload struct {
-		RepoPath      string
+		Repo          Repo
 		Type          EventType
 		Action        Action
 		Tag           string
@@ -89,12 +89,6 @@ func (e EventPayload) Validate() error {
 	}
 	if e.Action == "" {
 		return errors.New("event missing event action")
-	}
-	switch e.Type {
-	case EventTypePush, EventTypePull, EventTypeTag:
-		if e.RepoPath == "" {
-			return errors.New("event missing repo path")
-		}
 	}
 	return nil
 }

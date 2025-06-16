@@ -6,6 +6,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/module"
+	"github.com/leg100/otf/internal/vcs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -25,13 +26,13 @@ func TestModule(t *testing.T) {
 	})
 
 	t.Run("create connected module", func(t *testing.T) {
-		svc, org, ctx := setup(t, withGithubOption(github.WithRepo("leg100/terraform-aws-stuff")))
+		svc, org, ctx := setup(t, withGithubOption(github.WithRepo(vcs.NewMustRepo("leg100", "terraform-aws-stuff"))))
 
 		vcsprov := svc.createVCSProvider(t, ctx, org, nil)
 
 		mod, err := svc.Modules.PublishModule(ctx, module.PublishOptions{
 			VCSProviderID: vcsprov.ID,
-			Repo:          module.Repo("leg100/terraform-aws-stuff"),
+			Repo:          module.Repo(vcs.NewMustRepo("leg100", "terraform-aws-stuff")),
 		})
 		require.NoError(t, err)
 

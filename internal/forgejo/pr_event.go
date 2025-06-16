@@ -42,7 +42,13 @@ func handlePullRequestEvent(b []byte) (*vcs.EventPayload, error) {
 
 	// convert forgejo PR event to an OTF event
 	to := vcs.EventPayload{Type: vcs.EventTypePull}
-	to.RepoPath = event.Repository.FullName
+
+	repo, err := vcs.NewRepo(event.Repository.Owner.UserName, event.Repository.Name)
+	if err != nil {
+		return nil, err
+	}
+	to.Repo = repo
+
 	to.Branch = event.PullRequest.Head.Name
 	to.CommitSHA = event.CommitID
 	if to.CommitSHA == "" && event.PullRequest.Head != nil {

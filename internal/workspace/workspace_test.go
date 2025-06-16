@@ -10,6 +10,7 @@ import (
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/leg100/otf/internal/user"
+	"github.com/leg100/otf/internal/vcs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -116,7 +117,7 @@ func TestNewWorkspace(t *testing.T) {
 				Name:         internal.String("my-workspace"),
 				Organization: &org1,
 				ConnectOptions: &ConnectOptions{
-					RepoPath:      internal.String("leg100/otf"),
+					RepoPath:      vcs.RepoPtr(vcs.NewMustRepo("leg100", "otf")),
 					VCSProviderID: &vcsProviderID,
 					TagsRegex:     internal.String("{**"),
 				},
@@ -241,7 +242,7 @@ func TestWorkspace_UpdateError(t *testing.T) {
 			opts: UpdateOptions{
 				Name: internal.String("my-workspace"),
 				ConnectOptions: &ConnectOptions{
-					RepoPath:      internal.String("leg100/otf"),
+					RepoPath:      vcs.RepoPtr(vcs.NewMustRepo("leg100", "otf")),
 					VCSProviderID: &vcsProviderID,
 					TagsRegex:     internal.String("{**"),
 				},
@@ -383,7 +384,7 @@ func TestWorkspace_UpdateConnection(t *testing.T) {
 			opts: UpdateOptions{
 				Name: internal.String("my-workspace"),
 				ConnectOptions: &ConnectOptions{
-					RepoPath:      internal.String("leg100/otf"),
+					RepoPath:      vcs.RepoPtr(vcs.NewMustRepo("leg100", "otf")),
 					VCSProviderID: &vcsProviderID,
 				},
 			},
@@ -408,14 +409,14 @@ func TestWorkspace_UpdateConnection(t *testing.T) {
 				Name:         "dev",
 				Organization: org1,
 				Connection: &Connection{
-					Repo:          "leg100/otf",
+					Repo:          vcs.NewMustRepo("leg100", "otf"),
 					VCSProviderID: testutils.ParseID(t, "vcs-123"),
 				},
 			},
 			opts: UpdateOptions{
 				Name: internal.String("my-workspace"),
 				ConnectOptions: &ConnectOptions{
-					RepoPath: internal.String("leg100/otf-demo"),
+					RepoPath: vcs.RepoPtr(vcs.NewMustRepo("leg100", "otf-demo")),
 				},
 			},
 		},

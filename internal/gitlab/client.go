@@ -97,7 +97,7 @@ func (g *Client) GetDefaultBranch(ctx context.Context, identifier string) (strin
 	return proj.DefaultBranch, nil
 }
 
-func (g *Client) ListRepositories(ctx context.Context, lopts vcs.ListRepositoriesOptions) ([]string, error) {
+func (g *Client) ListRepositories(ctx context.Context, lopts vcs.ListRepositoriesOptions) ([]vcs.Repo, error) {
 	opts := &gitlab.ListProjectsOptions{
 		ListOptions: gitlab.ListOptions{
 			PerPage: lopts.PageSize,
@@ -111,9 +111,9 @@ func (g *Client) ListRepositories(ctx context.Context, lopts vcs.ListRepositorie
 		return nil, err
 	}
 
-	repos := make([]string, len(projects))
+	repos := make([]vcs.Repo, len(projects))
 	for i, proj := range projects {
-		repos[i] = proj.PathWithNamespace
+		repos[i] = vcs.NewMustRepo(proj.Namespace.Path, proj.Path)
 	}
 	return repos, nil
 }
@@ -134,12 +134,7 @@ func (g *Client) ListTags(ctx context.Context, opts vcs.ListTagsOptions) ([]stri
 }
 
 func (g *Client) GetRepoTarball(ctx context.Context, opts vcs.GetRepoTarballOptions) ([]byte, string, error) {
-	owner, name, found := strings.Cut(opts.Repo, "/")
-	if !found {
-		return nil, "", fmt.Errorf("malformed identifier: %s", opts.Repo)
-	}
-
-	tarball, _, err := g.client.Repositories.Archive(opts.Repo, &gitlab.ArchiveOptions{
+	tarball, _, err := g.client.Repositories.Archive(opts.Repo.String(), &gitlab.ArchiveOptions{
 		Format: internal.String("tar.gz"),
 		SHA:    opts.Ref,
 	})
@@ -150,7 +145,7 @@ func (g *Client) GetRepoTarball(ctx context.Context, opts vcs.GetRepoTarballOpti
 	// Gitlab tarball contents are contained within a top-level directory
 	// formatted <ref>-<sha>. We want the tarball without this directory,
 	// so we re-tar the contents without the top-level directory.
-	untarpath, err := os.MkdirTemp("", fmt.Sprintf("gitlab-%s-%s-*", owner, name))
+	untarpath, err := os.MkdirTemp("", fmt.Sprintf("gitlab-%s-%s-*", opts.Repo.Owner(), opts.Repo.Name()))
 	if err != nil {
 		return nil, "", err
 	}
@@ -194,7 +189,7 @@ func (g *Client) CreateWebhook(ctx context.Context, opts vcs.CreateWebhookOption
 		}
 	}
 
-	hook, _, err := g.client.Projects.AddProjectHook(opts.Repo, addOpts)
+	hook, _, err := g.client.Projects.AddProjectHook(opts.Repo.String(), addOpts)
 	if err != nil {
 		return "", err
 	}
@@ -221,7 +216,7 @@ func (g *Client) UpdateWebhook(ctx context.Context, id string, opts vcs.UpdateWe
 		}
 	}
 
-	_, _, err = g.client.Projects.EditProjectHook(opts.Repo, intID, editOpts)
+	_, _, err = g.client.Projects.EditProjectHook(opts.Repo.String(), intID, editOpts)
 	if err != nil {
 		return err
 	}
@@ -234,7 +229,7 @@ func (g *Client) GetWebhook(ctx context.Context, opts vcs.GetWebhookOptions) (vc
 		return vcs.Webhook{}, err
 	}
 
-	hook, resp, err := g.client.Projects.GetProjectHook(opts.Repo, id)
+	hook, resp, err := g.client.Projects.GetProjectHook(opts.Repo.String(), id)
 	if err != nil {
 		if resp.StatusCode == http.StatusNotFound {
 			return vcs.Webhook{}, internal.ErrResourceNotFound
@@ -264,7 +259,7 @@ func (g *Client) DeleteWebhook(ctx context.Context, opts vcs.DeleteWebhookOption
 		return err
 	}
 
-	_, err = g.client.Projects.DeleteProjectHook(opts.Repo, id)
+	_, err = g.client.Projects.DeleteProjectHook(opts.Repo.String(), id)
 	return err
 }
 
@@ -273,8 +268,8 @@ func (g *Client) SetStatus(ctx context.Context, opts vcs.SetStatusOptions) error
 	return nil
 }
 
-func (g *Client) ListPullRequestFiles(ctx context.Context, repo string, pull int) ([]string, error) {
-	diffs, _, err := g.client.MergeRequests.ListMergeRequestDiffs(repo, pull, &gitlab.ListMergeRequestDiffsOptions{})
+func (g *Client) ListPullRequestFiles(ctx context.Context, repo vcs.Repo, pull int) ([]string, error) {
+	diffs, _, err := g.client.MergeRequests.ListMergeRequestDiffs(repo.String(), pull, &gitlab.ListMergeRequestDiffsOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -288,8 +283,8 @@ func (g *Client) ListPullRequestFiles(ctx context.Context, repo string, pull int
 	return slices.Compact(changed), nil
 }
 
-func (g *Client) GetCommit(ctx context.Context, repo, ref string) (vcs.Commit, error) {
-	commit, _, err := g.client.Commits.GetCommit(repo, ref, &gitlab.GetCommitOptions{})
+func (g *Client) GetCommit(ctx context.Context, repo vcs.Repo, ref string) (vcs.Commit, error) {
+	commit, _, err := g.client.Commits.GetCommit(repo.String(), ref, &gitlab.GetCommitOptions{})
 	if err != nil {
 		return vcs.Commit{}, err
 	}

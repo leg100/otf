@@ -7,7 +7,7 @@ import (
 	"sync"
 
 	"github.com/a-h/templ"
-	"github.com/leg100/otf/internal/configversion"
+	"github.com/leg100/otf/internal/configversion/source"
 	"golang.org/x/exp/maps"
 )
 
@@ -51,15 +51,14 @@ type Kind struct {
 	// Source sets the source identifier for this kind, to inform users which
 	// kind is the source of a run configuration. By default the ID is used as
 	// the source identifier but Source takes precedence if it is non-nil.
-	Source *configversion.Source
+	Source *source.Source
 }
 
-func (k Kind) GetSource() configversion.Source {
+func (k Kind) GetSource() source.Source {
 	if k.Source != nil {
 		return *k.Source
 	}
-	return configversion.Source(k.ID)
-
+	return source.Source(k.ID)
 }
 
 type TokenKind struct {
@@ -82,17 +81,21 @@ type App interface {
 	InstallationLink() templ.SafeURL
 }
 
+type SourceIconRegistrar interface {
+	RegisterSourceIcon(source source.Source, icon templ.Component)
+}
+
 // kindDB is a database of vcs provider kinds
 type kindDB struct {
 	mu            sync.Mutex
 	kinds         map[KindID]Kind
-	configService *configversion.Service
+	iconRegistrar SourceIconRegistrar
 }
 
-func newKindDB(configService *configversion.Service) *kindDB {
+func newKindDB(registrar SourceIconRegistrar) *kindDB {
 	return &kindDB{
 		kinds:         make(map[KindID]Kind),
-		configService: configService,
+		iconRegistrar: registrar,
 	}
 }
 
@@ -103,7 +106,7 @@ func (db *kindDB) RegisterKind(kind Kind) {
 	db.kinds[kind.ID] = kind
 	// Also register its icon to be rendered on the UI next to runs triggered
 	// by this kind.
-	db.configService.RegisterSourceIcon(kind.GetSource(), triggerIcon(kind.GetSource(), kind.Icon))
+	db.iconRegistrar.RegisterSourceIcon(kind.GetSource(), triggerIcon(kind.GetSource(), kind.Icon))
 }
 
 func (db *kindDB) GetKind(id KindID) (Kind, error) {

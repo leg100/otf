@@ -45,7 +45,7 @@ func TestEventHandler(t *testing.T) {
 			sig:       genSigForFile("./testdata/test_delivery.json", secret),
 			want: &vcs.EventPayload{
 				Type:            vcs.EventTypePush,
-				RepoPath:        "tf/thing",
+				Repo:            vcs.NewMustRepo("tf", "thing"),
 				Branch:          "main",
 				DefaultBranch:   "main",
 				CommitSHA:       "671b42120e88955bc8d3f76a3fc18f63a8ecd90e",
@@ -65,7 +65,7 @@ func TestEventHandler(t *testing.T) {
 			sig:       genSigForFile("./testdata/add_tag.json", secret),
 			want: &vcs.EventPayload{
 				Type:            vcs.EventTypeTag,
-				RepoPath:        "tf/thing",
+				Repo:            vcs.NewMustRepo("tf", "thing"),
 				Tag:             "test",
 				DefaultBranch:   "main",
 				CommitSHA:       "671b42120e88955bc8d3f76a3fc18f63a8ecd90e",
@@ -85,7 +85,7 @@ func TestEventHandler(t *testing.T) {
 			sig:       genSigForFile("./testdata/delete_tag.json", secret),
 			want: &vcs.EventPayload{
 				Type:            vcs.EventTypeTag,
-				RepoPath:        "tf/thing",
+				Repo:            vcs.NewMustRepo("tf", "thing"),
 				Tag:             "test",
 				DefaultBranch:   "main",
 				CommitSHA:       "671b42120e88955bc8d3f76a3fc18f63a8ecd90e",
@@ -105,7 +105,7 @@ func TestEventHandler(t *testing.T) {
 			sig:       genSigForFile("./testdata/pr_opened.json", secret),
 			want: &vcs.EventPayload{
 				Type:              vcs.EventTypePull,
-				RepoPath:          "tf/thing",
+				Repo:              vcs.NewMustRepo("tf", "thing"),
 				PullRequestTitle:  "test",
 				PullRequestNumber: 64,
 				PullRequestURL:    "https://forgejo.example.com/tf/thing/pulls/64",
@@ -135,7 +135,7 @@ func TestEventHandler(t *testing.T) {
 			sig:       genSigForFile("./testdata/pr_closed.json", secret),
 			want: &vcs.EventPayload{
 				Type:              vcs.EventTypePull,
-				RepoPath:          "tf/thing",
+				Repo:              vcs.NewMustRepo("tf", "thing"),
 				PullRequestTitle:  "test",
 				PullRequestNumber: 64,
 				PullRequestURL:    "https://forgejo.example.com/tf/thing/pulls/64",
@@ -158,7 +158,7 @@ func TestEventHandler(t *testing.T) {
 			sig:       genSigForFile("./testdata/pr_merged.json", secret),
 			want: &vcs.EventPayload{
 				Type:              vcs.EventTypePull,
-				RepoPath:          "tf/thing",
+				Repo:              vcs.NewMustRepo("tf", "thing"),
 				PullRequestTitle:  "test",
 				PullRequestNumber: 64,
 				PullRequestURL:    "https://forgejo.example.com/tf/thing/pulls/64",

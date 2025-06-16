@@ -47,7 +47,7 @@ templ selectVCSProviderAction(vcsProviderID resource.TfeID) {
 }
 
 type connectProps struct {
-	repos    []string
+	repos    []vcs.Repo
 	provider *vcs.Provider
 }
 
@@ -86,10 +86,10 @@ type repoSelector struct {
 	provider *vcs.Provider
 }
 
-templ (s repoSelector) action(repo string) {
+templ (s repoSelector) action(repo vcs.Repo) {
 	<form action={ paths.CreateModule(s.provider.Organization) } method="POST">
 		<input type="hidden" name="vcs_provider_id" value={ s.provider.ID.String() }/>
-		<input type="hidden" name="identifier" id="identifier" value={ repo }/>
+		<input type="hidden" name="identifier" id="identifier" value={ repo.String() }/>
 		<button class="btn">Connect</button>
 	</form>
 }
@@ -209,7 +209,7 @@ templ get(props getProps) {
 						</form>
 						if props.module.Connection != nil {
 							<div>
-								Source <span class="bg-base-300" id="vcs-repo">{ props.module.Connection.Repo }</span>
+								Source <span class="bg-base-300" id="vcs-repo">{ props.module.Connection.Repo.String() }</span>
 							</div>
 						}
 					</div>

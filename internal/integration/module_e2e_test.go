@@ -21,7 +21,7 @@ func TestModuleE2E(t *testing.T) {
 
 	// create an otf daemon with a fake github backend, ready to serve up a repo
 	// and its contents via tarball.
-	repo := vcs.NewTestModuleRepo("aws", "mod")
+	repo := vcs.NewRandomModuleRepo("aws", "mod")
 	svc, org, ctx := setup(t, withGithubOptions(
 		github.WithRepo(repo),
 		github.WithRefs("tags/v0.0.1", "tags/v0.0.2", "tags/v0.1.0"),
@@ -54,7 +54,7 @@ func TestModuleE2E(t *testing.T) {
 		screenshot(t, page, "modules_select_repo")
 
 		// connect to first repo in list (there should only be one)
-		err = page.Locator(`//tr[@id='item-repo-` + repo + `']//button[text()='Connect']`).Click()
+		err = page.Locator(`//tr[@id='item-repo-` + repo.String() + `']//button[text()='Connect']`).Click()
 		require.NoError(t, err)
 
 		// flash message indicates success
@@ -86,7 +86,7 @@ func TestModuleE2E(t *testing.T) {
 
 	// generate and send push tag event for v1.0.0
 	pushTpl := testutils.ReadFile(t, "fixtures/github_push_tag.json")
-	push := fmt.Sprintf(string(pushTpl), "v1.0.0", repo)
+	push := fmt.Sprintf(string(pushTpl), "v1.0.0", repo.Name(), repo.Owner())
 	svc.SendEvent(t, github.PushEvent, []byte(push))
 
 	workspaceName := "module-test"

@@ -1,5 +1,7 @@
 package connections
 
+import "github.com/leg100/otf/internal/vcs"
+
 type Step int
 
 // steps for connecting a workspace to repo
@@ -16,7 +18,7 @@ templ Steps(current Step) {
 }
 
 type ReposTable struct {
-	Actions func(repo string) templ.Component
+	Actions func(repo vcs.Repo) templ.Component
 }
 
 templ (t ReposTable) Header() {
@@ -24,10 +26,10 @@ templ (t ReposTable) Header() {
 	<th>Action</th>
 }
 
-templ (t ReposTable) Row(repo string) {
-	<tr id={ "item-repo-" + repo }>
+templ (t ReposTable) Row(repo vcs.Repo) {
+	<tr id={ "item-repo-" + repo.String() }>
 		<td>
-			{ repo }
+			{ repo.String() }
 		</td>
 		<td>
 			@t.Actions(repo)

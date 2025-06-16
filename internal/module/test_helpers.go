@@ -59,11 +59,11 @@ func (f *fakeService) Hostname() string {
 }
 
 type fakeModulesCloudClient struct {
-	repos []string
+	repos []vcs.Repo
 
 	vcs.Client
 }
 
-func (f *fakeModulesCloudClient) ListRepositories(ctx context.Context, opts vcs.ListRepositoriesOptions) ([]string, error) {
+func (f *fakeModulesCloudClient) ListRepositories(ctx context.Context, opts vcs.ListRepositoriesOptions) ([]vcs.Repo, error) {
 	return f.repos, nil
 }

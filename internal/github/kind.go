@@ -3,14 +3,14 @@ package github
 import (
 	"context"
 
-	"github.com/leg100/otf/internal/configversion"
+	"github.com/leg100/otf/internal/configversion/source"
 	"github.com/leg100/otf/internal/vcs"
 )
 
 const (
-	TokenKindID vcs.KindID           = "github-token"
-	AppKindID   vcs.KindID           = "github-app"
-	Source      configversion.Source = "github"
+	TokenKindID vcs.KindID    = "github-token"
+	AppKindID   vcs.KindID    = "github-app"
+	Source      source.Source = "github"
 )
 
 type kindProvider struct {
@@ -40,7 +40,7 @@ func registerVCSKinds(
 		NewClient: provider.NewClient,
 		// Github apps don't need webhooks on repositories.
 		SkipRepohook: true,
-		Source:       configversion.Ptr(Source),
+		Source:       source.Ptr(Source),
 	})
 	vcsService.RegisterKind(vcs.Kind{
 		ID:       TokenKindID,
@@ -53,7 +53,7 @@ func registerVCSKinds(
 		EventHandler: HandleEvent,
 		// Github token kind vcs providers can be created via the TFE API.
 		TFEServiceProvider: vcs.ServiceProviderGithub,
-		Source:             configversion.Ptr(Source),
+		Source:             source.Ptr(Source),
 	})
 }
 

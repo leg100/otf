@@ -28,15 +28,16 @@ func (p *publisher) handle(event vcs.Event) {
 		"action", event.Action,
 		"branch", event.Branch,
 		"tag", event.Tag,
+		"repo", event.Repo,
 	)
 
-	if err := p.handleWithError(logger, event); err != nil {
-		p.Error(err, "handling event")
+	if err := p.handleWithError(event); err != nil {
+		logger.Error(err, "handling event")
 	}
 }
 
 // handlerWithError publishes a module version in response to a vcs event.
-func (p *publisher) handleWithError(logger logr.Logger, event vcs.Event) error {
+func (p *publisher) handleWithError(event vcs.Event) error {
 	// no parent context; handler is called asynchronously
 	ctx := context.Background()
 	// give spawner unlimited powers
@@ -55,16 +56,16 @@ func (p *publisher) handleWithError(logger logr.Logger, event vcs.Event) error {
 	}
 	// TODO: we're only retrieving *one* module, but can not *multiple* modules
 	// be connected to a repo?
-	module, err := p.modules.GetModuleByConnection(ctx, event.VCSProviderID, event.RepoPath)
+	module, err := p.modules.GetModuleByConnection(ctx, event.VCSProviderID, event.Repo)
 	if err != nil {
-		return err
+		return fmt.Errorf("retrieving module: %w", err)
 	}
 	if module.Connection == nil {
 		return fmt.Errorf("module is not connected to a repo: %s", module.ID)
 	}
 	client, err := p.vcsproviders.Get(ctx, module.Connection.VCSProviderID)
 	if err != nil {
-		return err
+		return fmt.Errorf("retrieving vcs provider: %w", err)
 	}
 	return p.modules.PublishVersion(ctx, PublishVersionOptions{
 		ModuleID: module.ID,

@@ -7,6 +7,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/configversion"
+	"github.com/leg100/otf/internal/configversion/source"
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
@@ -79,7 +80,7 @@ func (r *Reporter) Start(ctx context.Context) error {
 
 func (r *Reporter) handleRun(ctx context.Context, event *Event) error {
 	// Skip runs triggered via the UI or API
-	if event.Source == configversion.SourceUI || event.Source == configversion.SourceAPI {
+	if event.Source == source.UI || event.Source == source.API {
 		return nil
 	}
 

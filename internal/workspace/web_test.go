@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/antchfx/htmlquery"
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/http/html/paths"
@@ -113,9 +112,10 @@ func TestWorkspace_GetByName(t *testing.T) {
 func TestEditWorkspaceHandler(t *testing.T) {
 	ws1 := NewTestWorkspace(t, nil)
 	vcsProviderID := resource.NewTfeID(resource.VCSProviderKind)
+	repo := vcs.NewMustRepo("leg100", "terraform")
 	wsConnected := NewTestWorkspace(t, &CreateOptions{
 		ConnectOptions: &ConnectOptions{
-			RepoPath:      internal.String("leg100/otf"),
+			RepoPath:      &repo,
 			VCSProviderID: &vcsProviderID,
 		},
 	})
@@ -395,12 +395,12 @@ func TestListWorkspaceReposHandler(t *testing.T) {
 		vcsproviders: &fakeVCSProviderService{
 			provider: &vcs.Provider{
 				Client: &fakeVCSClient{
-					repos: []string{
-						vcs.NewTestRepo(),
-						vcs.NewTestRepo(),
-						vcs.NewTestRepo(),
-						vcs.NewTestRepo(),
-						vcs.NewTestRepo(),
+					repos: []vcs.Repo{
+						vcs.NewRandomRepo(),
+						vcs.NewRandomRepo(),
+						vcs.NewRandomRepo(),
+						vcs.NewRandomRepo(),
+						vcs.NewRandomRepo(),
 					},
 				},
 			},

@@ -7,7 +7,7 @@ import (
 type (
 	Client interface {
 		// ListRepositories lists repositories accessible to the current user.
-		ListRepositories(ctx context.Context, opts ListRepositoriesOptions) ([]string, error)
+		ListRepositories(ctx context.Context, opts ListRepositoriesOptions) ([]Repo, error)
 		GetDefaultBranch(ctx context.Context, identifier string) (string, error)
 		// GetRepoTarball retrieves a .tar.gz tarball of a git repository
 		GetRepoTarball(ctx context.Context, opts GetRepoTarballOptions) ([]byte, string, error)
@@ -22,9 +22,9 @@ type (
 		// 'tags/'.
 		ListTags(ctx context.Context, opts ListTagsOptions) ([]string, error)
 		// ListPullRequestFiles returns the paths of files that are modified in the pull request
-		ListPullRequestFiles(ctx context.Context, repo string, pull int) ([]string, error)
+		ListPullRequestFiles(ctx context.Context, repo Repo, pull int) ([]string, error)
 		// GetCommit retrieves commit from the repo with the given git ref
-		GetCommit(ctx context.Context, repo, ref string) (Commit, error)
+		GetCommit(ctx context.Context, repo Repo, ref string) (Commit, error)
 	}
 
 	// NewTokenClientOptions are options for creating a client using a personal
@@ -36,7 +36,7 @@ type (
 	}
 
 	GetRepoTarballOptions struct {
-		Repo string  // repo identifier, <owner>/<repo>
+		Repo Repo    // repo identifier, <owner>/<repo>
 		Ref  *string // branch/tag/SHA ref, nil means default branch
 	}
 
@@ -46,20 +46,20 @@ type (
 
 	// ListTagsOptions are options for listing tags on a vcs repository
 	ListTagsOptions struct {
-		Repo   string // repo identifier, <owner>/<repo>
+		Repo   Repo   // repo identifier, <owner>/<repo>
 		Prefix string // only list tags that start with this string
 	}
 
 	// Webhook is a cloud's configuration for a webhook.
 	Webhook struct {
 		ID       string // cloud's webhook ID
-		Repo     string // identifier is <repo_owner>/<repo_name>
+		Repo     Repo   // identifier is <repo_owner>/<repo_name>
 		Events   []EventType
 		Endpoint string // the OTF URL that receives events
 	}
 
 	CreateWebhookOptions struct {
-		Repo     string // repo identifier, <owner>/<repo>
+		Repo     Repo   // repo identifier, <owner>/<repo>
 		Secret   string // secret string for generating signature
 		Endpoint string // otf's external-facing host[:port]
 		Events   []EventType
@@ -69,20 +69,20 @@ type (
 
 	// GetWebhookOptions are options for retrieving a webhook.
 	GetWebhookOptions struct {
-		Repo string // Repository identifier, <owner>/<repo>
+		Repo Repo   // Repository identifier, <owner>/<repo>
 		ID   string // vcs' webhook ID
 	}
 
 	// DeleteWebhookOptions are options for deleting a webhook.
 	DeleteWebhookOptions struct {
-		Repo string // Repository identifier, <owner>/<repo>
+		Repo Repo   // Repository identifier, <owner>/<repo>
 		ID   string // vcs' webhook ID
 	}
 
 	// SetStatusOptions are options for setting a status on a VCS repo
 	SetStatusOptions struct {
 		Workspace   string // workspace name
-		Repo        string // <owner>/<repo>
+		Repo        Repo   // <owner>/<repo>
 		Ref         string // git ref
 		Status      Status
 		TargetURL   string

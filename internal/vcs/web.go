@@ -159,10 +159,11 @@ func (h *webHandlers) delete(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, paths.VCSProviders(provider.Organization), http.StatusFound)
 }
 
-func RepoURL(provider *Provider, repo string) templ.SafeURL {
+func RepoURL(provider *Provider, repo Repo) templ.SafeURL {
 	b := urlbuilder.New("https", provider.Kind.Hostname)
-	for segment := range strings.SplitSeq(repo, "/") {
+	for segment := range strings.SplitSeq(repo.owner, "/") {
 		b.Path(segment)
 	}
+	b.Path(repo.name)
 	return b.Build()
 }

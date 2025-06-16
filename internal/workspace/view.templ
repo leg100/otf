@@ -248,7 +248,7 @@ templ get(props getProps) {
 								href={ vcs.RepoURL(props.vcsProvider, props.ws.Connection.Repo) }
 								title="Go to repo homepage"
 							>
-								{ props.ws.Connection.Repo }
+								{ props.ws.Connection.Repo.String() }
 							</a>
 							@components.ExternalIcon()
 						</div>
@@ -414,7 +414,7 @@ templ edit(props editProps) {
 			if props.ws.Connection != nil {
 				<form action={ paths.DisconnectWorkspace(props.ws.ID) } method="POST">
 					<button class="btn" id="disconnect-workspace-repo-button">
-						Disconnect from { props.ws.Connection.Repo } ({ props.vcsProvider.String() })
+						Disconnect from { props.ws.Connection.Repo.String() } ({ props.vcsProvider.String() })
 					</button>
 				</form>
 			} else {
@@ -777,7 +777,7 @@ templ (s vcsProviderSelector) action(vcsProviderID resource.TfeID) {
 	</form>
 }
 
-templ listVCSRepos(ws *Workspace, vcsProviderID resource.TfeID, repos []string) {
+templ listVCSRepos(ws *Workspace, vcsProviderID resource.TfeID, repos []vcs.Repo) {
 	{{
 	layoutProps := components.LayoutProps{
 		Title:        "list vcs repos | " + ws.ID.String(),
@@ -817,10 +817,10 @@ type repoSelector struct {
 	vcsProviderID resource.TfeID
 }
 
-templ (s repoSelector) action(repo string) {
+templ (s repoSelector) action(repo vcs.Repo) {
 	<form action={ paths.ConnectWorkspace(s.workspaceID) } method="POST">
 		<input type="hidden" name="vcs_provider_id" value={ s.vcsProviderID.String() }/>
-		<input type="hidden" name="identifier" id="identifier" value={ repo }/>
+		<input type="hidden" name="identifier" id="identifier" value={ repo.String() }/>
 		<button class="btn">Connect</button>
 	</form>
 }

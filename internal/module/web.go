@@ -198,7 +198,7 @@ func (h *webHandlers) connect(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	filtered := make([]string, 0, len(results))
+	filtered := make([]vcs.Repo, 0, len(results))
 	for _, res := range results {
 		_, _, err := Repo(res).Split()
 		if err == ErrInvalidModuleRepo {
@@ -220,7 +220,7 @@ func (h *webHandlers) connect(w http.ResponseWriter, r *http.Request) {
 func (h *webHandlers) publish(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		VCSProviderID resource.TfeID `schema:"vcs_provider_id,required"`
-		Repo          Repo           `schema:"identifier,required"`
+		Repo          vcs.Repo       `schema:"identifier,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -228,10 +228,10 @@ func (h *webHandlers) publish(w http.ResponseWriter, r *http.Request) {
 	}
 
 	module, err := h.client.PublishModule(r.Context(), PublishOptions{
-		Repo:          params.Repo,
+		Repo:          Repo(params.Repo),
 		VCSProviderID: params.VCSProviderID,
 	})
-	if err != nil && errors.Is(err, internal.ErrInvalidRepo) || errors.Is(err, ErrInvalidModuleRepo) {
+	if err != nil && errors.Is(err, vcs.ErrInvalidRepo) || errors.Is(err, ErrInvalidModuleRepo) {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	} else if err != nil {

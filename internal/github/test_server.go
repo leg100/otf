@@ -18,6 +18,7 @@ import (
 	"github.com/google/go-github/v65/github"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/user"
+	"github.com/leg100/otf/internal/vcs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
@@ -50,7 +51,7 @@ type (
 
 	testdb struct {
 		username      *user.Username
-		repo          *string
+		repo          *vcs.Repo
 		commit        *string
 		defaultBranch *string
 		tarball       []byte
@@ -124,14 +125,20 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) (*TestServer, *url.UR
 		})
 	}
 	srv.mux.HandleFunc("/api/v3/user/repos", func(w http.ResponseWriter, r *http.Request) {
-		repos := []*github.Repository{{FullName: srv.repo}}
+		repos := []*github.Repository{
+			{
+				Owner:         &github.User{Login: internal.String(srv.repo.Owner())},
+				Name:          internal.String(srv.repo.Name()),
+				DefaultBranch: srv.defaultBranch,
+			},
+		}
 		out, err := json.Marshal(repos)
 		require.NoError(t, err)
 		w.Header().Add("Content-Type", "application/json")
 		w.Write(out)
 	})
 	if srv.repo != nil {
-		srv.mux.HandleFunc("/api/v3/repos/"+*srv.repo+"/git/matching-refs/", func(w http.ResponseWriter, r *http.Request) {
+		srv.mux.HandleFunc("/api/v3/repos/"+srv.repo.String()+"/git/matching-refs/", func(w http.ResponseWriter, r *http.Request) {
 			var refs []*github.Reference
 			for _, ref := range srv.refs {
 				refs = append(refs, &github.Reference{Ref: internal.String(ref)})
@@ -141,19 +148,23 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) (*TestServer, *url.UR
 			w.Header().Add("Content-Type", "application/json")
 			w.Write(out)
 		})
-		srv.mux.HandleFunc("/api/v3/repos/"+*srv.repo, func(w http.ResponseWriter, r *http.Request) {
-			repo := &github.Repository{FullName: srv.repo, DefaultBranch: srv.defaultBranch}
+		srv.mux.HandleFunc("/api/v3/repos/"+srv.repo.String(), func(w http.ResponseWriter, r *http.Request) {
+			repo := &github.Repository{
+				Owner:         &github.User{Login: internal.String(srv.repo.Owner())},
+				Name:          internal.String(srv.repo.Name()),
+				DefaultBranch: srv.defaultBranch,
+			}
 			out, err := json.Marshal(repo)
 			require.NoError(t, err)
 			w.Header().Add("Content-Type", "application/json")
 			w.Write(out)
 		})
-		srv.mux.HandleFunc("/api/v3/repos/"+*srv.repo+"/tarball/", func(w http.ResponseWriter, r *http.Request) {
+		srv.mux.HandleFunc("/api/v3/repos/"+srv.repo.String()+"/tarball/", func(w http.ResponseWriter, r *http.Request) {
 			link := url.URL{Scheme: "https", Host: r.Host, Path: "/mytarball"}
 			http.Redirect(w, r, link.String(), http.StatusFound)
 		})
 		// https://docs.github.com/en/rest/webhooks/repos?apiVersion=2022-11-28#create-a-repository-webhook
-		srv.mux.HandleFunc("/api/v3/repos/"+*srv.repo+"/hooks", func(w http.ResponseWriter, r *http.Request) {
+		srv.mux.HandleFunc("/api/v3/repos/"+srv.repo.String()+"/hooks", func(w http.ResponseWriter, r *http.Request) {
 			var opts struct {
 				Events []string `json:"events"`
 				Config struct {
@@ -192,7 +203,7 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) (*TestServer, *url.UR
 		// https://docs.github.com/en/rest/webhooks/repos?apiVersion=2022-11-28#get-a-repository-webhook
 		// https://docs.github.com/en/rest/webhooks/repos?apiVersion=2022-11-28#update-a-repository-webhook
 		// https://docs.github.com/en/rest/webhooks/repos?apiVersion=2022-11-28#delete-a-repository-webhook
-		srv.mux.HandleFunc("/api/v3/repos/"+*srv.repo+"/hooks/123", func(w http.ResponseWriter, r *http.Request) {
+		srv.mux.HandleFunc("/api/v3/repos/"+srv.repo.String()+"/hooks/123", func(w http.ResponseWriter, r *http.Request) {
 			switch r.Method {
 			case "PATCH":
 				var opts struct {
@@ -244,7 +255,7 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) (*TestServer, *url.UR
 			}
 		})
 		// https://docs.github.com/en/rest/commits/statuses?apiVersion=2022-11-28#create-a-commit-status
-		srv.mux.HandleFunc("/api/v3/repos/"+*srv.repo+"/statuses/", func(w http.ResponseWriter, r *http.Request) {
+		srv.mux.HandleFunc("/api/v3/repos/"+srv.repo.String()+"/statuses/", func(w http.ResponseWriter, r *http.Request) {
 			var commit github.StatusEvent
 			if err := json.NewDecoder(r.Body).Decode(&commit); err != nil {
 				http.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -254,7 +265,7 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) (*TestServer, *url.UR
 			w.WriteHeader(http.StatusCreated)
 		})
 		// https://docs.github.com/en/rest/pulls/pulls?apiVersion=2022-11-28#list-pull-requests-files
-		srv.mux.HandleFunc("/api/v3/repos/"+*srv.repo+"/pulls/"+srv.pullNumber+"/files", func(w http.ResponseWriter, r *http.Request) {
+		srv.mux.HandleFunc("/api/v3/repos/"+srv.repo.String()+"/pulls/"+srv.pullNumber+"/files", func(w http.ResponseWriter, r *http.Request) {
 			var commits []*github.CommitFile
 			for _, f := range srv.pullFiles {
 				commits = append(commits, &github.CommitFile{
@@ -271,10 +282,10 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) (*TestServer, *url.UR
 		})
 		if srv.commit != nil {
 			// https://docs.github.com/en/rest/commits/commits?apiVersion=2022-11-28#get-a-commit
-			srv.mux.HandleFunc("/api/v3/repos/"+*srv.repo+"/commits/"+*srv.commit, func(w http.ResponseWriter, r *http.Request) {
+			srv.mux.HandleFunc("/api/v3/repos/"+srv.repo.String()+"/commits/"+*srv.commit, func(w http.ResponseWriter, r *http.Request) {
 				out, err := json.Marshal(&github.Commit{
 					SHA: internal.String(*srv.commit),
-					URL: internal.String(*srv.url + "/" + *srv.repo),
+					URL: internal.String(*srv.url + "/" + srv.repo.String()),
 					Author: &github.CommitAuthor{
 						Login: internal.String("leg100"),
 					},
@@ -321,7 +332,7 @@ func WithUsername(username user.Username) TestServerOption {
 	}
 }
 
-func WithRepo(repo string) TestServerOption {
+func WithRepo(repo vcs.Repo) TestServerOption {
 	return func(srv *TestServer) {
 		srv.repo = &repo
 	}

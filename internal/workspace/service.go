@@ -242,7 +242,7 @@ func (s *Service) List(ctx context.Context, opts ListOptions) (*resource.Page[*W
 	return s.db.list(ctx, opts)
 }
 
-func (s *Service) ListConnectedWorkspaces(ctx context.Context, vcsProviderID resource.TfeID, repoPath string) ([]*Workspace, error) {
+func (s *Service) ListConnectedWorkspaces(ctx context.Context, vcsProviderID resource.TfeID, repoPath vcs.Repo) ([]*Workspace, error) {
 	return s.db.listByConnection(ctx, vcsProviderID, repoPath)
 }
 

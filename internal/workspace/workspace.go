@@ -15,6 +15,7 @@ import (
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runstatus"
+	"github.com/leg100/otf/internal/vcs"
 )
 
 const (
@@ -79,7 +80,7 @@ type (
 		TagsRegex string
 
 		VCSProviderID resource.TfeID
-		Repo          string
+		Repo          vcs.Repo
 
 		// By default, once a workspace is connected to a repo it is not
 		// possible to run a terraform apply via the CLI. Setting this to true
@@ -88,7 +89,7 @@ type (
 	}
 
 	ConnectOptions struct {
-		RepoPath      *string
+		RepoPath      *vcs.Repo
 		VCSProviderID *resource.TfeID
 
 		Branch        *string

@@ -23,7 +23,7 @@ func TestEventHandler(t *testing.T) {
 			"./testdata/push.json",
 			&vcs.EventPayload{
 				Type:          vcs.EventTypePush,
-				RepoPath:      "mike/diaspora",
+				Repo:          vcs.NewMustRepo("mike", "diaspora"),
 				Branch:        "master",
 				DefaultBranch: "master",
 				CommitSHA:     "da1560886d4f094c3e6c9ef40349f7d38b5d27d7",
@@ -45,7 +45,7 @@ func TestEventHandler(t *testing.T) {
 			&vcs.EventPayload{
 				Type:              vcs.EventTypePull,
 				Action:            vcs.ActionCreated,
-				RepoPath:          "leg100/otf-workspaces",
+				Repo:              vcs.NewMustRepo("leg100", "otf-workspaces"),
 				Branch:            "pr-1",
 				DefaultBranch:     "master",
 				CommitSHA:         "eea3783a079cd610b748e406610e78c7ce2f34e6",
@@ -65,7 +65,7 @@ func TestEventHandler(t *testing.T) {
 			&vcs.EventPayload{
 				Type:              vcs.EventTypePull,
 				Action:            vcs.ActionUpdated,
-				RepoPath:          "leg100/otf-workspaces",
+				Repo:              vcs.NewMustRepo("leg100", "otf-workspaces"),
 				Branch:            "pr-1",
 				DefaultBranch:     "master",
 				CommitSHA:         "30c78003043f3a5d8f34eda6332ad11376b1d41b",
@@ -85,7 +85,7 @@ func TestEventHandler(t *testing.T) {
 			&vcs.EventPayload{
 				Type:            vcs.EventTypeTag,
 				Action:          vcs.ActionCreated,
-				RepoPath:        "leg100/otf-workspaces",
+				Repo:            vcs.NewMustRepo("leg100", "otf-workspaces"),
 				Tag:             "v3",
 				DefaultBranch:   "master",
 				CommitSHA:       "eea3783a079cd610b748e406610e78c7ce2f34e6",
@@ -102,7 +102,7 @@ func TestEventHandler(t *testing.T) {
 			&vcs.EventPayload{
 				Type:            vcs.EventTypeTag,
 				Action:          vcs.ActionDeleted,
-				RepoPath:        "leg100/otf-workspaces",
+				Repo:            vcs.NewMustRepo("leg100", "otf-workspaces"),
 				Tag:             "v3",
 				DefaultBranch:   "master",
 				SenderUsername:  "leg100",

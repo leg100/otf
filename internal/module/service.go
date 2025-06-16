@@ -130,7 +130,7 @@ func (s *Service) publishModule(ctx context.Context, organization organization.N
 		mod.Connection, err = s.connections.Connect(ctx, connections.ConnectOptions{
 			ResourceID:    mod.ID,
 			VCSProviderID: opts.VCSProviderID,
-			RepoPath:      string(opts.Repo),
+			RepoPath:      vcs.Repo(opts.Repo),
 		})
 		if err != nil {
 			return err
@@ -140,7 +140,7 @@ func (s *Service) publishModule(ctx context.Context, organization organization.N
 			return fmt.Errorf("retreving vcs client config: %w", err)
 		}
 		tags, err = client.ListTags(ctx, vcs.ListTagsOptions{
-			Repo: string(opts.Repo),
+			Repo: vcs.Repo(opts.Repo),
 		})
 		if err != nil {
 			return err
@@ -194,7 +194,7 @@ func (s *Service) PublishVersion(ctx context.Context, opts PublishVersionOptions
 	}
 
 	tarball, _, err := opts.Client.GetRepoTarball(ctx, vcs.GetRepoTarballOptions{
-		Repo: string(opts.Repo),
+		Repo: vcs.Repo(opts.Repo),
 		Ref:  &opts.Ref,
 	})
 	if err != nil {
@@ -275,7 +275,7 @@ func (s *Service) GetModuleByID(ctx context.Context, id resource.TfeID) (*Module
 	return module, nil
 }
 
-func (s *Service) GetModuleByConnection(ctx context.Context, vcsProviderID resource.TfeID, repoPath string) (*Module, error) {
+func (s *Service) GetModuleByConnection(ctx context.Context, vcsProviderID resource.TfeID, repoPath vcs.Repo) (*Module, error) {
 	return s.db.getModuleByConnection(ctx, vcsProviderID, repoPath)
 }
 

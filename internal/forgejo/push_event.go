@@ -37,7 +37,13 @@ func handlePushEvent(b []byte) (*vcs.EventPayload, error) {
 
 	// convert forgejo push event to an OTF event
 	var to vcs.EventPayload
-	to.RepoPath = event.Repository.FullName
+
+	repo, err := vcs.NewRepo(event.Repository.Owner.UserName, event.Repository.Name)
+	if err != nil {
+		return nil, err
+	}
+	to.Repo = repo
+
 	to.CommitSHA = event.After
 	if len(event.Commits) > 0 {
 		to.CommitURL = event.Commits[0].URL

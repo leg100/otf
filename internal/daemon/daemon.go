@@ -164,13 +164,13 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	})
 
 	vcsService := vcs.NewService(vcs.Options{
-		Logger:               logger,
-		Authorizer:           authorizer,
-		DB:                   db,
-		Responder:            responder,
-		HostnameService:      hostnameService,
-		ConfigVersionService: configService,
-		SkipTLSVerification:  cfg.SkipTLSVerification,
+		Logger:              logger,
+		Authorizer:          authorizer,
+		DB:                  db,
+		Responder:           responder,
+		HostnameService:     hostnameService,
+		SourceIconRegistrar: configService,
+		SkipTLSVerification: cfg.SkipTLSVerification,
 	})
 
 	vcsEventBroker := &vcs.Broker{}

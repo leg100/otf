@@ -11,6 +11,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/configversion"
+	"github.com/leg100/otf/internal/configversion/source"
 	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/resource"
@@ -77,7 +78,7 @@ func (a *tfe) createRun(w http.ResponseWriter, r *http.Request) {
 		TargetAddrs:      params.TargetAddrs,
 		ReplaceAddrs:     params.ReplaceAddrs,
 		PlanOnly:         params.PlanOnly,
-		Source:           configversion.SourceAPI,
+		Source:           source.API,
 		AllowEmptyApply:  params.AllowEmptyApply,
 		TerraformVersion: params.TerraformVersion,
 	}
@@ -85,7 +86,7 @@ func (a *tfe) createRun(w http.ResponseWriter, r *http.Request) {
 		opts.ConfigurationVersionID = &params.ConfigurationVersion.ID
 	}
 	if tfeapi.IsTerraformCLI(r) {
-		opts.Source = configversion.SourceTerraform
+		opts.Source = source.Terraform
 	}
 	opts.Variables = make([]Variable, len(params.Variables))
 	for i, from := range params.Variables {
@@ -137,7 +138,7 @@ func (a *tfe) listRuns(w http.ResponseWriter, r *http.Request) {
 	// convert comma-separated list of statuses to []RunStatus
 	statuses := internal.FromStringCSV[runstatus.Status](params.Status)
 	// convert comma-separated list of sources to []RunSource
-	sources := internal.FromStringCSV[configversion.Source](params.Source)
+	sources := internal.FromStringCSV[source.Source](params.Source)
 	// split operations CSV
 	operations := internal.SplitCSV(params.Operation)
 	var planOnly *bool

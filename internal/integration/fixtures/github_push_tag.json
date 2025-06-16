@@ -5,11 +5,11 @@
   "repository": {
     "id": 575970469,
     "node_id": "R_kgDOIlScpQ",
-    "name": "terraform-otf-test",
-    "full_name": "%s",
+    "name": "%s",
+    "full_name": "leg100/terraform-otf-test",
     "private": true,
     "owner": {
-      "name": "leg100",
+      "name": "%s",
       "email": "75728+leg100@users.noreply.github.com",
       "login": "leg100",
       "id": 75728,

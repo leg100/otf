@@ -33,7 +33,7 @@ func TestRunService(t *testing.T) {
 
 	t.Run("create run using config from repo", func(t *testing.T) {
 		// setup daemon along with fake github repo
-		repo := vcs.NewTestRepo()
+		repo := vcs.NewRandomRepo()
 		daemon, _, ctx := setup(t, withGithubOptions(
 			github.WithRepo(repo),
 			github.WithCommit("0335fb07bb0244b7a169ee89d15c7703e4aaf7de"),

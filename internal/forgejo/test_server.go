@@ -43,7 +43,7 @@ type (
 	}
 	testdb struct {
 		username      *user.Username
-		repo          string
+		repo          *vcs.Repo
 		commit        *string
 		defaultBranch string
 		tarball       []byte
@@ -116,17 +116,15 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) (*TestServer, *url.UR
 
 	// repo endpoints
 
-	if srv.repo != "" {
+	if srv.repo != nil {
 		// SearchRepos
 		srv.mux.HandleFunc("/api/v1/user/repos", func(w http.ResponseWriter, r *http.Request) {
-			repos := []*forgejo.Repository{}
-			if srv.repo != "" {
-				repos = []*forgejo.Repository{{
-					FullName:    srv.repo,
-					Permissions: &forgejo.Permission{Admin: true},
-					Updated:     time.Now(),
-				}}
-			}
+			repos := []*forgejo.Repository{{
+				Owner:       &forgejo.User{UserName: srv.repo.Owner()},
+				Name:        srv.repo.Name(),
+				Permissions: &forgejo.Permission{Admin: true},
+				Updated:     time.Now(),
+			}}
 			out, err := json.Marshal(repos)
 			require.NoError(t, err)
 			w.Header().Add("Content-Type", "application/json")
@@ -134,8 +132,12 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) (*TestServer, *url.UR
 		})
 
 		// GetRepo
-		srv.mux.HandleFunc("/api/v1/repos/"+srv.repo, func(w http.ResponseWriter, r *http.Request) {
-			repo := &forgejo.Repository{FullName: srv.repo, DefaultBranch: srv.defaultBranch}
+		srv.mux.HandleFunc("/api/v1/repos/"+srv.repo.String(), func(w http.ResponseWriter, r *http.Request) {
+			repo := &forgejo.Repository{
+				Owner:         &forgejo.User{UserName: srv.repo.Owner()},
+				Name:          srv.repo.Name(),
+				DefaultBranch: srv.defaultBranch,
+			}
 			out, err := json.Marshal(repo)
 			require.NoError(t, err)
 			w.Header().Add("Content-Type", "application/json")
@@ -143,7 +145,7 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) (*TestServer, *url.UR
 		})
 
 		// CreateRepoHook
-		srv.mux.HandleFunc("/api/v1/repos/"+srv.repo+"/hooks", func(w http.ResponseWriter, r *http.Request) {
+		srv.mux.HandleFunc("/api/v1/repos/"+srv.repo.String()+"/hooks", func(w http.ResponseWriter, r *http.Request) {
 			var opts struct {
 				Events []string `json:"events"`
 				Config struct {
@@ -185,7 +187,7 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) (*TestServer, *url.UR
 		// EditRepoHook,
 		// GetRepoHook,
 		// DeleteRepoHook
-		srv.mux.HandleFunc("/api/v1/repos/"+srv.repo+"/hooks/123", func(w http.ResponseWriter, r *http.Request) {
+		srv.mux.HandleFunc("/api/v1/repos/"+srv.repo.String()+"/hooks/123", func(w http.ResponseWriter, r *http.Request) {
 			switch r.Method {
 			case "PATCH":
 				var opts struct {
@@ -244,7 +246,7 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) (*TestServer, *url.UR
 		})
 
 		// GetRepoRefs
-		srv.mux.HandleFunc("/api/v1/repos/"+srv.repo+"/git/refs/", func(w http.ResponseWriter, r *http.Request) {
+		srv.mux.HandleFunc("/api/v1/repos/"+srv.repo.String()+"/git/refs/", func(w http.ResponseWriter, r *http.Request) {
 			var refs []*forgejo.Reference
 			for _, ref := range srv.refs {
 				refs = append(refs, &forgejo.Reference{
@@ -261,7 +263,7 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) (*TestServer, *url.UR
 		})
 
 		// GetRepoTags
-		srv.mux.HandleFunc("/api/v1/repos/"+srv.repo+"/tags", func(w http.ResponseWriter, r *http.Request) {
+		srv.mux.HandleFunc("/api/v1/repos/"+srv.repo.String()+"/tags", func(w http.ResponseWriter, r *http.Request) {
 			var tags []*forgejo.Tag
 			for _, ref := range srv.refs {
 				if strings.HasPrefix(ref.ref, "refs/tags/") {
@@ -282,7 +284,7 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) (*TestServer, *url.UR
 
 		// GetArchive
 		if srv.tarball != nil {
-			srv.mux.HandleFunc("/api/v1/repos/"+srv.repo+"/archive/"+srv.defaultBranch+".tar.gz", func(w http.ResponseWriter, r *http.Request) {
+			srv.mux.HandleFunc("/api/v1/repos/"+srv.repo.String()+"/archive/"+srv.defaultBranch+".tar.gz", func(w http.ResponseWriter, r *http.Request) {
 				link := url.URL{Scheme: "https", Host: r.Host, Path: "/mytarball"}
 				http.Redirect(w, r, link.String(), http.StatusFound)
 			})
@@ -293,7 +295,7 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) (*TestServer, *url.UR
 
 		// CreateStatus
 		if srv.commit != nil {
-			srv.mux.HandleFunc("/api/v1/repos/"+srv.repo+"/statuses/"+*srv.commit, func(w http.ResponseWriter, r *http.Request) {
+			srv.mux.HandleFunc("/api/v1/repos/"+srv.repo.String()+"/statuses/"+*srv.commit, func(w http.ResponseWriter, r *http.Request) {
 				var opt forgejo.CreateStatusOption
 				if err := json.NewDecoder(r.Body).Decode(&opt); err != nil {
 					http.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -320,7 +322,7 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) (*TestServer, *url.UR
 		// ListRepoTags
 
 		// ListPullRequestFiles
-		srv.mux.HandleFunc("/api/v1/repos/"+srv.repo+"/pulls/"+srv.pullNumber+"/files", func(w http.ResponseWriter, r *http.Request) {
+		srv.mux.HandleFunc("/api/v1/repos/"+srv.repo.String()+"/pulls/"+srv.pullNumber+"/files", func(w http.ResponseWriter, r *http.Request) {
 			var commits []*forgejo.ChangedFile
 			for _, f := range srv.pullFiles {
 				commits = append(commits, &forgejo.ChangedFile{
@@ -338,11 +340,11 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) (*TestServer, *url.UR
 
 		// GetSingleCommit
 		if srv.commit != nil {
-			srv.mux.HandleFunc("/api/v1/repos/"+srv.repo+"/git/commits/"+*srv.commit, func(w http.ResponseWriter, r *http.Request) {
+			srv.mux.HandleFunc("/api/v1/repos/"+srv.repo.String()+"/git/commits/"+*srv.commit, func(w http.ResponseWriter, r *http.Request) {
 				out, err := json.Marshal(&forgejo.Commit{
 					CommitMeta: &forgejo.CommitMeta{
 						SHA: *srv.commit,
-						URL: *srv.url + "/" + srv.repo,
+						URL: *srv.url + "/" + srv.repo.String(),
 					},
 					Author: &forgejo.User{
 						UserName: srv.username.String(),
@@ -387,9 +389,9 @@ func WithUsername(username user.Username) TestServerOption {
 	}
 }
 
-func WithRepo(repo string) TestServerOption {
+func WithRepo(repo vcs.Repo) TestServerOption {
 	return func(srv *TestServer) {
-		srv.repo = repo
+		srv.repo = &repo
 	}
 }
 

@@ -181,7 +181,7 @@ func (g *Client) GetDefaultBranch(ctx context.Context, identifier string) (strin
 // (b) if authenticated using a personal access token then repositories
 // belonging to the user are listed; only the first page of repos is listed,
 // those that have most recently been pushed to.
-func (g *Client) ListRepositories(ctx context.Context, opts vcs.ListRepositoriesOptions) ([]string, error) {
+func (g *Client) ListRepositories(ctx context.Context, opts vcs.ListRepositoriesOptions) ([]vcs.Repo, error) {
 	var repos []*github.Repository
 	if g.iat {
 		// Apps.ListRepos endpoint does not support ordering on the server-side,
@@ -216,20 +216,15 @@ func (g *Client) ListRepositories(ctx context.Context, opts vcs.ListRepositories
 			return nil, err
 		}
 	}
-	names := make([]string, len(repos))
+	names := make([]vcs.Repo, len(repos))
 	for i, repo := range repos {
-		names[i] = repo.GetFullName()
+		names[i] = vcs.NewMustRepo(repo.Owner.GetLogin(), repo.GetName())
 	}
 	return names, nil
 }
 
 func (g *Client) ListTags(ctx context.Context, opts vcs.ListTagsOptions) ([]string, error) {
-	owner, name, found := strings.Cut(opts.Repo, "/")
-	if !found {
-		return nil, fmt.Errorf("malformed identifier: %s", opts.Repo)
-	}
-
-	results, _, err := g.client.Git.ListMatchingRefs(ctx, owner, name, &github.ReferenceListOptions{
+	results, _, err := g.client.Git.ListMatchingRefs(ctx, opts.Repo.Owner(), opts.Repo.Name(), &github.ReferenceListOptions{
 		Ref: "tags/" + opts.Prefix,
 	})
 	if err != nil {
@@ -253,17 +248,12 @@ func (g *Client) ExchangeCode(ctx context.Context, code string) (*github.AppConf
 }
 
 func (g *Client) GetRepoTarball(ctx context.Context, opts vcs.GetRepoTarballOptions) ([]byte, string, error) {
-	owner, name, found := strings.Cut(opts.Repo, "/")
-	if !found {
-		return nil, "", fmt.Errorf("malformed identifier: %s", opts.Repo)
-	}
-
 	var gopts github.RepositoryContentGetOptions
 	if opts.Ref != nil {
 		gopts.Ref = *opts.Ref
 	}
 
-	link, _, err := g.client.Repositories.GetArchiveLink(ctx, owner, name, github.Tarball, &gopts, maxRedirects)
+	link, _, err := g.client.Repositories.GetArchiveLink(ctx, opts.Repo.Owner(), opts.Repo.Name(), github.Tarball, &gopts, maxRedirects)
 	if err != nil {
 		return nil, "", err
 	}
@@ -283,7 +273,7 @@ func (g *Client) GetRepoTarball(ctx context.Context, opts vcs.GetRepoTarballOpti
 	// <owner>-<repo>-<commit>. We need a tarball without this parent directory,
 	// so we untar it to a temp dir, then tar it up the contents of the parent
 	// directory.
-	untarpath, err := os.MkdirTemp("", fmt.Sprintf("github-%s-%s-*", owner, name))
+	untarpath, err := os.MkdirTemp("", fmt.Sprintf("github-%s-%s-*", opts.Repo.Owner(), opts.Repo.Name()))
 	if err != nil {
 		return nil, "", err
 	}
@@ -314,11 +304,6 @@ func (g *Client) GetRepoTarball(ctx context.Context, opts vcs.GetRepoTarballOpti
 
 // CreateWebhook creates a webhook on a github repository.
 func (g *Client) CreateWebhook(ctx context.Context, opts vcs.CreateWebhookOptions) (string, error) {
-	owner, name, found := strings.Cut(opts.Repo, "/")
-	if !found {
-		return "", fmt.Errorf("malformed identifier: %s", opts.Repo)
-	}
-
 	var events []string
 	for _, event := range opts.Events {
 		switch event {
@@ -329,7 +314,7 @@ func (g *Client) CreateWebhook(ctx context.Context, opts vcs.CreateWebhookOption
 		}
 	}
 
-	hook, _, err := g.client.Repositories.CreateHook(ctx, owner, name, &github.Hook{
+	hook, _, err := g.client.Repositories.CreateHook(ctx, opts.Repo.Owner(), opts.Repo.Name(), &github.Hook{
 		Events: events,
 		Config: &github.HookConfig{
 			URL:         &opts.Endpoint,
@@ -345,11 +330,6 @@ func (g *Client) CreateWebhook(ctx context.Context, opts vcs.CreateWebhookOption
 }
 
 func (g *Client) UpdateWebhook(ctx context.Context, id string, opts vcs.UpdateWebhookOptions) error {
-	owner, name, found := strings.Cut(opts.Repo, "/")
-	if !found {
-		return fmt.Errorf("malformed identifier: %s", opts.Repo)
-	}
-
 	intID, err := strconv.ParseInt(id, 10, 64)
 	if err != nil {
 		return err
@@ -365,7 +345,7 @@ func (g *Client) UpdateWebhook(ctx context.Context, id string, opts vcs.UpdateWe
 		}
 	}
 
-	_, _, err = g.client.Repositories.EditHook(ctx, owner, name, intID, &github.Hook{
+	_, _, err = g.client.Repositories.EditHook(ctx, opts.Repo.Owner(), opts.Repo.Name(), intID, &github.Hook{
 		Events: events,
 		Config: &github.HookConfig{
 			URL:         &opts.Endpoint,
@@ -381,17 +361,12 @@ func (g *Client) UpdateWebhook(ctx context.Context, id string, opts vcs.UpdateWe
 }
 
 func (g *Client) GetWebhook(ctx context.Context, opts vcs.GetWebhookOptions) (vcs.Webhook, error) {
-	owner, name, found := strings.Cut(opts.Repo, "/")
-	if !found {
-		return vcs.Webhook{}, fmt.Errorf("malformed identifier: %s", opts.Repo)
-	}
-
 	intID, err := strconv.ParseInt(opts.ID, 10, 64)
 	if err != nil {
 		return vcs.Webhook{}, err
 	}
 
-	hook, resp, err := g.client.Repositories.GetHook(ctx, owner, name, intID)
+	hook, resp, err := g.client.Repositories.GetHook(ctx, opts.Repo.Owner(), opts.Repo.Name(), intID)
 	if err != nil {
 		if resp != nil && resp.StatusCode == http.StatusNotFound {
 			return vcs.Webhook{}, internal.ErrResourceNotFound
@@ -423,26 +398,16 @@ func (g *Client) GetWebhook(ctx context.Context, opts vcs.GetWebhookOptions) (vc
 }
 
 func (g *Client) DeleteWebhook(ctx context.Context, opts vcs.DeleteWebhookOptions) error {
-	owner, name, found := strings.Cut(opts.Repo, "/")
-	if !found {
-		return fmt.Errorf("malformed identifier: %s", opts.Repo)
-	}
-
 	intID, err := strconv.ParseInt(opts.ID, 10, 64)
 	if err != nil {
 		return err
 	}
 
-	_, err = g.client.Repositories.DeleteHook(ctx, owner, name, intID)
+	_, err = g.client.Repositories.DeleteHook(ctx, opts.Repo.Owner(), opts.Repo.Name(), intID)
 	return err
 }
 
 func (g *Client) SetStatus(ctx context.Context, opts vcs.SetStatusOptions) error {
-	owner, name, found := strings.Cut(opts.Repo, "/")
-	if !found {
-		return fmt.Errorf("malformed identifier: %s", opts.Repo)
-	}
-
 	var status string
 	switch opts.Status {
 	case vcs.PendingStatus:
@@ -457,7 +422,7 @@ func (g *Client) SetStatus(ctx context.Context, opts vcs.SetStatusOptions) error
 		return fmt.Errorf("invalid vcs status: %s", opts.Status)
 	}
 
-	_, _, err := g.client.Repositories.CreateStatus(ctx, owner, name, opts.Ref, &github.RepoStatus{
+	_, _, err := g.client.Repositories.CreateStatus(ctx, opts.Repo.Owner(), opts.Repo.Name(), opts.Ref, &github.RepoStatus{
 		Context:     internal.String(fmt.Sprintf("otf/%s", opts.Workspace)),
 		TargetURL:   internal.String(opts.TargetURL),
 		Description: internal.String(opts.Description),
@@ -466,12 +431,7 @@ func (g *Client) SetStatus(ctx context.Context, opts vcs.SetStatusOptions) error
 	return err
 }
 
-func (g *Client) ListPullRequestFiles(ctx context.Context, repo string, pull int) ([]string, error) {
-	owner, name, found := strings.Cut(repo, "/")
-	if !found {
-		return nil, fmt.Errorf("malformed identifier: %s", repo)
-	}
-
+func (g *Client) ListPullRequestFiles(ctx context.Context, repo vcs.Repo, pull int) ([]string, error) {
 	var files []string
 	nextPage := 0
 
@@ -493,7 +453,7 @@ listloop:
 			time.Sleep(attemptDelay)
 			attemptDelay = 2*attemptDelay + 1*time.Second
 
-			pageFiles, resp, err := g.client.PullRequests.ListFiles(ctx, owner, name, pull, &opts)
+			pageFiles, resp, err := g.client.PullRequests.ListFiles(ctx, repo.Owner(), repo.Name(), pull, &opts)
 			if err != nil {
 				ghErr, ok := err.(*github.ErrorResponse)
 				if ok && ghErr.Response.StatusCode == 404 {
@@ -522,13 +482,8 @@ listloop:
 	return files, nil
 }
 
-func (g *Client) GetCommit(ctx context.Context, repo, ref string) (vcs.Commit, error) {
-	owner, name, found := strings.Cut(repo, "/")
-	if !found {
-		return vcs.Commit{}, fmt.Errorf("malformed identifier: %s", repo)
-	}
-
-	commit, resp, err := g.client.Repositories.GetCommit(ctx, owner, name, ref, nil)
+func (g *Client) GetCommit(ctx context.Context, repo vcs.Repo, ref string) (vcs.Commit, error) {
+	commit, resp, err := g.client.Repositories.GetCommit(ctx, repo.Owner(), repo.Name(), ref, nil)
 	if err != nil {
 		return vcs.Commit{}, err
 	}

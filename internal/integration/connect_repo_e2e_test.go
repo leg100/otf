@@ -6,6 +6,7 @@ import (
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/testutils"
+	"github.com/leg100/otf/internal/vcs"
 	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/require"
 )
@@ -19,7 +20,7 @@ func TestConnectRepoE2E(t *testing.T) {
 	// contents via tarball. And register a callback to test receipt of commit
 	// statuses
 	daemon, org, ctx := setup(t,
-		withGithubOption(github.WithRepo("leg100/tfc-workspaces")),
+		withGithubOption(github.WithRepo(vcs.NewMustRepo("leg100", "tfc-workspaces"))),
 		withGithubOption(github.WithCommit("0335fb07bb0244b7a169ee89d15c7703e4aaf7de")),
 		withGithubOption(github.WithArchive(testutils.ReadFile(t, "../testdata/github.tar.gz"))),
 	)

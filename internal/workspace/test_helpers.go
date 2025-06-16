@@ -45,7 +45,7 @@ type FakeService struct {
 	Policy     Policy
 }
 
-func (f *FakeService) ListConnectedWorkspaces(ctx context.Context, vcsProviderID resource.TfeID, repoPath string) ([]*Workspace, error) {
+func (f *FakeService) ListConnectedWorkspaces(ctx context.Context, vcsProviderID resource.TfeID, repoPath vcs.Repo) ([]*Workspace, error) {
 	return f.Workspaces, nil
 }
 
@@ -124,12 +124,12 @@ func (f *fakeVCSProviderService) List(context.Context, organization.Name) ([]*vc
 }
 
 type fakeVCSClient struct {
-	repos []string
+	repos []vcs.Repo
 
 	vcs.Client
 }
 
-func (f *fakeVCSClient) ListRepositories(ctx context.Context, opts vcs.ListRepositoriesOptions) ([]string, error) {
+func (f *fakeVCSClient) ListRepositories(ctx context.Context, opts vcs.ListRepositoriesOptions) ([]vcs.Repo, error) {
 	return f.repos, nil
 }
 

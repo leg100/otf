@@ -3,7 +3,7 @@ package vcs
 import (
 	"errors"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/configversion"
+	"github.com/leg100/otf/internal/configversion/source"
 	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/components/paths"
 	"github.com/leg100/otf/internal/organization"
@@ -236,7 +236,7 @@ templ form(props formProps) {
 	}
 }
 
-templ triggerIcon(source configversion.Source, icon templ.Component) {
+templ triggerIcon(source source.Source, icon templ.Component) {
 	<div
 		class="size-6"
 		id={ "run-trigger-" + string(source) }

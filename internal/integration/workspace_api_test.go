@@ -64,7 +64,7 @@ func TestIntegration_WorkspaceAPI_CreateConnected(t *testing.T) {
 	integrationTest(t)
 
 	// setup daemon along with fake github repo
-	repo := vcs.NewTestRepo()
+	repo := vcs.NewRandomRepo()
 	daemon, org, ctx := setup(t, withGithubOptions(
 		github.WithRepo(repo),
 		github.WithCommit("0335fb07bb0244b7a169ee89d15c7703e4aaf7de"),
@@ -93,7 +93,7 @@ func TestIntegration_WorkspaceAPI_CreateConnected(t *testing.T) {
 		Name: internal.String("testing"),
 		VCSRepo: &tfe.VCSRepoOptions{
 			OAuthTokenID: internal.String(oauth.ID),
-			Identifier:   internal.String(repo),
+			Identifier:   internal.String(repo.String()),
 		},
 	})
 	require.NoError(t, err)

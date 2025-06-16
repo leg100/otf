@@ -18,7 +18,7 @@ import (
 func TestIntegration_AllowCLIApply(t *testing.T) {
 	integrationTest(t)
 
-	repo := vcs.NewTestRepo()
+	repo := vcs.NewRandomRepo()
 	daemon, org, ctx := setup(t, withGithubOptions(
 		github.WithRepo(repo),
 		github.WithArchive(testutils.ReadFile(t, "../testdata/github.tar.gz")),

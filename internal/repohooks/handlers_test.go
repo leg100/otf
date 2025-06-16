@@ -46,7 +46,7 @@ func Test_repohookHandler(t *testing.T) {
 		EventHeader: vcs.EventHeader{
 			VCSProviderID: testutils.ParseID(t, "vcs-123"),
 		},
-		EventPayload: vcs.EventPayload{RepoPath: hook.repoPath},
+		EventPayload: vcs.EventPayload{Repo: hook.repoPath},
 	}
 	assert.Equal(t, want, broker.got)
 }

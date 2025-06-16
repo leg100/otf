@@ -27,7 +27,7 @@ func TestEventHandler(t *testing.T) {
 			"./testdata/github_push.json",
 			&vcs.EventPayload{
 				Type:            vcs.EventTypePush,
-				RepoPath:        "leg100/tfc-workspaces",
+				Repo:            vcs.NewMustRepo("leg100", "tfc-workspaces"),
 				Branch:          "master",
 				DefaultBranch:   "master",
 				CommitSHA:       "42d6fc7dac35cc7945231195e248af2f6256b522",
@@ -46,7 +46,7 @@ func TestEventHandler(t *testing.T) {
 			"./testdata/github_app_push.json",
 			&vcs.EventPayload{
 				Type:               vcs.EventTypePush,
-				RepoPath:           "leg100/otf-workspaces",
+				Repo:               vcs.NewMustRepo("leg100", "otf-workspaces"),
 				Branch:             "master",
 				DefaultBranch:      "master",
 				CommitSHA:          "0a2d223fa1a3844480e3b7716cf87aacb658b91f",
@@ -66,7 +66,7 @@ func TestEventHandler(t *testing.T) {
 			"./testdata/github_pull_opened.json",
 			&vcs.EventPayload{
 				Type:              vcs.EventTypePull,
-				RepoPath:          "leg100/otf-workspaces",
+				Repo:              vcs.NewMustRepo("leg100", "otf-workspaces"),
 				Branch:            "pr-2",
 				DefaultBranch:     "master",
 				CommitSHA:         "c560613b228f5e189520fbab4078284ea8312bcb",
@@ -87,7 +87,7 @@ func TestEventHandler(t *testing.T) {
 			"./testdata/github_pull_update.json",
 			&vcs.EventPayload{
 				Type:              vcs.EventTypePull,
-				RepoPath:          "leg100/otf-workspaces",
+				Repo:              vcs.NewMustRepo("leg100", "otf-workspaces"),
 				Branch:            "pr-1",
 				DefaultBranch:     "master",
 				CommitSHA:         "067e2b4c6394b3dad3c0ec89ffc428ab60ae7e5d",
@@ -108,7 +108,7 @@ func TestEventHandler(t *testing.T) {
 			"./testdata/github_push_tag.json",
 			&vcs.EventPayload{
 				Type:            vcs.EventTypeTag,
-				RepoPath:        "leg100/terraform-otf-test",
+				Repo:            vcs.NewMustRepo("leg100", "terraform-otf-test"),
 				Tag:             "v1.0.0",
 				DefaultBranch:   "master",
 				CommitSHA:       "07101e82c4f525d5f697111f0690bdd0ff40a865",

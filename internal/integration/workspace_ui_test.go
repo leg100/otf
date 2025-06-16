@@ -199,7 +199,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 	})
 
 	t.Run("workspace settings", func(t *testing.T) {
-		repo := vcs.NewTestRepo()
+		repo := vcs.NewRandomRepo()
 		daemon, org, ctx := setup(t, withGithubOptions(
 			github.WithRepo(repo),
 			github.WithArchive(testutils.ReadFile(t, "../testdata/github.tar.gz")),
