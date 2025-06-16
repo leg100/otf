@@ -48,9 +48,16 @@ type Kind struct {
 	//
 	// https://developer.hashicorp.com/terraform/cloud-docs/api-docs/oauth-clients#request-body
 	TFEServiceProvider TFEServiceProviderType
+	// Source sets the source identifier for this kind, to inform users which
+	// kind is the source of a run configuration. By default the ID is used as
+	// the source identifier but Source takes precedence if it is non-nil.
+	Source *source.Source
 }
 
-func (k Kind) Source() source.Source {
+func (k Kind) GetSource() source.Source {
+	if k.Source != nil {
+		return *k.Source
+	}
 	return source.Source(k.ID)
 }
 
@@ -99,7 +106,7 @@ func (db *kindDB) RegisterKind(kind Kind) {
 	db.kinds[kind.ID] = kind
 	// Also register its icon to be rendered on the UI next to runs triggered
 	// by this kind.
-	db.iconRegistrar.RegisterSourceIcon(kind.Source(), IconWrapper(kind.ID, kind.Icon))
+	db.iconRegistrar.RegisterSourceIcon(kind.GetSource(), triggerIcon(kind.GetSource(), kind.Icon))
 }
 
 func (db *kindDB) GetKind(id KindID) (Kind, error) {

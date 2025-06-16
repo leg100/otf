@@ -11,6 +11,7 @@ import templruntime "github.com/a-h/templ/runtime"
 import (
 	"errors"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/configversion/source"
 	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/components/paths"
 	"github.com/leg100/otf/internal/organization"
@@ -86,7 +87,7 @@ func list(props listProps) templ.Component {
 				var templ_7745c5c3_Var4 string
 				templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(internal.Title(string(kind.ID)))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/vcs/view.templ`, Line: 35, Col: 43}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/vcs/view.templ`, Line: 36, Col: 43}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 				if templ_7745c5c3_Err != nil {
@@ -99,7 +100,7 @@ func list(props listProps) templ.Component {
 				var templ_7745c5c3_Var5 string
 				templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(kind.ID)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/vcs/view.templ`, Line: 37, Col: 63}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/vcs/view.templ`, Line: 38, Col: 63}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 				if templ_7745c5c3_Err != nil {
@@ -203,7 +204,7 @@ func (t Table) Row(provider *Provider) templ.Component {
 		var templ_7745c5c3_Var8 string
 		templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs("item-vcsprovider-" + provider.String())
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/vcs/view.templ`, Line: 63, Col: 49}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/vcs/view.templ`, Line: 64, Col: 49}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 		if templ_7745c5c3_Err != nil {
@@ -220,7 +221,7 @@ func (t Table) Row(provider *Provider) templ.Component {
 		var templ_7745c5c3_Var9 string
 		templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(provider.String())
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/vcs/view.templ`, Line: 67, Col: 23}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/vcs/view.templ`, Line: 68, Col: 23}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 		if templ_7745c5c3_Err != nil {
@@ -241,7 +242,7 @@ func (t Table) Row(provider *Provider) templ.Component {
 		var templ_7745c5c3_Var10 string
 		templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(internal.Ago(time.Now(), provider.CreatedAt))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/vcs/view.templ`, Line: 74, Col: 49}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/vcs/view.templ`, Line: 75, Col: 49}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 		if templ_7745c5c3_Err != nil {
@@ -308,7 +309,7 @@ func tableAction(vcsProviderID resource.TfeID) templ.Component {
 		var templ_7745c5c3_Var13 string
 		templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(vcsProviderID.String())
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/vcs/view.templ`, Line: 85, Col: 63}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/vcs/view.templ`, Line: 86, Col: 63}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 		if templ_7745c5c3_Err != nil {
@@ -498,7 +499,7 @@ func form(props formProps) templ.Component {
 		var templ_7745c5c3_Var20 string
 		templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinStringErrs(internal.Title(string(props.provider.Kind.ID)))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/vcs/view.templ`, Line: 144, Col: 65}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/vcs/view.templ`, Line: 145, Col: 65}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var20))
 		if templ_7745c5c3_Err != nil {
@@ -553,7 +554,7 @@ func form(props formProps) templ.Component {
 			var templ_7745c5c3_Var23 string
 			templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinStringErrs(props.provider.String())
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/vcs/view.templ`, Line: 174, Col: 36}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/vcs/view.templ`, Line: 175, Col: 36}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var23))
 			if templ_7745c5c3_Err != nil {
@@ -601,7 +602,7 @@ func form(props formProps) templ.Component {
 					var templ_7745c5c3_Var24 string
 					templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinStringErrs(props.provider.Installation.ID)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/vcs/view.templ`, Line: 202, Col: 129}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/vcs/view.templ`, Line: 203, Col: 129}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var24))
 					if templ_7745c5c3_Err != nil {
@@ -630,7 +631,7 @@ func form(props formProps) templ.Component {
 							var templ_7745c5c3_Var25 string
 							templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinStringErrs(install.ID)
 							if templ_7745c5c3_Err != nil {
-								return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/vcs/view.templ`, Line: 216, Col: 35}
+								return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/vcs/view.templ`, Line: 217, Col: 35}
 							}
 							_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var25))
 							if templ_7745c5c3_Err != nil {
@@ -643,7 +644,7 @@ func form(props formProps) templ.Component {
 							var templ_7745c5c3_Var26 string
 							templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.JoinStringErrs(install.String())
 							if templ_7745c5c3_Err != nil {
-								return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/vcs/view.templ`, Line: 217, Col: 28}
+								return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/vcs/view.templ`, Line: 218, Col: 28}
 							}
 							_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var26))
 							if templ_7745c5c3_Err != nil {
@@ -688,7 +689,7 @@ func form(props formProps) templ.Component {
 				var templ_7745c5c3_Var28 string
 				templ_7745c5c3_Var28, templ_7745c5c3_Err = templ.JoinStringErrs(string(props.provider.Kind.ID))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/vcs/view.templ`, Line: 232, Col: 85}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/vcs/view.templ`, Line: 233, Col: 85}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var28))
 				if templ_7745c5c3_Err != nil {
@@ -708,7 +709,7 @@ func form(props formProps) templ.Component {
 	})
 }
 
-func IconWrapper(id KindID, icon templ.Component) templ.Component {
+func triggerIcon(source source.Source, icon templ.Component) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -734,9 +735,9 @@ func IconWrapper(id KindID, icon templ.Component) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var30 string
-		templ_7745c5c3_Var30, templ_7745c5c3_Err = templ.JoinStringErrs("run-trigger-" + string(id))
+		templ_7745c5c3_Var30, templ_7745c5c3_Err = templ.JoinStringErrs("run-trigger-" + string(source))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/vcs/view.templ`, Line: 241, Col: 34}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/vcs/view.templ`, Line: 242, Col: 38}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var30))
 		if templ_7745c5c3_Err != nil {
@@ -747,9 +748,9 @@ func IconWrapper(id KindID, icon templ.Component) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var31 string
-		templ_7745c5c3_Var31, templ_7745c5c3_Err = templ.JoinStringErrs("run triggered via " + string(id))
+		templ_7745c5c3_Var31, templ_7745c5c3_Err = templ.JoinStringErrs("run triggered via " + string(source))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/vcs/view.templ`, Line: 242, Col: 43}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/vcs/view.templ`, Line: 243, Col: 47}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var31))
 		if templ_7745c5c3_Err != nil {
