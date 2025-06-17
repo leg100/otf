@@ -108,8 +108,8 @@ func (f *factory) NewRun(ctx context.Context, workspaceID resource.TfeID, opts C
 		run.EngineVersion = ws.EngineVersion.String()
 	}
 
-	run.Plan = newPhase(run.ID, internal.PlanPhase)
-	run.Apply = newPhase(run.ID, internal.ApplyPhase)
+	run.Plan = newPhase(run.ID, PlanPhase)
+	run.Apply = newPhase(run.ID, ApplyPhase)
 	run.updateStatus(runstatus.Pending, opts.now)
 
 	if run.Source == "" {

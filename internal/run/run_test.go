@@ -58,7 +58,7 @@ func TestRun_States(t *testing.T) {
 		run := newTestRun(t, ctx, CreateOptions{})
 		run.Status = runstatus.Planning
 
-		_, err := run.Finish(internal.PlanPhase, PhaseFinishOptions{})
+		_, err := run.Finish(PlanPhase, PhaseFinishOptions{})
 		require.NoError(t, err)
 
 		require.Equal(t, runstatus.PlannedAndFinished, run.Status)
@@ -70,7 +70,7 @@ func TestRun_States(t *testing.T) {
 		run := newTestRun(t, ctx, CreateOptions{})
 		run.Status = runstatus.Planning
 
-		_, err := run.Finish(internal.PlanPhase, PhaseFinishOptions{Errored: true})
+		_, err := run.Finish(PlanPhase, PhaseFinishOptions{Errored: true})
 		require.NoError(t, err)
 
 		require.Equal(t, runstatus.Errored, run.Status)
@@ -84,7 +84,7 @@ func TestRun_States(t *testing.T) {
 
 		run.Plan.ResourceReport = &Report{Additions: 1}
 
-		_, err := run.Finish(internal.PlanPhase, PhaseFinishOptions{})
+		_, err := run.Finish(PlanPhase, PhaseFinishOptions{})
 		require.NoError(t, err)
 
 		require.Equal(t, runstatus.Planned, run.Status)
@@ -98,7 +98,7 @@ func TestRun_States(t *testing.T) {
 
 		run.Plan.OutputReport = &Report{Additions: 1}
 
-		_, err := run.Finish(internal.PlanPhase, PhaseFinishOptions{})
+		_, err := run.Finish(PlanPhase, PhaseFinishOptions{})
 		require.NoError(t, err)
 
 		require.Equal(t, runstatus.Planned, run.Status)
@@ -112,7 +112,7 @@ func TestRun_States(t *testing.T) {
 
 		run.Plan.ResourceReport = &Report{Additions: 1}
 
-		autoapply, err := run.Finish(internal.PlanPhase, PhaseFinishOptions{})
+		autoapply, err := run.Finish(PlanPhase, PhaseFinishOptions{})
 		require.NoError(t, err)
 
 		assert.True(t, autoapply)
@@ -128,7 +128,7 @@ func TestRun_States(t *testing.T) {
 
 		run.Plan.ResourceReport = &Report{Additions: 1}
 
-		_, err := run.Finish(internal.PlanPhase, PhaseFinishOptions{})
+		_, err := run.Finish(PlanPhase, PhaseFinishOptions{})
 		require.NoError(t, err)
 
 		require.Equal(t, runstatus.CostEstimated, run.Status)
@@ -160,7 +160,7 @@ func TestRun_States(t *testing.T) {
 		run := newTestRun(t, ctx, CreateOptions{})
 		run.Status = runstatus.Applying
 
-		_, err := run.Finish(internal.ApplyPhase, PhaseFinishOptions{})
+		_, err := run.Finish(ApplyPhase, PhaseFinishOptions{})
 		require.NoError(t, err)
 
 		require.Equal(t, runstatus.Applied, run.Status)
@@ -171,7 +171,7 @@ func TestRun_States(t *testing.T) {
 		run := newTestRun(t, ctx, CreateOptions{})
 		run.Status = runstatus.Applying
 
-		_, err := run.Finish(internal.ApplyPhase, PhaseFinishOptions{Errored: true})
+		_, err := run.Finish(ApplyPhase, PhaseFinishOptions{Errored: true})
 		require.NoError(t, err)
 
 		require.Equal(t, runstatus.Errored, run.Status)

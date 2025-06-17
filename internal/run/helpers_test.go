@@ -7,7 +7,6 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/configversion"
-	"github.com/leg100/otf/internal/logs"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/workspace"
@@ -35,8 +34,6 @@ type (
 	}
 
 	fakeWebServiceOption func(*fakeWebServices)
-
-	fakeWebLogsService struct{}
 )
 
 func withWorkspace(workspace *workspace.Workspace) fakeWebServiceOption {
@@ -63,7 +60,6 @@ func newTestWebHandlers(_ *testing.T, opts ...fakeWebServiceOption) *webHandlers
 			Workspaces: []*workspace.Workspace{svc.ws},
 		},
 		runs: &svc,
-		logs: &fakeWebLogsService{},
 	}
 }
 
@@ -85,6 +81,6 @@ func (f *fakeWebServices) Apply(ctx context.Context, runID resource.TfeID) error
 	return nil
 }
 
-func (f *fakeWebLogsService) GetChunk(context.Context, logs.GetChunkOptions) (logs.Chunk, error) {
-	return logs.Chunk{}, nil
+func (f *fakeWebServices) GetChunk(context.Context, GetChunkOptions) (Chunk, error) {
+	return Chunk{}, nil
 }

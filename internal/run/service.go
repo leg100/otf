@@ -11,7 +11,6 @@ import (
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/engine"
-	"github.com/leg100/otf/internal/logs"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
@@ -40,12 +39,12 @@ type (
 		tfeapi                 *tfe
 		api                    *api
 		web                    *webHandlers
-		logs                   *logs.Service
 		afterCancelHooks       []func(context.Context, *Run) error
 		afterForceCancelHooks  []func(context.Context, *Run) error
 		afterEnqueuePlanHooks  []func(context.Context, *Run) error
 		afterEnqueueApplyHooks []func(context.Context, *Run) error
 		broker                 pubsub.SubscriptionService[*Event]
+		tailer                 *tailer
 
 		*factory
 	}
@@ -60,7 +59,6 @@ type (
 		EngineService        *engine.Service
 		VCSProviderService   *vcs.Service
 		TokensService        *tokens.Service
-		LogsService          *logs.Service
 
 		logr.Logger
 		internal.Cache
@@ -79,7 +77,6 @@ func NewService(opts Options) *Service {
 		db:         db,
 		cache:      opts.Cache,
 		Interface:  opts.Authorizer,
-		logs:       opts.LogsService,
 	}
 	svc.factory = &factory{
 		organizations: opts.OrganizationService,
@@ -100,6 +97,15 @@ func NewService(opts Options) *Service {
 		Service:   &svc,
 		Responder: opts.Responder,
 		Logger:    opts.Logger,
+		Verifier:  opts.Signer,
+	}
+	svc.tailer = &tailer{
+		broker: pubsub.NewBroker[Chunk](
+			opts.Logger,
+			opts.Listener,
+			"chunks",
+		),
+		client: &svc,
 	}
 	spawner := &Spawner{
 		Logger:     opts.Logger.WithValues("component", "spawner"),
@@ -279,7 +285,7 @@ func (s *Service) Delete(ctx context.Context, runID resource.TfeID) error {
 }
 
 // StartPhase starts a run phase.
-func (s *Service) StartPhase(ctx context.Context, runID resource.TfeID, phase internal.PhaseType, _ PhaseStartOptions) (*Run, error) {
+func (s *Service) StartPhase(ctx context.Context, runID resource.TfeID, phase PhaseType, _ PhaseStartOptions) (*Run, error) {
 	run, err := s.db.UpdateStatus(ctx, runID, func(ctx context.Context, run *Run) error {
 		return run.Start()
 	})
@@ -300,7 +306,7 @@ func (s *Service) StartPhase(ctx context.Context, runID resource.TfeID, phase in
 
 // FinishPhase finishes a phase. Creates a report of changes before updating the status of
 // the run.
-func (s *Service) FinishPhase(ctx context.Context, runID resource.TfeID, phase internal.PhaseType, opts PhaseFinishOptions) (*Run, error) {
+func (s *Service) FinishPhase(ctx context.Context, runID resource.TfeID, phase PhaseType, opts PhaseFinishOptions) (*Run, error) {
 	var resourceReport, outputReport Report
 	if !opts.Errored {
 		var err error
@@ -503,11 +509,11 @@ func (s *Service) UploadPlanFile(ctx context.Context, runID resource.TfeID, plan
 }
 
 // createReports creates reports of changes for the phase.
-func (s *Service) createReports(ctx context.Context, runID resource.TfeID, phase internal.PhaseType) (resource Report, output Report, err error) {
+func (s *Service) createReports(ctx context.Context, runID resource.TfeID, phase PhaseType) (resource Report, output Report, err error) {
 	switch phase {
-	case internal.PlanPhase:
+	case PlanPhase:
 		resource, output, err = s.createPlanReports(ctx, runID)
-	case internal.ApplyPhase:
+	case ApplyPhase:
 		resource, err = s.createApplyReport(ctx, runID)
 	default:
 		return Report{}, Report{}, fmt.Errorf("unknown supported phase for creating report: %s", phase)
@@ -531,9 +537,9 @@ func (s *Service) createPlanReports(ctx context.Context, runID resource.TfeID) (
 }
 
 func (s *Service) createApplyReport(ctx context.Context, runID resource.TfeID) (Report, error) {
-	logs, err := s.logs.GetChunk(ctx, logs.GetChunkOptions{
+	logs, err := s.GetChunk(ctx, GetChunkOptions{
 		RunID: runID,
-		Phase: internal.ApplyPhase,
+		Phase: ApplyPhase,
 	})
 	if err != nil {
 		return Report{}, err
@@ -558,4 +564,56 @@ func (s *Service) autoQueueRun(ctx context.Context, ws *workspace.Workspace) err
 		}
 	}
 	return nil
+}
+
+//
+// Run log stuff
+//
+
+// GetChunk retrieves a chunk of logs for a run phase.
+func (s *Service) GetChunk(ctx context.Context, opts GetChunkOptions) (Chunk, error) {
+	chunk, err := s.db.getChunk(ctx, opts)
+	if err != nil {
+		s.Error(err, "retrieving log chunk", "run_id", opts.RunID, "phase", opts.Phase, "offset", opts.Offset, "limit", opts.Limit)
+		return Chunk{}, err
+	}
+	s.V(9).Info("retrieved log chunk", "chunk", chunk)
+	return chunk, nil
+}
+
+// PutChunk writes a chunk of logs for a run phase
+func (s *Service) PutChunk(ctx context.Context, opts PutChunkOptions) error {
+	_, err := s.Authorize(ctx, authz.PutChunkAction, opts.RunID)
+	if err != nil {
+		return err
+	}
+
+	chunk, err := newChunk(opts)
+	if err != nil {
+		s.Error(err, "creating log chunk", "run_id", opts, "phase", opts.Phase, "offset", opts.Offset)
+		return err
+	}
+	if err := s.db.putChunk(ctx, chunk); err != nil {
+		s.Error(err, "writing log chunk", "chunk", chunk)
+		return err
+	}
+	s.V(3).Info("written log chunk", "chunk", chunk)
+
+	return nil
+}
+
+// Tail logs for a phase. Offset specifies the number of bytes into the logs
+// from which to start tailing.
+func (s *Service) Tail(ctx context.Context, opts TailOptions) (<-chan Chunk, error) {
+	subject, err := s.Authorize(ctx, authz.TailLogsAction, opts.RunID)
+	if err != nil {
+		return nil, err
+	}
+	tail, err := s.tailer.Tail(ctx, opts)
+	if err != nil {
+		s.Error(err, "tailing logs", "id", opts.RunID, "offset", opts.Offset, "subject", subject)
+		return nil, err
+	}
+	s.V(9).Info("tailing logs", "id", opts.RunID, "phase", opts.Phase, "subject", subject)
+	return tail, nil
 }

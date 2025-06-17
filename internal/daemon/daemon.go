@@ -23,7 +23,6 @@ import (
 	"github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/inmem"
 	"github.com/leg100/otf/internal/loginserver"
-	"github.com/leg100/otf/internal/logs"
 	"github.com/leg100/otf/internal/module"
 	"github.com/leg100/otf/internal/notifications"
 	"github.com/leg100/otf/internal/organization"
@@ -55,7 +54,6 @@ type (
 		Workspaces    *workspace.Service
 		Variables     *variable.Service
 		Notifications *notifications.Service
-		Logs          *logs.Service
 		State         *state.Service
 		Configs       *configversion.Service
 		Modules       *module.Service
@@ -224,14 +222,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		EngineService:       engineService,
 	})
 
-	logsService := logs.NewService(logs.Options{
-		Logger:     logger,
-		Authorizer: authorizer,
-		DB:         db,
-		Cache:      cache,
-		Listener:   listener,
-		Verifier:   signer,
-	})
 	runService := run.NewService(run.Options{
 		Logger:               logger,
 		Authorizer:           authorizer,
@@ -240,7 +230,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Responder:            responder,
 		OrganizationService:  orgService,
 		WorkspaceService:     workspaceService,
-		LogsService:          logsService,
 		ConfigVersionService: configService,
 		VCSProviderService:   vcsService,
 		Cache:                cache,
@@ -344,7 +333,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		State:      stateService,
 		Configs:    configService,
 		Runs:       runService,
-		Logs:       logsService,
 		Jobs:       runnerService,
 		Server:     hostnameService,
 	})
@@ -370,7 +358,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		vcsService,
 		moduleService,
 		runService,
-		logsService,
 		repoService,
 		authenticatorService,
 		loginserver.NewServer(loginserver.Options{
@@ -402,7 +389,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Workspaces:    workspaceService,
 		Variables:     variableService,
 		Notifications: notificationService,
-		Logs:          logsService,
 		State:         stateService,
 		Configs:       configService,
 		Modules:       moduleService,

@@ -53,8 +53,8 @@ type (
 	}
 
 	phaseClient interface {
-		StartPhase(ctx context.Context, runID resource.TfeID, phase internal.PhaseType, _ otfrun.PhaseStartOptions) (*otfrun.Run, error)
-		FinishPhase(ctx context.Context, runID resource.TfeID, phase internal.PhaseType, opts otfrun.PhaseFinishOptions) (*otfrun.Run, error)
+		StartPhase(ctx context.Context, runID resource.TfeID, phase otfrun.PhaseType, _ otfrun.PhaseStartOptions) (*otfrun.Run, error)
+		FinishPhase(ctx context.Context, runID resource.TfeID, phase otfrun.PhaseType, opts otfrun.PhaseFinishOptions) (*otfrun.Run, error)
 		Cancel(ctx context.Context, runID resource.TfeID) error
 	}
 )

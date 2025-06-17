@@ -216,16 +216,16 @@ func (r *Run) PeriodReport(now time.Time) (report PeriodReport) {
 }
 
 // Phase returns the current phase.
-func (r *Run) Phase() internal.PhaseType {
+func (r *Run) Phase() PhaseType {
 	switch r.Status {
 	case runstatus.Pending:
-		return internal.PendingPhase
+		return PendingPhase
 	case runstatus.PlanQueued, runstatus.Planning, runstatus.Planned:
-		return internal.PlanPhase
+		return PlanPhase
 	case runstatus.ApplyQueued, runstatus.Applying, runstatus.Applied:
-		return internal.ApplyPhase
+		return ApplyPhase
 	default:
-		return internal.UnknownPhase
+		return UnknownPhase
 	}
 }
 
@@ -434,13 +434,13 @@ func (r *Run) Start() error {
 // Finish updates the run to reflect its plan or apply phase having finished. If
 // a plan phase has finished and an apply should be automatically enqueued then
 // autoapply will be set to true.
-func (r *Run) Finish(phase internal.PhaseType, opts PhaseFinishOptions) (autoapply bool, err error) {
+func (r *Run) Finish(phase PhaseType, opts PhaseFinishOptions) (autoapply bool, err error) {
 	if r.Status == runstatus.Canceled {
 		// run was canceled before the phase finished so nothing more to do.
 		return false, nil
 	}
 	switch phase {
-	case internal.PlanPhase:
+	case PlanPhase:
 		if r.Status != runstatus.Planning {
 			return false, ErrInvalidRunStateTransition
 		}
@@ -466,7 +466,7 @@ func (r *Run) Finish(phase internal.PhaseType, opts PhaseFinishOptions) (autoapp
 			return false, nil
 		}
 		return r.AutoApply, nil
-	case internal.ApplyPhase:
+	case ApplyPhase:
 		if r.Status != runstatus.Applying {
 			return false, ErrInvalidRunStateTransition
 		}

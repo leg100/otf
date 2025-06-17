@@ -2,6 +2,7 @@ package run
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"time"
 
@@ -15,7 +16,6 @@ import (
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/paths"
-	"github.com/leg100/otf/internal/logs"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/workspace"
@@ -25,7 +25,6 @@ type (
 	webHandlers struct {
 		logger     logr.Logger
 		runs       webRunClient
-		logs       webLogsClient
 		workspaces webWorkspaceClient
 		authorizer webAuthorizer
 	}
@@ -40,10 +39,8 @@ type (
 		Apply(ctx context.Context, runID resource.TfeID) error
 		Discard(ctx context.Context, runID resource.TfeID) error
 		Watch(ctx context.Context) (<-chan pubsub.Event[*Event], func())
-	}
-
-	webLogsClient interface {
-		GetChunk(ctx context.Context, opts logs.GetChunkOptions) (logs.Chunk, error)
+		Tail(ctx context.Context, opts TailOptions) (<-chan Chunk, error)
+		GetChunk(ctx context.Context, opts GetChunkOptions) (Chunk, error)
 	}
 
 	webWorkspaceClient interface {
@@ -62,7 +59,6 @@ func newWebHandlers(service *Service, opts Options) *webHandlers {
 		logger:     opts.Logger,
 		runs:       service,
 		workspaces: opts.WorkspaceService,
-		logs:       opts.LogsService,
 	}
 }
 
@@ -82,6 +78,7 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 	r.HandleFunc("/runs/{run_id}/discard", h.discard).Methods("POST")
 	r.HandleFunc("/runs/{run_id}/retry", h.retry).Methods("POST")
 	r.HandleFunc("/runs/{run_id}/watch", h.watchRun).Methods("GET")
+	r.HandleFunc("/runs/{run_id}/tail", h.tailRun)
 
 	// this handles the link the terraform CLI shows during a plan/apply.
 	r.HandleFunc("/{organization_name}/{workspace_id}/runs/{run_id}", h.get).Methods("GET")
@@ -194,17 +191,17 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get existing logs thus far received for each phase.
-	planLogs, err := h.logs.GetChunk(r.Context(), logs.GetChunkOptions{
+	planLogs, err := h.runs.GetChunk(r.Context(), GetChunkOptions{
 		RunID: run.ID,
-		Phase: internal.PlanPhase,
+		Phase: PlanPhase,
 	})
 	if err != nil {
 		html.Error(w, "retrieving plan logs: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
-	applyLogs, err := h.logs.GetChunk(r.Context(), logs.GetChunkOptions{
+	applyLogs, err := h.runs.GetChunk(r.Context(), GetChunkOptions{
 		RunID: run.ID,
-		Phase: internal.ApplyPhase,
+		Phase: ApplyPhase,
 	})
 	if err != nil {
 		html.Error(w, "retrieving apply logs: "+err.Error(), http.StatusInternalServerError)
@@ -214,8 +211,8 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 	props := getProps{
 		run:       run,
 		ws:        ws,
-		planLogs:  logs.Chunk{Data: planLogs.Data},
-		applyLogs: logs.Chunk{Data: applyLogs.Data},
+		planLogs:  Chunk{Data: planLogs.Data},
+		applyLogs: Chunk{Data: applyLogs.Data},
 	}
 	html.Render(get(props), w, r)
 }
@@ -471,6 +468,63 @@ func (h *webHandlers) watchLatest(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if !conn.Send(*latestRunID) {
+			return
+		}
+	}
+}
+
+const (
+	EventLogChunk    string = "log_update"
+	EventLogFinished string = "log_finished"
+)
+
+func (h *webHandlers) tailRun(w http.ResponseWriter, r *http.Request) {
+	var params TailOptions
+	if err := decode.All(&params, r); err != nil {
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+
+	ch, err := h.runs.Tail(r.Context(), params)
+	if err != nil {
+		html.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+	w.WriteHeader(http.StatusOK)
+	rc := http.NewResponseController(w)
+	rc.Flush()
+
+	for {
+		select {
+		case chunk, ok := <-ch:
+			if !ok {
+				// no more logs
+				pubsub.WriteSSEEvent(w, []byte("no more logs"), EventLogFinished, false)
+				return
+			}
+			html := chunk.ToHTML()
+			if len(html) == 0 {
+				// don't send empty chunks
+				continue
+			}
+			js, err := json.Marshal(struct {
+				HTML       string `json:"html"`
+				NextOffset int    `json:"offset"`
+			}{
+				HTML:       string(html) + "<br>",
+				NextOffset: chunk.NextOffset(),
+			})
+			if err != nil {
+				h.logger.Error(err, "marshalling data")
+				continue
+			}
+			pubsub.WriteSSEEvent(w, js, EventLogChunk, false)
+			rc.Flush()
+		case <-r.Context().Done():
 			return
 		}
 	}

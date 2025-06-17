@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/sql"
 )
 
@@ -389,7 +389,7 @@ func scanJob(row pgx.CollectableRow) (*Job, error) {
 	type model struct {
 		ID           resource.TfeID `db:"job_id"`
 		RunID        resource.TfeID `db:"run_id"`
-		Phase        internal.PhaseType
+		Phase        run.PhaseType
 		Status       JobStatus
 		AgentPoolID  *resource.TfeID   `db:"agent_pool_id"`
 		Organization organization.Name `db:"organization_name"`

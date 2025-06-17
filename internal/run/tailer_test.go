@@ -1,10 +1,9 @@
-package logs
+package run
 
 import (
 	"context"
 	"testing"
 
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/stretchr/testify/assert"
@@ -23,13 +22,13 @@ func TestTail(t *testing.T) {
 
 		stream, err := app.Tail(ctx, TailOptions{
 			RunID: testutils.ParseID(t, "run-123"),
-			Phase: internal.PlanPhase,
+			Phase: PlanPhase,
 		})
 		require.NoError(t, err)
 
 		want := Chunk{
 			RunID:  testutils.ParseID(t, "run-123"),
-			Phase:  internal.PlanPhase,
+			Phase:  PlanPhase,
 			Data:   []byte("\x02hello world\x03"),
 			Offset: 6,
 		}
@@ -40,7 +39,7 @@ func TestTail(t *testing.T) {
 	t.Run("receive existing chunk", func(t *testing.T) {
 		want := Chunk{
 			RunID: testutils.ParseID(t, "run-123"),
-			Phase: internal.PlanPhase,
+			Phase: PlanPhase,
 			Data:  []byte("\x02hello"),
 		}
 		tailer := &tailer{
@@ -53,7 +52,7 @@ func TestTail(t *testing.T) {
 		}
 		stream, err := tailer.Tail(ctx, TailOptions{
 			RunID: testutils.ParseID(t, "run-123"),
-			Phase: internal.PlanPhase,
+			Phase: PlanPhase,
 		})
 		require.NoError(t, err)
 		require.Equal(t, want, <-stream)
@@ -63,7 +62,7 @@ func TestTail(t *testing.T) {
 		// send first chunk
 		want := Chunk{
 			RunID: testutils.ParseID(t, "run-123"),
-			Phase: internal.PlanPhase,
+			Phase: PlanPhase,
 			Data:  []byte("\x02hello"),
 		}
 		sub := make(chan pubsub.Event[Chunk])
@@ -74,7 +73,7 @@ func TestTail(t *testing.T) {
 
 		stream, err := svc.Tail(ctx, TailOptions{
 			RunID: testutils.ParseID(t, "run-123"),
-			Phase: internal.PlanPhase,
+			Phase: PlanPhase,
 		})
 		require.NoError(t, err)
 
@@ -85,7 +84,7 @@ func TestTail(t *testing.T) {
 		sub <- pubsub.Event[Chunk]{
 			Payload: Chunk{
 				RunID:  testutils.ParseID(t, "run-123"),
-				Phase:  internal.PlanPhase,
+				Phase:  PlanPhase,
 				Data:   []byte("lo world\x03"),
 				Offset: 4,
 			},
@@ -94,7 +93,7 @@ func TestTail(t *testing.T) {
 		// receive non-overlapping part of second chunk.
 		want = Chunk{
 			RunID:  testutils.ParseID(t, "run-123"),
-			Phase:  internal.PlanPhase,
+			Phase:  PlanPhase,
 			Data:   []byte(" world\x03"),
 			Offset: 6,
 		}
@@ -104,7 +103,7 @@ func TestTail(t *testing.T) {
 	t.Run("ignore duplicate chunk", func(t *testing.T) {
 		want := Chunk{
 			RunID: testutils.ParseID(t, "run-123"),
-			Phase: internal.PlanPhase,
+			Phase: PlanPhase,
 			Data:  []byte("\x02hello"),
 		}
 		sub := make(chan pubsub.Event[Chunk])
@@ -115,7 +114,7 @@ func TestTail(t *testing.T) {
 
 		stream, err := svc.Tail(ctx, TailOptions{
 			RunID: testutils.ParseID(t, "run-123"),
-			Phase: internal.PlanPhase,
+			Phase: PlanPhase,
 		})
 		require.NoError(t, err)
 
@@ -126,7 +125,7 @@ func TestTail(t *testing.T) {
 		sub <- pubsub.Event[Chunk]{
 			Payload: Chunk{
 				RunID: testutils.ParseID(t, "run-123"),
-				Phase: internal.PlanPhase,
+				Phase: PlanPhase,
 				Data:  []byte("\x02hello"),
 			},
 		}
@@ -134,7 +133,7 @@ func TestTail(t *testing.T) {
 		// publish non-duplicate chunk
 		want = Chunk{
 			RunID:  testutils.ParseID(t, "run-123"),
-			Phase:  internal.PlanPhase,
+			Phase:  PlanPhase,
 			Data:   []byte(" world\x03"),
 			Offset: 6,
 		}
@@ -152,7 +151,7 @@ func TestTail(t *testing.T) {
 
 		stream, err := svc.Tail(ctx, TailOptions{
 			RunID: testutils.ParseID(t, "run-123"),
-			Phase: internal.PlanPhase,
+			Phase: PlanPhase,
 		})
 		require.NoError(t, err)
 
@@ -160,7 +159,7 @@ func TestTail(t *testing.T) {
 		sub <- pubsub.Event[Chunk]{
 			Payload: Chunk{
 				RunID: testutils.ParseID(t, "run-456"),
-				Phase: internal.PlanPhase,
+				Phase: PlanPhase,
 				Data:  []byte("workers of the world, unite"),
 			},
 		}
@@ -168,7 +167,7 @@ func TestTail(t *testing.T) {
 		// publish chunk for tailed run
 		want := Chunk{
 			RunID: testutils.ParseID(t, "run-123"),
-			Phase: internal.PlanPhase,
+			Phase: PlanPhase,
 			Data:  []byte("\x02hello"),
 		}
 		sub <- pubsub.Event[Chunk]{Payload: want}
@@ -183,4 +182,18 @@ type fakeTailerClient struct {
 
 func (f *fakeTailerClient) GetChunk(ctx context.Context, opts GetChunkOptions) (Chunk, error) {
 	return f.chunk, nil
+}
+
+type fakeSubService struct {
+	stream chan pubsub.Event[Chunk]
+
+	pubsub.SubscriptionService[Chunk]
+}
+
+func (f *fakeSubService) Subscribe(ctx context.Context) (<-chan pubsub.Event[Chunk], func()) {
+	go func() {
+		<-ctx.Done()
+		close(f.stream)
+	}()
+	return f.stream, nil
 }

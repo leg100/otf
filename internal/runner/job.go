@@ -35,7 +35,7 @@ type Job struct {
 	// ID of the run that this job is for.
 	RunID resource.TfeID `jsonapi:"attribute" json:"run_id" db:"run_id"`
 	// Phase of run that this job is for.
-	Phase internal.PhaseType `jsonapi:"attribute" json:"phase"`
+	Phase otfrun.PhaseType `jsonapi:"attribute" json:"phase"`
 	// Current status of job.
 	Status JobStatus `jsonapi:"attribute" json:"status"`
 	// ID of agent pool the job's workspace is assigned to use. If non-nil then
@@ -109,12 +109,12 @@ func (j *Job) CanAccess(action authz.Action, req authz.Request) bool {
 			return true
 		case authz.UploadLockFileAction, authz.UploadPlanFileAction, authz.ApplyRunAction:
 			// plan phase
-			if j.Phase == internal.PlanPhase {
+			if j.Phase == otfrun.PlanPhase {
 				return true
 			}
 		case authz.GetLockFileAction, authz.CreateStateVersionAction:
 			// apply phase
-			if j.Phase == internal.ApplyPhase {
+			if j.Phase == otfrun.ApplyPhase {
 				return true
 			}
 		}

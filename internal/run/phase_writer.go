@@ -1,28 +1,27 @@
-package logs
+package run
 
 import (
 	"context"
 	"fmt"
 
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/resource"
 )
 
 type (
 	// PhaseWriter writes logs on behalf of a run phase.
 	PhaseWriter struct {
-		ctx     context.Context    // permits canceling mid-flow
-		started bool               // has first chunk been sent?
-		runID   resource.TfeID     // ID of run to write logs on behalf of.
-		phase   internal.PhaseType // run phase
-		offset  int                // current position in stream
+		ctx     context.Context // permits canceling mid-flow
+		started bool            // has first chunk been sent?
+		runID   resource.TfeID  // ID of run to write logs on behalf of.
+		phase   PhaseType       // run phase
+		offset  int             // current position in stream
 
 		PutChunkService // for uploading logs to server
 	}
 
 	PhaseWriterOptions struct {
 		RunID  resource.TfeID
-		Phase  internal.PhaseType
+		Phase  PhaseType
 		Writer PutChunkService
 	}
 )
@@ -40,8 +39,7 @@ func NewPhaseWriter(ctx context.Context, opts PhaseWriterOptions) *PhaseWriter {
 
 // Write uploads a chunk of logs to the server.
 func (w *PhaseWriter) Write(p []byte) (int, error) {
-	// TODO: io.Writer's should not retain p but do we need to copy it? Does
-	// this code 'retain' p? Does the cache or the database 'retain' p?
+	// io.Writer implementations should not retain p
 	data := make([]byte, len(p))
 	copy(data, p)
 

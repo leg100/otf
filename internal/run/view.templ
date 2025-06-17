@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/components/paths"
-	"github.com/leg100/otf/internal/logs"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runstatus"
@@ -187,8 +186,8 @@ func (t table) getWorkspaceName(ctx context.Context, run *Run) (string, error) {
 type getProps struct {
 	run       *Run
 	ws        *workspace.Workspace
-	planLogs  logs.Chunk
-	applyLogs logs.Chunk
+	planLogs  Chunk
+	applyLogs Chunk
 }
 
 templ get(props getProps) {

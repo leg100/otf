@@ -8,6 +8,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -19,12 +20,12 @@ func TestAllocator_seed(t *testing.T) {
 
 	job1 := &Job{
 		RunID:  resource.NewTfeID(resource.RunKind),
-		Phase:  internal.PlanPhase,
+		Phase:  run.PlanPhase,
 		Status: JobUnallocated,
 	}
 	job2 := &Job{
 		RunID:    resource.NewTfeID(resource.RunKind),
-		Phase:    internal.PlanPhase,
+		Phase:    run.PlanPhase,
 		Status:   JobAllocated,
 		RunnerID: &agent2.ID,
 	}
@@ -68,12 +69,12 @@ func TestAllocator_allocate(t *testing.T) {
 			},
 			job: &Job{
 				RunID:  testutils.ParseID(t, "run-123"),
-				Phase:  internal.PlanPhase,
+				Phase:  run.PlanPhase,
 				Status: JobUnallocated,
 			},
 			wantJob: &Job{
 				RunID:    testutils.ParseID(t, "run-123"),
-				Phase:    internal.PlanPhase,
+				Phase:    run.PlanPhase,
 				Status:   JobAllocated,
 				RunnerID: &runner1ID,
 			},
@@ -116,13 +117,13 @@ func TestAllocator_allocate(t *testing.T) {
 			},
 			job: &Job{
 				ID:          job1ID,
-				Phase:       internal.PlanPhase,
+				Phase:       run.PlanPhase,
 				Status:      JobUnallocated,
 				AgentPoolID: &pool1ID,
 			},
 			wantJob: &Job{
 				ID:          job1ID,
-				Phase:       internal.PlanPhase,
+				Phase:       run.PlanPhase,
 				Status:      JobAllocated,
 				AgentPoolID: &pool1ID,
 				RunnerID:    &runner1ID,

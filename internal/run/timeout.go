@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runstatus"
 	"golang.org/x/exp/maps"
@@ -60,16 +59,16 @@ func (e *Timeout) check(ctx context.Context) {
 	// Statuses that are checked for timeout
 	statuses := map[runstatus.Status]struct {
 		// phase corresponding to status
-		phase internal.PhaseType
+		phase PhaseType
 		// each status has a specific timeout
 		timeout time.Duration
 	}{
 		runstatus.Planning: {
-			phase:   internal.PlanPhase,
+			phase:   PlanPhase,
 			timeout: e.PlanningTimeout,
 		},
 		runstatus.Applying: {
-			phase:   internal.ApplyPhase,
+			phase:   ApplyPhase,
 			timeout: e.ApplyingTimeout,
 		},
 	}

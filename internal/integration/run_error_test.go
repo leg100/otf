@@ -8,8 +8,8 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/logs"
 	"github.com/leg100/otf/internal/resource"
+	runpkg "github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/require"
@@ -81,9 +81,9 @@ func TestRunError(t *testing.T) {
 			run := daemon.createRun(t, ctx, ws, cv, nil)
 
 			// tail run logs
-			logs, err := daemon.Logs.Tail(ctx, logs.TailOptions{
+			logs, err := daemon.Runs.Tail(ctx, runpkg.TailOptions{
 				RunID: run.ID,
-				Phase: internal.PlanPhase,
+				Phase: runpkg.PlanPhase,
 			})
 			require.NoError(t, err)
 

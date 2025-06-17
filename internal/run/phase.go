@@ -15,6 +15,12 @@ const (
 	PhaseCanceled    PhaseStatus = "canceled"
 	PhaseErrored     PhaseStatus = "errored"
 	PhaseUnreachable PhaseStatus = "unreachable"
+
+	PendingPhase PhaseType = "pending"
+	PlanPhase    PhaseType = "plan"
+	ApplyPhase   PhaseType = "apply"
+	FinalPhase   PhaseType = "final"
+	UnknownPhase PhaseType = "unknown"
 )
 
 type (
@@ -27,7 +33,7 @@ type (
 		// first.
 		StatusTimestamps []PhaseStatusTimestamp `json:"status_timestamps"`
 
-		internal.PhaseType `json:"phase"`
+		PhaseType `json:"phase"`
 
 		// report of planned or applied resource changes
 		ResourceReport *Report `json:"resource_report"`
@@ -36,6 +42,8 @@ type (
 	}
 
 	PhaseStatus string
+
+	PhaseType string
 
 	PhaseStartOptions struct {
 		Type    string         `jsonapi:"primary,phase"`
@@ -48,14 +56,14 @@ type (
 	}
 
 	PhaseStatusTimestamp struct {
-		Phase     internal.PhaseType
+		Phase     PhaseType
 		Status    PhaseStatus `json:"status"`
 		Timestamp time.Time   `json:"timestamp"`
 	}
 )
 
 // newPhase constructs a new phase. A new phase always starts in pending status.
-func newPhase(runID resource.TfeID, t internal.PhaseType) Phase {
+func newPhase(runID resource.TfeID, t PhaseType) Phase {
 	p := Phase{RunID: runID, PhaseType: t}
 	p.UpdateStatus(PhasePending)
 	return p

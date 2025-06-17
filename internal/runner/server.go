@@ -15,7 +15,6 @@ type ServerRunnerOptions struct {
 	Variables  variablesClient
 	State      stateClient
 	Configs    configClient
-	Logs       logsClient
 	Server     hostnameClient
 	Jobs       operationJobsClient
 }
@@ -33,7 +32,6 @@ func NewServerRunner(opts ServerRunnerOptions) (*Runner, error) {
 			variables:  opts.Variables,
 			state:      opts.State,
 			configs:    opts.Configs,
-			logs:       opts.Logs,
 			server:     opts.Server,
 			jobs:       opts.Jobs,
 		},
@@ -54,7 +52,6 @@ type localOperationSpawner struct {
 	variables  variablesClient
 	state      stateClient
 	configs    configClient
-	logs       logsClient
 	server     hostnameClient
 	jobs       operationJobsClient
 }
@@ -74,7 +71,6 @@ func (s *localOperationSpawner) newOperation(job *Job, jobToken []byte) (*operat
 		variables:    s.variables,
 		state:        s.state,
 		configs:      s.configs,
-		logs:         s.logs,
 		server:       s.server,
 	}), nil
 }

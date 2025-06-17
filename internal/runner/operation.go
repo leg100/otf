@@ -20,9 +20,8 @@ import (
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/engine"
 	"github.com/leg100/otf/internal/logr"
-	"github.com/leg100/otf/internal/logs"
 	"github.com/leg100/otf/internal/resource"
-	"github.com/leg100/otf/internal/run"
+	runpkg "github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/state"
 	"github.com/leg100/otf/internal/variable"
 	"github.com/leg100/otf/internal/workspace"
@@ -54,7 +53,7 @@ type (
 		PluginCache bool // toggle use of engine's shared plugin cache
 
 		job          *Job
-		run          *run.Run
+		run          *runpkg.Run
 		canceled     bool
 		ctx          context.Context
 		cancelfn     context.CancelFunc
@@ -71,7 +70,6 @@ type (
 		variables  variablesClient
 		state      stateClient
 		configs    configClient
-		logs       logsClient
 		server     hostnameClient
 		jobs       operationJobsClient
 	}
@@ -92,7 +90,6 @@ type (
 		variables  variablesClient
 		state      stateClient
 		configs    configClient
-		logs       logsClient
 		server     hostnameClient
 		jobs       operationJobsClient
 	}
@@ -111,11 +108,12 @@ type (
 	}
 
 	runClient interface {
-		Get(ctx context.Context, runID resource.TfeID) (*run.Run, error)
-		GetPlanFile(ctx context.Context, id resource.TfeID, format run.PlanFormat) ([]byte, error)
-		UploadPlanFile(ctx context.Context, id resource.TfeID, plan []byte, format run.PlanFormat) error
+		Get(ctx context.Context, runID resource.TfeID) (*runpkg.Run, error)
+		GetPlanFile(ctx context.Context, id resource.TfeID, format runpkg.PlanFormat) ([]byte, error)
+		UploadPlanFile(ctx context.Context, id resource.TfeID, plan []byte, format runpkg.PlanFormat) error
 		GetLockFile(ctx context.Context, id resource.TfeID) ([]byte, error)
 		UploadLockFile(ctx context.Context, id resource.TfeID, lockFile []byte) error
+		PutChunk(ctx context.Context, opts runpkg.PutChunkOptions) error
 	}
 
 	workspaceClient interface {
@@ -133,10 +131,6 @@ type (
 	stateClient interface {
 		Create(ctx context.Context, opts state.CreateStateVersionOptions) (*state.Version, error)
 		DownloadCurrent(ctx context.Context, workspaceID resource.TfeID) ([]byte, error)
-	}
-
-	logsClient interface {
-		PutChunk(ctx context.Context, opts logs.PutChunkOptions) error
 	}
 
 	hostnameClient interface {
@@ -175,7 +169,6 @@ func newOperation(opts operationOptions) *operation {
 		jobs:         opts.jobs,
 		state:        opts.state,
 		configs:      opts.configs,
-		logs:         opts.logs,
 		server:       opts.server,
 		isAgent:      opts.isAgent,
 	}
@@ -241,10 +234,10 @@ func (o *operation) do() error {
 		}
 	}()
 	o.workdir = wd
-	writer := logs.NewPhaseWriter(o.ctx, logs.PhaseWriterOptions{
+	writer := runpkg.NewPhaseWriter(o.ctx, runpkg.PhaseWriterOptions{
 		RunID:  run.ID,
 		Phase:  run.Phase(),
-		Writer: o.logs,
+		Writer: o.runs,
 	})
 	defer writer.Close()
 	o.out = writer
@@ -275,14 +268,14 @@ func (o *operation) do() error {
 		o.downloadState,
 	}
 	switch run.Phase() {
-	case internal.PlanPhase:
+	case runpkg.PlanPhase:
 		steps = append(steps, o.init)
 		steps = append(steps, o.plan)
 		steps = append(steps, o.convertPlanToJSON)
 		steps = append(steps, o.uploadPlan)
 		steps = append(steps, o.uploadJSONPlan)
 		steps = append(steps, o.uploadLockFile)
-	case internal.ApplyPhase:
+	case runpkg.ApplyPhase:
 		// Download lock file from plan phase for the apply phase, to ensure
 		// same providers are used in both phases.
 		steps = append(steps, o.downloadLockFile)
@@ -560,7 +553,7 @@ func (o *operation) uploadPlan(ctx context.Context) error {
 		return err
 	}
 
-	if err := o.runs.UploadPlanFile(ctx, o.run.ID, file, run.PlanFormatBinary); err != nil {
+	if err := o.runs.UploadPlanFile(ctx, o.run.ID, file, runpkg.PlanFormatBinary); err != nil {
 		return fmt.Errorf("unable to upload plan: %w", err)
 	}
 
@@ -572,7 +565,7 @@ func (o *operation) uploadJSONPlan(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	if err := o.runs.UploadPlanFile(ctx, o.run.ID, jsonFile, run.PlanFormatJSON); err != nil {
+	if err := o.runs.UploadPlanFile(ctx, o.run.ID, jsonFile, runpkg.PlanFormatJSON); err != nil {
 		return fmt.Errorf("unable to upload JSON plan: %w", err)
 	}
 	return nil
@@ -593,7 +586,7 @@ func (o *operation) uploadLockFile(ctx context.Context) error {
 }
 
 func (o *operation) downloadPlanFile(ctx context.Context) error {
-	plan, err := o.runs.GetPlanFile(ctx, o.run.ID, run.PlanFormatBinary)
+	plan, err := o.runs.GetPlanFile(ctx, o.run.ID, runpkg.PlanFormatBinary)
 	if err != nil {
 		return err
 	}

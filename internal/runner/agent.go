@@ -4,7 +4,6 @@ import (
 	otfapi "github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/logr"
-	"github.com/leg100/otf/internal/logs"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/state"
 	"github.com/leg100/otf/internal/variable"
@@ -81,7 +80,6 @@ func (s *remoteOperationSpawner) newOperation(job *Job, jobToken []byte) (*opera
 		variables:    &variable.Client{Client: apiClient},
 		state:        &state.Client{Client: apiClient},
 		configs:      &configversion.Client{Client: apiClient},
-		logs:         &logs.Client{Client: apiClient},
 		server:       apiClient,
 		isAgent:      true,
 	}), nil
