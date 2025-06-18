@@ -144,41 +144,23 @@ func (db *pgdb) UpdateStatus(ctx context.Context, runID resource.TfeID, fn func(
 		func(ctx context.Context) (*Run, error) {
 			row := db.Query(ctx, `
 SELECT
-    runs.run_id,
-    runs.created_at,
-    runs.cancel_signaled_at,
-    runs.is_destroy,
-    runs.position_in_queue,
-    runs.refresh,
-    runs.refresh_only,
-    runs.source,
-    runs.status,
+	runs.*,
     plans.status        AS plan_status,
-    applies.status      AS apply_status,
-    runs.replace_addrs,
-    runs.target_addrs,
-    runs.auto_apply,
     plans.resource_report::"report" AS plan_resource_report,
     plans.output_report::"report" AS plan_output_report,
+    applies.status      AS apply_status,
     applies.resource_report::"report" AS apply_resource_report,
-    runs.configuration_version_id,
-    runs.workspace_id,
-    runs.plan_only,
-    runs.created_by,
-    runs.engine_version,
-    runs.allow_empty_apply,
-    workspaces.execution_mode AS execution_mode,
-    CASE WHEN workspaces.latest_run_id = runs.run_id THEN true
-         ELSE false
-    END AS latest,
     workspaces.organization_name,
+    workspaces.execution_mode,
     organizations.cost_estimation_enabled,
     rst.run_status_timestamps,
     pst.plan_status_timestamps,
     ast.apply_status_timestamps,
     rv.run_variables,
     ia::"ingress_attributes" AS ingress_attributes,
-	runs.engine
+    CASE WHEN workspaces.latest_run_id = runs.run_id THEN true
+         ELSE false
+    END AS latest
 FROM runs
 JOIN plans USING (run_id)
 JOIN applies USING (run_id)
@@ -377,41 +359,23 @@ func (db *pgdb) ListRuns(ctx context.Context, opts ListOptions) (*resource.Page[
 	}
 	rows := db.Query(ctx, `
 SELECT
-    runs.run_id,
-    runs.created_at,
-    runs.cancel_signaled_at,
-    runs.is_destroy,
-    runs.position_in_queue,
-    runs.refresh,
-    runs.refresh_only,
-    runs.source,
-    runs.status,
-    plans.status      AS plan_status,
-    applies.status      AS apply_status,
-    runs.replace_addrs,
-    runs.target_addrs,
-    runs.auto_apply,
+	runs.*,
+    plans.status        AS plan_status,
     plans.resource_report::"report" AS plan_resource_report,
     plans.output_report::"report" AS plan_output_report,
+    applies.status      AS apply_status,
     applies.resource_report::"report" AS apply_resource_report,
-    runs.configuration_version_id,
-    runs.workspace_id,
-    runs.plan_only,
-    runs.created_by,
-    runs.engine_version,
-    runs.allow_empty_apply,
-    workspaces.execution_mode AS execution_mode,
-    CASE WHEN workspaces.latest_run_id = runs.run_id THEN true
-         ELSE false
-    END AS latest,
     workspaces.organization_name,
+    workspaces.execution_mode,
     organizations.cost_estimation_enabled,
     rst.run_status_timestamps,
     pst.plan_status_timestamps,
     ast.apply_status_timestamps,
     rv.run_variables,
     ia::"ingress_attributes" AS ingress_attributes,
-	runs.engine
+    CASE WHEN workspaces.latest_run_id = runs.run_id THEN true
+         ELSE false
+    END AS latest
 FROM runs
 JOIN plans USING (run_id)
 JOIN applies USING (run_id)
@@ -511,41 +475,23 @@ AND (($8::text IS NULL) OR ia.sender_username = $8)
 func (db *pgdb) get(ctx context.Context, runID resource.ID) (*Run, error) {
 	rows := db.Query(ctx, `
 SELECT
-    runs.run_id,
-    runs.created_at,
-    runs.cancel_signaled_at,
-    runs.is_destroy,
-    runs.position_in_queue,
-    runs.refresh,
-    runs.refresh_only,
-    runs.source,
-    runs.status,
-    plans.status      AS plan_status,
-    applies.status      AS apply_status,
-    runs.replace_addrs,
-    runs.target_addrs,
-    runs.auto_apply,
+	runs.*,
+    plans.status        AS plan_status,
     plans.resource_report::"report" AS plan_resource_report,
     plans.output_report::"report" AS plan_output_report,
+    applies.status      AS apply_status,
     applies.resource_report::"report" AS apply_resource_report,
-    runs.configuration_version_id,
-    runs.workspace_id,
-    runs.plan_only,
-    runs.created_by,
-    runs.engine_version,
-    runs.allow_empty_apply,
-    workspaces.execution_mode AS execution_mode,
-    CASE WHEN workspaces.latest_run_id = runs.run_id THEN true
-         ELSE false
-    END AS latest,
     workspaces.organization_name,
+    workspaces.execution_mode,
     organizations.cost_estimation_enabled,
     rst.run_status_timestamps,
     pst.plan_status_timestamps,
     ast.apply_status_timestamps,
     rv.run_variables,
     ia::"ingress_attributes" AS ingress_attributes,
-	runs.engine
+    CASE WHEN workspaces.latest_run_id = runs.run_id THEN true
+         ELSE false
+    END AS latest
 FROM runs
 JOIN plans USING (run_id)
 JOIN applies USING (run_id)
@@ -859,6 +805,7 @@ func (db *pgdb) scan(row pgx.CollectableRow) (*Run, error) {
 			IngressAttributes      *configversion.IngressAttributesModel `db:"ingress_attributes"`
 			CreatedBy              *user.Username                        `db:"created_by"`
 			CostEstimationEnabled  bool                                  `db:"cost_estimation_enabled"`
+			LockFile               []byte                                `db:"lock_file"`
 		}
 	)
 	m, err := pgx.RowToStructByName[model](row)
