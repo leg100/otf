@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.25](https://github.com/leg100/otf/compare/v0.3.24...v0.3.25) (2025-06-20)
+
+
+### Bug Fixes
+
+* **docs:** fix 404 links ([fb5dda0](https://github.com/leg100/otf/commit/fb5dda0a732c35ce64cad0c9e8716ed84b3e5c9d))
+
 ## [0.3.24](https://github.com/leg100/otf/compare/v0.3.23...v0.3.24) (2025-06-15)
 
 
