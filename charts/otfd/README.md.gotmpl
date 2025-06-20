@@ -7,13 +7,13 @@ Installs the [otf](https://github.com/leg100/otf) daemon.
 
 ## Usage
 
-First, follow the instructions in the repo [README.md](../../README.md) to add the helm repository.
+First, follow the instructions in the [docs](https://docs.otf.ninja/install/#install-from-source) to add the helm repository.
 
 To install the chart you need at the very minimum:
 
 * A PostgreSQL database up and running.
-* A hex-coded 16 byte [secret](https://docs.otf.ninja/latest/config/flags#-secret).
-* Either setup an [identity provider](https://docs.otf.ninja/latest/auth#identity-providers) or set a [site admin token](https://docs.otf.ninja/latest/auth#site-admin).
+* A hex-coded 16 byte [secret](https://docs.otf.ninja/config/flags#-secret).
+* Either setup an [identity provider](https://docs.otf.ninja/auth/providers/github) or set a [site admin token](https://docs.otf.ninja/auth#site-admin).
 
 For example, if a PostgreSQL server is accessible via the hostname `postgres`, has a database named `otf` accessible to a user with username `postgres` and password `postgres`:
 
@@ -21,7 +21,7 @@ For example, if a PostgreSQL server is accessible via the hostname `postgres`, h
 helm install otfd otf/otfd --set secret=2876cb147697052eec5b3cdb56211681 --set site-token=my-token --set database=postgres://postgres:postgres@postgres/otf
 ```
 
-Alternatively, you can use the [test-values.yaml](./charts/otfd/test-values.yaml) from this repo:
+Alternatively, you can use the [test-values.yaml](./test-values.yaml) from this repo:
 
 ```
 helm install otfd otf/otfd -f ./charts/otfd/test-values.yaml

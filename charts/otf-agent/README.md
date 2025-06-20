@@ -2,16 +2,16 @@
 
 ![Version: 0.1.15](https://img.shields.io/badge/Version-0.1.15-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 0.3.22](https://img.shields.io/badge/AppVersion-0.3.22-informational?style=flat-square)
 
-Installs the [otf agent](https://docs.otf.ninja/latest/agents/).
+Installs the [otf agent](https://docs.otf.ninja/runners/).
 
 ## Usage
 
-First follow the instructions in the repo [README.md](../../README.md) to add the helm repository.
+First, follow the instructions in the [docs](https://docs.otf.ninja/install/#install-from-source) to add the helm repository.
 
 Then ensure:
 
 * You have a running deployment of `otfd`.
-* You have generated an agent token (see the [agent docs](https://docs.otf.ninja/latest/agents/)).
+* You have generated an agent token (see the [docs](https://docs.otf.ninja/runners/)).
 
 Once you have these, deploy the chart with the URL of the `otfd` deployment and the agent token, e.g.:
 
@@ -56,15 +56,15 @@ address=10.244.0.18 agent.pool_id=apool-5b90443ed82ef769
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | affinity | object | `{}` |  |
-| concurrency | int | `nil` | Set the number of runs that can be processed concurrently. See [docs](https://docs.otf.ninja/latest/config/flags/#-concurrency). |
+| concurrency | int | `nil` | Set the number of runs that can be processed concurrently. See [docs](https://docs.otf.ninja/config/flags/#-concurrency). |
 | extraEnvs | list | `[]` | Extra environment variables to be passed to the deployment. |
 | fullnameOverride | string | `""` |  |
 | image.pullPolicy | string | `"IfNotPresent"` |  |
 | image.repository | string | `"leg100/otf-agent"` |  |
 | image.tag | string | `""` |  |
 | imagePullSecrets | list | `[]` |  |
-| logging.format | string | `nil` | Logging format: default, text, or json. See [docs](https://docs.otf.ninja/latest/config/flags/#-log-format) |
-| logging.verbosity | int | `nil` | Logging verbosity, the higher the number the more verbose the logs. See [docs](https://docs.otf.ninja/latest/config/flags/#-v). |
+| logging.format | string | `nil` | Logging format: default, text, or json. See [docs](https://docs.otf.ninja/config/flags/#-log-format) |
+| logging.verbosity | int | `nil` | Logging verbosity, the higher the number the more verbose the logs. See [docs](https://docs.otf.ninja/config/flags/#-v). |
 | nameOverride | string | `""` |  |
 | nodeSelector | object | `{}` |  |
 | pluginCache | bool | `nil` | Enable shared plugin cache for terraform providers. |

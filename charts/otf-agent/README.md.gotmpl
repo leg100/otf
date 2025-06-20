@@ -3,16 +3,16 @@
 
 {{ template "chart.badgesSection" . }}
 
-Installs the [otf agent](https://docs.otf.ninja/latest/agents/).
+Installs the [otf agent](https://docs.otf.ninja/runners/).
 
 ## Usage
 
-First follow the instructions in the repo [README.md](../../README.md) to add the helm repository.
+First, follow the instructions in the [docs](https://docs.otf.ninja/install/#install-from-source) to add the helm repository.
 
 Then ensure:
 
 * You have a running deployment of `otfd`.
-* You have generated an agent token (see the [agent docs](https://docs.otf.ninja/latest/agents/)).
+* You have generated an agent token (see the [docs](https://docs.otf.ninja/runners/)).
 
 Once you have these, deploy the chart with the URL of the `otfd` deployment and the agent token, e.g.:
 

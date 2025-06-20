@@ -6,7 +6,7 @@
 # can pass individual test names as arguments to override the default behaviour
 # of running all tests.
 #
-# Read the docs first: https://docs.otf.ninja/latest/testing/
+# Read the docs first: https://docs.otf.ninja/testing/
 
 set -e
 
