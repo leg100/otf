@@ -80,12 +80,17 @@ type (
 
 		// Username of user who created the run. This is nil if the run was
 		// instead triggered by a VCS event.
-		CreatedBy *user.Username
+		CreatedBy *Creator
 
 		// OTF doesn't support cost estimation but some go-tfe API tests expect
 		// a run to enter the RunCostEstimated state, and this boolean
 		// determines whether to enter that state upon finishing a plan.
 		CostEstimationEnabled bool
+	}
+
+	Creator struct {
+		Username user.Username
+		Avatar   []byte
 	}
 
 	Variable struct {
