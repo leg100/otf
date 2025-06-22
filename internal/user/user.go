@@ -4,12 +4,9 @@ package user
 import (
 	"context"
 	"fmt"
-	"image"
-	"image/draw"
 	"log/slog"
 	"time"
 
-	"github.com/lafriks/go-avatars"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/organization"
@@ -40,7 +37,7 @@ type (
 		// user belongs to many teams
 		Teams []*team.Team
 
-		avatar []byte
+		avatar *string
 	}
 
 	// ListOptions are options for the ListUsers endpoint.
@@ -88,23 +85,11 @@ func WithTeams(memberships ...*team.Team) NewUserOption {
 
 func (u *User) String() string { return u.Username.String() }
 
-func (u *User) Avatar() ([]byte, error) {
+func (u *User) Avatar() (string, error) {
 	if u.avatar != nil {
-		return u.avatar, nil
+		return *u.avatar, nil
 	}
-	img := image.NewRGBA(image.Rect(0, 0, 20, 20))
-	a, err := avatars.Generate(time.Now().Format(time.RFC3339Nano))
-	if err != nil {
-		return nil, err
-	}
-	av, err := a.Image(avatars.RenderSize(size))
-	if err != nil {
-		return nil, err
-	}
-	pos := image.Rect((i-int(i/10)*10)*size, int(i/10)*size, ((i-int(i/10)*10)+1)*size, (int(i/10)+1)*size)
-	draw.Draw(img, pos, av, image.Point{}, draw.Over)
-
-	return nil
+	return avatar(u.Username.String())
 }
 
 // IsTeamMember determines whether user is a member of the given team.

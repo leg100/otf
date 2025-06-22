@@ -124,7 +124,10 @@ func (f *factory) NewRun(ctx context.Context, workspaceID resource.TfeID, opts C
 		run.AllowEmptyApply = *opts.AllowEmptyApply
 	}
 	if creator, _ := user.UserFromContext(ctx); creator != nil {
-		run.CreatedBy = &creator.Username
+		run.CreatedBy = &Creator{
+			Username: creator.Username,
+			Avatar:   creator.Avatar(),
+		}
 	}
 	if opts.IsDestroy != nil {
 		run.IsDestroy = *opts.IsDestroy
