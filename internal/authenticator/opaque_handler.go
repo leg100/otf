@@ -3,7 +3,6 @@ package authenticator
 import (
 	"context"
 
-	"github.com/leg100/otf/internal/user"
 	"golang.org/x/oauth2"
 )
 
@@ -21,16 +20,16 @@ type (
 
 	IdentityProviderClient interface {
 		// GetCurrentUser retrieves the currently authenticated user
-		GetCurrentUser(ctx context.Context) (user.Username, error)
+		GetCurrentUser(ctx context.Context) (UserInfo, error)
 	}
 )
 
-func (a *opaqueHandler) getUsername(ctx context.Context, token *oauth2.Token) (user.Username, error) {
+func (a *opaqueHandler) parseUserInfo(ctx context.Context, token *oauth2.Token) (UserInfo, error) {
 	// construct client from token
 	client, err := a.ClientConstructor(a.OAuthConfig, token)
 	if err != nil {
-		return user.Username{}, err
+		return UserInfo{}, err
 	}
-	// get username from identity provider
+	// get user info from identity provider
 	return client.GetCurrentUser(ctx)
 }

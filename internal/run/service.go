@@ -59,6 +59,7 @@ type (
 		EngineService        *engine.Service
 		VCSProviderService   *vcs.Service
 		TokensService        *tokens.Service
+		UsersService         *user.Service
 
 		logr.Logger
 		internal.Cache

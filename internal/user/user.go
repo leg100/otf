@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net/url"
 	"time"
 
 	"github.com/leg100/otf/internal"
@@ -37,7 +38,7 @@ type (
 		// user belongs to many teams
 		Teams []*team.Team
 
-		avatar *string
+		AvatarURL *url.URL
 	}
 
 	// ListOptions are options for the ListUsers endpoint.
@@ -47,7 +48,7 @@ type (
 		Organization organization.Name `schema:"name"`
 	}
 
-	NewUserOption func(*User)
+	NewUserOption func(*User) error
 
 	CreateUserOptions struct {
 		Username string `json:"username"`
@@ -83,14 +84,13 @@ func WithTeams(memberships ...*team.Team) NewUserOption {
 	}
 }
 
-func (u *User) String() string { return u.Username.String() }
-
-func (u *User) Avatar() (string, error) {
-	if u.avatar != nil {
-		return *u.avatar, nil
+func WithAvatarURL(url string) NewUserOption {
+	return func(user *User) {
+		user.AvatarURL = url
 	}
-	return avatar(u.Username.String())
 }
+
+func (u *User) String() string { return u.Username.String() }
 
 // IsTeamMember determines whether user is a member of the given team.
 func (u *User) IsTeamMember(teamID resource.TfeID) bool {

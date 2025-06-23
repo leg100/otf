@@ -5,6 +5,7 @@ import (
 	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -44,10 +45,10 @@ func Test_idtokenHandler_getUsername(t *testing.T) {
 		return oidc.NewVerifier("", keySet, &oidc.Config{ClientID: "otf"})
 	}
 	// setup handler to parse the 'name' claim
-	username, err := newUsernameClaim("name")
+	username, err := newIDTokenUnmarshaler("name")
 	require.NoError(t, err)
 
-	handler := idtokenHandler{
+	handler := idTokenHandler{
 		verifier: fakeVerifier(t, "otf", key),
 		username: username,
 	}
@@ -56,4 +57,36 @@ func Test_idtokenHandler_getUsername(t *testing.T) {
 	))
 	require.NoError(t, err)
 	assert.Equal(t, "bobby", got.String())
+}
+
+func TestUsernameClaim_UnmarshalJSON(t *testing.T) {
+	tests := []struct {
+		kind  claim
+		token string
+		want  string
+	}{
+		{
+			kind:  NameClaim,
+			token: `{"name": "bobby"}`,
+			want:  "bobby",
+		},
+		{
+			kind:  EmailClaim,
+			token: `{"email": "foo@example.com"}`,
+			want:  "foo@example.com",
+		},
+		{
+			kind:  SubClaim,
+			token: `{"sub": "111112222"}`,
+			want:  "111112222",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(string(tt.kind), func(t *testing.T) {
+			uc := idTokenUnmarshaler{kind: tt.kind}
+			err := json.Unmarshal([]byte(tt.token), &uc)
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, uc.value.String())
+		})
+	}
 }

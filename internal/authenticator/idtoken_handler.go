@@ -4,10 +4,21 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/leg100/otf/internal/user"
 	"golang.org/x/oauth2"
+)
+
+// claim is the name of the claim which provides the username in an ID token.
+type claim string
+
+const (
+	EmailClaim   claim = "email"
+	SubClaim           = "sub"
+	NameClaim          = "name"
+	DefaultClaim       = NameClaim
 )
 
 var (
@@ -18,12 +29,12 @@ var (
 )
 
 type (
-	// idtokenHandler handles specifically an OIDC ID token, extracting the
+	// idTokenHandler handles specifically an OIDC ID token, extracting the
 	// username from a claim within the token.
-	idtokenHandler struct {
-		provider *oidc.Provider
-		verifier *oidc.IDTokenVerifier
-		username *usernameClaim
+	idTokenHandler struct {
+		provider      *oidc.Provider
+		verifier      *oidc.IDTokenVerifier
+		usernameClaim claim
 	}
 
 	// OIDCConfig is the configuration for a generic OIDC provider.
@@ -45,10 +56,17 @@ type (
 	}
 )
 
-func newIDTokenHandler(ctx context.Context, opts OIDCConfig) (*idtokenHandler, error) {
+func newIDTokenHandler(ctx context.Context, opts OIDCConfig) (*idTokenHandler, error) {
 	if opts.IssuerURL == "" {
 		return nil, ErrMissingOIDCIssuerURL
 	}
+
+	switch claim(opts.UsernameClaim) {
+	case EmailClaim, SubClaim, NameClaim:
+	default:
+		return nil, errors.New("unknown username claim: must be one of email, sub, or name")
+	}
+
 	// construct oidc provider, using our own http client, which lets us disable
 	// tls verification for testing purposes.
 	ctx = contextWithClient(ctx, opts.SkipTLSVerification)
@@ -57,36 +75,54 @@ func newIDTokenHandler(ctx context.Context, opts OIDCConfig) (*idtokenHandler, e
 		return nil, fmt.Errorf("constructing OIDC provider: %w", err)
 	}
 
-	// parse claim to be used for username
-	username, err := newUsernameClaim(opts.UsernameClaim)
-	if err != nil {
-		return nil, err
-	}
-
-	return &idtokenHandler{
-		verifier: provider.Verifier(&oidc.Config{ClientID: opts.ClientID}),
-		username: username,
-		provider: provider,
+	return &idTokenHandler{
+		verifier:      provider.Verifier(&oidc.Config{ClientID: opts.ClientID}),
+		provider:      provider,
+		usernameClaim: claim(opts.UsernameClaim),
 	}, nil
 }
 
-func (o idtokenHandler) getUsername(ctx context.Context, token *oauth2.Token) (user.Username, error) {
+// parseUserInfo parses the user info from an oauth access token
+func (o idTokenHandler) parseUserInfo(ctx context.Context, oauthToken *oauth2.Token) (UserInfo, error) {
 	// Extract the ID Token from OAuth2 token.
-	rawIDToken, ok := token.Extra("id_token").(string)
+	rawIDToken, ok := oauthToken.Extra("id_token").(string)
 	if !ok {
-		return user.Username{}, errors.New("id_token missing")
+		return UserInfo{}, errors.New("id_token missing")
 	}
 
 	// Parse and verify ID Token payload.
-	idt, err := o.verifier.Verify(ctx, rawIDToken)
+	idToken, err := o.verifier.Verify(ctx, rawIDToken)
 	if err != nil {
-		return user.Username{}, err
+		return UserInfo{}, err
 	}
 
-	// Extract username from claim
-	if err := idt.Claims(&o.username); err != nil {
-		return user.Username{}, err
+	// Extract claims from id token
+	var claims struct {
+		Name      user.Username `json:"name"`
+		Sub       user.Username `json:"sub"`
+		Email     user.Username `json:"email"`
+		AvatarURL string        `json:"picture"`
+	}
+	if err := idToken.Claims(&claims); err != nil {
+		return UserInfo{}, err
 	}
 
-	return o.username.value, nil
+	// Extract user info from claims
+	var userInfo UserInfo
+	switch o.usernameClaim {
+	case NameClaim:
+		userInfo.Username = claims.Name
+	case SubClaim:
+		userInfo.Username = claims.Sub
+	case EmailClaim:
+		userInfo.Username = claims.Email
+	}
+	if claims.AvatarURL != "" {
+		u, err := url.Parse(claims.AvatarURL)
+		if err != nil {
+			return UserInfo{}, err
+		}
+		userInfo.AvatarURL = u
+	}
+	return userInfo, nil
 }

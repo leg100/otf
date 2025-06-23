@@ -6,28 +6,39 @@ import (
 	"image"
 	"image/draw"
 	"image/png"
+	"sync"
 
-	"github.com/lafriks/go-avatars"
+	"github.com/o1egl/govatar"
+)
+
+var (
+	cache map[string]string = map[string]string{}
+	mu    sync.Mutex
 )
 
 func avatar(seed string) (string, error) {
-	size := 80
+	mu.Lock()
+	defer mu.Unlock()
+
+	if img, ok := cache[seed]; ok {
+		return img, nil
+	}
+
+	size := 400
+	a, err := govatar.GenerateForUsername(govatar.FEMALE, seed)
+	if err != nil {
+		return "", nil
+	}
+	pos := image.Rect(0, 0, 400, 400)
 	img := image.NewRGBA(image.Rect(0, 0, size, size))
-	a, err := avatars.Generate(seed)
-	if err != nil {
-		return "", nil
-	}
-	av, err := a.Image(avatars.RenderSize(size))
-	if err != nil {
-		return "", nil
-	}
-	pos := image.Rect(0, 0, 80, 80)
-	draw.Draw(img, pos, av, image.Point{}, draw.Over)
+	draw.Draw(img, pos, a, image.Point{}, draw.Over)
 
 	var buf bytes.Buffer
 	encoder := base64.NewEncoder(base64.StdEncoding, &buf)
 	if err := png.Encode(encoder, img); err != nil {
-		return "", nil
+		return "", err
 	}
+	// Cache before returning
+	cache[seed] = buf.String()
 	return buf.String(), nil
 }

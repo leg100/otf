@@ -2,7 +2,6 @@ package authenticator
 
 import (
 	"context"
-	"crypto/tls"
 	"errors"
 	"fmt"
 	"net/http"
@@ -12,11 +11,13 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
+	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
+	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/resource"
-	"github.com/leg100/otf/internal/user"
+	userpkg "github.com/leg100/otf/internal/user"
 	"golang.org/x/oauth2"
 )
 
@@ -28,7 +29,7 @@ type (
 	// tokenHandler takes an OAuth access token and returns the username
 	// associated with the token.
 	tokenHandler interface {
-		getUsername(context.Context, *oauth2.Token) (user.Username, error)
+		parseUserInfo(context.Context, *oauth2.Token) (UserInfo, error)
 	}
 
 	sessionStarter interface {
@@ -39,6 +40,7 @@ type (
 	// authorization from the user to access their account details on a particular
 	// cloud.
 	OAuthClient struct {
+		logr.Logger
 		OAuthConfig
 		// extract username from token
 		tokenHandler
@@ -65,6 +67,7 @@ type (
 )
 
 func newOAuthClient(
+	logger logr.Logger,
 	handler tokenHandler,
 	hostnameService *internal.HostnameService,
 	tokensService sessionStarter,
@@ -162,8 +165,8 @@ func (a *OAuthClient) callbackHandler(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, paths.Login(), http.StatusFound)
 		return
 	}
-	// Extract username from OAuth token
-	username, err := a.getUsername(r.Context(), token)
+	// Extract user info from OAuth token
+	userInfo, err := a.parseUserInfo(r.Context(), token)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -171,18 +174,35 @@ func (a *OAuthClient) callbackHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Retrieve user with extracted username, creating the user if necessary.
 	// Use privileged context to authorize access to user service endpoints.
-	ctx := authz.AddSubjectToContext(r.Context(), &authz.Superuser{Username: "oauth_client"})
-	user, err := a.users.GetUser(ctx, user.UserSpec{Username: &username})
+	var (
+		createUser bool
+		ctx        = authz.AddSubjectToContext(r.Context(), &authz.Superuser{Username: "oauth_client"})
+	)
+	user, err := a.users.GetUser(ctx, userpkg.UserSpec{Username: &userInfo.Username})
 	if errors.Is(err, internal.ErrResourceNotFound) {
-		user, err = a.users.Create(ctx, username.String())
+		createUser = true
 	}
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	// Lookup user in db, to retrieve user id to embed in session token
-	// Get or create user.
+	if createUser {
+		user, err = a.users.Create(ctx, userInfo.Username.String(), userpkg.WithAvatarURL(userInfo.AvatarURL))
+		if err != nil {
+			html.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	} else if user.AvatarURL != userInfo.AvatarURL {
+		// User's avatar URL has changed, so update db with latest URL.
+		if err := a.users.UpdateAvatar(ctx, user.Username, userInfo.AvatarURL); err != nil {
+			// Just log the error because a failure to update a user's avatar
+			// should not prevent them from logging in.
+			a.Error(err, "updating user avatar url")
+			return
+		}
+	}
+
 	if err := a.sessions.StartSession(w, r, user.ID); err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -228,13 +248,7 @@ func updateHost(u, host string) (string, error) {
 // contextWithClient returns a context that embeds an OAuth2 http client.
 func contextWithClient(ctx context.Context, skipTLSVerification bool) context.Context {
 	if skipTLSVerification {
-		return context.WithValue(ctx, oauth2.HTTPClient, &http.Client{
-			Transport: &http.Transport{
-				TLSClientConfig: &tls.Config{
-					InsecureSkipVerify: skipTLSVerification,
-				},
-			},
-		})
+		return context.WithValue(ctx, oauth2.HTTPClient, otfhttp.InsecureTransport)
 	}
 	return ctx
 }
