@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/url"
 
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/leg100/otf/internal/user"
@@ -118,11 +117,7 @@ func (o idTokenHandler) parseUserInfo(ctx context.Context, oauthToken *oauth2.To
 		userInfo.Username = claims.Email
 	}
 	if claims.AvatarURL != "" {
-		u, err := url.Parse(claims.AvatarURL)
-		if err != nil {
-			return UserInfo{}, err
-		}
-		userInfo.AvatarURL = u
+		userInfo.AvatarURL = &claims.AvatarURL
 	}
 	return userInfo, nil
 }

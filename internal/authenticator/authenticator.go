@@ -3,12 +3,11 @@
 package authenticator
 
 import (
-	"net/url"
-
 	"github.com/leg100/otf/internal/user"
 )
 
+// UserInfo is info about a user retrieved from the identity provider.
 type UserInfo struct {
 	Username  user.Username
-	AvatarURL *url.URL
+	AvatarURL *string // Optional.
 }

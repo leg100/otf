@@ -372,14 +372,7 @@ func (h *webHandlers) watchRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Render a one-row table containing run each time a run event arrives.
-	comp := func(run *Run) templ.Component {
-		return components.UnpaginatedTable(
-			&table{users: h.users},
-			[]*Run{run},
-			"run-item-"+run.ID.String(),
-		)
-	}
-	conn, err := components.NewWebsocket(h.logger, w, r, h.runs, comp)
+	conn, err := components.NewWebsocket(h.logger, w, r, h.runs, (&event{users: h.users}).view)
 	if err != nil {
 		h.logger.Error(err, "upgrading websocket connection")
 		return

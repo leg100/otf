@@ -16,7 +16,7 @@ func TestIntegration_OIDC(t *testing.T) {
 	svc, _, _ := setup(t, withOIDConfig(
 		authenticator.OIDCConfig{
 			Name:                "google",
-			IssuerURL:           authenticator.NewOIDCIssuer(t, "bobby", "stub-client-id", "google"),
+			IssuerURL:           authenticator.NewTestOIDCIssuer(t, "bobby", "stub-client-id", "google"),
 			ClientID:            "stub-client-id",
 			ClientSecret:        "stub-client-secret",
 			SkipTLSVerification: true,

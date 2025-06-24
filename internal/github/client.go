@@ -157,7 +157,7 @@ func (g *Client) GetCurrentUser(ctx context.Context) (authenticator.UserInfo, er
 	}
 	return authenticator.UserInfo{
 		Username:  username,
-		AvatarURL: guser.GetAvatarURL(),
+		AvatarURL: guser.AvatarURL,
 	}, nil
 }
 

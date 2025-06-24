@@ -284,7 +284,7 @@ func scan(row pgx.CollectableRow) (*User, error) {
 		CreatedAt time.Time      `db:"created_at"`
 		UpdatedAt time.Time      `db:"updated_at"`
 		SiteAdmin bool           `db:"site_admin"`
-		AvatarURL string         `db:"avatar_url"`
+		AvatarURL *string        `db:"avatar_url"`
 		Username  Username
 		Teams     []team.Model
 	}

@@ -36,8 +36,11 @@ templ profile() {
 		},
 		ContentActions: profileActions(),
 	}) {
-		<div class="flex flex-col gap-4">
+		<div class="flex flex-col gap-4 mt-2">
 			<p id="logged-in-msg">You are logged in as <span class="badge badge-primary badge-soft">{ components.CurrentUsername(ctx) }</span></p>
+			<div class="size-16">
+				@components.CurrentUserAvatar()
+			</div>
 		</div>
 	}
 }

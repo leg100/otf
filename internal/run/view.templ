@@ -70,16 +70,6 @@ templ (t table) Header() {
 }
 
 templ (t table) Row(run *Run) {
-	{{
-		var avatarURL string
-		if run.CreatedBy != nil {
-			user, err := t.users.GetUser(ctx, user.UserSpec{Username: run.CreatedBy})
-			if err != nil {
-				return err
-			}
-			avatarURL = user.AvatarURL
-		}
-	}}
 	<tr id={ "run-item-" + run.ID.String() } x-data={ components.BlockLink(paths.Run(run.ID)) }>
 		<!-- provide workspace name if not filtered by workspace ID -->
 		if t.workspaceClient != nil {
@@ -94,15 +84,7 @@ templ (t table) Row(run *Run) {
 		</td>
 		<td>
 			<div class="flex flex gap-2">
-				<div class="avatar">
-					<div class="size-14 rounded">
-						if avatarURL != "" {
-							<img src={ templ.SafeURL(avatarURL) }/>
-						} else if run.IngressAttributes != nil {
-							<img src={ templ.SafeURL(run.IngressAttributes.SenderAvatarURL) }/>
-						}
-					</div>
-				</div>
+				@t.avatar(run)
 				<div class="flex flex-col gap-2">
 					if run.CreatedBy != nil {
 						<span class="inline-block max-w-[16rem] truncate" id="run-created-by">
@@ -206,6 +188,24 @@ func (t table) getWorkspaceName(ctx context.Context, run *Run) (string, error) {
 	return ws.Name, nil
 }
 
+templ (t table) avatar(run *Run) {
+	<div class="avatar">
+		<div class="size-14 rounded">
+			if run.CreatedBy != nil {
+				{{
+					user, err := t.users.GetUser(ctx, user.UserSpec{Username: run.CreatedBy})
+					if err != nil {
+						return err
+					}
+				}}
+				@components.Avatar(user.AvatarURL)
+			} else if run.IngressAttributes != nil {
+				<img src={ templ.SafeURL(run.IngressAttributes.SenderAvatarURL) }/>
+			}
+		</div>
+	</div>
+}
+
 type getProps struct {
 	run       *Run
 	ws        *workspace.Workspace
@@ -305,7 +305,7 @@ type event struct {
 }
 
 templ (e *event) view(run *Run) {
-	<!-- render single-row table -->
+	// render single-row table
 	@components.UnpaginatedTable(&table{users: e.users}, []*Run{run}, "run-item-"+run.ID.String())
 	@phaseStatus(run.Plan)
 	@phaseStatus(run.Apply)

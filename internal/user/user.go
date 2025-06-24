@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"net/url"
 	"time"
 
 	"github.com/leg100/otf/internal"
@@ -38,7 +37,7 @@ type (
 		// user belongs to many teams
 		Teams []*team.Team
 
-		AvatarURL *url.URL
+		AvatarURL *string
 	}
 
 	// ListOptions are options for the ListUsers endpoint.
@@ -48,7 +47,7 @@ type (
 		Organization organization.Name `schema:"name"`
 	}
 
-	NewUserOption func(*User) error
+	NewUserOption func(*User)
 
 	CreateUserOptions struct {
 		Username string `json:"username"`
@@ -84,13 +83,11 @@ func WithTeams(memberships ...*team.Team) NewUserOption {
 	}
 }
 
-func WithAvatarURL(url string) NewUserOption {
-	return func(user *User) {
-		user.AvatarURL = url
-	}
-}
-
 func (u *User) String() string { return u.Username.String() }
+
+// PictureURL avoids an import cycle with the UI components package, allowing
+// the layout template to retrieve the current user's avatar URL.
+func (u *User) PictureURL() *string { return u.AvatarURL }
 
 // IsTeamMember determines whether user is a member of the given team.
 func (u *User) IsTeamMember(teamID resource.TfeID) bool {

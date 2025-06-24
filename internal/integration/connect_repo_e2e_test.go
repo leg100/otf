@@ -54,7 +54,7 @@ func TestConnectRepoE2E(t *testing.T) {
 		err = expect.Locator(page.Locator(`//div[@id='latest-run']//a[@id='commit-sha-abbrev']`)).ToContainText("42d6fc7")
 		require.NoError(t, err)
 		// user should match that of push event
-		err = expect.Locator(page.Locator(`//div[@id='latest-run']//a[@id='vcs-username' and text()='@leg100']`)).ToBeVisible()
+		err = expect.Locator(page.Locator(`//div[@id='latest-run']//a[@id='vcs-username']`)).ToHaveText("leg100")
 		require.NoError(t, err)
 		// because run was triggered from github, the github icon should be visible.
 		err = expect.Locator(page.Locator(`//div[@id='latest-run']//*[@id='github-icon']`)).ToBeVisible()

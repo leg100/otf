@@ -159,7 +159,7 @@ func (a *Service) UpdateAvatar(ctx context.Context, username Username, avatarURL
 		return err
 	}
 
-	a.V(0).Info("updated user avatar url", "username", username, "avatar_url", avatarURL, "subject", subject)
+	a.V(8).Info("updated user avatar url", "username", username, "avatar_url", avatarURL, "subject", subject)
 
 	return nil
 }

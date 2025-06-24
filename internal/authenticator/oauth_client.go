@@ -173,29 +173,22 @@ func (a *OAuthClient) callbackHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Retrieve user with extracted username, creating the user if necessary.
+	//
 	// Use privileged context to authorize access to user service endpoints.
-	var (
-		createUser bool
-		ctx        = authz.AddSubjectToContext(r.Context(), &authz.Superuser{Username: "oauth_client"})
-	)
+	ctx := authz.AddSubjectToContext(r.Context(), &authz.Superuser{Username: "oauth_client"})
 	user, err := a.users.GetUser(ctx, userpkg.UserSpec{Username: &userInfo.Username})
 	if errors.Is(err, internal.ErrResourceNotFound) {
-		createUser = true
+		user, err = a.users.Create(ctx, userInfo.Username.String())
 	}
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	if createUser {
-		user, err = a.users.Create(ctx, userInfo.Username.String(), userpkg.WithAvatarURL(userInfo.AvatarURL))
-		if err != nil {
-			html.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-	} else if user.AvatarURL != userInfo.AvatarURL {
-		// User's avatar URL has changed, so update db with latest URL.
-		if err := a.users.UpdateAvatar(ctx, user.Username, userInfo.AvatarURL); err != nil {
+	// If there is an avatar then refresh user's avatar regardless of whether
+	// it's changed from last time.
+	if userInfo.AvatarURL != nil {
+		if err := a.users.UpdateAvatar(ctx, user.Username, *userInfo.AvatarURL); err != nil {
 			// Just log the error because a failure to update a user's avatar
 			// should not prevent them from logging in.
 			a.Error(err, "updating user avatar url")
@@ -248,7 +241,9 @@ func updateHost(u, host string) (string, error) {
 // contextWithClient returns a context that embeds an OAuth2 http client.
 func contextWithClient(ctx context.Context, skipTLSVerification bool) context.Context {
 	if skipTLSVerification {
-		return context.WithValue(ctx, oauth2.HTTPClient, otfhttp.InsecureTransport)
+		return context.WithValue(ctx, oauth2.HTTPClient, &http.Client{
+			Transport: otfhttp.InsecureTransport,
+		})
 	}
 	return ctx
 }
