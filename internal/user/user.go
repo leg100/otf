@@ -30,12 +30,12 @@ type (
 		CreatedAt time.Time      `jsonapi:"attribute" json:"created-at"`
 		UpdatedAt time.Time      `jsonapi:"attribute" json:"updated-at"`
 		SiteAdmin bool           `jsonapi:"attribute" json:"site-admin"`
-
 		// username is globally unique
 		Username Username `jsonapi:"attribute" json:"username"`
-
 		// user belongs to many teams
 		Teams []*team.Team
+		// AvatarURL is the URL of an avatar depicting user.
+		AvatarURL *string
 	}
 
 	// ListOptions are options for the ListUsers endpoint.
@@ -82,6 +82,10 @@ func WithTeams(memberships ...*team.Team) NewUserOption {
 }
 
 func (u *User) String() string { return u.Username.String() }
+
+// PictureURL avoids an import cycle with the UI components package, allowing
+// the layout template to retrieve the current user's avatar URL.
+func (u *User) PictureURL() *string { return u.AvatarURL }
 
 // IsTeamMember determines whether user is a member of the given team.
 func (u *User) IsTeamMember(teamID resource.TfeID) bool {

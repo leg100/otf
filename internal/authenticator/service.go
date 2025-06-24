@@ -35,6 +35,7 @@ type (
 	userService interface {
 		GetUser(ctx context.Context, spec user.UserSpec) (*user.User, error)
 		Create(ctx context.Context, username string, opts ...user.NewUserOption) (*user.User, error)
+		UpdateAvatar(ctx context.Context, username user.Username, avatarURL string) error
 	}
 )
 
@@ -59,6 +60,7 @@ func NewAuthenticatorService(ctx context.Context, opts Options) (*Service, error
 		return nil, err
 	}
 	client, err := newOAuthClient(
+		opts.Logger,
 		handler,
 		opts.HostnameService,
 		opts.TokensService,
@@ -95,6 +97,7 @@ func (a *Service) RegisterOAuthClient(cfg OpaqueHandlerConfig) error {
 		return nil
 	}
 	client, err := newOAuthClient(
+		a.Logger,
 		&opaqueHandler{cfg},
 		a.HostnameService,
 		a.TokensService,

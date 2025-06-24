@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/a-h/templ"
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
@@ -18,6 +19,7 @@ import (
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/workspace"
 )
 
@@ -26,6 +28,7 @@ type (
 		logger     logr.Logger
 		runs       webRunClient
 		workspaces webWorkspaceClient
+		users      webUsersClient
 		authorizer webAuthorizer
 	}
 
@@ -48,6 +51,10 @@ type (
 		Watch(ctx context.Context) (<-chan pubsub.Event[*workspace.Event], func())
 	}
 
+	webUsersClient interface {
+		GetUser(ctx context.Context, username user.UserSpec) (*user.User, error)
+	}
+
 	webAuthorizer interface {
 		CanAccess(context.Context, authz.Action, resource.ID) bool
 	}
@@ -59,6 +66,7 @@ func newWebHandlers(service *Service, opts Options) *webHandlers {
 		logger:     opts.Logger,
 		runs:       service,
 		workspaces: opts.WorkspaceService,
+		users:      opts.UsersService,
 	}
 }
 
@@ -111,10 +119,13 @@ func (h *webHandlers) createRun(w http.ResponseWriter, r *http.Request) {
 func (h *webHandlers) listByOrganization(w http.ResponseWriter, r *http.Request) {
 	if websocket.IsWebSocketUpgrade(r) {
 		h := &components.WebsocketListHandler[*Run, *Event, ListOptions]{
-			Logger:    h.logger,
-			Client:    h.runs,
-			Populator: table{workspaceClient: h.workspaces},
-			ID:        "page-results",
+			Logger: h.logger,
+			Client: h.runs,
+			Populator: table{
+				workspaceClient: h.workspaces,
+				users:           h.users,
+			},
+			ID: "page-results",
 		}
 		h.Handler(w, r)
 		return
@@ -125,10 +136,12 @@ func (h *webHandlers) listByOrganization(w http.ResponseWriter, r *http.Request)
 func (h *webHandlers) listByWorkspace(w http.ResponseWriter, r *http.Request) {
 	if websocket.IsWebSocketUpgrade(r) {
 		h := &components.WebsocketListHandler[*Run, *Event, ListOptions]{
-			Logger:    h.logger,
-			Client:    h.runs,
-			Populator: table{},
-			ID:        "page-results",
+			Logger: h.logger,
+			Client: h.runs,
+			Populator: table{
+				users: h.users,
+			},
+			ID: "page-results",
 		}
 		h.Handler(w, r)
 		return
@@ -232,7 +245,13 @@ func (h *webHandlers) getWidget(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	html.Render(widget(run), w, r)
+	table := components.UnpaginatedTable(
+		&table{users: h.users},
+		[]*Run{run},
+		"run-item-"+run.ID.String(),
+	)
+
+	html.Render(table, w, r)
 }
 
 func (h *webHandlers) delete(w http.ResponseWriter, r *http.Request) {
@@ -352,7 +371,8 @@ func (h *webHandlers) watchRun(w http.ResponseWriter, r *http.Request) {
 	if !websocket.IsWebSocketUpgrade(r) {
 		return
 	}
-	conn, err := components.NewWebsocket(h.logger, w, r, h.runs, eventView)
+	// Render a one-row table containing run each time a run event arrives.
+	conn, err := components.NewWebsocket(h.logger, w, r, h.runs, (&event{users: h.users}).view)
 	if err != nil {
 		h.logger.Error(err, "upgrading websocket connection")
 		return
@@ -413,7 +433,17 @@ func (h *webHandlers) watchLatest(w http.ResponseWriter, r *http.Request) {
 	if !websocket.IsWebSocketUpgrade(r) {
 		return
 	}
-	conn, err := components.NewWebsocket(h.logger, w, r, h.runs, latestRunSingleTable)
+	conn, err := components.NewWebsocket(
+		h.logger, w, r,
+		h.runs,
+		func(run *Run) templ.Component {
+			return components.UnpaginatedTable(
+				&table{users: h.users},
+				[]*Run{run},
+				"latest-run",
+			)
+		},
+	)
 	if err != nil {
 		h.logger.Error(err, "upgrading websocket connection")
 		return

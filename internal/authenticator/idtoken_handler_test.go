@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"github.com/coreos/go-oidc/v3/oidc"
+	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/user"
 	"github.com/lestrrat-go/jwx/v2/jwa"
 	"github.com/lestrrat-go/jwx/v2/jwt"
 	"github.com/stretchr/testify/assert"
@@ -22,38 +24,71 @@ func Test_newIDTokenHandler(t *testing.T) {
 	assert.Equal(t, ErrMissingOIDCIssuerURL, err)
 }
 
-// Test_idtokenHandler_getUsername tests extracting the 'name' claim from an ID
+// Test_idtokenHandler_parseUserInfo tests extracting user info from an ID
 // token.
-func Test_idtokenHandler_getUsername(t *testing.T) {
-	// create id token
-	token, err := jwt.NewBuilder().
-		Audience([]string{"otf"}).
-		Claim("name", "bobby").
-		IssuedAt(time.Now()).
-		Expiration(time.Now().Add(time.Minute)).
-		Build()
-	require.NoError(t, err)
-	key, err := rsa.GenerateKey(rand.Reader, 1024)
-	require.NoError(t, err)
-	signed, err := jwt.Sign(token, jwt.WithKey(jwa.RS256, key))
-	require.NoError(t, err)
+func Test_idtokenHandler_parseUserInfo(t *testing.T) {
 
 	// setup id token verifier
-	fakeVerifier := func(t *testing.T, aud string, key *rsa.PrivateKey) *oidc.IDTokenVerifier {
+	fakeVerifier := func(key *rsa.PrivateKey) *oidc.IDTokenVerifier {
 		keySet := &oidc.StaticKeySet{PublicKeys: []crypto.PublicKey{key.Public()}}
 		return oidc.NewVerifier("", keySet, &oidc.Config{ClientID: "otf"})
 	}
-	// setup handler to parse the 'name' claim
-	username, err := newUsernameClaim("name")
-	require.NoError(t, err)
 
-	handler := idtokenHandler{
-		verifier: fakeVerifier(t, "otf", key),
-		username: username,
+	// test extracting username from different claims
+	tests := []struct {
+		claim claim
+		want  UserInfo
+	}{
+		{
+			NameClaim,
+			UserInfo{
+				Username:  user.MustUsername("bobby"),
+				AvatarURL: internal.Ptr("https://mypic.com"),
+			},
+		},
+		{
+			EmailClaim,
+			UserInfo{
+				Username: user.MustUsername("foo@example.com"),
+			},
+		},
+		{
+			SubClaim,
+			UserInfo{
+				Username: user.MustUsername("1111112222"),
+			},
+		},
 	}
-	got, err := handler.getUsername(context.Background(), (&oauth2.Token{}).WithExtra(
-		map[string]any{"id_token": string(signed)},
-	))
-	require.NoError(t, err)
-	assert.Equal(t, "bobby", got.String())
+	for _, tt := range tests {
+		t.Run(string(tt.claim), func(t *testing.T) {
+			// construct fake id token with wanted claims
+			builder := jwt.NewBuilder().
+				Audience([]string{"otf"}).
+				Claim(string(tt.claim), tt.want.Username.String()).
+				IssuedAt(time.Now()).
+				Expiration(time.Now().Add(time.Minute))
+			if tt.want.AvatarURL != nil {
+				builder = builder.Claim("picture", tt.want.AvatarURL)
+			}
+			token, err := builder.Build()
+			require.NoError(t, err)
+
+			key, err := rsa.GenerateKey(rand.Reader, 1024)
+			require.NoError(t, err)
+
+			signed, err := jwt.Sign(token, jwt.WithKey(jwa.RS256, key))
+			require.NoError(t, err)
+
+			handler := idTokenHandler{
+				verifier:      fakeVerifier(key),
+				usernameClaim: tt.claim,
+			}
+			got, err := handler.parseUserInfo(context.Background(), (&oauth2.Token{}).WithExtra(
+				map[string]any{"id_token": string(signed)},
+			))
+			require.NoError(t, err)
+
+			assert.Equal(t, tt.want, got)
+		})
+	}
 }

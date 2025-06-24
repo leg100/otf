@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"testing"
 
+	"github.com/go-logr/logr"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/testutils"
@@ -57,6 +58,7 @@ func newTestOAuthServerClient(t *testing.T, userID resource.TfeID) *OAuthClient 
 	require.NoError(t, err)
 
 	client, err := newOAuthClient(
+		logr.Discard(),
 		fakeTokenHandler{},
 		internal.NewHostnameService("otf-server.com"),
 		&fakeTokensService{},

@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/go-github/v65/github"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authenticator"
 	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/stretchr/testify/assert"
@@ -18,12 +19,13 @@ import (
 
 func TestGetUser(t *testing.T) {
 	ctx := context.Background()
-	want := user.NewTestUsername(t)
-	client := newTestServerClient(t, WithUsername(want))
+	username := user.MustUsername("bobby")
+	client := newTestServerClient(t, WithUsername(username))
 
 	got, err := client.GetCurrentUser(ctx)
 	require.NoError(t, err)
 
+	want := authenticator.UserInfo{Username: username}
 	assert.Equal(t, want, got)
 }
 

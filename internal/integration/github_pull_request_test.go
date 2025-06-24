@@ -64,7 +64,7 @@ func TestGithubPullRequest(t *testing.T) {
 			// should be one run widget with info matching the pull request
 			err = expect.Locator(page.Locator(`//a[@id='pull-request-link']`)).ToHaveText(`#2`)
 			require.NoError(t, err)
-			err = expect.Locator(page.Locator(`//a[@id='vcs-username']`)).ToHaveText(`@leg100`)
+			err = expect.Locator(page.Locator(`//a[@id='vcs-username']`)).ToHaveText(`leg100`)
 			require.NoError(t, err)
 			err = expect.Locator(page.Locator(`//a[@id='commit-sha-abbrev']`)).ToContainText(event.commit)
 			require.NoError(t, err)

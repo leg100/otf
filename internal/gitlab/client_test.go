@@ -9,24 +9,30 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authenticator"
 	"github.com/leg100/otf/internal/testutils"
+	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestClient_GetUser(t *testing.T) {
+func TestClient_GetCurrentUser(t *testing.T) {
 	mux, client := setup(t)
 
 	mux.HandleFunc("/api/v4/user", func(w http.ResponseWriter, r *http.Request) {
 		require.Equal(t, "GET", r.Method)
-		fmt.Fprint(w, `{"username":"bobby"}`)
+		fmt.Fprint(w, `{"username":"bobby","avatar_url": "https://mymugshot.com"}`)
 	})
 
 	got, err := client.GetCurrentUser(context.Background())
 	require.NoError(t, err)
 
-	assert.Equal(t, "bobby", got.String())
+	want := authenticator.UserInfo{
+		Username:  user.MustUsername("bobby"),
+		AvatarURL: internal.Ptr("https://mymugshot.com"),
+	}
+	assert.Equal(t, want, got)
 }
 
 func TestClient_GetDefaultBranch(t *testing.T) {

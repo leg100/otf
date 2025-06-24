@@ -75,7 +75,7 @@ func TestWeb_ListHandler(t *testing.T) {
 				r = r.WithContext(authz.AddSubjectToContext(context.Background(), tt.subject))
 				w := httptest.NewRecorder()
 				svc.list(w, r)
-				assert.Equal(t, 200, w.Code)
+				assert.Equal(t, 200, w.Code, w.Body.String())
 				doc, err := htmlquery.Parse(w.Body)
 				require.NoError(t, err)
 				button := htmlquery.FindOne(doc, `//button[@id='new-organization-button']`)

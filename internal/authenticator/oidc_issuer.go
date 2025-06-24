@@ -18,9 +18,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// NewOIDCIssuer creates an oidc issuer server and returns its url. For testing
+// NewTestOIDCIssuer creates an oidc issuer server and returns its url. For testing
 // purposes.
-func NewOIDCIssuer(t *testing.T, username, aud, name string) string {
+func NewTestOIDCIssuer(t *testing.T, username, aud, name string) string {
 	priv, err := rsa.GenerateKey(rand.Reader, 1024)
 	require.NoError(t, err)
 

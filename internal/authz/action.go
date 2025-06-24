@@ -125,6 +125,7 @@ const (
 	DeleteConfigurationVersionAction
 
 	CreateUserAction
+	UpdateUserAction
 	ListUsersAction
 	GetUserAction
 	DeleteUserAction

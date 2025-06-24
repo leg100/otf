@@ -11,8 +11,8 @@ import (
 
 type fakeTokenHandler struct{}
 
-func (f fakeTokenHandler) getUsername(ctx context.Context, token *oauth2.Token) (user.Username, error) {
-	return user.Username{}, nil
+func (f fakeTokenHandler) parseUserInfo(ctx context.Context, token *oauth2.Token) (UserInfo, error) {
+	return UserInfo{}, nil
 }
 
 type fakeTokensService struct{}
@@ -32,4 +32,8 @@ func (f *fakeUserService) GetUser(ctx context.Context, spec user.UserSpec) (*use
 
 func (f *fakeUserService) Create(ctx context.Context, username string, opts ...user.NewUserOption) (*user.User, error) {
 	return nil, nil
+}
+
+func (f *fakeUserService) UpdateAvatar(ctx context.Context, username user.Username, avatarURL string) error {
+	return nil
 }

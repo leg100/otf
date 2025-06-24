@@ -15,6 +15,7 @@ var (
 	_ resource.ID = (*Username)(nil)
 )
 
+// Username of an OTF user.
 type Username struct {
 	name string
 }

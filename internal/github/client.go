@@ -146,13 +146,19 @@ func NewOAuthClient(cfg authenticator.OAuthConfig, token *oauth2.Token) (authent
 	})
 }
 
-func (g *Client) GetCurrentUser(ctx context.Context) (user.Username, error) {
+func (g *Client) GetCurrentUser(ctx context.Context) (authenticator.UserInfo, error) {
 	guser, _, err := g.client.Users.Get(ctx, "")
 	if err != nil {
-		return user.Username{}, err
+		return authenticator.UserInfo{}, err
 	}
-	usernameStr := guser.GetLogin()
-	return user.NewUsername(usernameStr)
+	username, err := user.NewUsername(guser.GetLogin())
+	if err != nil {
+		return authenticator.UserInfo{}, err
+	}
+	return authenticator.UserInfo{
+		Username:  username,
+		AvatarURL: guser.AvatarURL,
+	}, nil
 }
 
 func (g *Client) GetDefaultBranch(ctx context.Context, identifier string) (string, error) {

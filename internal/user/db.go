@@ -27,12 +27,14 @@ INSERT INTO users (
     user_id,
     created_at,
     updated_at,
-    username
+    username,
+	avatar_url
 ) VALUES (
     @user_id,
     @created_at,
     @updated_at,
-    @username
+    @username,
+	@avatar_url
 )
 `,
 			pgx.NamedArgs{
@@ -40,6 +42,7 @@ INSERT INTO users (
 				"created_at": user.CreatedAt,
 				"updated_at": user.UpdatedAt,
 				"username":   user.Username,
+				"avatar_url": user.AvatarURL,
 			},
 		)
 		if err != nil {
@@ -64,10 +67,19 @@ FROM users
 	})
 }
 
+func (db *pgdb) updateAvatarURL(ctx context.Context, username Username, avatarURL string) error {
+	_, err := db.Exec(ctx, `
+UPDATE users
+SET avatar_url = $1
+WHERE username = $2
+`, avatarURL, username)
+	return err
+}
+
 func (db *pgdb) listUsers(ctx context.Context) ([]*User, error) {
 	rows := db.Query(ctx, `
 SELECT
-    u.user_id, u.username, u.created_at, u.updated_at, u.site_admin,
+    u.*,
     (
         SELECT array_agg(t.*)::teams[]
         FROM teams t
@@ -83,7 +95,7 @@ FROM users u
 func (db *pgdb) listOrganizationUsers(ctx context.Context, organization organization.Name) ([]*User, error) {
 	rows := db.Query(ctx, `
 SELECT
-    u.user_id, u.username, u.created_at, u.updated_at, u.site_admin,
+    u.*,
     (
         SELECT array_agg(t.*)::teams[]
         FROM teams t
@@ -103,7 +115,7 @@ GROUP BY u.user_id
 func (db *pgdb) listTeamUsers(ctx context.Context, teamID resource.TfeID) ([]*User, error) {
 	rows := db.Query(ctx, `
 SELECT
-    u.user_id, u.username, u.created_at, u.updated_at, u.site_admin,
+    u.*,
     (
         SELECT array_agg(t.*)::teams[]
         FROM teams t
@@ -126,7 +138,7 @@ func (db *pgdb) getUser(ctx context.Context, spec UserSpec) (*User, error) {
 	if spec.UserID != nil {
 		rows = db.Query(ctx, `
 SELECT
-    u.user_id, u.username, u.created_at, u.updated_at, u.site_admin,
+    u.*,
     (
         SELECT array_agg(t.*)::teams[]
         FROM teams t
@@ -140,7 +152,7 @@ WHERE u.user_id = $1
 	} else if spec.Username != nil {
 		rows = db.Query(ctx, `
 SELECT
-    u.user_id, u.username, u.created_at, u.updated_at, u.site_admin,
+    u.*,
     (
         SELECT array_agg(t.*)::teams[]
         FROM teams t
@@ -154,7 +166,7 @@ WHERE u.username = $1
 	} else if spec.AuthenticationTokenID != nil {
 		rows = db.Query(ctx, `
 SELECT
-    u.user_id, u.username, u.created_at, u.updated_at, u.site_admin,
+    u.*,
     (
         SELECT array_agg(t.*)::teams[]
         FROM teams t
@@ -272,6 +284,7 @@ func scan(row pgx.CollectableRow) (*User, error) {
 		CreatedAt time.Time      `db:"created_at"`
 		UpdatedAt time.Time      `db:"updated_at"`
 		SiteAdmin bool           `db:"site_admin"`
+		AvatarURL *string        `db:"avatar_url"`
 		Username  Username
 		Teams     []team.Model
 	}
@@ -285,6 +298,7 @@ func scan(row pgx.CollectableRow) (*User, error) {
 		UpdatedAt: m.UpdatedAt,
 		SiteAdmin: m.SiteAdmin,
 		Username:  m.Username,
+		AvatarURL: m.AvatarURL,
 	}
 	// Only allocate if there are any teams; tests for equality otherwise fail
 	// comparing nil with an empty slice.

@@ -148,6 +148,22 @@ func (a *Service) Create(ctx context.Context, username string, opts ...NewUserOp
 	return user, nil
 }
 
+func (a *Service) UpdateAvatar(ctx context.Context, username Username, avatarURL string) error {
+	subject, err := a.Authorize(ctx, authz.UpdateUserAction, resource.SiteID)
+	if err != nil {
+		return err
+	}
+
+	if err := a.db.updateAvatarURL(ctx, username, avatarURL); err != nil {
+		a.Error(err, "updating avatar url", "username", username, "avatar_url", avatarURL, "subject", subject)
+		return err
+	}
+
+	a.V(8).Info("updated user avatar url", "username", username, "avatar_url", avatarURL, "subject", subject)
+
+	return nil
+}
+
 func (a *Service) GetUser(ctx context.Context, spec UserSpec) (*User, error) {
 	subject, err := a.Authorize(ctx, authz.GetUserAction, resource.SiteID)
 	if err != nil {
