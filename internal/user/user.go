@@ -30,13 +30,11 @@ type (
 		CreatedAt time.Time      `jsonapi:"attribute" json:"created-at"`
 		UpdatedAt time.Time      `jsonapi:"attribute" json:"updated-at"`
 		SiteAdmin bool           `jsonapi:"attribute" json:"site-admin"`
-
 		// username is globally unique
 		Username Username `jsonapi:"attribute" json:"username"`
-
 		// user belongs to many teams
 		Teams []*team.Team
-
+		// AvatarURL is the URL of an avatar depicting user.
 		AvatarURL *string
 	}
 
