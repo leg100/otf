@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.3.25](https://github.com/leg100/otf/compare/v0.3.24...v0.3.25) (2025-06-24)
+
+
+### Features
+
+* **ui:** user avatars ([f35efdd](https://github.com/leg100/otf/commit/f35efdd5a703282645b3239d610421d360bba6be))
+
+
+### Bug Fixes
+
+* **docs:** fix 404 links ([fb5dda0](https://github.com/leg100/otf/commit/fb5dda0a732c35ce64cad0c9e8716ed84b3e5c9d))
+
 ## [0.3.24](https://github.com/leg100/otf/compare/v0.3.23...v0.3.24) (2025-06-15)
 
 
