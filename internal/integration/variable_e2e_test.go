@@ -23,9 +23,15 @@ func TestVariableE2E(t *testing.T) {
 		// go to workspace
 		_, err := page.Goto(workspaceURL(svc.System.Hostname(), org.Name, "my-test-workspace"))
 		require.NoError(t, err)
+
 		// go to variables
 		err = page.Locator(`//ul[@id='workspace-submenu']//li[@id='menu-item-variables']/a`).Click()
 		require.NoError(t, err)
+
+		// confirm 'variables' submenu button is active
+		err = expect.Locator(page.Locator(`//*[@id="menu-item-variables"]/a`)).ToHaveClass(`menu-active`)
+		require.NoError(t, err)
+
 		// click add variable button
 		err = page.Locator(`//button[text()='Add variable']`).Click()
 		require.NoError(t, err)

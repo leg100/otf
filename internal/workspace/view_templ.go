@@ -2439,6 +2439,10 @@ func WorkspaceHeaderLinks(workspaceID resource.TfeID, canUpdate bool) templ.Comp
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
+		templ_7745c5c3_Err = components.MenuItem("Overview", paths.Workspace(workspaceID)).Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
 		templ_7745c5c3_Err = components.MenuItem("Runs", paths.Runs(workspaceID)).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err

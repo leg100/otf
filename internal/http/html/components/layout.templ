@@ -114,7 +114,6 @@ templ BareLayout(props BareLayoutProps) {
 			<script defer src={ AssetPath(ctx, "/static/js/alpine.3.14.8.min.js") }></script>
 			<link rel="stylesheet" href={ AssetPath(ctx, "/static/css/output.css") }/>
 		</head>
-		<!--<body class="flex-col m-0 min-h-screen font-sans">-->
 		<body class="min-h-screen grid grid-rows-[auto_1fr_auto] grid-cols-[200px_3fr]">
 			<header class="col-span-2 border-b-1 border-base-content/30">
 				@navbar(props.Organization)
@@ -144,7 +143,6 @@ templ BareLayout(props BareLayoutProps) {
 }
 
 templ navbar(organization resource.ID) {
-	<!--<div class="navbar bg-base-100 px-2 flex flex-wrap justify-between items-center gap-6 my-0 mx-auto p-1 font-mono">-->
 	<div class="navbar bg-base-100 min-h-1">
 		<div class="flex-1 flex gap-10">
 			<img src={ AssetPath(ctx, "/static/images/logo.svg") } alt="logo"/>

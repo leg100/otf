@@ -63,6 +63,10 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 			clipboardContents, err := page.EvaluateHandle(`window.navigator.clipboard.readText()`)
 			require.NoError(t, err)
 			assert.Equal(t, run.ID.String(), clipboardContents.String())
+
+			// confirm 'overview' submenu button is active
+			err = expect.Locator(page.Locator(`//*[@id="menu-item-overview"]/a`)).ToHaveClass(`menu-active`)
+			require.NoError(t, err)
 		})
 	})
 
@@ -219,6 +223,10 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 
 			// go to workspace settings
 			err = page.Locator(`//ul[@id='workspace-submenu']//li[@id='menu-item-settings']/a`).Click()
+			require.NoError(t, err)
+
+			// confirm 'settings' submenu button is active
+			err = expect.Locator(page.Locator(`//ul[@id='workspace-submenu']//li[@id='menu-item-settings']/a`)).ToHaveClass(`menu-active`)
 			require.NoError(t, err)
 
 			// default should be set to always trigger runs

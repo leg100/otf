@@ -59,14 +59,17 @@ templ MenuItem(title string, path templ.SafeURL, matchPrefixes ...string) {
 	<li id={ "menu-item-" + strings.ReplaceAll(strings.ToLower(string(title)), " ", "-") }>
 		<a
 			href={ path }
-			class={ templ.KV("menu-active", menuIsActive(ctx, append(matchPrefixes, string(path))...)) }
+			class={ templ.KV("menu-active", menuIsActive(ctx, string(path), matchPrefixes...)) }
 		>
 			{ string(title) }
 		</a>
 	</li>
 }
 
-func menuIsActive(ctx context.Context, pathPrefixes ...string) bool {
+func menuIsActive(ctx context.Context, path string, pathPrefixes ...string) bool {
+	if CurrentPath(ctx) == path {
+		return true
+	}
 	for _, p := range pathPrefixes {
 		if strings.HasPrefix(CurrentPath(ctx), p) {
 			return true

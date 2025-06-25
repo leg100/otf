@@ -827,6 +827,7 @@ templ (s repoSelector) action(repo vcs.Repo) {
 
 templ WorkspaceHeaderLinks(workspaceID resource.TfeID, canUpdate bool) {
 	<ul id="workspace-submenu" class="menu menu-horizontal bg-base-200 rounded-box [&>li>a]:py-0">
+		@components.MenuItem("Overview", paths.Workspace(workspaceID))
 		@components.MenuItem("Runs", paths.Runs(workspaceID))
 		@components.MenuItem("Variables", paths.Variables(workspaceID))
 		if canUpdate {

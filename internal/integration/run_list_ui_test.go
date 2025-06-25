@@ -54,6 +54,10 @@ func TestIntegration_RunListUI(t *testing.T) {
 		_, err := page.Goto(workspaceRunsURL(daemon.System.Hostname(), ws1.ID))
 		require.NoError(t, err)
 
+		// confirm 'runs' submenu button is active
+		err = expect.Locator(page.Locator(`//ul[@id='workspace-submenu']//li[@id='menu-item-runs']/a`)).ToHaveClass(`menu-active`)
+		require.NoError(t, err)
+
 		// should be three runs
 		err = expect.Locator(page.Locator(`#page-info`)).ToHaveText("1-3 of 3")
 		require.NoError(t, err)

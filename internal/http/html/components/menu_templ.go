@@ -241,7 +241,7 @@ func MenuItem(title string, path templ.SafeURL, matchPrefixes ...string) templ.C
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var6 = []any{templ.KV("menu-active", menuIsActive(ctx, append(matchPrefixes, string(path))...))}
+		var templ_7745c5c3_Var6 = []any{templ.KV("menu-active", menuIsActive(ctx, string(path), matchPrefixes...))}
 		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var6...)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
@@ -289,7 +289,10 @@ func MenuItem(title string, path templ.SafeURL, matchPrefixes ...string) templ.C
 	})
 }
 
-func menuIsActive(ctx context.Context, pathPrefixes ...string) bool {
+func menuIsActive(ctx context.Context, path string, pathPrefixes ...string) bool {
+	if CurrentPath(ctx) == path {
+		return true
+	}
 	for _, p := range pathPrefixes {
 		if strings.HasPrefix(CurrentPath(ctx), p) {
 			return true
