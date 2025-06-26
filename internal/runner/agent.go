@@ -1,9 +1,12 @@
 package runner
 
 import (
+	"context"
+
 	otfapi "github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/logr"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/state"
 	"github.com/leg100/otf/internal/variable"
@@ -38,49 +41,46 @@ func NewAgent(logger logr.Logger, opts AgentOptions) (*Runner, error) {
 	if err != nil {
 		return nil, err
 	}
+	opts.OperationConfig.IsAgent = true
 	return newRunner(
 		logger,
 		&remoteClient{Client: apiClient},
-		&remoteOperationSpawner{
-			logger: logger,
-			config: *opts.Config,
-			url:    opts.URL,
+		&RemoteOperationSpawner{
+			Logger: logger,
+			Config: opts.OperationConfig,
+			URL:    opts.URL,
 		},
 		true,
 		*opts.Config,
 	)
 }
 
-type remoteOperationSpawner struct {
-	config Config
-	logger logr.Logger
-	url    string
+type RemoteOperationSpawner struct {
+	Config OperationConfig
+	Logger logr.Logger
+	URL    string
 }
 
-func (s *remoteOperationSpawner) newOperation(job *Job, jobToken []byte) (*operation, error) {
-	apiClient, err := otfapi.NewClient(otfapi.Config{
-		URL:           s.url,
+func (s *RemoteOperationSpawner) NewOperation(ctx context.Context, jobID resource.TfeID, jobToken []byte) (*operation, error) {
+	client, err := otfapi.NewClient(otfapi.Config{
+		URL:           s.URL,
 		Token:         string(jobToken),
 		RetryRequests: true,
 	})
 	if err != nil {
 		return nil, err
 	}
-	return newOperation(operationOptions{
-		logger:       s.logger,
-		Debug:        s.config.Debug,
-		Sandbox:      s.config.Sandbox,
-		PluginCache:  s.config.PluginCache,
-		engineBinDir: s.config.EngineBinDir,
-		job:          job,
-		jobToken:     jobToken,
-		runs:         &run.Client{Client: apiClient},
-		jobs:         &remoteClient{Client: apiClient},
-		workspaces:   &workspace.Client{Client: apiClient},
-		variables:    &variable.Client{Client: apiClient},
-		state:        &state.Client{Client: apiClient},
-		configs:      &configversion.Client{Client: apiClient},
-		server:       apiClient,
-		isAgent:      true,
-	}), nil
+	return newOperation(ctx, operationOptions{
+		logger:          s.Logger,
+		OperationConfig: s.Config,
+		jobID:           jobID,
+		jobToken:        jobToken,
+		runs:            &run.Client{Client: client},
+		jobs:            &remoteClient{Client: client},
+		workspaces:      &workspace.Client{Client: client},
+		variables:       &variable.Client{Client: client},
+		state:           &state.Client{Client: client},
+		configs:         &configversion.Client{Client: client},
+		server:          client,
+	})
 }

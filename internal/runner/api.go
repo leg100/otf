@@ -37,9 +37,9 @@ type (
 func (a *api) addHandlers(r *mux.Router) {
 	r = r.PathPrefix(otfapi.DefaultBasePath).Subrouter()
 
-	// agents
 	r.HandleFunc("/agents/register", a.registerAgent).Methods("POST")
 	r.HandleFunc("/agents/jobs", a.getJobs).Methods("GET")
+	r.HandleFunc("/agents/job/{job_id}", a.getJob).Methods("GET")
 	r.HandleFunc("/agents/status", a.updateAgentStatus).Methods("POST")
 	r.HandleFunc("/agents/start", a.startJob).Methods("POST")
 	r.HandleFunc("/agents/finish", a.finishJob).Methods("POST")
@@ -81,6 +81,22 @@ func (a *api) getJobs(w http.ResponseWriter, r *http.Request) {
 	}
 
 	jobs, err := a.Service.getJobs(r.Context(), runner.ID)
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+
+	a.Respond(w, r, jobs, http.StatusOK)
+}
+
+func (a *api) getJob(w http.ResponseWriter, r *http.Request) {
+	jobID, err := decode.ID("job_id", r)
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+
+	jobs, err := a.Service.getJob(r.Context(), jobID)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return

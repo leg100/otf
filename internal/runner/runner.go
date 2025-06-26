@@ -24,23 +24,22 @@ const DefaultMaxJobs = 5
 
 var PluginCacheDir = filepath.Join(os.TempDir(), "plugin-cache")
 
-type (
-	Runner struct {
-		*RunnerMeta
+// Runner runs jobs.
+type Runner struct {
+	*RunnerMeta
 
-		Sandbox         bool   // isolate privileged ops within sandbox
-		Debug           bool   // toggle debug mode
-		PluginCache     bool   // toggle use of terraform's shared plugin cache
-		TerraformBinDir string // destination directory for terraform binaries
+	Sandbox         bool   // isolate privileged ops within sandbox
+	Debug           bool   // toggle debug mode
+	PluginCache     bool   // toggle use of terraform's shared plugin cache
+	TerraformBinDir string // destination directory for terraform binaries
 
-		client     client
-		spawner    operationSpawner
-		registered chan struct{}
+	client     client
+	spawner    operationSpawner
+	registered chan struct{}
 
-		logger logr.Logger // logger that logs messages regardless of whether runner is a pool runner or not.
-		v      int         // logger verbosity
-	}
-)
+	logger logr.Logger // logger that logs messages regardless of whether runner is a server or agent runner.
+	v      int         // logger verbosity
+}
 
 // newRunner constructs a runner.
 func newRunner(
@@ -209,7 +208,7 @@ func (r *Runner) Start(ctx context.Context) error {
 							}
 							return fmt.Errorf("starting job and retrieving job token: %w", err)
 						}
-						op, err := r.spawner.newOperation(j, token)
+						op, err := r.spawner.NewOperation(ctx, j.ID, token)
 						if err != nil {
 							return fmt.Errorf("spawning job operation: %w", err)
 						}

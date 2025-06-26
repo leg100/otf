@@ -78,6 +78,19 @@ func (c *remoteClient) getJobs(ctx context.Context, agentID resource.TfeID) ([]*
 	return jobs, nil
 }
 
+func (c *remoteClient) getJob(ctx context.Context, jobID resource.TfeID) (*Job, error) {
+	u := fmt.Sprintf("agents/job/%s", jobID)
+	req, err := c.newRequest("GET", u, nil)
+	if err != nil {
+		return nil, err
+	}
+	var job *Job
+	if err := c.Do(ctx, req, &job); err != nil {
+		return nil, err
+	}
+	return job, nil
+}
+
 func (c *remoteClient) updateStatus(ctx context.Context, agentID resource.TfeID, status RunnerStatus) error {
 	req, err := c.newRequest("POST", "agents/status", &updateAgentStatusParams{
 		Status: status,

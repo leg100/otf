@@ -454,7 +454,7 @@ func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, org organizat
 		token = string(tokenBytes)
 	}
 
-	cfg := runner.NewConfig()
+	cfg := runner.NewDefaultConfig()
 	for _, fn := range opts {
 		fn(cfg)
 	}

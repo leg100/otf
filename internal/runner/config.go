@@ -8,15 +8,14 @@ import (
 type Config struct {
 	Name         string // descriptive name given to runner
 	MaxJobs      int    // number of jobs the runner can execute at any one time
-	Sandbox      bool   // isolate privileged ops within sandbox
-	Debug        bool   // toggle debug mode
-	PluginCache  bool   // toggle use of terraform's shared plugin cache
-	EngineBinDir string // destination directory for engine binaries
+	LauncherKind string // how jobs are launched: forked processes or kubernetes jobs
+	OperationConfig
 }
 
-func NewConfig() *Config {
+func NewDefaultConfig() *Config {
 	return &Config{
-		MaxJobs: DefaultMaxJobs,
+		MaxJobs:      DefaultMaxJobs,
+		LauncherKind: "process",
 	}
 }
 
@@ -26,6 +25,7 @@ func NewConfigFromFlags(flags *pflag.FlagSet) *Config {
 	flags.BoolVar(&opts.Sandbox, "sandbox", false, "Isolate terraform apply within sandbox for additional security")
 	flags.BoolVar(&opts.Debug, "debug", false, "Enable runner debug mode which dumps additional info to terraform runs.")
 	flags.BoolVar(&opts.PluginCache, "plugin-cache", false, "Enable shared plugin cache for terraform providers.")
-	flags.StringVar(&opts.EngineBinDir, "engine-bins-dir", engine.DefaultBinDir, "Destination directory for engine binary downloads.")
+	flags.StringVar(&opts.engineBinDir, "engine-bins-dir", engine.DefaultBinDir, "Destination directory for engine binary downloads.")
+	flags.StringVar(&opts.LauncherKind, "launcher", "process", "Sets how jobs are launched: process or kubernetes")
 	return &opts
 }
