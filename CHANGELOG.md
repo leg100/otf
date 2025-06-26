@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.3.26](https://github.com/leg100/otf/compare/v0.3.25...v0.3.26) (2025-06-26)
+
+
+### Features
+
+* **ui:** add workspace overview sub menu link ([892381f](https://github.com/leg100/otf/commit/892381f1b96b00db54151546b63743f3b18b369f))
+
+
+### Bug Fixes
+
+* **ui:** make page size selector fully visible when set to 100 ([5ec4f84](https://github.com/leg100/otf/commit/5ec4f84132ceef293452d3ed32d1fb5c5e906674))
+
+
+### Miscellaneous
+
+* bump templ version ([cbd6f3c](https://github.com/leg100/otf/commit/cbd6f3c329a3edfca15c9d8bea266700991a4b15))
+
 ## [0.3.25](https://github.com/leg100/otf/compare/v0.3.24...v0.3.25) (2025-06-24)
 
 
