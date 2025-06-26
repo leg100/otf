@@ -190,7 +190,7 @@ live:
 	make -j live/tailwind live/sync_assets live/templ
 
 install-templ:
-	go get -tool github.com/a-h/templ/cmd/templ@v0.3.865
+	go get -tool github.com/a-h/templ/cmd/templ@v0.3.906
 
 generate-templates: install-templ
 	go tool templ generate
