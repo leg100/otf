@@ -48,6 +48,7 @@ func (s *Subsystem) Start(ctx context.Context, g *errgroup.Group) error {
 	ctx = authz.AddSubjectToContext(ctx, &authz.Superuser{Username: s.Name})
 
 	op := func() (err error) {
+		s.V(1).Info("starting subsystem", "name", s.Name)
 		start := func(ctx context.Context) error {
 			s.V(1).Info("started subsystem", "name", s.Name)
 			return s.System.Start(ctx)

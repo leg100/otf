@@ -137,6 +137,7 @@ func (r *Runner) Start(ctx context.Context) error {
 			if updateErr := r.client.updateStatus(ctx, registrationMetadata.ID, RunnerExited); updateErr != nil {
 				err = fmt.Errorf("sending final status update: %w", updateErr)
 			}
+			r.logger.V(r.v).Info("sent final status update")
 		}()
 
 		// every 10 seconds update the runner status
@@ -178,10 +179,9 @@ func (r *Runner) Start(ctx context.Context) error {
 		defer func() {
 			if terminator.totalJobs() > 0 {
 				r.logger.Info("gracefully canceling in-progress jobs", "total", terminator.totalJobs())
-				// The interrupt sent to the main process is also sent to the
-				// forked terraform processes, so there is no need to send the
-				// latter another interrupt but merely set the cancel semaphore
-				// on each operation.
+				// NOTE: The interrupt sent to the main process is also sent to
+				// any forked terraform processes, which is what we want, but it
+				// is also necessary to instruct operations to stop.
 				terminator.stopAll()
 			}
 		}()
@@ -189,43 +189,42 @@ func (r *Runner) Start(ctx context.Context) error {
 		// fetch jobs allocated to this runner and spawn operations to do jobs; also
 		// handle cancelation signals for jobs
 		for {
-			processJobs := func() (err error) {
+			processJobs := func() error {
 				r.logger.V(r.v).Info("waiting for next job")
 				// block on waiting for jobs
-				jobs, err := r.client.getJobs(ctx, registrationMetadata.ID)
+				jobs, err := r.client.awaitAllocatedJobs(ctx, registrationMetadata.ID)
 				if err != nil {
 					return err
 				}
 				for _, j := range jobs {
-					if j.Status == JobAllocated {
-						r.logger.V(r.v).Info("received job", "job", j)
-						// start job and receive job token in return
-						token, err := r.client.startJob(ctx, j.ID)
-						if err != nil {
-							if ctx.Err() != nil {
-								// context cancelled means process is shutting
-								// down.
-								return nil
-							}
-							return fmt.Errorf("starting job and retrieving job token: %w", err)
-						}
-						op, err := r.spawner.newOperation(j, token)
-						if err != nil {
-							return fmt.Errorf("spawning job operation: %w", err)
-						}
-						// check operation in with the terminator, so that if a cancelation signal
-						// arrives it can be handled accordingly for the duration of the operation.
-						terminator.checkIn(j.ID, op)
-						op.V(0).Info("started job")
-						g.Go(func() error {
-							op.doAndFinish()
-							terminator.checkOut(op.job.ID)
-							return nil
-						})
-					} else if j.Signaled != nil {
-						r.logger.V(r.v).Info("received cancelation signal", "force", *j.Signaled, "job", j)
-						terminator.cancel(j.ID, *j.Signaled, true)
+					if j.Status != JobAllocated {
+						// Skip jobs in a state other than allocated.
+						continue
 					}
+					r.logger.V(r.v).Info("received job", "job", j)
+					// start job and receive job token in return
+					token, err := r.client.startJob(ctx, j.ID)
+					if err != nil {
+						if ctx.Err() != nil {
+							// context cancelled means process is shutting
+							// down.
+							return nil
+						}
+						return fmt.Errorf("starting job and retrieving job token: %w", err)
+					}
+					op, err := r.spawner.newOperation(j, token)
+					if err != nil {
+						return fmt.Errorf("spawning job operation: %w", err)
+					}
+					// check operation in with the terminator, so that if the
+					// runner shuts down then the operation is shutdown too.
+					terminator.checkIn(j.ID, op)
+					op.V(0).Info("started job")
+					g.Go(func() error {
+						op.doAndFinish()
+						terminator.checkOut(op.job.ID)
+						return nil
+					})
 				}
 				return nil
 			}

@@ -52,7 +52,7 @@ func (f *fakeRunnerClient) register(ctx context.Context, opts registerOptions) (
 	return &RunnerMeta{ID: f.registeredID}, nil
 }
 
-func (f *fakeRunnerClient) getJobs(ctx context.Context, agentID resource.TfeID) ([]*Job, error) {
+func (f *fakeRunnerClient) awaitAllocatedJobs(ctx context.Context, _ resource.TfeID) ([]*Job, error) {
 	// Block until context canceled
 	<-ctx.Done()
 	return nil, nil

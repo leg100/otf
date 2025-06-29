@@ -32,15 +32,6 @@ func (t *terminator) checkOut(jobID resource.TfeID) {
 	delete(t.mapping, jobID)
 }
 
-func (t *terminator) cancel(jobID resource.TfeID, force, sendSignal bool) {
-	t.mu.RLock()
-	defer t.mu.RUnlock()
-
-	if job, ok := t.mapping[jobID]; ok {
-		job.cancel(force, sendSignal)
-	}
-}
-
 func (t *terminator) stopAll() {
 	t.mu.RLock()
 	defer t.mu.RUnlock()

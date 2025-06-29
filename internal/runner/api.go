@@ -43,6 +43,7 @@ func (a *api) addHandlers(r *mux.Router) {
 	r.HandleFunc("/agents/status", a.updateAgentStatus).Methods("POST")
 	r.HandleFunc("/agents/start", a.startJob).Methods("POST")
 	r.HandleFunc("/agents/finish", a.finishJob).Methods("POST")
+	r.HandleFunc("/agents/jobs/{job_id}/await-signal", a.awaitJobSignal).Methods("GET")
 
 	// agent tokens
 	r.HandleFunc("/agent-tokens/{pool_id}/create", a.createAgentToken).Methods("POST")
@@ -80,13 +81,28 @@ func (a *api) getJobs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jobs, err := a.Service.getJobs(r.Context(), runner.ID)
+	jobs, err := a.Service.awaitAllocatedJobs(r.Context(), runner.ID)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
 
 	a.Respond(w, r, jobs, http.StatusOK)
+}
+
+func (a *api) awaitJobSignal(w http.ResponseWriter, r *http.Request) {
+	jobID, err := decode.ID("job_id", r)
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+	signal, err := a.Service.awaitJobSignal(r.Context(), jobID)()
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+
+	a.Respond(w, r, signal, http.StatusOK)
 }
 
 // updateAgentStatus receives a status update from an agent

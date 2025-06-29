@@ -124,8 +124,10 @@ func setup(t *testing.T, opts ...configOption) (*testDaemon, *organization.Organ
 	t.Cleanup(unsub)
 
 	t.Cleanup(func() {
+		logger.Info("before cancel")
 		cancel() // terminates daemon
-		<-done   // don't exit test until daemon is fully terminated
+		logger.Info("after cancel")
+		<-done // don't exit test until daemon is fully terminated
 	})
 
 	daemon := &testDaemon{

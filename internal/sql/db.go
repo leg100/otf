@@ -2,6 +2,7 @@ package sql
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/url"
 	"strconv"
@@ -17,7 +18,7 @@ import (
 )
 
 // max conns avail in a pgx pool
-const defaultMaxConnections = 10
+const defaultMaxConnections = 100
 
 type (
 	// DB provides access to the postgres db as well as queries generated from
@@ -155,9 +156,11 @@ func (db *DB) WaitAndLock(ctx context.Context, id int64, fn func(context.Context
 	// problems because a lock must be released on the same connection on which
 	// it was obtained.
 	return db.Pool.AcquireFunc(ctx, func(conn *pgxpool.Conn) error {
+		db.Info("acquiring session-level advisory lock", "id", id)
 		if _, err = conn.Exec(ctx, "SELECT pg_advisory_lock($1)", id); err != nil {
 			return err
 		}
+		db.Info("acquired session-level advisory lock", "id", id)
 		defer func() {
 			_, closeErr := conn.Exec(ctx, "SELECT pg_advisory_unlock($1)", id)
 			if err != nil {
@@ -169,6 +172,54 @@ func (db *DB) WaitAndLock(ctx context.Context, id int64, fn func(context.Context
 		ctx = newContext(ctx, conn)
 		return fn(ctx)
 	})
+}
+
+// Notify sends a postgres notification. The payload is marshaled as JSON and
+// sent to the given channel.
+func (db *DB) Notify(ctx context.Context, channel string, payload any) error {
+	marshaled, err := json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+	_, err = db.conn(ctx).Exec(ctx, fmt.Sprintf("NOTIFY %s, '%s'", channel, string(marshaled)))
+	if err != nil {
+		return fmt.Errorf("sending postgres notification: %w", err)
+	}
+	return nil
+}
+
+// Listen to a postgres notification channel, returning a channel of
+// notifications.
+func (db *DB) Listen(ctx context.Context, channel string) (<-chan string, error) {
+	conn, err := db.Acquire(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("unable to acquire postgres connection: %w", err)
+	}
+
+	if _, err := conn.Exec(ctx, "LISTEN "+channel); err != nil {
+		conn.Release()
+		return nil, err
+	}
+
+	ch := make(chan string)
+	go func() {
+		defer conn.Release()
+		for {
+			notification, err := conn.Conn().WaitForNotification(ctx)
+			if err != nil {
+				select {
+				case <-ctx.Done():
+					// parent has decided to shutdown so exit without logging an error
+				default:
+					db.Error(err, "waiting for postgres notification")
+				}
+				close(ch)
+				return
+			}
+			ch <- notification.Payload
+		}
+	}()
+	return ch, nil
 }
 
 func (db *DB) Lock(ctx context.Context, table string, fn func(context.Context) error) error {
