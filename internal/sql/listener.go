@@ -66,15 +66,15 @@ func (b *Listener) RegisterTable(table string, forwarder ForwardFunc) {
 // started listening; from this point onwards published messages will be
 // forwarded.
 func (b *Listener) Start(ctx context.Context) error {
-	conn, err := b.conn.Acquire(ctx)
-	if err != nil {
-		return fmt.Errorf("unable to acquire postgres connection: %w", err)
-	}
-	defer conn.Release()
+	// Cancel listen connection when leaving func.
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 
-	if _, err := conn.Exec(ctx, "LISTEN events"); err != nil {
-		return err
+	notifications, err := b.conn.Listen(ctx, "events")
+	if err != nil {
+		return fmt.Errorf("listening to postgres notification channel: %w", err)
 	}
+
 	b.V(2).Info("listening for events")
 	go func() {
 		// close semaphore to indicate broker is now listening
@@ -90,23 +90,8 @@ func (b *Listener) Start(ctx context.Context) error {
 
 	// check for new events
 	g.Go(func() error {
-		for {
-			notification, err := conn.Conn().WaitForNotification(ctx)
-			if err != nil {
-				select {
-				case <-ctx.Done():
-					// parent has decided to shutdown so exit without error
-					return nil
-				default:
-					b.Error(err, "waiting for postgres notification")
-					return err
-				}
-			}
-			row := b.conn.Query(ctx, `
-SELECT *
-FROM events
-WHERE id = $1
-`, notification.Payload)
+		for notification := range notifications {
+			row := b.conn.Query(ctx, `SELECT * FROM events WHERE id = $1 `, notification)
 			event, err := pgx.CollectOneRow(row, pgx.RowToStructByName[Event])
 			if err != nil {
 				return fmt.Errorf("retrieving events: %w", err)
@@ -122,6 +107,7 @@ WHERE id = $1
 			}
 			forwarder(event)
 		}
+		return nil
 	})
 	return g.Wait()
 }

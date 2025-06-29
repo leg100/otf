@@ -4,7 +4,6 @@ import (
 	"errors"
 	"log/slog"
 
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
@@ -49,9 +48,6 @@ type Job struct {
 	// ID of runner that this job is allocated to. Only set once job enters
 	// JobAllocated state.
 	RunnerID *resource.TfeID `jsonapi:"attribute" json:"runner_id" db:"runner_id"`
-	// Signaled is non-nil when a cancelation signal has been sent to the job
-	// and it is true when it has been forceably canceled.
-	Signaled *bool `jsonapi:"attribute" json:"signaled"`
 }
 
 func newJob(run *otfrun.Run) *Job {
@@ -73,13 +69,6 @@ func (j *Job) LogValue() slog.Value {
 		slog.Any("organization", j.Organization),
 		slog.String("phase", string(j.Phase)),
 		slog.String("status", string(j.Status)),
-	}
-	if j.Signaled != nil {
-		if *j.Signaled {
-			attrs = append(attrs, slog.Bool("force_cancel_signal_sent", true))
-		} else {
-			attrs = append(attrs, slog.Bool("cancel_signal_sent", true))
-		}
 	}
 	return slog.GroupValue(attrs...)
 }
@@ -147,37 +136,29 @@ func (j *Job) reallocate(runnerID resource.TfeID) error {
 
 // cancel job based on current state of its parent run - depending on its state,
 // the job is signaled and/or its state is updated too.
-func (j *Job) cancel(run *otfrun.Run) (*bool, error) {
-	// whether job be signaled
-	var signal *bool
+func (j *Job) cancel(run *otfrun.Run) (signal bool, force bool, err error) {
 	switch run.Status {
 	case runstatus.Planning, runstatus.Applying:
 		if run.CancelSignaledAt != nil {
 			// run is still in progress but the user has requested it be
 			// canceled, so signal job to gracefully cancel current operation
-			signal = internal.Ptr(false)
+			return true, false, nil
 		}
 	case runstatus.Canceled:
-		// run has been canceled so immediately cancel job too
+		// run has been canceled so immediately cancel job too but don't send a
+		// signal.
 		if err := j.updateStatus(JobCanceled); err != nil {
-			return nil, err
+			return false, false, err
 		}
 	case runstatus.ForceCanceled:
 		// run has been forceably canceled, so both signal job to forcefully
 		// cancel current operation, and immediately cancel job.
-		signal = internal.Ptr(true)
 		if err := j.updateStatus(JobCanceled); err != nil {
-			return nil, err
+			return false, false, err
 		}
+		return true, true, nil
 	}
-	if signal != nil {
-		if j.Status != JobRunning {
-			return nil, errors.New("job can only be signaled when in the JobRunning state")
-		}
-		j.Signaled = signal
-		return signal, nil
-	}
-	return nil, nil
+	return false, false, nil
 }
 
 func (j *Job) startJob() error {

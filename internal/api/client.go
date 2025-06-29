@@ -102,7 +102,7 @@ func NewClient(config Config) (*Client, error) {
 				if retryErr != nil {
 					err = retryErr
 				}
-				config.Logger.Error(err, "retrying request")
+				config.Logger.Error(err, "retrying request", "url", resp.Request.URL)
 			}
 			return retry, retryErr
 		}

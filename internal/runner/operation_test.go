@@ -88,22 +88,23 @@ func TestExecutor_execute(t *testing.T) {
 	t.Run("cancel forceably", func(t *testing.T) {
 		r, w := io.Pipe()
 		reader := iochan.DelimReader(r, '\n')
-		wkr := &operation{
-			Logger:  logr.Discard(),
-			out:     w,
-			workdir: &workdir{root: ""},
+		op := &operation{
+			Logger:   logr.Discard(),
+			cancelfn: func() {},
+			out:      w,
+			workdir:  &workdir{root: ""},
 		}
 		done := make(chan error)
 		go func() {
-			done <- wkr.execute([]string{"./testdata/killme_harder"})
+			done <- op.execute([]string{"./testdata/killme_harder"})
 		}()
 
 		// send graceful cancel
 		assert.Equal(t, "ok, try killing me now\n", <-reader)
-		wkr.cancel(false, true)
+		op.cancel(false, true)
 		assert.Equal(t, "you will have to try harder than that\n", <-reader)
 		// send force cancel
-		wkr.cancel(true, true)
+		op.cancel(true, true)
 		assert.Error(t, <-done)
 	})
 }

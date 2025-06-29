@@ -61,6 +61,7 @@ func (s *remoteOperationSpawner) newOperation(job *Job, jobToken []byte) (*opera
 	apiClient, err := otfapi.NewClient(otfapi.Config{
 		URL:           s.url,
 		Token:         string(jobToken),
+		Logger:        s.logger,
 		RetryRequests: true,
 	})
 	if err != nil {
@@ -75,7 +76,7 @@ func (s *remoteOperationSpawner) newOperation(job *Job, jobToken []byte) (*opera
 		job:          job,
 		jobToken:     jobToken,
 		runs:         &run.Client{Client: apiClient},
-		jobs:         &remoteClient{Client: apiClient},
+		jobs:         newRemoteClient(apiClient, nil),
 		workspaces:   &workspace.Client{Client: apiClient},
 		variables:    &variable.Client{Client: apiClient},
 		state:        &state.Client{Client: apiClient},
