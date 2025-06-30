@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
@@ -543,6 +544,18 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 	for _, ss := range subsystems {
 		if err := ss.Start(ctx, g); err != nil {
 			return err
+		}
+		// Wait for subsystem to finish starting up if it exposes the ability to
+		// do so.
+		wait, ok := ss.System.(interface{ Started() <-chan struct{} })
+		if ok {
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-time.After(time.Second * 10):
+				return fmt.Errorf("timed out waiting for subsystem to start: %s", ss.Name)
+			case <-wait.Started():
+			}
 		}
 	}
 
