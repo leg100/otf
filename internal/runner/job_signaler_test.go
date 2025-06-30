@@ -27,7 +27,7 @@ func TestJobSignaler(t *testing.T) {
 	job2 := resource.NewTfeID(resource.JobKind)
 
 	// subscribe to job1
-	fn := signaler.subscribe(context.Background(), job1)
+	fn := signaler.awaitJobSignal(context.Background(), job1)
 
 	// send job2 signal
 	ch <- fmt.Sprintf(`{"job_id": "%s"}`, job2)
@@ -41,7 +41,7 @@ func TestJobSignaler(t *testing.T) {
 	assert.Equal(t, jobSignal{JobID: job1}, got)
 
 	// subscribe to job1 again
-	fn = signaler.subscribe(context.Background(), job1)
+	fn = signaler.awaitJobSignal(context.Background(), job1)
 
 	// send job1 force signal
 	ch <- fmt.Sprintf(`{"job_id": "%s","force": true}`, job1)

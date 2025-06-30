@@ -397,7 +397,7 @@ func (s *Service) getJob(ctx context.Context, jobID resource.TfeID) (*Job, error
 }
 
 func (s *Service) awaitJobSignal(ctx context.Context, jobID resource.TfeID) func() (jobSignal, error) {
-	return s.Signaler.subscribe(ctx, jobID)
+	return s.Signaler.awaitJobSignal(ctx, jobID)
 }
 
 func (s *Service) listJobs(ctx context.Context) ([]*Job, error) {

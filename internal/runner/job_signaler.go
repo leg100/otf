@@ -75,11 +75,11 @@ func (s *jobSignaler) publish(ctx context.Context, jobID resource.TfeID, force b
 	return nil
 }
 
-// subscribe creates a "one-shot" subscription: it returns a channel on which
-// any signals for a job with the given ID is sent to; once a single signal is
-// sent the channel is closed. If the context is canceled before a signal is
-// sent then the channel is closed.
-func (s *jobSignaler) subscribe(ctx context.Context, jobID resource.TfeID) func() (jobSignal, error) {
+// awaitJobSignal creates a "one-shot" subscription: it returns a function which
+// itself only returns once a job signal is received for a job with the given
+// ID. If the context is canceled then an error is instead returned giving the
+// reason for the context cancelation.
+func (s *jobSignaler) awaitJobSignal(ctx context.Context, jobID resource.TfeID) func() (jobSignal, error) {
 	ch := make(chan jobSignal, 1)
 
 	s.mu.Lock()
