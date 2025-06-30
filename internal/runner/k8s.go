@@ -2,16 +2,17 @@ package runner
 
 import (
 	"context"
+	"fmt"
 
 	otfapi "github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/logr"
-	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/state"
 	"github.com/leg100/otf/internal/variable"
 	"github.com/leg100/otf/internal/workspace"
 	batchv1 "k8s.io/api/batch/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -30,12 +31,12 @@ func NewKubeOperationSpawner(logger logr.Logger, cfg Config, url string) (*KubeO
 	// creates the in-cluster config
 	config, err := rest.InClusterConfig()
 	if err != nil {
-		panic(err.Error())
+		return nil, fmt.Errorf("creating kubernetes config: %w", err)
 	}
 	// creates the clientset
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		panic(err.Error())
+		return nil, fmt.Errorf("creating kubernetes clientset: %w", err)
 	}
 	return &KubeOperationSpawner{
 		Config: cfg,
@@ -45,18 +46,33 @@ func NewKubeOperationSpawner(logger logr.Logger, cfg Config, url string) (*KubeO
 	}, nil
 }
 
-func (s *KubeOperationSpawner) NewOperation(ctx context.Context, jobID resource.TfeID, jobToken []byte) (*operation, error) {
+func (s *KubeOperationSpawner) NewOperation(ctx context.Context, job *Job, jobToken []byte) (*operation, error) {
 	// Launch k8s job
 	spec := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      jobID.String(),
+			Name:      job.String(),
 			Namespace: s.Namespace,
 			Labels: map[string]string{
-				"runner-id": "",
+				"job-id":       job.ID.String(),
+				"runner-id":    job.RunnerID.String(),
+				"workspace-id": job.WorkspaceID.String(),
+				"organization": job.Organization.String(),
+			},
+		},
+		Spec: batchv1.JobSpec{
+			Template: corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{
+							Name:  "otf-job",
+							Image: "",
+						},
+					},
+				},
 			},
 		},
 	}
-	job, err := s.kube.BatchV1().Jobs(s.Namespace).Create(ctx, spec, metav1.CreateOptions{})
+	_, err := s.kube.BatchV1().Jobs(s.Namespace).Create(ctx, spec, metav1.CreateOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -64,6 +80,7 @@ func (s *KubeOperationSpawner) NewOperation(ctx context.Context, jobID resource.
 		URL:           s.URL,
 		Token:         string(jobToken),
 		RetryRequests: true,
+		Logger:        s.Logger,
 	})
 	if err != nil {
 		return nil, err
@@ -71,7 +88,7 @@ func (s *KubeOperationSpawner) NewOperation(ctx context.Context, jobID resource.
 	return newOperation(ctx, operationOptions{
 		logger:          s.Logger,
 		OperationConfig: s.Config.OperationConfig,
-		jobID:           jobID,
+		job:             job,
 		jobToken:        jobToken,
 		runs:            &run.Client{Client: client},
 		jobs:            &remoteClient{Client: client},

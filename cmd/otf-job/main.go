@@ -8,6 +8,7 @@ import (
 
 	cmdutil "github.com/leg100/otf/cmd"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runner"
@@ -53,7 +54,7 @@ func run(ctx context.Context, args []string) error {
 				return err
 			}
 			spawner := &runner.RemoteOperationSpawner{
-				Config: *opts.OperationConfig,
+				Config: opts.OperationConfig,
 				Logger: logger,
 				URL:    opts.URL,
 			}
@@ -63,13 +64,12 @@ func run(ctx context.Context, args []string) error {
 		},
 	}
 
-	cmd.MarkFlagRequired("token")
-	cmd.SetArgs(args)
-
 	loggerConfig = logr.NewConfigFromFlags(cmd.Flags())
-	opts = runner.NewAgentOptionsFromFlags(cmd.Flags())
 	cmd.Flags().StringVar(&jobToken, "job-token", "", "Job token for authentication")
 	cmd.Flags().StringVar(&jobIDRaw, "job-id", "", "ID of job to execute")
+	cmd.Flags().StringVar(&opts.URL, "url", api.DefaultURL, "URL of OTF server")
+
+	cmd.SetArgs(args)
 
 	if err := cmdutil.SetFlagsFromEnvVariables(cmd.Flags()); err != nil {
 		return errors.Wrap(err, "failed to populate config from environment vars")

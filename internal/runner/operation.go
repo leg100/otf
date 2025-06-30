@@ -88,7 +88,7 @@ type (
 		OperationConfig
 
 		logger   logr.Logger
-		jobID    resource.TfeID
+		job      *Job
 		jobToken []byte
 
 		runs       runClient
@@ -106,6 +106,7 @@ type (
 
 	operationJobsClient interface {
 		awaitJobSignal(ctx context.Context, jobID resource.TfeID) func() (jobSignal, error)
+		getJob(ctx context.Context, jobID resource.TfeID) (*Job, error)
 		finishJob(ctx context.Context, jobID resource.TfeID, opts finishJobOptions) error
 	}
 
@@ -146,17 +147,13 @@ type (
 )
 
 func newOperation(ctx context.Context, opts operationOptions) (*operation, error) {
-	job, err := opts.jobs.getJob(ctx, opts.jobID)
-	if err != nil {
-		return nil, err
-	}
 	// An operation has its own uninherited context; the operation is instead
 	// canceled via its cancel() method, which provides more control, with the
 	// ability to gracefully or forcefully cancel an operation.
 	ctx, cancelfn := context.WithCancel(context.Background())
 	// Authenticate as the job (only effective on server runner; the agent
 	// runner instead authenticates remotely via its job token).
-	ctx = authz.AddSubjectToContext(ctx, job)
+	ctx = authz.AddSubjectToContext(ctx, opts.job)
 
 	envs := defaultEnvs
 	if opts.PluginCache {
@@ -166,10 +163,10 @@ func newOperation(ctx context.Context, opts operationOptions) (*operation, error
 	envs = append(envs, internal.CredentialEnv(opts.server.Hostname(), opts.jobToken))
 
 	return &operation{
-		Logger:       opts.logger.WithValues("job", job),
+		Logger:       opts.logger.WithValues("job", opts.job),
 		Sandbox:      opts.Sandbox,
 		Debug:        opts.Debug,
-		job:          job,
+		job:          opts.job,
 		engineBinDir: opts.engineBinDir,
 		envs:         envs,
 		ctx:          ctx,

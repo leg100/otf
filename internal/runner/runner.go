@@ -210,7 +210,7 @@ func (r *Runner) Start(ctx context.Context) error {
 						}
 						return fmt.Errorf("starting job and retrieving job token: %w", err)
 					}
-					op, err := r.spawner.newOperation(j, token)
+					op, err := r.spawner.NewOperation(ctx, job, token)
 					if err != nil {
 						return fmt.Errorf("spawning job operation: %w", err)
 					}

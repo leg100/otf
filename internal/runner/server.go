@@ -63,7 +63,7 @@ func (s *localOperationSpawner) NewOperation(ctx context.Context, jobID resource
 	return newOperation(ctx, operationOptions{
 		logger:          s.logger,
 		OperationConfig: s.config.OperationConfig,
-		jobID:           jobID,
+		job:             jobID,
 		jobToken:        jobToken,
 		jobs:            s.jobs,
 		runs:            s.runs,

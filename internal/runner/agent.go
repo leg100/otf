@@ -6,12 +6,10 @@ import (
 	otfapi "github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/logr"
-	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/state"
 	"github.com/leg100/otf/internal/variable"
 	"github.com/leg100/otf/internal/workspace"
-	"github.com/spf13/pflag"
 )
 
 type AgentOptions struct {
@@ -19,16 +17,6 @@ type AgentOptions struct {
 
 	URL   string
 	Token string
-}
-
-func NewAgentOptionsFromFlags(flags *pflag.FlagSet) *AgentOptions {
-	opts := AgentOptions{
-		Config: NewConfigFromFlags(flags),
-	}
-	flags.StringVar(&opts.Name, "name", "", "Give agent a descriptive name. Optional.")
-	flags.StringVar(&opts.URL, "url", otfapi.DefaultURL, "URL of OTF server")
-	flags.StringVar(&opts.Token, "token", "", "Agent token for authentication")
-	return &opts
 }
 
 func NewAgent(logger logr.Logger, opts AgentOptions) (*Runner, error) {
@@ -61,11 +49,11 @@ type RemoteOperationSpawner struct {
 	URL    string
 }
 
-func (s *RemoteOperationSpawner) NewOperation(ctx context.Context, jobID resource.TfeID, jobToken []byte) (*operation, error) {
+func (s *RemoteOperationSpawner) NewOperation(ctx context.Context, job *Job, jobToken []byte) (*operation, error) {
 	client, err := otfapi.NewClient(otfapi.Config{
 		URL:           s.URL,
 		Token:         string(jobToken),
-		Logger:        s.logger,
+		Logger:        s.Logger,
 		RetryRequests: true,
 	})
 	if err != nil {
@@ -74,7 +62,7 @@ func (s *RemoteOperationSpawner) NewOperation(ctx context.Context, jobID resourc
 	return newOperation(ctx, operationOptions{
 		logger:          s.Logger,
 		OperationConfig: s.Config,
-		jobID:           jobID,
+		job:             job,
 		jobToken:        jobToken,
 		runs:            &run.Client{Client: client},
 		jobs:            &remoteClient{Client: client},

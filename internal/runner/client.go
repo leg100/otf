@@ -58,7 +58,7 @@ func (c *remoteClient) register(ctx context.Context, opts registerOptions) (*Run
 }
 
 func (c *remoteClient) awaitAllocatedJobs(ctx context.Context, agentID resource.TfeID) ([]*Job, error) {
-	req, err := c.newRequest("GET", "agents/jobs", nil)
+	req, err := c.newRequest("GET", "agents/await-allocated-jobs", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -75,6 +75,19 @@ func (c *remoteClient) awaitAllocatedJobs(ctx context.Context, agentID resource.
 		return nil, err
 	}
 	return jobs, nil
+}
+
+func (c *remoteClient) getJob(ctx context.Context, jobID resource.TfeID) (*Job, error) {
+	u := fmt.Sprintf("jobs/%s", jobID)
+	req, err := c.newRequest("GET", u, nil)
+	if err != nil {
+		return nil, err
+	}
+	var job *Job
+	if err := c.Do(ctx, req, &job); err != nil {
+		return nil, err
+	}
+	return job, nil
 }
 
 func (c *remoteClient) awaitJobSignal(ctx context.Context, jobID resource.TfeID) func() (jobSignal, error) {

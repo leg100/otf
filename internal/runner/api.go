@@ -38,11 +38,11 @@ func (a *api) addHandlers(r *mux.Router) {
 	r = r.PathPrefix(otfapi.DefaultBasePath).Subrouter()
 
 	r.HandleFunc("/agents/register", a.registerAgent).Methods("POST")
-	r.HandleFunc("/agents/jobs", a.getJobs).Methods("GET")
-	r.HandleFunc("/agents/job/{job_id}", a.getJob).Methods("GET")
 	r.HandleFunc("/agents/status", a.updateAgentStatus).Methods("POST")
+	r.HandleFunc("/agents/await-allocated-jobs", a.awaitAllocatedJobs).Methods("GET")
 	r.HandleFunc("/jobs/start", a.startJob).Methods("POST")
 	r.HandleFunc("/jobs/finish", a.finishJob).Methods("POST")
+	r.HandleFunc("/jobs/{job_id}", a.getJob).Methods("GET")
 	r.HandleFunc("/jobs/{job_id}/await-signal", a.awaitJobSignal).Methods("GET")
 
 	// agent tokens
@@ -73,7 +73,7 @@ func (a *api) registerAgent(w http.ResponseWriter, r *http.Request) {
 	a.Respond(w, r, agent, http.StatusCreated)
 }
 
-func (a *api) getJobs(w http.ResponseWriter, r *http.Request) {
+func (a *api) awaitAllocatedJobs(w http.ResponseWriter, r *http.Request) {
 	// retrieve runner, which contains ID of calling agent
 	runner, err := runnerFromContext(r.Context())
 	if err != nil {
@@ -88,6 +88,22 @@ func (a *api) getJobs(w http.ResponseWriter, r *http.Request) {
 	}
 
 	a.Respond(w, r, jobs, http.StatusOK)
+}
+
+func (a *api) getJob(w http.ResponseWriter, r *http.Request) {
+	jobID, err := decode.ID("job_id", r)
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+
+	job, err := a.Service.getJob(r.Context(), jobID)
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+
+	a.Respond(w, r, job, http.StatusOK)
 }
 
 func (a *api) awaitJobSignal(w http.ResponseWriter, r *http.Request) {
