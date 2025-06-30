@@ -18,7 +18,7 @@ import (
 )
 
 // max conns avail in a pgx pool
-const defaultMaxConnections = 100
+const defaultMaxConnections = 10
 
 type (
 	// DB provides access to the postgres db as well as queries generated from
