@@ -30,14 +30,6 @@ type remoteClient struct {
 	agentID *resource.TfeID
 }
 
-func newRemoteClient(apiClient *otfapi.Client, agentID *resource.TfeID) *remoteClient {
-	client := &remoteClient{
-		Client:  apiClient,
-		agentID: agentID,
-	}
-	return client
-}
-
 // newRequest constructs a new API request
 func (c *remoteClient) newRequest(method, path string, v interface{}) (*retryablehttp.Request, error) {
 	req, err := c.Client.NewRequest(method, path, v)

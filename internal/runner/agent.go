@@ -76,7 +76,7 @@ func (s *remoteOperationSpawner) newOperation(job *Job, jobToken []byte) (*opera
 		job:          job,
 		jobToken:     jobToken,
 		runs:         &run.Client{Client: apiClient},
-		jobs:         newRemoteClient(apiClient, nil),
+		jobs:         &remoteClient{Client: apiClient},
 		workspaces:   &workspace.Client{Client: apiClient},
 		variables:    &variable.Client{Client: apiClient},
 		state:        &state.Client{Client: apiClient},
