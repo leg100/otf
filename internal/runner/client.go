@@ -86,7 +86,7 @@ func (c *remoteClient) awaitAllocatedJobs(ctx context.Context, agentID resource.
 }
 
 func (c *remoteClient) awaitJobSignal(ctx context.Context, jobID resource.TfeID) func() (jobSignal, error) {
-	u := fmt.Sprintf("agents/jobs/%s/await-signal", jobID)
+	u := fmt.Sprintf("jobs/%s/await-signal", jobID)
 	req, err := c.newRequest("GET", u, nil)
 	if err != nil {
 		return func() (jobSignal, error) {
@@ -142,7 +142,7 @@ func (c *remoteClient) CreateAgentToken(ctx context.Context, poolID resource.Tfe
 // jobs
 
 func (c *remoteClient) startJob(ctx context.Context, jobID resource.TfeID) ([]byte, error) {
-	req, err := c.newRequest("POST", "agents/start", &startJobParams{
+	req, err := c.newRequest("POST", "jobs/start", &startJobParams{
 		JobID: jobID,
 	})
 	if err != nil {
@@ -156,7 +156,7 @@ func (c *remoteClient) startJob(ctx context.Context, jobID resource.TfeID) ([]by
 }
 
 func (c *remoteClient) finishJob(ctx context.Context, jobID resource.TfeID, opts finishJobOptions) error {
-	req, err := c.newRequest("POST", "agents/finish", &finishJobParams{
+	req, err := c.newRequest("POST", "jobs/finish", &finishJobParams{
 		JobID:            jobID,
 		finishJobOptions: opts,
 	})

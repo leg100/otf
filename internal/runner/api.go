@@ -41,9 +41,9 @@ func (a *api) addHandlers(r *mux.Router) {
 	r.HandleFunc("/agents/register", a.registerAgent).Methods("POST")
 	r.HandleFunc("/agents/jobs", a.getJobs).Methods("GET")
 	r.HandleFunc("/agents/status", a.updateAgentStatus).Methods("POST")
-	r.HandleFunc("/agents/start", a.startJob).Methods("POST")
-	r.HandleFunc("/agents/finish", a.finishJob).Methods("POST")
-	r.HandleFunc("/agents/jobs/{job_id}/await-signal", a.awaitJobSignal).Methods("GET")
+	r.HandleFunc("/jobs/start", a.startJob).Methods("POST")
+	r.HandleFunc("/jobs/finish", a.finishJob).Methods("POST")
+	r.HandleFunc("/jobs/{job_id}/await-signal", a.awaitJobSignal).Methods("GET")
 
 	// agent tokens
 	r.HandleFunc("/agent-tokens/{pool_id}/create", a.createAgentToken).Methods("POST")
