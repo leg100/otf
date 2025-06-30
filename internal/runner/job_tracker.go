@@ -11,28 +11,28 @@ type cancelable interface {
 	cancel(force, sendSignal bool)
 }
 
-// terminator handles canceling jobs
-type terminator struct {
+// jobTracker keeps track of a runner's active jobs.
+type jobTracker struct {
 	// mapping maps job to a cancelable operation executing the job.
 	mapping map[resource.TfeID]cancelable
 	mu      sync.RWMutex
 }
 
-func (t *terminator) checkIn(jobID resource.TfeID, job cancelable) {
+func (t *jobTracker) checkIn(jobID resource.TfeID, job cancelable) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
 	t.mapping[jobID] = job
 }
 
-func (t *terminator) checkOut(jobID resource.TfeID) {
+func (t *jobTracker) checkOut(jobID resource.TfeID) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
 	delete(t.mapping, jobID)
 }
 
-func (t *terminator) stopAll() {
+func (t *jobTracker) stopAll() {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
 
@@ -41,7 +41,7 @@ func (t *terminator) stopAll() {
 	}
 }
 
-func (t *terminator) totalJobs() int {
+func (t *jobTracker) totalJobs() int {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
 

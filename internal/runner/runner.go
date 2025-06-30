@@ -92,9 +92,8 @@ func newRunner(
 func (r *Runner) Start(ctx context.Context) error {
 	r.logger.V(r.v).Info("starting runner", "version", internal.Version)
 
-	// Initialize terminator, which is responsible for terminating jobs in
-	// response to cancelation signals.
-	terminator := &terminator{mapping: make(map[resource.TfeID]cancelable)}
+	// Initialize tracker, to keep track of active jobs.
+	tracker := &jobTracker{mapping: make(map[resource.TfeID]cancelable)}
 
 	// Authenticate as unregistered runner with the registration endpoint. This
 	// is only necessary for the server runner; the agent runner relies on
@@ -147,7 +146,7 @@ func (r *Runner) Start(ctx context.Context) error {
 			case <-ticker.C:
 				// send runner status update
 				status := RunnerIdle
-				if terminator.totalJobs() > 0 {
+				if tracker.totalJobs() > 0 {
 					status = RunnerBusy
 				}
 				if err := r.client.updateStatus(ctx, registrationMetadata.ID, status); err != nil {
@@ -177,12 +176,12 @@ func (r *Runner) Start(ctx context.Context) error {
 
 	g.Go(func() (err error) {
 		defer func() {
-			if terminator.totalJobs() > 0 {
-				r.logger.Info("gracefully canceling in-progress jobs", "total", terminator.totalJobs())
+			if tracker.totalJobs() > 0 {
+				r.logger.Info("gracefully canceling in-progress jobs", "total", tracker.totalJobs())
 				// NOTE: The interrupt sent to the main process is also sent to
 				// any forked terraform processes, which is what we want, but it
 				// is also necessary to instruct operations to stop.
-				terminator.stopAll()
+				tracker.stopAll()
 			}
 		}()
 
@@ -216,13 +215,13 @@ func (r *Runner) Start(ctx context.Context) error {
 					if err != nil {
 						return fmt.Errorf("spawning job operation: %w", err)
 					}
-					// check operation in with the terminator, so that if the
+					// check job operation in with the tracker, so that if the
 					// runner shuts down then the operation is shutdown too.
-					terminator.checkIn(j.ID, op)
+					tracker.checkIn(j.ID, op)
 					op.V(0).Info("started job")
 					g.Go(func() error {
 						op.doAndFinish()
-						terminator.checkOut(op.job.ID)
+						tracker.checkOut(op.job.ID)
 						return nil
 					})
 				}
