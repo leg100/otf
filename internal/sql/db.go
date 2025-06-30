@@ -216,7 +216,13 @@ func (db *DB) Listen(ctx context.Context, channel string) (<-chan string, error)
 				close(ch)
 				return
 			}
-			ch <- notification.Payload
+			select {
+			case <-ctx.Done():
+				// parent has decided to shutdown so exit without logging an error
+				close(ch)
+				return
+			case ch <- notification.Payload:
+			}
 		}
 	}()
 	return ch, nil

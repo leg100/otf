@@ -130,7 +130,7 @@ func TestClusterLogs(t *testing.T) {
 	remote, _, _ := setup(t, db, disableScheduler())
 
 	ctx, cancel := context.WithCancel(ctx)
-	t.Cleanup(func() { cancel() })
+	t.Cleanup(cancel)
 
 	// create run on local node
 	run := local.createRun(t, ctx, nil, nil, nil)
