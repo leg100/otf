@@ -2,6 +2,7 @@ package runner
 
 import (
 	"context"
+	"fmt"
 	"net/netip"
 	"time"
 
@@ -147,7 +148,6 @@ func (db *db) deleteRunner(ctx context.Context, runnerID resource.TfeID) error {
 DELETE
 FROM runners
 WHERE runner_id = $1
-RETURNING runner_id, name, version, max_jobs, ip_address, last_ping_at, last_status_at, status, agent_pool_id
 `, runnerID)
 	return err
 }
@@ -209,17 +209,12 @@ INSERT INTO jobs (
 	return err
 }
 
-func (db *db) getAllocatedAndSignaledJobs(ctx context.Context, runnerID resource.TfeID) ([]*Job, error) {
+func (db *db) listAllocatedJobs(ctx context.Context, runnerID resource.TfeID) ([]*Job, error) {
 	rows := db.Query(ctx, `
 SELECT
-    j.job_id,
-    j.run_id,
-    j.phase,
-    j.status,
-    j.signaled,
-    j.runner_id,
+    j.*,
     w.agent_pool_id,
-    r.workspace_id,
+	w.workspace_id,
     w.organization_name
 FROM jobs j
 JOIN runs r USING (run_id)
@@ -227,48 +222,15 @@ JOIN workspaces w USING (workspace_id)
 WHERE j.runner_id = $1
 AND   j.status = 'allocated'
 `, runnerID)
-	allocated, err := sql.CollectRows(rows, scanJob)
-	if err != nil {
-		return nil, err
-	}
-	rows = db.Query(ctx, `
-UPDATE jobs AS j
-SET signaled = NULL
-FROM runs r, workspaces w
-WHERE j.run_id = r.run_id
-AND   r.workspace_id = w.workspace_id
-AND   j.runner_id = $1
-AND   j.status = 'running'
-AND   j.signaled IS NOT NULL
-RETURNING
-    j.job_id,
-    j.run_id,
-    j.phase,
-    j.status,
-    j.signaled,
-    j.runner_id,
-    w.agent_pool_id,
-    r.workspace_id,
-    w.organization_name
-`, runnerID)
-	signaled, err := sql.CollectRows(rows, scanJob)
-	if err != nil {
-		return nil, err
-	}
-	return append(allocated, signaled...), nil
+	return sql.CollectRows(rows, scanJob)
 }
 
 func (db *db) getJob(ctx context.Context, jobID resource.TfeID) (*Job, error) {
 	rows := db.Query(ctx, `
 SELECT
-    j.job_id,
-    j.run_id,
-    j.phase,
-    j.status,
-    j.signaled,
-    j.runner_id,
+    j.*,
     w.agent_pool_id,
-    r.workspace_id,
+	w.workspace_id,
     w.organization_name
 FROM jobs j
 JOIN runs r USING (run_id)
@@ -281,14 +243,9 @@ WHERE j.job_id = $1
 func (db *db) listJobs(ctx context.Context) ([]*Job, error) {
 	rows := db.Query(ctx, `
 SELECT
-    j.job_id,
-    j.run_id,
-    j.phase,
-    j.status,
-    j.signaled,
-    j.runner_id,
+    j.*,
     w.agent_pool_id,
-    r.workspace_id,
+    w.workspace_id,
     w.organization_name
 FROM jobs j
 JOIN runs r USING (run_id)
@@ -297,90 +254,44 @@ JOIN workspaces w USING (workspace_id)
 	return sql.CollectRows(rows, scanJob)
 }
 
-func (db *db) updateJob(ctx context.Context, jobID resource.TfeID, fn func(context.Context, *Job) error) (*Job, error) {
+// updateJob updates a job given either its job ID, or if its run ID. If the run
+// ID is given then it updates the last unfinished job belonging to the run.
+func (db *db) updateJob(ctx context.Context, runOrJobID resource.TfeID, fn func(context.Context, *Job) error) (*Job, error) {
 	return sql.Updater(
 		ctx,
 		db.DB,
 		func(ctx context.Context) (*Job, error) {
-			rows := db.Query(ctx, `
+			row := db.Query(ctx, `
 SELECT
-    j.job_id,
-    j.run_id,
-    j.phase,
-    j.status,
-    j.signaled,
-    j.runner_id,
+    j.*,
     w.agent_pool_id,
-    r.workspace_id,
+    w.workspace_id,
     w.organization_name
 FROM jobs j
 JOIN runs r USING (run_id)
 JOIN workspaces w USING (workspace_id)
 WHERE j.job_id = $1
+OR (r.run_id = $1 AND j.status IN ('unallocated', 'allocated', 'running'))
 FOR UPDATE OF j
-`, jobID)
-			return sql.CollectOneRow(rows, scanJob)
+`, runOrJobID)
+			return sql.CollectOneRow(row, scanJob)
 		},
 		fn,
 		func(ctx context.Context, job *Job) error {
 			_, err := db.Exec(ctx, `
 UPDATE jobs
-SET status   = $1,
-    signaled = $2,
-    runner_id = $3
-WHERE job_id = $4
-RETURNING run_id, phase, status, runner_id, signaled, job_id
-`,
-				job.Status,
-				job.Signaled,
-				job.RunnerID,
-				job.ID,
-			)
-			return err
-		},
-	)
-}
-
-func (db *db) updateUnfinishedJobByRunID(ctx context.Context, runID resource.TfeID, fn func(context.Context, *Job) error) (*Job, error) {
-	return sql.Updater(
-		ctx,
-		db.DB,
-		func(ctx context.Context) (*Job, error) {
-			rows := db.Query(ctx, `
-SELECT
-    j.job_id,
-    j.run_id,
-    j.phase,
-    j.status,
-    j.signaled,
-    j.runner_id,
-    w.agent_pool_id,
-    r.workspace_id,
-    w.organization_name
-FROM jobs j
-JOIN runs r USING (run_id)
-JOIN workspaces w USING (workspace_id)
-WHERE j.run_id = $1
-AND   j.status IN ('unallocated', 'allocated', 'running')
-FOR UPDATE OF j
-`, runID)
-			return sql.CollectOneRow(rows, scanJob)
-		},
-		fn,
-		func(ctx context.Context, job *Job) error {
-			_, err := db.Exec(ctx, `
-UPDATE jobs
-SET status   = $1,
-    signaled = $2,
-    runner_id = $3
-WHERE job_id = $4
-`,
-				job.Status,
-				job.Signaled,
-				job.RunnerID,
-				job.ID,
-			)
-			return err
+SET status    = @status,
+    runner_id = @runner_id
+WHERE job_id  = @job_id
+`, pgx.NamedArgs{
+				"status":    job.Status,
+				"runner_id": job.RunnerID,
+				"job_id":    job.ID,
+			})
+			if err != nil {
+				return fmt.Errorf("updating job: %w", err)
+			}
+			return nil
 		},
 	)
 }
@@ -395,7 +306,6 @@ func scanJob(row pgx.CollectableRow) (*Job, error) {
 		Organization organization.Name `db:"organization_name"`
 		WorkspaceID  resource.TfeID    `db:"workspace_id"`
 		RunnerID     *resource.TfeID   `db:"runner_id"`
-		Signaled     *bool
 	}
 	m, err := pgx.RowToAddrOfStructByName[model](row)
 	if err != nil {
@@ -410,7 +320,6 @@ func scanJob(row pgx.CollectableRow) (*Job, error) {
 		Organization: m.Organization,
 		WorkspaceID:  m.WorkspaceID,
 		RunnerID:     m.RunnerID,
-		Signaled:     m.Signaled,
 	}
 	return meta, nil
 }

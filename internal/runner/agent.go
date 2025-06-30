@@ -61,6 +61,7 @@ func (s *remoteOperationSpawner) newOperation(job *Job, jobToken []byte) (*opera
 	apiClient, err := otfapi.NewClient(otfapi.Config{
 		URL:           s.url,
 		Token:         string(jobToken),
+		Logger:        s.logger,
 		RetryRequests: true,
 	})
 	if err != nil {

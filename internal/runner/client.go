@@ -17,7 +17,7 @@ type client interface {
 	register(ctx context.Context, opts registerOptions) (*RunnerMeta, error)
 	updateStatus(ctx context.Context, agentID resource.TfeID, status RunnerStatus) error
 
-	getJobs(ctx context.Context, agentID resource.TfeID) ([]*Job, error)
+	awaitAllocatedJobs(ctx context.Context, agentID resource.TfeID) ([]*Job, error)
 	startJob(ctx context.Context, jobID resource.TfeID) ([]byte, error)
 	finishJob(ctx context.Context, jobID resource.TfeID, opts finishJobOptions) error
 }
@@ -57,7 +57,7 @@ func (c *remoteClient) register(ctx context.Context, opts registerOptions) (*Run
 	return &m, nil
 }
 
-func (c *remoteClient) getJobs(ctx context.Context, agentID resource.TfeID) ([]*Job, error) {
+func (c *remoteClient) awaitAllocatedJobs(ctx context.Context, agentID resource.TfeID) ([]*Job, error) {
 	req, err := c.newRequest("GET", "agents/jobs", nil)
 	if err != nil {
 		return nil, err
@@ -67,15 +67,40 @@ func (c *remoteClient) getJobs(ctx context.Context, agentID resource.TfeID) ([]*
 	// GET request blocks until:
 	//
 	// (a) job(s) are allocated to agent
-	// (b) job(s) already allocated to agent are sent a cancelation signal
-	// (c) a timeout is reached
+	// (b) a timeout is reached
 	//
-	// (c) can occur due to any intermediate proxies placed between otf-agent
+	// (b) can occur due to any intermediate proxies placed between otf-agent
 	// and otfd, such as nginx, which has a default proxy_read_timeout of 60s.
 	if err := c.Do(ctx, req, &jobs); err != nil {
 		return nil, err
 	}
 	return jobs, nil
+}
+
+func (c *remoteClient) awaitJobSignal(ctx context.Context, jobID resource.TfeID) func() (jobSignal, error) {
+	u := fmt.Sprintf("jobs/%s/await-signal", jobID)
+	req, err := c.newRequest("GET", u, nil)
+	if err != nil {
+		return func() (jobSignal, error) {
+			return jobSignal{}, nil
+		}
+	}
+
+	var signal jobSignal
+	// GET request blocks until:
+	// (a) job signal is sent
+	// (b) a timeout is reached
+	//
+	// (b) can occur due to any intermediate proxies placed between the client
+	// and otfd, such as nginx, which has a default proxy_read_timeout of 60s.
+	if err := c.Do(ctx, req, &signal); err != nil {
+		return func() (jobSignal, error) {
+			return jobSignal{}, err
+		}
+	}
+	return func() (jobSignal, error) {
+		return signal, nil
+	}
 }
 
 func (c *remoteClient) updateStatus(ctx context.Context, agentID resource.TfeID, status RunnerStatus) error {
@@ -109,7 +134,7 @@ func (c *remoteClient) CreateAgentToken(ctx context.Context, poolID resource.Tfe
 // jobs
 
 func (c *remoteClient) startJob(ctx context.Context, jobID resource.TfeID) ([]byte, error) {
-	req, err := c.newRequest("POST", "agents/start", &startJobParams{
+	req, err := c.newRequest("POST", "jobs/start", &startJobParams{
 		JobID: jobID,
 	})
 	if err != nil {
@@ -123,7 +148,7 @@ func (c *remoteClient) startJob(ctx context.Context, jobID resource.TfeID) ([]by
 }
 
 func (c *remoteClient) finishJob(ctx context.Context, jobID resource.TfeID, opts finishJobOptions) error {
-	req, err := c.newRequest("POST", "agents/finish", &finishJobParams{
+	req, err := c.newRequest("POST", "jobs/finish", &finishJobParams{
 		JobID:            jobID,
 		finishJobOptions: opts,
 	})
