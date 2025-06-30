@@ -65,6 +65,7 @@ func (s *RemoteOperationSpawner) NewOperation(ctx context.Context, jobID resourc
 	client, err := otfapi.NewClient(otfapi.Config{
 		URL:           s.URL,
 		Token:         string(jobToken),
+		Logger:        s.logger,
 		RetryRequests: true,
 	})
 	if err != nil {

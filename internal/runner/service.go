@@ -35,6 +35,7 @@ type (
 		runnerBroker pubsub.SubscriptionService[*RunnerEvent]
 		jobBroker    pubsub.SubscriptionService[*JobEvent]
 		phases       phaseClient
+		Signaler     *jobSignaler
 
 		db *db
 		*tokenFactory
@@ -67,7 +68,8 @@ func NewService(opts ServiceOptions) *Service {
 		tokenFactory: &tokenFactory{
 			tokens: opts.TokensService,
 		},
-		phases: opts.RunService,
+		phases:   opts.RunService,
+		Signaler: newJobSignaler(opts.Logger, opts.DB),
 	}
 	svc.tfeapi = &tfe{
 		Service:   svc,
@@ -306,37 +308,46 @@ func (s *Service) createJob(ctx context.Context, run *otfrun.Run) error {
 // the corresponding job is signaled and what type of signal, and/or whether the
 // job should be canceled.
 func (s *Service) cancelJob(ctx context.Context, run *otfrun.Run) error {
-	var signal *bool
-	job, err := s.db.updateUnfinishedJobByRunID(ctx, run.ID, func(ctx context.Context, job *Job) (err error) {
-		signal, err = job.cancel(run)
-		return err
+	var (
+		signal bool
+		force  bool
+		err    error
+	)
+	job, err := s.db.updateJob(ctx, run.ID, func(ctx context.Context, job *Job) error {
+		// Determine whether job is to be signaled and if so if it is to be
+		// signaled by force.
+		signal, force, err = job.cancel(run)
+		if err != nil {
+			return err
+		}
+		if signal {
+			if err := s.Signaler.publish(ctx, job.ID, force); err != nil {
+				return err
+			}
+		}
+		return nil
 	})
 	if err != nil {
 		if errors.Is(err, internal.ErrResourceNotFound) {
+			s.Error(err, "not found", "run", run)
 			// ignore when no job has yet been created for the run.
 			return nil
 		}
 		s.Error(err, "canceling job for run", "run", run)
 		return err
 	}
-	if signal != nil {
-		s.V(4).Info("sending cancelation signal to job", "force-cancel", *signal, "job", job)
-	} else {
+	if signal {
+		s.V(4).Info("sent cancelation signal to job", "force", force, "job", job)
+	}
+	if job.Status == JobCanceled {
 		s.V(4).Info("canceled job", "job", job)
 	}
 	return nil
 }
 
-// getJobs returns jobs that either:
-// (a) have JobAllocated status
-// (b) have JobRunning status and a non-nil cancellation signal
-//
-// getJobs is intended to be called by an runner in order to retrieve jobs to
-// execute and jobs to cancel.
-//
-// TODO: rename to reflect the fact this routine *waits* for a job if there
-// isn't immediately an available job.
-func (s *Service) getJobs(ctx context.Context, runnerID resource.TfeID) ([]*Job, error) {
+// awaitAllocatedJobs waits until there is at least one allocated job for a
+// runner before returning allocated job(s).
+func (s *Service) awaitAllocatedJobs(ctx context.Context, runnerID resource.TfeID) ([]*Job, error) {
 	// only these subjects may call this endpoint:
 	// (a) a runner with an ID matching runnerID
 	if err := authorizeRunner(ctx, runnerID); err != nil {
@@ -346,7 +357,7 @@ func (s *Service) getJobs(ctx context.Context, runnerID resource.TfeID) ([]*Job,
 	sub, unsub := s.WatchJobs(ctx)
 	defer unsub()
 
-	jobs, err := s.db.getAllocatedAndSignaledJobs(ctx, runnerID)
+	jobs, err := s.db.listAllocatedJobs(ctx, runnerID)
 	if err != nil {
 		return nil, err
 	}
@@ -383,6 +394,10 @@ func (s *Service) getJobs(ctx context.Context, runnerID resource.TfeID) ([]*Job,
 
 func (s *Service) getJob(ctx context.Context, jobID resource.TfeID) (*Job, error) {
 	return s.db.getJob(ctx, jobID)
+}
+
+func (s *Service) awaitJobSignal(ctx context.Context, jobID resource.TfeID) func() (jobSignal, error) {
+	return s.Signaler.awaitJobSignal(ctx, jobID)
 }
 
 func (s *Service) listJobs(ctx context.Context) ([]*Job, error) {

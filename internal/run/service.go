@@ -400,20 +400,16 @@ func (s *Service) Cancel(ctx context.Context, runID resource.TfeID) error {
 	if err != nil {
 		return err
 	}
-	return s.db.Tx(ctx, func(ctx context.Context) error {
+	var run *Run
+	err = s.db.Tx(ctx, func(ctx context.Context) error {
 		_, isUser := subject.(*user.User)
 
-		run, err := s.db.UpdateStatus(ctx, runID, func(ctx context.Context, run *Run) (err error) {
+		var err error
+		run, err = s.db.UpdateStatus(ctx, runID, func(ctx context.Context, run *Run) (err error) {
 			return run.Cancel(isUser, false)
 		})
 		if err != nil {
-			s.Error(err, "canceling run", "id", runID, "subject", subject)
 			return err
-		}
-		if run.CancelSignaledAt != nil && run.Status != runstatus.Canceled {
-			s.V(0).Info("sent cancelation signal to run", "id", runID, "subject", subject)
-		} else {
-			s.V(0).Info("canceled run", "id", runID, "subject", subject)
 		}
 		// invoke AfterCancel hooks
 		for _, hook := range s.afterCancelHooks {
@@ -423,6 +419,15 @@ func (s *Service) Cancel(ctx context.Context, runID resource.TfeID) error {
 		}
 		return nil
 	})
+	if err != nil {
+		s.Error(err, "canceling run", "id", runID, "subject", subject)
+	}
+	if run.Status != runstatus.Canceled && run.CancelSignaledAt != nil {
+		s.V(0).Info("signaled cancelation", "id", runID, "subject", subject)
+	} else {
+		s.V(0).Info("canceled run", "id", runID, "subject", subject)
+	}
+	return nil
 }
 
 func (s *Service) AfterCancelRun(hook func(context.Context, *Run) error) {

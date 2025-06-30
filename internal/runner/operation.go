@@ -14,7 +14,9 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 
+	"github.com/cenkalti/backoff"
 	"github.com/fatih/color"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
@@ -103,7 +105,7 @@ type (
 	}
 
 	operationJobsClient interface {
-		getJob(ctx context.Context, jobID resource.TfeID) (*Job, error)
+		awaitJobSignal(ctx context.Context, jobID resource.TfeID) func() (jobSignal, error)
 		finishJob(ctx context.Context, jobID resource.TfeID, opts finishJobOptions) error
 	}
 
@@ -186,6 +188,34 @@ func newOperation(ctx context.Context, opts operationOptions) (*operation, error
 // doAndFinish executes the job and marks the job as complete with the
 // appropriate status.
 func (o *operation) doAndFinish() {
+	// Whilst operation is being done relay any cancelation signals
+	go func() {
+		handleJobSignal := func() error {
+			for {
+				// blocks until signal received
+				signal, err := o.jobs.awaitJobSignal(o.ctx, o.job.ID)()
+				if err != nil {
+					// If context has closed then the op has finished and we can
+					// exit.
+					if o.ctx.Err() != nil {
+						return nil
+					}
+					return err
+				}
+				o.cancel(signal.Force, true)
+			}
+		}
+		policy := backoff.WithContext(backoff.NewExponentialBackOff(), o.ctx)
+		_ = backoff.RetryNotify(handleJobSignal, policy, func(err error, next time.Duration) {
+			// An error is likely to do with proxies timing out long lived
+			// connections like this one.
+			o.V(8).Info("awaiting job signal", "error", err, "backoff", next)
+		})
+	}()
+	// Upon finish cancel the context to ensure everything is cleaned up,
+	// including stopping the job signaling go routine above.
+	defer o.cancelfn()
+
 	// do the job, and then handle any error and send appropriate job status
 	// update
 	err := o.do()
@@ -320,8 +350,8 @@ func (o *operation) do() error {
 
 func (o *operation) cancel(force, sendSignal bool) {
 	o.canceled = true
-	// cancel context only if forced and if there is a context to cancel
-	if force && o.cancelfn != nil {
+	// cancel context only if forced
+	if force {
 		o.cancelfn()
 	}
 	// signal current process if there is one.
