@@ -56,7 +56,10 @@ func (h *AppEventHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	for _, prov := range providers {
 		h.Publish(vcs.Event{
-			EventHeader:  vcs.EventHeader{VCSProviderID: prov.ID},
+			EventHeader: vcs.EventHeader{
+				VCSProviderID: prov.ID,
+				Source:        Source,
+			},
 			EventPayload: *payload,
 		})
 	}

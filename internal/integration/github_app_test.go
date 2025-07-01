@@ -12,11 +12,13 @@ import (
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/http/decode"
+	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/playwright-community/playwright-go"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -307,6 +309,10 @@ func TestIntegration_GithubApp_Event(t *testing.T) {
 	push := testutils.ReadFile(t, "./fixtures/github_app_push.json")
 	github.SendEventRequest(t, github.PushEvent, daemon.System.URL(github.AppEventsPath), "secret", push)
 
-	// wait for run to be created
-	<-daemon.runEvents
+	runEvent := <-daemon.runEvents
+	daemon.waitRunStatus(t, ctx, runEvent.Payload.ID, runstatus.Planned)
+
+	// github should receive a pending status update
+	got := daemon.GetStatus(t, ctx)
+	assert.Equal(t, "pending", got.GetState())
 }
