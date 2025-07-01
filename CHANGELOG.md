@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.3.26](https://github.com/leg100/otf/compare/v0.3.25...v0.3.26) (2025-07-01)
+
+
+### Features
+
+* **ui:** add workspace overview sub menu link ([892381f](https://github.com/leg100/otf/commit/892381f1b96b00db54151546b63743f3b18b369f))
+
+
+### Bug Fixes
+
+* github app connected workspaces not sending status updates ([42e2ce7](https://github.com/leg100/otf/commit/42e2ce7ab039709a4c29b11001e642abac251be4))
+* **ui:** make page size selector fully visible when set to 100 ([5ec4f84](https://github.com/leg100/otf/commit/5ec4f84132ceef293452d3ed32d1fb5c5e906674))
+
+
+### Miscellaneous
+
+* bump templ version ([cbd6f3c](https://github.com/leg100/otf/commit/cbd6f3c329a3edfca15c9d8bea266700991a4b15))
+* remove debug statements ([c93b542](https://github.com/leg100/otf/commit/c93b5422af1c102c3d94c1dc5fa122e06803beb4))
+* remove unnecessary source ptr func ([0ef66e9](https://github.com/leg100/otf/commit/0ef66e9478ad0ffafdf54f1e06a97337cc9646aa))
+
 ## [0.3.25](https://github.com/leg100/otf/compare/v0.3.24...v0.3.25) (2025-06-24)
 
 
