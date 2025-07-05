@@ -81,3 +81,57 @@ func TestIntegration_TeamUI(t *testing.T) {
 		require.NoError(t, err)
 	})
 }
+
+func TestIntegration_TeamUI_Permissions(t *testing.T) {
+	integrationTest(t)
+
+	daemon, org, ctx := setup(t)
+	team := daemon.createTeam(t, ctx, org)
+
+	browser.New(t, ctx, func(page playwright.Page) {
+		// go to team's page
+		teamURL := "https://" + daemon.System.Hostname() + "/app/teams/" + team.ID.String()
+		_, err := page.Goto(teamURL)
+		require.NoError(t, err)
+
+		// new team should have no permissions
+		err = expect.Locator(page.Locator(`//*[@id="manage_workspaces"]`)).Not().ToBeChecked()
+		require.NoError(t, err)
+		err = expect.Locator(page.Locator(`//*[@id="manage_vcs"]`)).Not().ToBeChecked()
+		require.NoError(t, err)
+		err = expect.Locator(page.Locator(`//*[@id="manage_modules"]`)).Not().ToBeChecked()
+		require.NoError(t, err)
+
+		// assign manage workspaces permission
+		err = page.Locator(`//*[@id="manage_workspaces"]`).Check()
+		require.NoError(t, err)
+
+		// save changes
+		err = page.Locator(`//*[@id="content"]/form[1]/div[4]/button`).Click()
+		require.NoError(t, err)
+
+		// expect flash message
+		err = expect.Locator(page.GetByRole("alert")).ToHaveText("team permissions updated")
+		require.NoError(t, err)
+
+		// manage workspaces permission checkbox should be checked
+		err = expect.Locator(page.Locator(`//*[@id="manage_workspaces"]`)).ToBeChecked()
+		require.NoError(t, err)
+
+		// unassign manage workspaces permission
+		err = page.Locator(`//*[@id="manage_workspaces"]`).Uncheck()
+		require.NoError(t, err)
+
+		// save changes
+		err = page.Locator(`//*[@id="content"]/form[1]/div[4]/button`).Click()
+		require.NoError(t, err)
+
+		// expect flash message
+		err = expect.Locator(page.GetByRole("alert")).ToHaveText("team permissions updated")
+		require.NoError(t, err)
+
+		// manage workspaces permission checkbox should be unchecked
+		err = expect.Locator(page.Locator(`//*[@id="manage_workspaces"]`)).Not().ToBeChecked()
+		require.NoError(t, err)
+	})
+}
