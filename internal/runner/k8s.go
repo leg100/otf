@@ -4,13 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	otfapi "github.com/leg100/otf/internal/api"
-	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/logr"
-	"github.com/leg100/otf/internal/run"
-	"github.com/leg100/otf/internal/state"
-	"github.com/leg100/otf/internal/variable"
-	"github.com/leg100/otf/internal/workspace"
+	"golang.org/x/sync/errgroup"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -46,7 +41,7 @@ func NewKubeOperationSpawner(logger logr.Logger, cfg Config, url string) (*KubeO
 	}, nil
 }
 
-func (s *KubeOperationSpawner) NewOperation(ctx context.Context, job *Job, jobToken []byte) (*operation, error) {
+func (s *KubeOperationSpawner) Spawn(ctx context.Context, _ *errgroup.Group, job *Job, jobToken []byte) error {
 	// Launch k8s job
 	spec := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
@@ -74,28 +69,7 @@ func (s *KubeOperationSpawner) NewOperation(ctx context.Context, job *Job, jobTo
 	}
 	_, err := s.kube.BatchV1().Jobs(s.Namespace).Create(ctx, spec, metav1.CreateOptions{})
 	if err != nil {
-		return nil, err
+		return err
 	}
-	client, err := otfapi.NewClient(otfapi.Config{
-		URL:           s.URL,
-		Token:         string(jobToken),
-		RetryRequests: true,
-		Logger:        s.Logger,
-	})
-	if err != nil {
-		return nil, err
-	}
-	return newOperation(ctx, operationOptions{
-		logger:          s.Logger,
-		OperationConfig: s.Config.OperationConfig,
-		job:             job,
-		jobToken:        jobToken,
-		runs:            &run.Client{Client: client},
-		jobs:            &remoteClient{Client: client},
-		workspaces:      &workspace.Client{Client: client},
-		variables:       &variable.Client{Client: client},
-		state:           &state.Client{Client: client},
-		configs:         &configversion.Client{Client: client},
-		server:          client,
-	})
+	return nil
 }

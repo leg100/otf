@@ -210,19 +210,9 @@ func (r *Runner) Start(ctx context.Context) error {
 						}
 						return fmt.Errorf("starting job and retrieving job token: %w", err)
 					}
-					op, err := r.spawner.NewOperation(ctx, job, token)
-					if err != nil {
+					if err := r.spawner.SpawnOperation(ctx, g, j, token); err != nil {
 						return fmt.Errorf("spawning job operation: %w", err)
 					}
-					// check job operation in with the tracker, so that if the
-					// runner shuts down then the operation is shutdown too.
-					tracker.checkIn(j.ID, op)
-					op.V(0).Info("started job")
-					g.Go(func() error {
-						op.doAndFinish()
-						tracker.checkOut(op.job.ID)
-						return nil
-					})
 				}
 				return nil
 			}

@@ -27,6 +27,7 @@ import (
 	"github.com/leg100/otf/internal/state"
 	"github.com/leg100/otf/internal/variable"
 	"github.com/leg100/otf/internal/workspace"
+	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -101,7 +102,7 @@ type (
 	}
 
 	operationSpawner interface {
-		NewOperation(ctx context.Context, jobID resource.TfeID, jobToken []byte) (*operation, error)
+		SpawnOperation(ctx context.Context, g *errgroup.Group, job *Job, jobToken []byte) error
 	}
 
 	operationJobsClient interface {
@@ -146,14 +147,14 @@ type (
 	}
 )
 
-func newOperation(ctx context.Context, opts operationOptions) (*operation, error) {
+func doOperation(parentCtx context.Context, g *errgroup.Group, opts operationOptions) {
 	// An operation has its own uninherited context; the operation is instead
 	// canceled via its cancel() method, which provides more control, with the
 	// ability to gracefully or forcefully cancel an operation.
 	ctx, cancelfn := context.WithCancel(context.Background())
 	// Authenticate as the job (only effective on server runner; the agent
 	// runner instead authenticates remotely via its job token).
-	ctx = authz.AddSubjectToContext(ctx, opts.job)
+	ctx = authz.AddSubjectToContext(parentCtx, opts.job)
 
 	envs := defaultEnvs
 	if opts.PluginCache {
@@ -162,7 +163,7 @@ func newOperation(ctx context.Context, opts operationOptions) (*operation, error
 	// make token available to engine CLI
 	envs = append(envs, internal.CredentialEnv(opts.server.Hostname(), opts.jobToken))
 
-	return &operation{
+	op := &operation{
 		Logger:       opts.logger.WithValues("job", opts.job),
 		Sandbox:      opts.Sandbox,
 		Debug:        opts.Debug,
@@ -179,7 +180,20 @@ func newOperation(ctx context.Context, opts operationOptions) (*operation, error
 		configs:      opts.configs,
 		server:       opts.server,
 		isAgent:      opts.IsAgent,
-	}, nil
+	}
+	if g != nil {
+		g.Go(func() error {
+			op.doAndFinish()
+			return nil
+		})
+	} else {
+		op.doAndFinish()
+	}
+	// When parent context is done, gracefully cancel the op.
+	go func() {
+		<-parentCtx.Done()
+		op.cancel(false, true)
+	}()
 }
 
 // doAndFinish executes the job and marks the job as complete with the

@@ -10,6 +10,7 @@ import (
 	"github.com/leg100/otf/internal/state"
 	"github.com/leg100/otf/internal/variable"
 	"github.com/leg100/otf/internal/workspace"
+	"golang.org/x/sync/errgroup"
 )
 
 type AgentOptions struct {
@@ -49,7 +50,7 @@ type RemoteOperationSpawner struct {
 	URL    string
 }
 
-func (s *RemoteOperationSpawner) NewOperation(ctx context.Context, job *Job, jobToken []byte) (*operation, error) {
+func (s *RemoteOperationSpawner) SpawnOperation(ctx context.Context, g *errgroup.Group, job *Job, jobToken []byte) error {
 	client, err := otfapi.NewClient(otfapi.Config{
 		URL:           s.URL,
 		Token:         string(jobToken),
@@ -57,9 +58,9 @@ func (s *RemoteOperationSpawner) NewOperation(ctx context.Context, job *Job, job
 		RetryRequests: true,
 	})
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return newOperation(ctx, operationOptions{
+	doOperation(ctx, g, operationOptions{
 		logger:          s.Logger,
 		OperationConfig: s.Config,
 		job:             job,
@@ -72,4 +73,5 @@ func (s *RemoteOperationSpawner) NewOperation(ctx context.Context, job *Job, job
 		configs:         &configversion.Client{Client: client},
 		server:          client,
 	})
+	return nil
 }

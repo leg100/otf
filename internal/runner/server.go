@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/leg100/otf/internal/logr"
-	"github.com/leg100/otf/internal/resource"
+	"golang.org/x/sync/errgroup"
 )
 
 // ServerRunnerOptions are options for constructing a server runner.
@@ -59,11 +59,11 @@ type localOperationSpawner struct {
 	jobs       operationJobsClient
 }
 
-func (s *localOperationSpawner) NewOperation(ctx context.Context, jobID resource.TfeID, jobToken []byte) (*operation, error) {
-	return newOperation(ctx, operationOptions{
+func (s *localOperationSpawner) SpawnOperation(ctx context.Context, g *errgroup.Group, job *Job, jobToken []byte) error {
+	doOperation(ctx, g, operationOptions{
 		logger:          s.logger,
 		OperationConfig: s.config.OperationConfig,
-		job:             jobID,
+		job:             job,
 		jobToken:        jobToken,
 		jobs:            s.jobs,
 		runs:            s.runs,
@@ -73,4 +73,5 @@ func (s *localOperationSpawner) NewOperation(ctx context.Context, jobID resource
 		configs:         s.configs,
 		server:          s.server,
 	})
+	return nil
 }
