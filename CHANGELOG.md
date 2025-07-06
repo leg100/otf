@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.27](https://github.com/leg100/otf/compare/v0.3.26...v0.3.27) (2025-07-06)
+
+
+### Bug Fixes
+
+* **ui:** cannot unassign team permissions ([b4415b4](https://github.com/leg100/otf/commit/b4415b401c0a1367ed4d888c4008936f9c10727e))
+* **ui:** edit variable set variable link 404 ([5eed13a](https://github.com/leg100/otf/commit/5eed13a8dbcee53a8ec18560834e2b1a8f48c791))
+
 ## [0.3.26](https://github.com/leg100/otf/compare/v0.3.25...v0.3.26) (2025-07-01)
 
 
