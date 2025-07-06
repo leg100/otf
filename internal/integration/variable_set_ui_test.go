@@ -4,12 +4,15 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/variable"
 	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/require"
 )
 
-// TestIntegration_VariableSetUI tests management of variable sets via the UI.
-func TestIntegration_VariableSetUI(t *testing.T) {
+// TestIntegration_VariableSetUI tests adding a variable set in the browser.
+func TestIntegration_VariableSetUI_New(t *testing.T) {
 	integrationTest(t)
 
 	svc, org, ctx := setup(t)
@@ -46,6 +49,27 @@ func TestIntegration_VariableSetUI(t *testing.T) {
 		// confirm variable set added
 		err = expect.Locator(page.GetByRole("alert")).ToHaveText("added variable set: global-1")
 		require.NoError(t, err)
+	})
+}
+
+// TestIntegration_VariableSetUI_Edit tests editing a variable set via the UI.
+func TestIntegration_VariableSetUI_Edit(t *testing.T) {
+	integrationTest(t)
+
+	svc, org, ctx := setup(t)
+
+	set, err := svc.Variables.CreateVariableSet(ctx, org.Name, variable.CreateVariableSetOptions{
+		Name:   "global-1",
+		Global: true,
+	})
+	require.NoError(t, err)
+
+	// Edit global variable set in browser
+	browser.New(t, ctx, func(page playwright.Page) {
+		// go to variable set's page
+		setURL := "https://" + svc.System.Hostname() + "/app/variable-sets/" + set.ID.String() + "/edit"
+		_, err := page.Goto(setURL)
+		require.NoError(t, err)
 
 		// edit description
 		err = page.Locator("textarea#description").Fill("this is my newly updated global variable set")
@@ -74,21 +98,31 @@ func TestIntegration_VariableSetUI(t *testing.T) {
 		// select terraform variable category
 		err = page.Locator("input#terraform").Click()
 		require.NoError(t, err)
+
 		// submit form
 		err = page.Locator(`//button[@id='save-variable-button']`).Click()
 		require.NoError(t, err)
+
 		// confirm variable added
 		err = expect.Locator(page.GetByRole("alert")).ToHaveText("added variable: foo")
 		require.NoError(t, err)
+	})
+}
 
-		ws1 := svc.createWorkspace(t, ctx, org)
-		ws2 := svc.createWorkspace(t, ctx, org)
-		ws3 := svc.createWorkspace(t, ctx, org)
+// TestIntegration_VariableSetUI_NewEdit_WorkspaceScoped tests creating a
+// workspace-scoped variable set via the UI.
+func TestIntegration_VariableSetUI_New_WorkspaceScoped(t *testing.T) {
+	integrationTest(t)
 
-		// Create workspace-scoped variable set in browser, and add a variable.
-		//
+	svc, org, ctx := setup(t)
+	ws1 := svc.createWorkspace(t, ctx, org)
+	ws2 := svc.createWorkspace(t, ctx, org)
+	ws3 := svc.createWorkspace(t, ctx, org)
+
+	// Create workspace-scoped variable set in browser, and add a variable.
+	browser.New(t, ctx, func(page playwright.Page) {
 		// go to org
-		_, err = page.Goto(organizationURL(svc.System.Hostname(), org.Name))
+		_, err := page.Goto(organizationURL(svc.System.Hostname(), org.Name))
 		require.NoError(t, err)
 
 		// go to variable sets
@@ -148,31 +182,49 @@ func TestIntegration_VariableSetUI(t *testing.T) {
 		// list of workspaces should be persisted, and include ws1
 		err = expect.Locator(page.Locator(`//div[@id='existing-workspaces']//span`)).ToHaveText(ws1.Name)
 		require.NoError(t, err)
+	})
+}
 
-		// add a variable
-		err = page.Locator(`//button[@id='add-variable-button']`).Click()
-		require.NoError(t, err)
+// TestIntegration_VariableSetUI_WorkspaceVariables tests the visibility and
+// precedence of variable set variables for a workspace via the UI.
+func TestIntegration_VariableSetUI_WorkspaceVariables(t *testing.T) {
+	integrationTest(t)
 
-		// enter key
-		err = page.Locator("input#key").Fill("foo")
-		require.NoError(t, err)
+	svc, org, ctx := setup(t)
 
-		// enter value
-		err = page.Locator("textarea#value").Fill("baz")
-		require.NoError(t, err)
+	ws1 := svc.createWorkspace(t, ctx, org)
 
-		// select terraform variable category
-		err = page.Locator("input#terraform").Click()
-		require.NoError(t, err)
+	// create global set
+	globalSet, err := svc.Variables.CreateVariableSet(ctx, org.Name, variable.CreateVariableSetOptions{
+		Name:   "global-1",
+		Global: true,
+	})
+	require.NoError(t, err)
 
-		// submit form
-		err = page.Locator(`//button[@id='save-variable-button']`).Click()
-		require.NoError(t, err)
+	// create variable for global set
+	_, err = svc.Variables.CreateVariableSetVariable(ctx, globalSet.ID, variable.CreateVariableOptions{
+		Key:      internal.Ptr("foo"),
+		Value:    internal.Ptr("bar"),
+		Category: internal.Ptr(variable.CategoryTerraform),
+	})
+	require.NoError(t, err)
 
-		// confirm variable added
-		err = expect.Locator(page.GetByRole("alert")).ToHaveText("added variable: foo")
-		require.NoError(t, err)
+	// create workspace-scoped set
+	workspaceScopedSet, err := svc.Variables.CreateVariableSet(ctx, org.Name, variable.CreateVariableSetOptions{
+		Name:       "workspace-scoped-1",
+		Workspaces: []resource.TfeID{ws1.ID},
+	})
+	require.NoError(t, err)
 
+	// create variable for workspace-scoped set
+	_, err = svc.Variables.CreateVariableSetVariable(ctx, workspaceScopedSet.ID, variable.CreateVariableOptions{
+		Key:      internal.Ptr("foo"),
+		Value:    internal.Ptr("bar"),
+		Category: internal.Ptr(variable.CategoryTerraform),
+	})
+	require.NoError(t, err)
+
+	browser.New(t, ctx, func(page playwright.Page) {
 		// go to variables page for workspace ws1
 		_, err = page.Goto(workspaceURL(svc.System.Hostname(), org.Name, ws1.Name))
 		require.NoError(t, err)
@@ -195,6 +247,26 @@ func TestIntegration_VariableSetUI(t *testing.T) {
 		err = expect.Locator(page.Locator(`//*[@id='variables-table']//tbody/tr[2]/td[1]`)).ToHaveText(`workspace-scoped-1`)
 		require.NoError(t, err)
 		err = expect.Locator(page.Locator(`//*[@id='variables-table']//tbody/tr[2]/td[2]`)).ToHaveText(`foo`)
+		require.NoError(t, err)
+
+		// click through to the variable set's edit page
+		err = page.Locator(`//*[@id='variables-table']//tbody/tr[1]/td[1]/a`).Click()
+		require.NoError(t, err)
+
+		// expect variable set's edit page to load with title
+		err = expect.Locator(page.Locator(`//*[@id="content"]/span`)).ToHaveText(`Edit variable set`)
+		require.NoError(t, err)
+
+		// go back to workspace variables page
+		_, err = page.GoBack()
+		require.NoError(t, err)
+
+		// click through to the variable set variable's edit page
+		err = page.Locator(`//*[@id='variables-table']//tbody/tr[1]/td[2]/s`).Click()
+		require.NoError(t, err)
+
+		// expect variable set variable's edit page to load with title
+		err = expect.Locator(page.Locator(`//*[@id="content"]/span`)).ToHaveText(`Edit variable`)
 		require.NoError(t, err)
 	})
 }

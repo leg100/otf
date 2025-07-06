@@ -66,9 +66,9 @@ type (
 	// OrganizationAccessOptions defines access to be granted upon team creation
 	// or to grant/rescind to/from an existing team.
 	OrganizationAccessOptions struct {
-		ManageWorkspaces *bool `schema:"manage_workspaces"`
-		ManageVCS        *bool `schema:"manage_vcs"`
-		ManageModules    *bool `schema:"manage_modules"`
+		ManageWorkspaces *bool
+		ManageVCS        *bool
+		ManageModules    *bool
 
 		// TFE fields that OTF does not support but persists merely to pass the
 		// go-tfe integration tests

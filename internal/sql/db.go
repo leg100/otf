@@ -156,11 +156,9 @@ func (db *DB) WaitAndLock(ctx context.Context, id int64, fn func(context.Context
 	// problems because a lock must be released on the same connection on which
 	// it was obtained.
 	return db.Pool.AcquireFunc(ctx, func(conn *pgxpool.Conn) error {
-		db.Info("acquiring session-level advisory lock", "id", id)
 		if _, err = conn.Exec(ctx, "SELECT pg_advisory_lock($1)", id); err != nil {
 			return err
 		}
-		db.Info("acquired session-level advisory lock", "id", id)
 		defer func() {
 			_, closeErr := conn.Exec(ctx, "SELECT pg_advisory_unlock($1)", id)
 			if err != nil {

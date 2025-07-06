@@ -224,7 +224,7 @@ func (s *Service) DeleteWorkspaceVariable(ctx context.Context, variableID resour
 	return wv, nil
 }
 
-func (s *Service) createVariableSet(ctx context.Context, organization organization.Name, opts CreateVariableSetOptions) (*VariableSet, error) {
+func (s *Service) CreateVariableSet(ctx context.Context, organization organization.Name, opts CreateVariableSetOptions) (*VariableSet, error) {
 	subject, err := s.Authorize(ctx, authz.CreateVariableSetAction, organization)
 	if err != nil {
 		return nil, err
@@ -381,7 +381,7 @@ func (s *Service) deleteVariableSet(ctx context.Context, setID resource.TfeID) (
 	return set, nil
 }
 
-func (s *Service) createVariableSetVariable(ctx context.Context, setID resource.TfeID, opts CreateVariableOptions) (*Variable, error) {
+func (s *Service) CreateVariableSetVariable(ctx context.Context, setID resource.TfeID, opts CreateVariableOptions) (*Variable, error) {
 	var (
 		subject authz.Subject
 		set     *VariableSet
