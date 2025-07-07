@@ -41,7 +41,7 @@ func NewKubeOperationSpawner(logger logr.Logger, cfg Config, url string) (*KubeO
 	}, nil
 }
 
-func (s *KubeOperationSpawner) Spawn(ctx context.Context, _ *errgroup.Group, job *Job, jobToken []byte) error {
+func (s *KubeOperationSpawner) SpawnOperation(ctx context.Context, _ *errgroup.Group, job *Job, jobToken []byte) error {
 	// Launch k8s job
 	spec := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
