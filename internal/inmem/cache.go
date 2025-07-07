@@ -9,9 +9,9 @@ import (
 
 type CacheConfig struct {
 	// Total capacity of cache in MB.
-	Size int
+	Size int `name:"cache-size" help:"Maximum cache size in MB. 0 means unlimited size."`
 	// Time-to-live for each cache entry before automatic deletion.
-	TTL time.Duration
+	TTL time.Duration `name:"cache-expiry" help:"Cache entry TTL."`
 }
 
 func NewCache(config CacheConfig) (*bigcache.BigCache, error) {

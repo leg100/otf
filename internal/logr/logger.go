@@ -12,8 +12,8 @@ import (
 
 type (
 	Config struct {
-		Verbosity int
-		Format    string
+		Verbosity int    `name:"v" help:"Logging level"`
+		Format    string `name:"log-format" help:"Logging format: text or json"`
 	}
 
 	Format string
