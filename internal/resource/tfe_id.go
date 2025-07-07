@@ -105,6 +105,12 @@ func (id *TfeID) Value() (driver.Value, error) {
 	return id.String(), nil
 }
 
+// Type implements pflag.Value
+func (*TfeID) Type() string { return "id" }
+
+// Set implements pflag.Value
+func (id *TfeID) Set(text string) error { return id.Scan(text) }
+
 // GenerateRandomStringFromAlphabet generates a random string of a given size
 // using characters from the given alphabet.
 func GenerateRandomStringFromAlphabet(size int, alphabet string) string {
