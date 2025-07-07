@@ -42,7 +42,7 @@ func NewTeamCommand(apiClient *otfapi.Client) *cobra.Command {
 }
 
 func (a *teamCLI) teamNewCommand() *cobra.Command {
-	var org string
+	var orgName organization.Name
 
 	cmd := &cobra.Command{
 		Use:           "new [name]",
@@ -51,11 +51,7 @@ func (a *teamCLI) teamNewCommand() *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			orgname, err := organization.NewName(org)
-			if err != nil {
-				return err
-			}
-			team, err := a.client.Create(cmd.Context(), orgname, CreateTeamOptions{
+			team, err := a.client.Create(cmd.Context(), orgName, CreateTeamOptions{
 				Name: internal.Ptr(args[0]),
 			})
 			if err != nil {
@@ -66,14 +62,14 @@ func (a *teamCLI) teamNewCommand() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&org, "organization", "", "OTF organization in which to perform action")
+	cmd.Flags().Var(&orgName, "organization", "OTF organization in which to perform action")
 	cmd.MarkFlagRequired("organization")
 
 	return cmd
 }
 
 func (a *teamCLI) teamDeleteCommand() *cobra.Command {
-	var org string
+	var orgName organization.Name
 
 	cmd := &cobra.Command{
 		Use:           "delete [name]",
@@ -82,11 +78,7 @@ func (a *teamCLI) teamDeleteCommand() *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			orgname, err := organization.NewName(org)
-			if err != nil {
-				return err
-			}
-			team, err := a.client.Get(cmd.Context(), orgname, args[0])
+			team, err := a.client.Get(cmd.Context(), orgName, args[0])
 			if err != nil {
 				return err
 			}
@@ -98,7 +90,7 @@ func (a *teamCLI) teamDeleteCommand() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&org, "organization", "", "OTF organization in which to perform action")
+	cmd.Flags().Var(&orgName, "organization", "OTF organization in which to perform action")
 	cmd.MarkFlagRequired("organization")
 
 	return cmd
