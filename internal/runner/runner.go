@@ -41,8 +41,8 @@ type Runner struct {
 	v      int         // logger verbosity
 }
 
-// newRunner constructs a runner.
-func newRunner(
+// New constructs a runner.
+func New(
 	logger logr.Logger,
 	client client,
 	spawner operationSpawner,

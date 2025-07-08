@@ -107,7 +107,7 @@ type (
 
 	operationJobsClient interface {
 		awaitJobSignal(ctx context.Context, jobID resource.TfeID) func() (jobSignal, error)
-		getJob(ctx context.Context, jobID resource.TfeID) (*Job, error)
+		GetJob(ctx context.Context, jobID resource.TfeID) (*Job, error)
 		finishJob(ctx context.Context, jobID resource.TfeID, opts finishJobOptions) error
 	}
 
@@ -181,6 +181,12 @@ func doOperation(parentCtx context.Context, g *errgroup.Group, opts operationOpt
 		server:       opts.server,
 		isAgent:      opts.IsAgent,
 	}
+	// When parent context is done, gracefully cancel the op.
+	go func() {
+		<-parentCtx.Done()
+		op.cancel(false, true)
+	}()
+	// If a group is defined then run op within go routine
 	if g != nil {
 		g.Go(func() error {
 			op.doAndFinish()
@@ -189,11 +195,6 @@ func doOperation(parentCtx context.Context, g *errgroup.Group, opts operationOpt
 	} else {
 		op.doAndFinish()
 	}
-	// When parent context is done, gracefully cancel the op.
-	go func() {
-		<-parentCtx.Done()
-		op.cancel(false, true)
-	}()
 }
 
 // doAndFinish executes the job and marks the job as complete with the

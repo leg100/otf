@@ -24,7 +24,7 @@ type ServerRunnerOptions struct {
 
 // NewServerRunner constructs a server runner.
 func NewServerRunner(opts ServerRunnerOptions) (*Runner, error) {
-	daemon, err := newRunner(
+	daemon, err := New(
 		opts.Logger,
 		opts.Runners,
 		&localOperationSpawner{

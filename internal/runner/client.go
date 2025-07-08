@@ -23,7 +23,7 @@ type client interface {
 }
 
 // client accesses the service endpoints via RPC.
-type remoteClient struct {
+type Client struct {
 	*otfapi.Client
 
 	// agentID is the ID of the agent using the client
@@ -31,7 +31,7 @@ type remoteClient struct {
 }
 
 // newRequest constructs a new API request
-func (c *remoteClient) newRequest(method, path string, v interface{}) (*retryablehttp.Request, error) {
+func (c *Client) newRequest(method, path string, v interface{}) (*retryablehttp.Request, error) {
 	req, err := c.Client.NewRequest(method, path, v)
 	if err != nil {
 		return nil, err
@@ -42,7 +42,7 @@ func (c *remoteClient) newRequest(method, path string, v interface{}) (*retryabl
 	return req, err
 }
 
-func (c *remoteClient) register(ctx context.Context, opts registerOptions) (*RunnerMeta, error) {
+func (c *Client) register(ctx context.Context, opts registerOptions) (*RunnerMeta, error) {
 	req, err := c.newRequest("POST", "agents/register", &opts)
 	if err != nil {
 		return nil, err
@@ -57,7 +57,7 @@ func (c *remoteClient) register(ctx context.Context, opts registerOptions) (*Run
 	return &m, nil
 }
 
-func (c *remoteClient) awaitAllocatedJobs(ctx context.Context, agentID resource.TfeID) ([]*Job, error) {
+func (c *Client) awaitAllocatedJobs(ctx context.Context, agentID resource.TfeID) ([]*Job, error) {
 	req, err := c.newRequest("GET", "agents/await-allocated-jobs", nil)
 	if err != nil {
 		return nil, err
@@ -77,7 +77,7 @@ func (c *remoteClient) awaitAllocatedJobs(ctx context.Context, agentID resource.
 	return jobs, nil
 }
 
-func (c *remoteClient) getJob(ctx context.Context, jobID resource.TfeID) (*Job, error) {
+func (c *Client) GetJob(ctx context.Context, jobID resource.TfeID) (*Job, error) {
 	u := fmt.Sprintf("jobs/%s", jobID)
 	req, err := c.newRequest("GET", u, nil)
 	if err != nil {
@@ -90,7 +90,7 @@ func (c *remoteClient) getJob(ctx context.Context, jobID resource.TfeID) (*Job, 
 	return job, nil
 }
 
-func (c *remoteClient) awaitJobSignal(ctx context.Context, jobID resource.TfeID) func() (jobSignal, error) {
+func (c *Client) awaitJobSignal(ctx context.Context, jobID resource.TfeID) func() (jobSignal, error) {
 	u := fmt.Sprintf("jobs/%s/await-signal", jobID)
 	req, err := c.newRequest("GET", u, nil)
 	if err != nil {
@@ -116,7 +116,7 @@ func (c *remoteClient) awaitJobSignal(ctx context.Context, jobID resource.TfeID)
 	}
 }
 
-func (c *remoteClient) updateStatus(ctx context.Context, agentID resource.TfeID, status RunnerStatus) error {
+func (c *Client) updateStatus(ctx context.Context, agentID resource.TfeID, status RunnerStatus) error {
 	req, err := c.newRequest("POST", "agents/status", &updateAgentStatusParams{
 		Status: status,
 	})
@@ -131,7 +131,7 @@ func (c *remoteClient) updateStatus(ctx context.Context, agentID resource.TfeID,
 
 // agent tokens
 
-func (c *remoteClient) CreateAgentToken(ctx context.Context, poolID resource.TfeID, opts CreateAgentTokenOptions) (*agentToken, []byte, error) {
+func (c *Client) CreateAgentToken(ctx context.Context, poolID resource.TfeID, opts CreateAgentTokenOptions) (*agentToken, []byte, error) {
 	u := fmt.Sprintf("agent-tokens/%s/create", poolID)
 	req, err := c.newRequest("POST", u, &opts)
 	if err != nil {
@@ -146,7 +146,7 @@ func (c *remoteClient) CreateAgentToken(ctx context.Context, poolID resource.Tfe
 
 // jobs
 
-func (c *remoteClient) startJob(ctx context.Context, jobID resource.TfeID) ([]byte, error) {
+func (c *Client) startJob(ctx context.Context, jobID resource.TfeID) ([]byte, error) {
 	req, err := c.newRequest("POST", "jobs/start", &startJobParams{
 		JobID: jobID,
 	})
@@ -160,7 +160,7 @@ func (c *remoteClient) startJob(ctx context.Context, jobID resource.TfeID) ([]by
 	return buf.Bytes(), nil
 }
 
-func (c *remoteClient) finishJob(ctx context.Context, jobID resource.TfeID, opts finishJobOptions) error {
+func (c *Client) finishJob(ctx context.Context, jobID resource.TfeID, opts finishJobOptions) error {
 	req, err := c.newRequest("POST", "jobs/finish", &finishJobParams{
 		JobID:            jobID,
 		finishJobOptions: opts,

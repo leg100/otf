@@ -14,7 +14,7 @@ func TestRunner(t *testing.T) {
 	updates := make(chan RunnerStatus)
 	wantID := resource.NewTfeID(resource.RunnerKind)
 
-	r, err := newRunner(
+	r, err := New(
 		logr.Discard(),
 		&fakeRunnerClient{registeredID: wantID, updates: updates},
 		&fakeOperationSpawner{},

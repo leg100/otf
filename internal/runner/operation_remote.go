@@ -13,37 +13,6 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-type AgentOptions struct {
-	*Config
-
-	URL   string
-	Token string
-}
-
-func NewAgent(logger logr.Logger, opts AgentOptions) (*Runner, error) {
-	apiClient, err := otfapi.NewClient(otfapi.Config{
-		URL:           opts.URL,
-		Token:         opts.Token,
-		Logger:        logger,
-		RetryRequests: true,
-	})
-	if err != nil {
-		return nil, err
-	}
-	opts.OperationConfig.IsAgent = true
-	return newRunner(
-		logger,
-		&remoteClient{Client: apiClient},
-		&RemoteOperationSpawner{
-			Logger: logger,
-			Config: opts.OperationConfig,
-			URL:    opts.URL,
-		},
-		true,
-		*opts.Config,
-	)
-}
-
 type RemoteOperationSpawner struct {
 	Config OperationConfig
 	Logger logr.Logger
@@ -51,6 +20,7 @@ type RemoteOperationSpawner struct {
 }
 
 func (s *RemoteOperationSpawner) SpawnOperation(ctx context.Context, g *errgroup.Group, job *Job, jobToken []byte) error {
+	// Construct an API client authenticating as the job.
 	client, err := otfapi.NewClient(otfapi.Config{
 		URL:           s.URL,
 		Token:         string(jobToken),
@@ -60,18 +30,38 @@ func (s *RemoteOperationSpawner) SpawnOperation(ctx context.Context, g *errgroup
 	if err != nil {
 		return err
 	}
+	DoRemoteOperation(
+		ctx,
+		s.Logger,
+		g,
+		s.Config,
+		client,
+		job,
+		jobToken,
+	)
+	return nil
+}
+
+func DoRemoteOperation(
+	ctx context.Context,
+	logger logr.Logger,
+	g *errgroup.Group,
+	config OperationConfig,
+	client *otfapi.Client,
+	job *Job,
+	jobToken []byte,
+) {
 	doOperation(ctx, g, operationOptions{
-		logger:          s.Logger,
-		OperationConfig: s.Config,
+		logger:          logger,
+		OperationConfig: config,
 		job:             job,
 		jobToken:        jobToken,
 		runs:            &run.Client{Client: client},
-		jobs:            &remoteClient{Client: client},
+		jobs:            &Client{Client: client},
 		workspaces:      &workspace.Client{Client: client},
 		variables:       &variable.Client{Client: client},
 		state:           &state.Client{Client: client},
 		configs:         &configversion.Client{Client: client},
 		server:          client,
 	})
-	return nil
 }

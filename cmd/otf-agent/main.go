@@ -34,7 +34,9 @@ func main() {
 func run(ctx context.Context, args []string) error {
 	var (
 		loggerConfig *logr.Config
-		opts         runner.AgentOptions
+		config       *runner.Config
+		url          string
+		token        string
 	)
 
 	cmd := &cobra.Command{
@@ -47,26 +49,28 @@ func run(ctx context.Context, args []string) error {
 			if err != nil {
 				return err
 			}
+			// Create an API client authenticating with the agent token.
 			client, err := api.NewClient(api.Config{
-				URL:           opts.URL,
-				Token:         opts.Token,
+				URL:           url,
+				Token:         token,
 				Logger:        logger,
 				RetryRequests: true,
 			})
 			if err != nil {
 				return err
 			}
-			opts.OperationConfig.IsAgent = true
+			config.OperationConfig.IsAgent = true
+			// Construct and start the runner.
 			runner, err := runner.New(
 				logger,
 				&remoteClient{Client: client},
 				&runner.RemoteOperationSpawner{
 					Logger: logger,
-					Config: opts.OperationConfig,
-					URL:    opts.URL,
+					Config: config.OperationConfig,
+					URL:    url,
 				},
 				true,
-				*opts.Config,
+				*config,
 			)
 			if err != nil {
 				return fmt.Errorf("initializing agent: %w", err)
@@ -76,12 +80,10 @@ func run(ctx context.Context, args []string) error {
 		},
 	}
 
-	opts = runner.AgentOptions{
-		Config: runner.NewConfigFromFlags(cmd.Flags()),
-	}
-	cmd.Flags().StringVar(&opts.Name, "name", "", "Give agent a descriptive name. Optional.")
-	cmd.Flags().StringVar(&opts.URL, "url", api.DefaultURL, "URL of OTF server")
-	cmd.Flags().StringVar(&opts.Token, "token", "", "Agent token for authentication")
+	config = runner.NewConfigFromFlags(cmd.Flags())
+	cmd.Flags().StringVar(&name, "name", "", "Give agent a descriptive name. Optional.")
+	cmd.Flags().StringVar(&url, "url", api.DefaultURL, "URL of OTF server")
+	cmd.Flags().StringVar(&token, "token", "", "Agent token for authentication")
 
 	cmd.MarkFlagRequired("token")
 	cmd.SetArgs(args)
