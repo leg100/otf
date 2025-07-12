@@ -12,7 +12,7 @@ import (
 func newTestJWT(t *testing.T, secret []byte, id resource.TfeID, lifetime time.Duration) string {
 	t.Helper()
 
-	f := &tokenFactory{key: newTestJWK(t, secret)}
+	f := &tokenFactory{symKey: newTestJWK(t, secret)}
 	token, err := f.NewToken(id, WithExpiry(time.Now().Add(lifetime)))
 	require.NoError(t, err)
 	return string(token)

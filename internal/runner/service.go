@@ -65,11 +65,13 @@ func NewService(opts ServiceOptions) *Service {
 		Logger:     opts.Logger,
 		Authorizer: opts.Authorizer,
 		db:         &db{DB: opts.DB},
-		tokenFactory: &tokenFactory{
-			tokens: opts.TokensService,
-		},
-		phases:   opts.RunService,
-		Signaler: newJobSignaler(opts.Logger, opts.DB),
+		phases:     opts.RunService,
+		Signaler:   newJobSignaler(opts.Logger, opts.DB),
+	}
+	svc.tokenFactory = &tokenFactory{
+		runners:    svc,
+		tokens:     opts.TokensService,
+		workspaces: opts.WorkspaceService,
 	}
 	svc.tfeapi = &tfe{
 		Service:   svc,
@@ -510,6 +512,11 @@ func (s *Service) finishJob(ctx context.Context, jobID resource.TfeID, opts fini
 		s.V(2).Info("finished job", "job", job, "status", opts.Status)
 	}
 	return nil
+}
+
+// getDynamicCredentials generates a token for use with dynamic credentials.
+func (s *Service) generateDynamicCredentialsToken(ctx context.Context, jobID resource.TfeID, audience string) ([]byte, error) {
+	return s.tokenFactory.newDynamicCredentialsToken(ctx, jobID, audience)
 }
 
 // agent tokens

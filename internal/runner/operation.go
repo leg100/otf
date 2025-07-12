@@ -13,6 +13,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 
@@ -54,18 +55,19 @@ type (
 		Debug       bool // toggle debug mode
 		PluginCache bool // toggle use of engine's shared plugin cache
 
-		job          *Job
-		run          *runpkg.Run
-		canceled     bool
-		ctx          context.Context
-		cancelfn     context.CancelFunc
-		out          io.Writer
-		enginePath   string
-		envs         []string
-		proc         *os.Process
-		downloader   downloader
-		isAgent      bool
-		engineBinDir string
+		job           *Job
+		run           *runpkg.Run
+		canceled      bool
+		ctx           context.Context
+		cancelfn      context.CancelFunc
+		out           io.Writer
+		enginePath    string
+		envs          []string
+		terraformVars []*variable.Variable
+		proc          *os.Process
+		downloader    downloader
+		isAgent       bool
+		engineBinDir  string
 
 		runs       runClient
 		workspaces workspaceClient
@@ -294,10 +296,14 @@ func (o *operation) do() error {
 	steps := []step{
 		o.downloadEngine,
 		o.downloadConfig,
-		o.writeVars,
+		o.readVars,
 		o.deleteBackendConfig,
 		o.downloadState,
 	}
+	// determine if dynamic credentials is enabled
+	if slices.Contains(o.envs, "TFC_GCP_PROVIDER_AUTH") {
+	}
+	steps = append(steps, o.writeTerraformVars)
 	switch run.Phase() {
 	case runpkg.PlanPhase:
 		steps = append(steps, o.init)
@@ -501,21 +507,28 @@ func (o *operation) downloadLockFile(ctx context.Context) error {
 	return o.writeFile(lockFilename, lockFile)
 }
 
-func (o *operation) writeVars(ctx context.Context) error {
-	// retrieve variables and add them to the environment
+// readVars retrieves terraform and environment variables and adds them to the
+// operation
+func (o *operation) readVars(ctx context.Context) error {
 	variables, err := o.variables.ListEffectiveVariables(o.ctx, o.run.ID)
 	if err != nil {
 		return fmt.Errorf("retrieving variables: %w", err)
 	}
-	// append variables that are environment variables to the list of
-	// environment variables
 	for _, v := range variables {
 		if v.Category == variable.CategoryEnv {
 			ev := fmt.Sprintf("%s=%s", v.Key, v.Value)
 			o.envs = append(o.envs, ev)
 		}
+		if v.Category == variable.CategoryTerraform {
+			o.terraformVars = append(o.terraformVars, v)
+		}
 	}
-	if err := variable.WriteTerraformVars(o.workdir.String(), variables); err != nil {
+	return nil
+}
+
+// writeTerraformVars writes out terraform variables to a local hcl file
+func (o *operation) writeTerraformVars(ctx context.Context) error {
+	if err := variable.WriteTerraformVars(o.workdir.String(), o.terraformVars); err != nil {
 		return fmt.Errorf("writing terraform.fvars: %w", err)
 	}
 	return nil

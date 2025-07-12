@@ -19,7 +19,7 @@ func TestService_StartSession(t *testing.T) {
 	require.NoError(t, err)
 	svc := Service{
 		Logger:       logr.Discard(),
-		tokenFactory: &tokenFactory{key: key},
+		tokenFactory: &tokenFactory{symKey: key},
 	}
 
 	userID := resource.NewTfeID(resource.UserKind)

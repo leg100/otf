@@ -1,6 +1,9 @@
 package tokens
 
 import (
+	"errors"
+	"os"
+
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal/resource"
@@ -21,7 +24,9 @@ type (
 		logr.Logger
 		GoogleIAPConfig
 
-		Secret []byte
+		Secret         []byte
+		PublicKeyPath  string
+		PrivateKeyPath string
 	}
 )
 
@@ -33,7 +38,39 @@ func NewService(opts Options) (*Service, error) {
 	if err != nil {
 		return nil, err
 	}
-	svc.tokenFactory = &tokenFactory{key: key}
+
+	var (
+		pubKey  jwk.Key
+		privKey jwk.Key
+	)
+	switch {
+	case opts.PublicKeyPath != "" && opts.PrivateKeyPath == "":
+		return nil, errors.New("must provide both private and public key paths")
+	case opts.PublicKeyPath == "" && opts.PrivateKeyPath != "":
+		return nil, errors.New("must provide both private and public key paths")
+	case opts.PublicKeyPath != "" && opts.PrivateKeyPath != "":
+		pubKeyRaw, err := os.ReadFile(opts.PublicKeyPath)
+		if err != nil {
+			return nil, err
+		}
+		privKeyRaw, err := os.ReadFile(opts.PrivateKeyPath)
+		if err != nil {
+			return nil, err
+		}
+		pubKey, err = jwk.FromRaw(pubKeyRaw)
+		if err != nil {
+			return nil, err
+		}
+		privKey, err = jwk.FromRaw(privKeyRaw)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	svc.tokenFactory = &tokenFactory{
+		symKey:     key,
+		PrivateKey: privKey,
+	}
 	svc.registry = &registry{
 		kinds: make(map[resource.Kind]SubjectGetter),
 	}
@@ -41,6 +78,7 @@ func NewService(opts Options) (*Service, error) {
 		Logger:          opts.Logger,
 		GoogleIAPConfig: opts.GoogleIAPConfig,
 		key:             key,
+		publicKey:       pubKey,
 		registry:        svc.registry,
 	})
 	return &svc, nil

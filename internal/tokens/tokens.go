@@ -15,7 +15,8 @@ type (
 
 	// tokenFactory constructs new tokens using a JWK
 	tokenFactory struct {
-		key jwk.Key
+		symKey     jwk.Key
+		PrivateKey jwk.Key
 	}
 )
 
@@ -39,5 +40,19 @@ func (f *tokenFactory) NewToken(subjectID resource.TfeID, opts ...NewTokenOption
 	if err != nil {
 		return nil, err
 	}
-	return jwt.Sign(token, jwt.WithKey(jwa.HS256, f.key))
+	return jwt.Sign(token, jwt.WithKey(jwa.HS256, f.symKey))
+}
+
+func (f *tokenFactory) NewAsymmToken(subjectID resource.TfeID, opts ...NewTokenOption) ([]byte, error) {
+	builder := jwt.NewBuilder().
+		Subject(subjectID.String()).
+		IssuedAt(time.Now())
+	for _, fn := range opts {
+		builder = fn(builder)
+	}
+	token, err := builder.Build()
+	if err != nil {
+		return nil, err
+	}
+	return jwt.Sign(token, jwt.WithKey(f.PrivateKey.Algorithm(), f.PrivateKey))
 }
