@@ -1,4 +1,4 @@
-package runner
+package dynamiccreds
 
 import (
 	"context"
@@ -16,7 +16,7 @@ import (
 
 type provider string
 
-type TokenGetter interface {
+type TokenGenerator interface {
 	GenerateDynamicCredentialsToken(ctx context.Context, jobID resource.TfeID, audience string) ([]byte, error)
 }
 
@@ -49,7 +49,7 @@ func (c *providerConfigs[T]) addConfig(tag string, config T) {
 // Setup cloud providers for dynamic credentials for a job.
 func Setup(
 	ctx context.Context,
-	tokenGetter TokenGetter,
+	tokenGenerator TokenGenerator,
 	workdir string,
 	jobID resource.TfeID,
 	phase run.PhaseType,
@@ -89,13 +89,13 @@ func Setup(
 
 			// Construct helper to assist configuration below.
 			h := helper{
-				envs:        envs,
-				provider:    provider,
-				workdir:     workdir,
-				jobID:       jobID,
-				phase:       phase,
-				tag:         tag,
-				tokenGetter: tokenGetter,
+				envs:           envs,
+				provider:       provider,
+				workdir:        workdir,
+				jobID:          jobID,
+				phase:          phase,
+				tag:            tag,
+				TokenGenerator: tokenGenerator,
 			}
 
 			// Each cloud provider has environment variables named according to
@@ -148,13 +148,14 @@ func Setup(
 // helper provides helper functions for the configuration of each cloud
 // provider.
 type helper struct {
-	envs        map[string]string
-	provider    provider
-	workdir     string
-	jobID       resource.TfeID
-	phase       run.PhaseType
-	tag         string
-	tokenGetter TokenGetter
+	envs     map[string]string
+	provider provider
+	workdir  string
+	jobID    resource.TfeID
+	phase    run.PhaseType
+	tag      string
+
+	TokenGenerator
 }
 
 // getRunVar retrieves from environment variables a run-level value
@@ -179,7 +180,7 @@ func (h *helper) writeFile(fname string, data []byte) (string, error) {
 
 // generateToken generates an OIDC token.
 func (h *helper) generateToken(ctx context.Context, audience string) ([]byte, error) {
-	return h.tokenGetter.GenerateDynamicCredentialsToken(ctx, h.jobID, audience)
+	return h.GenerateDynamicCredentialsToken(ctx, h.jobID, audience)
 }
 
 func lookupEnv(envs map[string]string, provider provider, tag string, name string) (string, error) {

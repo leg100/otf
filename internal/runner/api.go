@@ -191,7 +191,7 @@ func (a *api) generateDynamicCredentialsToken(w http.ResponseWriter, r *http.Req
 		tfeapi.Error(w, err)
 		return
 	}
-	token, err := a.Service.generateDynamicCredentialsToken(
+	token, err := a.Service.GenerateDynamicCredentialsToken(
 		r.Context(),
 		params.JobID,
 		params.generateDynamicCredentialsTokenParams.Audience,

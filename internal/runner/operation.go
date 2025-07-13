@@ -24,6 +24,7 @@ import (
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/resource"
 	runpkg "github.com/leg100/otf/internal/run"
+	"github.com/leg100/otf/internal/runner/dynamiccreds"
 	"github.com/leg100/otf/internal/state"
 	"github.com/leg100/otf/internal/variable"
 	"github.com/leg100/otf/internal/workspace"
@@ -104,6 +105,7 @@ type (
 	operationJobsClient interface {
 		awaitJobSignal(ctx context.Context, jobID resource.TfeID) func() (jobSignal, error)
 		finishJob(ctx context.Context, jobID resource.TfeID, opts finishJobOptions) error
+		GenerateDynamicCredentialsToken(ctx context.Context, jobID resource.TfeID, audience string) ([]byte, error)
 	}
 
 	// downloader downloads engine versions
@@ -532,9 +534,26 @@ func (o *operation) writeTerraformVars(ctx context.Context) error {
 }
 
 func (o *operation) setupDynamicCredentials(ctx context.Context) error {
-	if err := variable.WriteTerraformVars(o.workdir.String(), o.terraformVars); err != nil {
-		return fmt.Errorf("writing terraform.fvars: %w", err)
+	envsMap := make(map[string]string, len(o.envs))
+	for _, kv := range o.envs {
+		k, v, found := strings.Cut(kv, "=")
+		if !found {
+			continue
+		}
+		envsMap[k] = v
 	}
+	envs, err := dynamiccreds.Setup(
+		ctx,
+		o.jobs,
+		o.workdir.String(),
+		o.job.ID,
+		o.job.Phase,
+		envsMap,
+	)
+	if err != nil {
+		return err
+	}
+	o.envs = append(o.envs, envs...)
 	return nil
 }
 

@@ -15,6 +15,7 @@ import (
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
 	otfrun "github.com/leg100/otf/internal/run"
+	"github.com/leg100/otf/internal/runner/dynamiccreds"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/tokens"
@@ -28,15 +29,15 @@ type (
 		logr.Logger
 		*authz.Authorizer
 
-		tfeapi             *tfe
-		api                *api
-		web                *webHandlers
-		poolBroker         pubsub.SubscriptionService[*Pool]
-		runnerBroker       pubsub.SubscriptionService[*RunnerEvent]
-		jobBroker          pubsub.SubscriptionService[*JobEvent]
-		phases             phaseClient
-		Signaler           *jobSignaler
-		dynamicCredentials *dynamicCredentialsTokenGenerator
+		tfeapi       *tfe
+		api          *api
+		web          *webHandlers
+		poolBroker   pubsub.SubscriptionService[*Pool]
+		runnerBroker pubsub.SubscriptionService[*RunnerEvent]
+		jobBroker    pubsub.SubscriptionService[*JobEvent]
+		phases       phaseClient
+		Signaler     *jobSignaler
+		workspaces   *workspace.Service
 
 		db *db
 		*tokenFactory
@@ -68,14 +69,10 @@ func NewService(opts ServiceOptions) *Service {
 		db:         &db{DB: opts.DB},
 		phases:     opts.RunService,
 		Signaler:   newJobSignaler(opts.Logger, opts.DB),
+		workspaces: opts.WorkspaceService,
 	}
 	svc.tokenFactory = &tokenFactory{
 		tokens: opts.TokensService,
-	}
-	svc.dynamicCredentials = &dynamicCredentialsTokenGenerator{
-		privateKey:                    opts.TokensService.PrivateKey,
-		tokenGeneratorJobGetter:       svc,
-		tokenGeneratorWorkspaceGetter: opts.WorkspaceService,
 	}
 	svc.tfeapi = &tfe{
 		Service:   svc,
@@ -518,8 +515,36 @@ func (s *Service) finishJob(ctx context.Context, jobID resource.TfeID, opts fini
 	return nil
 }
 
-func (s *Service) generateDynamicCredentialsToken(ctx context.Context, jobID resource.TfeID, audience string) ([]byte, error) {
-	return s.dynamicCredentials.generateToken(ctx, jobID, audience)
+func (s *Service) GenerateDynamicCredentialsToken(ctx context.Context, jobID resource.TfeID, audience string) ([]byte, error) {
+	token, err := func() ([]byte, error) {
+		if s.tokens.PrivateKey == nil {
+			return nil, errors.New("no private key has been configured")
+		}
+		job, err := s.getJob(ctx, jobID)
+		if err != nil {
+			return nil, err
+		}
+		workspace, err := s.workspaces.Get(ctx, job.WorkspaceID)
+		if err != nil {
+			return nil, err
+		}
+		return dynamiccreds.GenerateToken(
+			s.tokens.PrivateKey,
+			job.Organization,
+			job.WorkspaceID,
+			workspace.Name,
+			job.RunID,
+			jobID,
+			job.Phase,
+			audience,
+		)
+	}()
+	if err != nil {
+		s.Error(err, "generating token for dynamic credentials", "job_id", jobID, "audience", audience)
+		return nil, err
+	}
+	s.V(4).Info("generated token for dynamic credentials", "job_id", jobID, "audience", audience)
+	return token, nil
 }
 
 // agent tokens
