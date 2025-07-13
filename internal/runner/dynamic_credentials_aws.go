@@ -1,4 +1,4 @@
-package dynamiccreds
+package runner
 
 import (
 	"context"

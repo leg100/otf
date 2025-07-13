@@ -28,14 +28,15 @@ type (
 		logr.Logger
 		*authz.Authorizer
 
-		tfeapi       *tfe
-		api          *api
-		web          *webHandlers
-		poolBroker   pubsub.SubscriptionService[*Pool]
-		runnerBroker pubsub.SubscriptionService[*RunnerEvent]
-		jobBroker    pubsub.SubscriptionService[*JobEvent]
-		phases       phaseClient
-		Signaler     *jobSignaler
+		tfeapi             *tfe
+		api                *api
+		web                *webHandlers
+		poolBroker         pubsub.SubscriptionService[*Pool]
+		runnerBroker       pubsub.SubscriptionService[*RunnerEvent]
+		jobBroker          pubsub.SubscriptionService[*JobEvent]
+		phases             phaseClient
+		Signaler           *jobSignaler
+		dynamicCredentials *dynamicCredentialsTokenGenerator
 
 		db *db
 		*tokenFactory
@@ -69,9 +70,12 @@ func NewService(opts ServiceOptions) *Service {
 		Signaler:   newJobSignaler(opts.Logger, opts.DB),
 	}
 	svc.tokenFactory = &tokenFactory{
-		runners:    svc,
-		tokens:     opts.TokensService,
-		workspaces: opts.WorkspaceService,
+		tokens: opts.TokensService,
+	}
+	svc.dynamicCredentials = &dynamicCredentialsTokenGenerator{
+		privateKey:                    opts.TokensService.PrivateKey,
+		tokenGeneratorJobGetter:       svc,
+		tokenGeneratorWorkspaceGetter: opts.WorkspaceService,
 	}
 	svc.tfeapi = &tfe{
 		Service:   svc,
@@ -514,9 +518,8 @@ func (s *Service) finishJob(ctx context.Context, jobID resource.TfeID, opts fini
 	return nil
 }
 
-// getDynamicCredentials generates a token for use with dynamic credentials.
 func (s *Service) generateDynamicCredentialsToken(ctx context.Context, jobID resource.TfeID, audience string) ([]byte, error) {
-	return s.tokenFactory.newDynamicCredentialsToken(ctx, jobID, audience)
+	return s.dynamicCredentials.generateToken(ctx, jobID, audience)
 }
 
 // agent tokens

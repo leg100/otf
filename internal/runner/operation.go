@@ -13,7 +13,6 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
-	"slices"
 	"strings"
 	"time"
 
@@ -297,13 +296,11 @@ func (o *operation) do() error {
 		o.downloadEngine,
 		o.downloadConfig,
 		o.readVars,
+		o.setupDynamicCredentials,
+		o.writeTerraformVars,
 		o.deleteBackendConfig,
 		o.downloadState,
 	}
-	// determine if dynamic credentials is enabled
-	if slices.Contains(o.envs, "TFC_GCP_PROVIDER_AUTH") {
-	}
-	steps = append(steps, o.writeTerraformVars)
 	switch run.Phase() {
 	case runpkg.PlanPhase:
 		steps = append(steps, o.init)
@@ -528,6 +525,13 @@ func (o *operation) readVars(ctx context.Context) error {
 
 // writeTerraformVars writes out terraform variables to a local hcl file
 func (o *operation) writeTerraformVars(ctx context.Context) error {
+	if err := variable.WriteTerraformVars(o.workdir.String(), o.terraformVars); err != nil {
+		return fmt.Errorf("writing terraform.fvars: %w", err)
+	}
+	return nil
+}
+
+func (o *operation) setupDynamicCredentials(ctx context.Context) error {
 	if err := variable.WriteTerraformVars(o.workdir.String(), o.terraformVars); err != nil {
 		return fmt.Errorf("writing terraform.fvars: %w", err)
 	}
