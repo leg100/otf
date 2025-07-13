@@ -534,21 +534,13 @@ func (o *operation) writeTerraformVars(ctx context.Context) error {
 }
 
 func (o *operation) setupDynamicCredentials(ctx context.Context) error {
-	envsMap := make(map[string]string, len(o.envs))
-	for _, kv := range o.envs {
-		k, v, found := strings.Cut(kv, "=")
-		if !found {
-			continue
-		}
-		envsMap[k] = v
-	}
 	envs, err := dynamiccreds.Setup(
 		ctx,
 		o.jobs,
 		o.workdir.String(),
 		o.job.ID,
 		o.job.Phase,
-		envsMap,
+		o.envs,
 	)
 	if err != nil {
 		return err

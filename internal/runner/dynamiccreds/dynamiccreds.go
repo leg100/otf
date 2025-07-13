@@ -27,9 +27,9 @@ type TokenGenerator interface {
 // reference these as terraform variables and assign them to each provider
 // block.
 type multiConfig struct {
-	AWS   *providerConfigs[awsVariablesSharedConfigFile]    `json:"tfc_aws_dynamic_credentials"`
-	Azure *providerConfigs[azureVariablesCredentialsConfig] `json:"tfc_azure_dynamic_credentials"`
-	GCP   *providerConfigs[gcpVariablesCredentialsPath]     `json:"tfc_gcp_dynamic_credentials"`
+	AWS   providerConfigs[awsVariablesSharedConfigFile]    `json:"tfc_aws_dynamic_credentials"`
+	Azure providerConfigs[azureVariablesCredentialsConfig] `json:"tfc_azure_dynamic_credentials"`
+	GCP   providerConfigs[gcpVariablesCredentialsPath]     `json:"tfc_gcp_dynamic_credentials"`
 }
 
 type providerConfigs[T any] struct {
@@ -53,13 +53,24 @@ func Setup(
 	workdir string,
 	jobID resource.TfeID,
 	phase run.PhaseType,
-	envs map[string]string,
+	environmentVariables []string,
 ) ([]string, error) {
 	var (
 		// new environment variables to be returned to the caller.
 		newEnvs []string
 		cfg     multiConfig
+		// whether dynamic credentials are enabled.
+		enabled bool
 	)
+	// convert slice of envs to a map
+	envs := make(map[string]string, len(environmentVariables))
+	for _, kv := range environmentVariables {
+		k, v, found := strings.Cut(kv, "=")
+		if !found {
+			continue
+		}
+		envs[k] = v
+	}
 
 	// Configure dynamic credentials for each cloud provider
 	for _, provider := range []provider{aws, azure, gcp} {
@@ -74,18 +85,20 @@ func Setup(
 				continue
 			}
 			// Must be set to "true" or "false"
-			enabled, err := strconv.ParseBool(v)
+			b, err := strconv.ParseBool(v)
 			if err != nil {
 				return nil, err
 			}
-			if !enabled {
+			if !b {
 				continue
 			}
 			// If a tag is specified then it must be prefixed with an underscore
 			// followed by the name of the alias.
-			if tag != "" || !strings.HasPrefix(tag, "_") {
+			if tag != "" && !strings.HasPrefix(tag, "_") {
 				return nil, fmt.Errorf("expected environment variable to have format TFC_<cloud>_PROVIDER_AUTH[_TAG]; instead got: %s", k)
 			}
+			// dynamic credentials are enabled
+			enabled = true
 
 			// Construct helper to assist configuration below.
 			h := helper{
@@ -131,8 +144,8 @@ func Setup(
 			}
 		}
 	}
-	// write provider config to workspace's workdir.
-	{
+	if enabled {
+		// write provider config to workspace's workdir.
 		marshaled, err := json.Marshal(cfg)
 		if err != nil {
 			return nil, err
@@ -203,6 +216,9 @@ func lookupRunEnv(envs map[string]string, provider provider, tag string, phase r
 // with that name and returns the value of the first one found. Otherwise an
 // error is returned.
 func tryEnvs(envs map[string]string, names ...string) (string, error) {
+	for i := range names {
+		names[i] = strings.ToUpper(names[i])
+	}
 	for k, v := range envs {
 		if slices.Contains(names, k) {
 			return v, nil
