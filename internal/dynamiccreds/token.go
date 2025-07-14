@@ -7,6 +7,7 @@ import (
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
+	"github.com/lestrrat-go/jwx/v2/jwa"
 	"github.com/lestrrat-go/jwx/v2/jwk"
 	"github.com/lestrrat-go/jwx/v2/jwt"
 )
@@ -36,7 +37,11 @@ func GenerateToken(
 		Claim("terraform_run_phase", phase)
 	token, err := builder.Build()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("building token: %w", err)
 	}
-	return jwt.Sign(token, jwt.WithKey(privateKey.Algorithm(), privateKey))
+	signedToken, err := jwt.Sign(token, jwt.WithKey(jwa.RS256, privateKey))
+	if err != nil {
+		return nil, fmt.Errorf("signing token: %w", err)
+	}
+	return signedToken, nil
 }

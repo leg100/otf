@@ -1,12 +1,15 @@
 package dynamiccreds
 
 import (
+	"crypto/x509"
+	"encoding/pem"
 	"errors"
 	"os"
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/lestrrat-go/jwx/v2/jwk"
+	"golang.org/x/crypto/ssh"
 )
 
 type (
@@ -30,26 +33,41 @@ func NewService(opts Options) (*Service, error) {
 	case opts.PublicKeyPath == "" && opts.PrivateKeyPath != "":
 		return nil, errors.New("must provide both private and public key paths")
 	case opts.PublicKeyPath != "" && opts.PrivateKeyPath != "":
-		pubKeyRaw, err := os.ReadFile(opts.PublicKeyPath)
-		if err != nil {
-			return nil, err
+		// parse and assign public key
+		{
+			raw, err := os.ReadFile(opts.PublicKeyPath)
+			if err != nil {
+				return nil, err
+			}
+			decoded, _ := pem.Decode(raw)
+			parsed, err := x509.ParsePKIXPublicKey(decoded.Bytes)
+			if err != nil {
+				return nil, err
+			}
+			key, err := jwk.FromRaw(parsed)
+			if err != nil {
+				return nil, err
+			}
+			svc.handlers = &Handlers{
+				hostnameService: opts.HostnameService,
+				publicKey:       key,
+			}
 		}
-		privKeyRaw, err := os.ReadFile(opts.PrivateKeyPath)
-		if err != nil {
-			return nil, err
-		}
-		pubKey, err := jwk.FromRaw(pubKeyRaw)
-		if err != nil {
-			return nil, err
-		}
-		privKey, err := jwk.FromRaw(privKeyRaw)
-		if err != nil {
-			return nil, err
-		}
-		svc.privateKey = privKey
-		svc.handlers = &Handlers{
-			hostnameService: opts.HostnameService,
-			publicKey:       pubKey,
+		// parse and assign private key
+		{
+			raw, err := os.ReadFile(opts.PrivateKeyPath)
+			if err != nil {
+				return nil, err
+			}
+			parsed, err := ssh.ParseRawPrivateKey(raw)
+			if err != nil {
+				return nil, err
+			}
+			key, err := jwk.FromRaw(parsed)
+			if err != nil {
+				return nil, err
+			}
+			svc.privateKey = key
 		}
 	}
 

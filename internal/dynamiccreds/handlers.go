@@ -14,7 +14,7 @@ type Handlers struct {
 	publicKey       jwk.Key
 }
 
-type wellKnownConfig struct {
+type WellKnownConfig struct {
 	// IssuerURL is the identity of the provider, and the string it uses to sign
 	// ID tokens with. For example "https://accounts.google.com". This value MUST
 	// match ID tokens exactly.
@@ -43,10 +43,10 @@ func (h *Handlers) addHandlers(r *mux.Router) {
 }
 
 func (h *Handlers) wellKnown(w http.ResponseWriter, r *http.Request) {
-	cfg := wellKnownConfig{
+	cfg := WellKnownConfig{
 		IssuerURL:     h.hostnameService.URL(""),
 		JWKSURL:       h.hostnameService.URL("/.well-known/jwks"),
-		Algorithms:    []string{h.publicKey.Algorithm().String()},
+		Algorithms:    []string{"RS256"},
 		Scopes:        []string{"openid"},
 		SubjectTypes:  []string{"public"},
 		ResponseTypes: []string{"id_token"},

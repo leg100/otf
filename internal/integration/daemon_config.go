@@ -126,3 +126,10 @@ func withServerRunnerSandbox() configOption {
 		cfg.RunnerConfig.Sandbox = true
 	}
 }
+
+func withKeyPairPaths(private, public string) configOption {
+	return func(cfg *config) {
+		cfg.PrivateKeyPath = private
+		cfg.PublicKeyPath = public
+	}
+}
