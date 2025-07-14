@@ -17,7 +17,7 @@ func configureAzure(ctx context.Context, h helper, audience string) (azureVariab
 	if err != nil {
 		return azureVariablesCredentialsConfig{}, nil, err
 	}
-	clientIDPath, err := h.writeFile("azure_dynamic_credentials_client_id", []byte(clientID))
+	clientIDPath, err := h.writeFile("client_id", []byte(clientID))
 	if err != nil {
 		return azureVariablesCredentialsConfig{}, nil, err
 	}

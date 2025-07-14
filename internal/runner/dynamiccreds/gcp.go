@@ -14,8 +14,8 @@ type (
 	}
 
 	gcpCredentialConfig struct {
-		Type             string
-		Audience         string
+		Type             string                    `json:"type"`
+		Audience         string                    `json:"audience"`
 		SubjectTokenType string                    `json:"subject_token_type"`
 		TokenURL         string                    `json:"token_url"`
 		ImpersonationURL string                    `json:"service_account_impersonation_url"`
@@ -23,17 +23,17 @@ type (
 	}
 
 	gcpCredentialConfigSource struct {
-		File   string
-		Format gcpCredentialConfigSourceFormat
+		File   string                          `json:"file"`
+		Format gcpCredentialConfigSourceFormat `json:"format"`
 	}
 
 	gcpCredentialConfigSourceFormat struct {
-		Type    string
+		Type    string `json:"type"`
 		Subject string `json:"subject_token_field_name"`
 	}
 
 	gcpVariablesCredentialsPath struct {
-		Credentials string
+		Credentials string `json:"credentials"`
 	}
 )
 

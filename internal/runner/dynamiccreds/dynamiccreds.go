@@ -27,14 +27,14 @@ type TokenGenerator interface {
 // reference these as terraform variables and assign them to each provider
 // block.
 type multiConfig struct {
-	AWS   providerConfigs[awsVariablesSharedConfigFile]    `json:"tfc_aws_dynamic_credentials"`
-	Azure providerConfigs[azureVariablesCredentialsConfig] `json:"tfc_azure_dynamic_credentials"`
-	GCP   providerConfigs[gcpVariablesCredentialsPath]     `json:"tfc_gcp_dynamic_credentials"`
+	AWS   providerConfigs[awsVariablesSharedConfigFile]    `json:"tfc_aws_dynamic_credentials,omitzero"`
+	Azure providerConfigs[azureVariablesCredentialsConfig] `json:"tfc_azure_dynamic_credentials,omitzero"`
+	GCP   providerConfigs[gcpVariablesCredentialsPath]     `json:"tfc_gcp_dynamic_credentials,omitzero"`
 }
 
 type providerConfigs[T any] struct {
-	Default T
-	Aliases map[string]T
+	Default T            `json:"default,omitzero"`
+	Aliases map[string]T `json:"aliases,omitzero"`
 }
 
 func (c *providerConfigs[T]) addConfig(tag string, config T) {
@@ -112,11 +112,9 @@ func Setup(
 			}
 
 			// Each cloud provider has environment variables named according to
-			// a common pattern from which to read its OIDC audience value.
-			audience, err := lookupEnv(envs, provider, tag, "workload_identity_audience")
-			if err != nil {
-				return nil, err
-			}
+			// a common pattern from which to read its OIDC audience value. It
+			// is optional to provide these variables, so ignore any error.
+			audience, _ := lookupEnv(envs, provider, tag, "workload_identity_audience")
 
 			// Configure credentials differently depending on the cloud.
 			switch provider {

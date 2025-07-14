@@ -1,6 +1,7 @@
 package dynamiccreds
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 
@@ -21,6 +22,7 @@ func configureAWS(ctx context.Context, h helper, audience string) (awsVariablesS
 	if audience == "" {
 		audience = "aws.workload.identity"
 	}
+
 	// Write token to disk.
 	token, err := h.generateToken(ctx, audience)
 	if err != nil {
@@ -30,6 +32,7 @@ func configureAWS(ctx context.Context, h helper, audience string) (awsVariablesS
 	if err != nil {
 		return awsVariablesSharedConfigFile{}, nil, err
 	}
+
 	// Construct and write config.
 	inidata := ini.Empty()
 	section, err := inidata.NewSection("default")
@@ -40,10 +43,15 @@ func configureAWS(ctx context.Context, h helper, audience string) (awsVariablesS
 	if err != nil {
 		return awsVariablesSharedConfigFile{}, nil, err
 	}
-	configPath := "config.ini"
-	if err := inidata.SaveTo(configPath); err != nil {
+	var buf bytes.Buffer
+	if _, err := inidata.WriteTo(&buf); err != nil {
 		return awsVariablesSharedConfigFile{}, nil, err
 	}
+	configPath, err := h.writeFile("config.ini", buf.Bytes())
+	if err != nil {
+		return awsVariablesSharedConfigFile{}, nil, err
+	}
+
 	cfg := awsVariablesSharedConfigFile{
 		SharedConfigFile: configPath,
 	}
