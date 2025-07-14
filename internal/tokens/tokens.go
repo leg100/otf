@@ -15,8 +15,7 @@ type (
 
 	// tokenFactory constructs new tokens using a JWK
 	tokenFactory struct {
-		symKey     jwk.Key
-		PrivateKey jwk.Key
+		symKey jwk.Key
 	}
 )
 

@@ -39,8 +39,7 @@ type (
 		GoogleIAPConfig
 		logr.Logger
 
-		key       jwk.Key
-		publicKey jwk.Key
+		key jwk.Key
 
 		*registry
 	}
@@ -144,7 +143,7 @@ func (m *middleware) validateBearer(ctx context.Context, bearer string) (authz.S
 	if m.SiteToken != "" && m.SiteToken == token {
 		return m.SiteAdmin, nil
 	}
-	id, err := m.parseIDFromJWT(token)
+	id, err := m.parseIDFromJWT([]byte(token))
 	if err != nil {
 		return nil, err
 	}
@@ -158,7 +157,7 @@ func (m *middleware) validateUIRequest(ctx context.Context, w http.ResponseWrite
 		return nil, false
 	}
 	// parse jwt from cookie and verify signature
-	id, err := m.parseIDFromJWT(cookie.Value)
+	id, err := m.parseIDFromJWT([]byte(cookie.Value))
 	if err != nil {
 		if errors.Is(err, jwt.ErrTokenExpired()) {
 			html.FlashError(w, "session expired")
@@ -175,17 +174,10 @@ func (m *middleware) validateUIRequest(ctx context.Context, w http.ResponseWrite
 	return user, true
 }
 
-func (m *middleware) parseIDFromJWT(token string) (resource.TfeID, error) {
-	// Try verifying signature with symmetric key and if that fails fallback to
-	// trying the public key, if there is one.
-	parsed, err := jwt.Parse([]byte(token), jwt.WithKey(jwa.HS256, m.key))
+func (m *middleware) parseIDFromJWT(token []byte) (resource.TfeID, error) {
+	parsed, err := jwt.Parse(token, jwt.WithKey(jwa.HS256, m.key))
 	if err != nil {
-		if m.publicKey != nil {
-			parsed, err = jwt.Parse([]byte(token), jwt.WithKey(m.publicKey.Algorithm(), m.publicKey))
-		}
-		if err != nil {
-			return resource.TfeID{}, err
-		}
+		return resource.TfeID{}, err
 	}
 	return resource.ParseTfeID(parsed.Subject())
 }

@@ -24,8 +24,8 @@ import (
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/resource"
 	runpkg "github.com/leg100/otf/internal/run"
-	"github.com/leg100/otf/internal/runner/dynamiccreds"
 	"github.com/leg100/otf/internal/state"
+	"github.com/leg100/otf/internal/tokens/dynamiccreds"
 	"github.com/leg100/otf/internal/variable"
 	"github.com/leg100/otf/internal/workspace"
 )

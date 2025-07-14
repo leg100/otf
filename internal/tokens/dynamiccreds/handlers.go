@@ -1,4 +1,4 @@
-package tokens
+package dynamiccreds
 
 import (
 	"encoding/json"
@@ -9,11 +9,9 @@ import (
 	"github.com/lestrrat-go/jwx/v2/jwk"
 )
 
-type handlers struct {
-	hostname   string
-	system     *internal.HostnameService
-	privateKey jwk.Key
-	publicKey  jwk.Key
+type Handlers struct {
+	hostnameService *internal.HostnameService
+	publicKey       jwk.Key
 }
 
 type wellKnownConfig struct {
@@ -39,16 +37,16 @@ type wellKnownConfig struct {
 	SubjectTypes []string `json:"subject_types_supported"`
 }
 
-func (h *handlers) addHandlers(r *mux.Router) {
+func (h *Handlers) addHandlers(r *mux.Router) {
 	r.HandleFunc("/.well-known/openid-configuration", h.wellKnown).Methods("GET")
 	r.HandleFunc("/.well-known/jwks", h.jwks).Methods("GET")
 }
 
-func (h *handlers) wellKnown(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) wellKnown(w http.ResponseWriter, r *http.Request) {
 	cfg := wellKnownConfig{
-		IssuerURL:     h.system.URL(""),
-		JWKSURL:       h.system.URL("/.well-known/jwks"),
-		Algorithms:    []string{h.privateKey.Algorithm().String()},
+		IssuerURL:     h.hostnameService.URL(""),
+		JWKSURL:       h.hostnameService.URL("/.well-known/jwks"),
+		Algorithms:    []string{h.publicKey.Algorithm().String()},
 		Scopes:        []string{"openid"},
 		SubjectTypes:  []string{"public"},
 		ResponseTypes: []string{"id_token"},
@@ -69,7 +67,7 @@ func (h *handlers) wellKnown(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *handlers) jwks(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) jwks(w http.ResponseWriter, r *http.Request) {
 	set := jwk.NewSet()
 	set.AddKey(h.publicKey)
 	if err := json.NewEncoder(w).Encode(set); err != nil {

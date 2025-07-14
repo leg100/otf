@@ -15,10 +15,10 @@ import (
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
 	otfrun "github.com/leg100/otf/internal/run"
-	"github.com/leg100/otf/internal/runner/dynamiccreds"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/tokens"
+	"github.com/leg100/otf/internal/tokens/dynamiccreds"
 	"github.com/leg100/otf/internal/workspace"
 )
 
@@ -38,6 +38,7 @@ type (
 		phases       phaseClient
 		Signaler     *jobSignaler
 		workspaces   *workspace.Service
+		dynamiccreds *dynamiccreds.Service
 
 		db *db
 		*tokenFactory
@@ -49,10 +50,11 @@ type (
 		*sql.Listener
 		*tfeapi.Responder
 
-		RunService       *otfrun.Service
-		WorkspaceService *workspace.Service
-		TokensService    *tokens.Service
-		Authorizer       *authz.Authorizer
+		RunService                *otfrun.Service
+		WorkspaceService          *workspace.Service
+		TokensService             *tokens.Service
+		Authorizer                *authz.Authorizer
+		DynamicCredentialsService *dynamiccreds.Service
 	}
 
 	phaseClient interface {
@@ -64,12 +66,13 @@ type (
 
 func NewService(opts ServiceOptions) *Service {
 	svc := &Service{
-		Logger:     opts.Logger,
-		Authorizer: opts.Authorizer,
-		db:         &db{DB: opts.DB},
-		phases:     opts.RunService,
-		Signaler:   newJobSignaler(opts.Logger, opts.DB),
-		workspaces: opts.WorkspaceService,
+		Logger:       opts.Logger,
+		Authorizer:   opts.Authorizer,
+		db:           &db{DB: opts.DB},
+		phases:       opts.RunService,
+		Signaler:     newJobSignaler(opts.Logger, opts.DB),
+		workspaces:   opts.WorkspaceService,
+		dynamiccreds: opts.DynamicCredentialsService,
 	}
 	svc.tokenFactory = &tokenFactory{
 		tokens: opts.TokensService,
@@ -517,7 +520,7 @@ func (s *Service) finishJob(ctx context.Context, jobID resource.TfeID, opts fini
 
 func (s *Service) GenerateDynamicCredentialsToken(ctx context.Context, jobID resource.TfeID, audience string) ([]byte, error) {
 	token, err := func() ([]byte, error) {
-		if s.tokens.PrivateKey == nil {
+		if s.dynamiccreds.PrivateKey() == nil {
 			return nil, errors.New("no private key has been configured")
 		}
 		job, err := s.getJob(ctx, jobID)
@@ -529,7 +532,7 @@ func (s *Service) GenerateDynamicCredentialsToken(ctx context.Context, jobID res
 			return nil, err
 		}
 		return dynamiccreds.GenerateToken(
-			s.tokens.PrivateKey,
+			s.dynamiccreds.PrivateKey(),
 			job.Organization,
 			job.WorkspaceID,
 			workspace.Name,
