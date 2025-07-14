@@ -196,3 +196,9 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
+
+volumes: []
+
+volumeMounts: []
+
+sidecars: []
