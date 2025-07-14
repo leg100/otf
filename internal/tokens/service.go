@@ -22,9 +22,6 @@ type (
 		GoogleIAPConfig
 
 		Secret []byte
-
-		PublicKeyPath  string
-		PrivateKeyPath string
 	}
 )
 
@@ -36,10 +33,7 @@ func NewService(opts Options) (*Service, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	svc.tokenFactory = &tokenFactory{
-		symKey: key,
-	}
+	svc.tokenFactory = &tokenFactory{key: key}
 	svc.registry = &registry{
 		kinds: make(map[resource.Kind]SubjectGetter),
 	}

@@ -15,7 +15,7 @@ type (
 
 	// tokenFactory constructs new tokens using a JWK
 	tokenFactory struct {
-		symKey jwk.Key
+		key jwk.Key
 	}
 )
 
@@ -39,5 +39,5 @@ func (f *tokenFactory) NewToken(subjectID resource.TfeID, opts ...NewTokenOption
 	if err != nil {
 		return nil, err
 	}
-	return jwt.Sign(token, jwt.WithKey(jwa.HS256, f.symKey))
+	return jwt.Sign(token, jwt.WithKey(jwa.HS256, f.key))
 }
