@@ -20,12 +20,12 @@ import (
 	"github.com/fatih/color"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
+	"github.com/leg100/otf/internal/dynamiccreds"
 	"github.com/leg100/otf/internal/engine"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/resource"
 	runpkg "github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/state"
-	"github.com/leg100/otf/internal/tokens/dynamiccreds"
 	"github.com/leg100/otf/internal/variable"
 	"github.com/leg100/otf/internal/workspace"
 )

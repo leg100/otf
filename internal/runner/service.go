@@ -9,6 +9,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
+	"github.com/leg100/otf/internal/dynamiccreds"
 	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/organization"
@@ -18,7 +19,6 @@ import (
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/tokens"
-	"github.com/leg100/otf/internal/tokens/dynamiccreds"
 	"github.com/leg100/otf/internal/workspace"
 )
 

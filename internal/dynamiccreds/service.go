@@ -12,7 +12,6 @@ import (
 type (
 	Service struct {
 		handlers   *Handlers
-		isEnabled  bool
 		privateKey jwk.Key
 	}
 
