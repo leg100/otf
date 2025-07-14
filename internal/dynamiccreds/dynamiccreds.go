@@ -119,26 +119,26 @@ func Setup(
 			// Configure credentials differently depending on the cloud.
 			switch provider {
 			case aws:
-				cloudConfig, envs, err := configureAWS(ctx, h, audience)
+				providerCfg, envs, err := configureAWS(ctx, h, audience)
 				if err != nil {
 					return nil, err
 				}
 				newEnvs = append(newEnvs, envs...)
-				cfg.AWS.addConfig(tag, cloudConfig)
+				cfg.AWS.addConfig(tag, providerCfg)
 			case azure:
-				variables, envs, err := configureAzure(ctx, h, audience)
+				providerCfg, envs, err := configureAzure(ctx, h, audience)
 				if err != nil {
 					return nil, err
 				}
 				newEnvs = append(newEnvs, envs...)
-				cfg.Azure.addConfig(tag, variables)
+				cfg.Azure.addConfig(tag, providerCfg)
 			case gcp:
-				variables, envs, err := configureGCP(ctx, h, audience)
+				providerCfg, envs, err := configureGCP(ctx, h, audience)
 				if err != nil {
 					return nil, err
 				}
 				newEnvs = append(newEnvs, envs...)
-				cfg.GCP.addConfig(tag, variables)
+				cfg.GCP.addConfig(tag, providerCfg)
 			}
 		}
 	}
