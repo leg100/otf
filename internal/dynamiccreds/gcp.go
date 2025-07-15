@@ -19,7 +19,7 @@ type (
 		SubjectTokenType string                    `json:"subject_token_type"`
 		TokenURL         string                    `json:"token_url"`
 		ImpersonationURL string                    `json:"service_account_impersonation_url"`
-		CredentialSource gcpCredentialConfigSource `json:"credentials_source"`
+		CredentialSource gcpCredentialConfigSource `json:"credential_source"`
 	}
 
 	gcpCredentialConfigSource struct {

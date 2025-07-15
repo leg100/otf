@@ -14,6 +14,7 @@ import (
 
 func GenerateToken(
 	privateKey jwk.Key,
+	issuer string,
 	organization organization.Name,
 	workspaceID resource.TfeID,
 	workspaceName string,
@@ -29,6 +30,7 @@ func GenerateToken(
 		Subject(subject).
 		Audience([]string{audience}).
 		IssuedAt(now).
+		Issuer(issuer).
 		NotBefore(now).
 		Expiration(now.Add(time.Hour)).
 		Claim("terraform_organization_name", organization).

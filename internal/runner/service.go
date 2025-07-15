@@ -39,6 +39,7 @@ type (
 		Signaler     *jobSignaler
 		workspaces   *workspace.Service
 		dynamiccreds *dynamiccreds.Service
+		hostnames    *internal.HostnameService
 
 		db *db
 		*tokenFactory
@@ -55,6 +56,7 @@ type (
 		TokensService             *tokens.Service
 		Authorizer                *authz.Authorizer
 		DynamicCredentialsService *dynamiccreds.Service
+		HostnameService           *internal.HostnameService
 	}
 
 	phaseClient interface {
@@ -73,6 +75,7 @@ func NewService(opts ServiceOptions) *Service {
 		Signaler:     newJobSignaler(opts.Logger, opts.DB),
 		workspaces:   opts.WorkspaceService,
 		dynamiccreds: opts.DynamicCredentialsService,
+		hostnames:    opts.HostnameService,
 	}
 	svc.tokenFactory = &tokenFactory{
 		tokens: opts.TokensService,
@@ -533,6 +536,7 @@ func (s *Service) GenerateDynamicCredentialsToken(ctx context.Context, jobID res
 		}
 		return dynamiccreds.GenerateToken(
 			s.dynamiccreds.PrivateKey(),
+			s.hostnames.URL(""),
 			job.Organization,
 			job.WorkspaceID,
 			workspace.Name,

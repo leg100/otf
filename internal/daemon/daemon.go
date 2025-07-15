@@ -287,6 +287,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		TokensService:             tokensService,
 		Listener:                  listener,
 		DynamicCredentialsService: dynamiccredsService,
+		HostnameService:           hostnameService,
 	})
 	authenticatorService, err := authenticator.NewAuthenticatorService(ctx, authenticator.Options{
 		Logger:               logger,
