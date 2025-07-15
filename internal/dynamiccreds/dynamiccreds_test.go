@@ -52,6 +52,7 @@ func TestSetup(t *testing.T) {
 				want := fmt.Sprintf("GOOGLE_APPLICATION_CREDENTIALS=%s", configPath)
 				assert.Contains(t, envs, want)
 				wantConfig := fmt.Sprintf(`{
+  "universe_domain": "googleapis.com",
   "type": "external_account",
   "audience": "acme.audience",
   "subject_token_type": "urn:ietf:params:oauth:token-type:jwt",
@@ -60,8 +61,7 @@ func TestSetup(t *testing.T) {
   "credentials_source": {
     "file": "%s/gcp_token",
     "format": {
-      "type": "json",
-      "subject_token_field_name": "access_token"
+      "type": "text"
     }
   }
 }`, workdir)

@@ -14,7 +14,7 @@ type Handlers struct {
 	publicKey       jwk.Key
 }
 
-type WellKnownConfig struct {
+type wellKnownConfig struct {
 	// IssuerURL is the identity of the provider, and the string it uses to sign
 	// ID tokens with. For example "https://accounts.google.com". This value MUST
 	// match ID tokens exactly.
@@ -43,7 +43,7 @@ func (h *Handlers) addHandlers(r *mux.Router) {
 }
 
 func (h *Handlers) wellKnown(w http.ResponseWriter, r *http.Request) {
-	cfg := WellKnownConfig{
+	cfg := wellKnownConfig{
 		IssuerURL:     h.hostnameService.URL(""),
 		JWKSURL:       h.hostnameService.URL("/.well-known/jwks"),
 		Algorithms:    []string{"RS256"},
@@ -55,13 +55,20 @@ func (h *Handlers) wellKnown(w http.ResponseWriter, r *http.Request) {
 			"aud",
 			"exp",
 			"iat",
+			"nbf",
 			"iss",
 			"jti",
-			"otf_workspace",
-			"otf_organization",
+			"terraform_organization_name",
+			"terraform_workspace_name",
+			"terraform_workspace_id",
+			"terraform_full_workspace",
+			"terraform_run_id",
+			"terraform_run_phase",
 		},
 	}
-	if err := json.NewEncoder(w).Encode(cfg); err != nil {
+	encoder := json.NewEncoder(w)
+	encoder.SetIndent("", "  ")
+	if err := encoder.Encode(cfg); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -70,7 +77,9 @@ func (h *Handlers) wellKnown(w http.ResponseWriter, r *http.Request) {
 func (h *Handlers) jwks(w http.ResponseWriter, r *http.Request) {
 	set := jwk.NewSet()
 	set.AddKey(h.publicKey)
-	if err := json.NewEncoder(w).Encode(set); err != nil {
+	encoder := json.NewEncoder(w)
+	encoder.SetIndent("", "  ")
+	if err := encoder.Encode(set); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

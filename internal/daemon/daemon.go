@@ -272,6 +272,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		HostnameService: hostnameService,
 		PublicKeyPath:   cfg.PublicKeyPath,
 		PrivateKeyPath:  cfg.PrivateKeyPath,
+		Logger:          logger,
 	})
 	if err != nil {
 		return nil, err

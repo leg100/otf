@@ -8,6 +8,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/logr"
 	"github.com/lestrrat-go/jwx/v2/jwk"
 	"golang.org/x/crypto/ssh"
 )
@@ -19,6 +20,7 @@ type (
 	}
 
 	Options struct {
+		Logger          logr.Logger
 		HostnameService *internal.HostnameService
 		PublicKeyPath   string
 		PrivateKeyPath  string
@@ -69,6 +71,7 @@ func NewService(opts Options) (*Service, error) {
 			}
 			svc.privateKey = key
 		}
+		opts.Logger.Info("enabled dynamic provider credentials")
 	}
 
 	return &svc, nil

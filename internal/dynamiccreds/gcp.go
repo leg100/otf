@@ -4,16 +4,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"regexp"
 )
 
 const gcp provider = "gcp"
 
-type (
-	gcpCredentials struct {
-		AccessToken string `json:"access_token"`
-	}
+var workloadProviderNameRegex = regexp.MustCompile(`^projects/[^/]+/locations/global/workloadIdentityPools/[^/]+/providers/[^/]+$`)
 
+type (
 	gcpCredentialConfig struct {
+		UniverseDomain   string                    `json:"universe_domain"`
 		Type             string                    `json:"type"`
 		Audience         string                    `json:"audience"`
 		SubjectTokenType string                    `json:"subject_token_type"`
@@ -28,8 +28,7 @@ type (
 	}
 
 	gcpCredentialConfigSourceFormat struct {
-		Type    string `json:"type"`
-		Subject string `json:"subject_token_field_name"`
+		Type string `json:"type"`
 	}
 
 	gcpVariablesCredentialsPath struct {
@@ -64,6 +63,9 @@ func configureGCP(ctx context.Context, h helper, audience string) (gcpVariablesC
 			providerID,
 		)
 	}
+	if !workloadProviderNameRegex.MatchString(workloadProviderName) {
+		return gcpVariablesCredentialsPath{}, nil, fmt.Errorf("workload provider name must match the regex: %s", workloadProviderNameRegex.String())
+	}
 	if audience == "" {
 		audience = fmt.Sprintf("//iam.googleapis.com/%s", workloadProviderName)
 	}
@@ -72,17 +74,13 @@ func configureGCP(ctx context.Context, h helper, audience string) (gcpVariablesC
 		return gcpVariablesCredentialsPath{}, nil, err
 	}
 	// Construct and write credentials to disk.
-	creds := gcpCredentials{AccessToken: string(token)}
-	marshaled, err := json.Marshal(creds)
-	if err != nil {
-		return gcpVariablesCredentialsPath{}, nil, err
-	}
-	credsPath, err := h.writeFile("token", marshaled)
+	credsPath, err := h.writeFile("token", token)
 	if err != nil {
 		return gcpVariablesCredentialsPath{}, nil, err
 	}
 	// Construct and write credentials config.
 	credsConfig := gcpCredentialConfig{
+		UniverseDomain:   "googleapis.com",
 		Type:             "external_account",
 		Audience:         audience,
 		SubjectTokenType: "urn:ietf:params:oauth:token-type:jwt",
@@ -91,12 +89,11 @@ func configureGCP(ctx context.Context, h helper, audience string) (gcpVariablesC
 		CredentialSource: gcpCredentialConfigSource{
 			File: credsPath,
 			Format: gcpCredentialConfigSourceFormat{
-				Type:    "json",
-				Subject: "access_token",
+				Type: "text",
 			},
 		},
 	}
-	marshaled, err = json.Marshal(credsConfig)
+	marshaled, err := json.Marshal(credsConfig)
 	if err != nil {
 		return gcpVariablesCredentialsPath{}, nil, err
 	}

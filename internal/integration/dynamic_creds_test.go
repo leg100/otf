@@ -1,15 +1,12 @@
 package integration
 
 import (
-	"encoding/json"
 	"net/http"
 	"testing"
 
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/dynamiccreds"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/variable"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -46,13 +43,10 @@ func TestDynamicCredentials(t *testing.T) {
 	run := daemon.createRun(t, ctx, ws1, cv1, nil)
 	daemon.waitRunStatus(t, ctx, run.ID, runstatus.Planned)
 
+	// check endpoints are exposed
 	resp, err := http.Get(daemon.System.URL("/.well-known/openid-configuration"))
 	require.NoError(t, err)
 	require.Equal(t, 200, resp.StatusCode)
-	var cfg dynamiccreds.WellKnownConfig
-	err = json.NewDecoder(resp.Body).Decode(&cfg)
-	require.NoError(t, err)
-	assert.Equal(t, []string{"RS256"}, cfg.Algorithms)
 
 	resp, err = http.Get(daemon.System.URL("/.well-known/jwks"))
 	require.NoError(t, err)

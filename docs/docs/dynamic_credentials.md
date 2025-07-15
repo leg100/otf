@@ -46,6 +46,12 @@ In order to verify signed JWTs, cloud platforms must have network access to the 
 `/.well-known/openid-configuration` - standard OIDC metadata.
 `/.well-known/jwks` - OTF`s public key(s) that cloud platforms use to verify the authenticity of tokens that claim to come from OTF.
 
+!!! note
+
+Not all cloud providers have this requirement. For example, GCP permits uploading the key:
+
+OIDC JWKS files that are directly uploaded to Google Cloud. By using this method, the endpoint doesn't need to be publicly accessible. The x5c and x5t fields inside the JWK aren't supported and must be removed before uploading
+
 ## Notes
 
 \* There are some minor differences where OTF divergges from the Terraform Cloud documentation:

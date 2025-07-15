@@ -22,13 +22,15 @@ func GenerateToken(
 	phase run.PhaseType,
 	audience string,
 ) ([]byte, error) {
+	now := time.Now()
 	workspacePath := fmt.Sprintf("organization:%s:workspace:%s", organization, workspaceName)
 	subject := fmt.Sprintf("%s:run_phase:%s", workspacePath, phase)
 	builder := jwt.NewBuilder().
 		Subject(subject).
 		Audience([]string{audience}).
-		IssuedAt(time.Now()).
-		Expiration(time.Now().Add(time.Hour)).
+		IssuedAt(now).
+		NotBefore(now).
+		Expiration(now.Add(time.Hour)).
 		Claim("terraform_organization_name", organization).
 		Claim("terraform_workspace_name", workspaceName).
 		Claim("terraform_workspace_id", workspaceID).
