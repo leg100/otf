@@ -197,8 +197,11 @@ tolerations: []
 
 affinity: {}
 
+# -- Additional volumes to make available to the pod
 volumes: []
 
+# -- Additional volume mounts for the main otfd container
 volumeMounts: []
 
+# -- Additional sidecar containers to run alongside the main otfd container
 sidecars: []
