@@ -133,3 +133,9 @@ func withKeyPairPaths(private, public string) configOption {
 		cfg.PublicKeyPath = public
 	}
 }
+
+func withHostname(hostname string) configOption {
+	return func(cfg *config) {
+		cfg.Host = hostname
+	}
+}

@@ -52,9 +52,13 @@ Not all cloud providers have this requirement. For example, GCP permits uploadin
 
 OIDC JWKS files that are directly uploaded to Google Cloud. By using this method, the endpoint doesn't need to be publicly accessible. The x5c and x5t fields inside the JWK aren't supported and must be removed before uploading
 
+curl https://tower.otf.ninja/.well-known/jwks
+
 ## Notes
 
 \* There are some minor differences where OTF divergges from the Terraform Cloud documentation:
 
 * The token's subject in TFC has the format: `organization:<org>:project:<project>:workspace:<workspace>:run-phase:<phase>` Whereas OTF does not have support for projects. Therefore the subject format is `organization:<org>:workspace:<workspace>:run-phase:<phase>`.
 * The example terraform configurations reference projects, but OTF does not support projects. Therefore you'll need to amend the terraform configurations accordingly.
+
+Issuer must match the OTF hostname you've set using `--hostname`.
