@@ -93,3 +93,12 @@ tolerations: []
 affinity: {}
 
 topologySpreadConstraints: []
+
+# -- Additional volumes to make available to the pod
+volumes: []
+
+# -- Additional volume mounts for the main otf-agent container
+volumeMounts: []
+
+# -- Additional sidecar containers to run alongside the main otf-agent container
+sidecars: []
