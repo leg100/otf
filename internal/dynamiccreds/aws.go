@@ -43,6 +43,10 @@ func configureAWS(ctx context.Context, h helper, audience string) (awsVariablesS
 	if err != nil {
 		return awsVariablesSharedConfigFile{}, nil, err
 	}
+	_, err = section.NewKey("role_arn", arn)
+	if err != nil {
+		return awsVariablesSharedConfigFile{}, nil, err
+	}
 	var buf bytes.Buffer
 	if _, err := inidata.WriteTo(&buf); err != nil {
 		return awsVariablesSharedConfigFile{}, nil, err

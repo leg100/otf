@@ -62,3 +62,8 @@ curl https://tower.otf.ninja/.well-known/jwks
 * The example terraform configurations reference projects, but OTF does not support projects. Therefore you'll need to amend the terraform configurations accordingly.
 
 Issuer must match the OTF hostname you've set using `--hostname`.
+
+
+Supports multiple conifgurations:
+
+https://developer.hashicorp.com/terraform/cloud-docs/workspaces/dynamic-provider-credentials/specifying-multiple-configurations
