@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.3.28](https://github.com/leg100/otf/compare/v0.3.27...v0.3.28) (2025-07-18)
+
+
+### Features
+
+* extend helm charts values to add volumes, volumeMounts and sidecars ([#807](https://github.com/leg100/otf/issues/807)) ([94147b5](https://github.com/leg100/otf/commit/94147b548cf02e78d0e5b6b59acec603ec89bcfc))
+
+
+### Bug Fixes
+
+* **ui:** hide sensitive outputs on the workspace page ([#810](https://github.com/leg100/otf/issues/810)) ([87dcc61](https://github.com/leg100/otf/commit/87dcc61bb2e920a1c074578c82a3fc7aacf8a529))
+* **ui:** no delete button for variable set variable ([88449cd](https://github.com/leg100/otf/commit/88449cd0a6c8c6f01b8d02af613ed88e7e00a905))
+* **ui:** page metadata info hard to see in dark mode ([1ac8cd5](https://github.com/leg100/otf/commit/1ac8cd5a872729b7ce4b227947c3f6c65699f7bc))
+
 ## [0.3.27](https://github.com/leg100/otf/compare/v0.3.26...v0.3.27) (2025-07-06)
 
 
