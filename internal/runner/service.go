@@ -9,6 +9,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
+	"github.com/leg100/otf/internal/dynamiccreds"
 	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/organization"
@@ -36,6 +37,9 @@ type (
 		jobBroker    pubsub.SubscriptionService[*JobEvent]
 		phases       phaseClient
 		Signaler     *jobSignaler
+		workspaces   *workspace.Service
+		dynamiccreds *dynamiccreds.Service
+		hostnames    *internal.HostnameService
 
 		db *db
 		*tokenFactory
@@ -47,10 +51,12 @@ type (
 		*sql.Listener
 		*tfeapi.Responder
 
-		RunService       *otfrun.Service
-		WorkspaceService *workspace.Service
-		TokensService    *tokens.Service
-		Authorizer       *authz.Authorizer
+		RunService                *otfrun.Service
+		WorkspaceService          *workspace.Service
+		TokensService             *tokens.Service
+		Authorizer                *authz.Authorizer
+		DynamicCredentialsService *dynamiccreds.Service
+		HostnameService           *internal.HostnameService
 	}
 
 	phaseClient interface {
@@ -62,14 +68,17 @@ type (
 
 func NewService(opts ServiceOptions) *Service {
 	svc := &Service{
-		Logger:     opts.Logger,
-		Authorizer: opts.Authorizer,
-		db:         &db{DB: opts.DB},
-		tokenFactory: &tokenFactory{
-			tokens: opts.TokensService,
-		},
-		phases:   opts.RunService,
-		Signaler: newJobSignaler(opts.Logger, opts.DB),
+		Logger:       opts.Logger,
+		Authorizer:   opts.Authorizer,
+		db:           &db{DB: opts.DB},
+		phases:       opts.RunService,
+		Signaler:     newJobSignaler(opts.Logger, opts.DB),
+		workspaces:   opts.WorkspaceService,
+		dynamiccreds: opts.DynamicCredentialsService,
+		hostnames:    opts.HostnameService,
+	}
+	svc.tokenFactory = &tokenFactory{
+		tokens: opts.TokensService,
 	}
 	svc.tfeapi = &tfe{
 		Service:   svc,
@@ -510,6 +519,39 @@ func (s *Service) finishJob(ctx context.Context, jobID resource.TfeID, opts fini
 		s.V(2).Info("finished job", "job", job, "status", opts.Status)
 	}
 	return nil
+}
+
+func (s *Service) GenerateDynamicCredentialsToken(ctx context.Context, jobID resource.TfeID, audience string) ([]byte, error) {
+	token, err := func() ([]byte, error) {
+		if s.dynamiccreds.PrivateKey() == nil {
+			return nil, errors.New("no private key has been configured")
+		}
+		job, err := s.getJob(ctx, jobID)
+		if err != nil {
+			return nil, err
+		}
+		workspace, err := s.workspaces.Get(ctx, job.WorkspaceID)
+		if err != nil {
+			return nil, err
+		}
+		return dynamiccreds.GenerateToken(
+			s.dynamiccreds.PrivateKey(),
+			s.hostnames.URL(""),
+			job.Organization,
+			job.WorkspaceID,
+			workspace.Name,
+			job.RunID,
+			jobID,
+			job.Phase,
+			audience,
+		)
+	}()
+	if err != nil {
+		s.Error(err, "generating token for dynamic credentials", "job_id", jobID, "audience", audience)
+		return nil, err
+	}
+	s.V(4).Info("generated token for dynamic credentials", "job_id", jobID, "audience", audience)
+	return token, nil
 }
 
 // agent tokens

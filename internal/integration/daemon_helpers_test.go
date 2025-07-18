@@ -345,18 +345,21 @@ func (s *testDaemon) createRun(t *testing.T, ctx context.Context, ws *workspace.
 	return run
 }
 
-func (s *testDaemon) createVariable(t *testing.T, ctx context.Context, ws *workspace.Workspace) *variable.Variable {
+func (s *testDaemon) createVariable(t *testing.T, ctx context.Context, ws *workspace.Workspace, opts *variable.CreateVariableOptions) *variable.Variable {
 	t.Helper()
 
 	if ws == nil {
 		ws = s.createWorkspace(t, ctx, nil)
 	}
 
-	v, err := s.Variables.CreateWorkspaceVariable(ctx, ws.ID, variable.CreateVariableOptions{
-		Key:      internal.Ptr("key-" + internal.GenerateRandomString(4)),
-		Value:    internal.Ptr("val-" + internal.GenerateRandomString(4)),
-		Category: internal.Ptr(variable.CategoryTerraform),
-	})
+	if opts == nil {
+		opts = &variable.CreateVariableOptions{
+			Key:      internal.Ptr("key-" + internal.GenerateRandomString(4)),
+			Value:    internal.Ptr("val-" + internal.GenerateRandomString(4)),
+			Category: internal.Ptr(variable.CategoryTerraform),
+		}
+	}
+	v, err := s.Variables.CreateWorkspaceVariable(ctx, ws.ID, *opts)
 	require.NoError(t, err)
 	return v
 }

@@ -16,6 +16,7 @@ import (
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/connections"
 	"github.com/leg100/otf/internal/disco"
+	"github.com/leg100/otf/internal/dynamiccreds"
 	"github.com/leg100/otf/internal/engine"
 	"github.com/leg100/otf/internal/forgejo"
 	"github.com/leg100/otf/internal/github"
@@ -267,15 +268,26 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		WorkspaceService: workspaceService,
 		RunClient:        runService,
 	})
+	dynamiccredsService, err := dynamiccreds.NewService(dynamiccreds.Options{
+		HostnameService: hostnameService,
+		PublicKeyPath:   cfg.PublicKeyPath,
+		PrivateKeyPath:  cfg.PrivateKeyPath,
+		Logger:          logger,
+	})
+	if err != nil {
+		return nil, err
+	}
 	runnerService := runner.NewService(runner.ServiceOptions{
-		Logger:           logger,
-		Authorizer:       authorizer,
-		DB:               db,
-		Responder:        responder,
-		RunService:       runService,
-		WorkspaceService: workspaceService,
-		TokensService:    tokensService,
-		Listener:         listener,
+		Logger:                    logger,
+		Authorizer:                authorizer,
+		DB:                        db,
+		Responder:                 responder,
+		RunService:                runService,
+		WorkspaceService:          workspaceService,
+		TokensService:             tokensService,
+		Listener:                  listener,
+		DynamicCredentialsService: dynamiccredsService,
+		HostnameService:           hostnameService,
 	})
 	authenticatorService, err := authenticator.NewAuthenticatorService(ctx, authenticator.Options{
 		Logger:               logger,
@@ -378,6 +390,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 			GithubApps: githubAppService,
 			VCSService: vcsService,
 		},
+		dynamiccredsService,
 	}
 
 	return &Daemon{
