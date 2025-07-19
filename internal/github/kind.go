@@ -62,6 +62,7 @@ func (p *kindProvider) NewClient(ctx context.Context, cfg vcs.Config) (vcs.Clien
 	opts := ClientOptions{
 		Hostname:            p.hostname,
 		SkipTLSVerification: p.skipTLSVerification,
+		APIURL:              cfg.APIURL,
 	}
 	if cfg.Token != nil {
 		opts.PersonalToken = cfg.Token

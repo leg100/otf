@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net/url"
 	"time"
 
 	"github.com/leg100/otf/internal"
@@ -19,6 +20,8 @@ type (
 		Name         string
 		CreatedAt    time.Time
 		Organization organization.Name
+		// The homepage of the provider. Optional.
+		HTTPURL *url.URL
 		// The kind of provider
 		Kind
 		// Config for constructing a client
@@ -38,6 +41,8 @@ type (
 		KindID       KindID `schema:"kind,required"`
 		Token        *string
 		InstallID    *int64 `schema:"install_id"`
+		APIURL       *url.URL
+		HTTPURL      *url.URL
 	}
 
 	UpdateOptions struct {
@@ -62,6 +67,8 @@ func (f *factory) newProvider(ctx context.Context, opts CreateOptions) (*Provide
 		CreatedAt:    internal.CurrentTimestamp(nil),
 		Organization: opts.Organization,
 		Kind:         kind,
+		HTTPURL:      opts.HTTPURL,
+		Config:       Config{APIURL: opts.APIURL},
 	}
 	if kind.AppKind != nil {
 		if opts.InstallID == nil {
@@ -75,12 +82,12 @@ func (f *factory) newProvider(ctx context.Context, opts CreateOptions) (*Provide
 		if err != nil {
 			return nil, err
 		}
-		provider.Config = Config{Installation: &install}
+		provider.Config.Installation = &install
 	} else if kind.TokenKind != nil {
 		if opts.Token == nil {
 			return nil, errors.New("token required for client")
 		}
-		provider.Config = Config{Token: opts.Token}
+		provider.Config.Token = opts.Token
 	} else {
 		return nil, errors.New("an installation or a token must be specified")
 	}

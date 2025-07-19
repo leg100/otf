@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"path"
 	"slices"
@@ -24,7 +25,12 @@ type Client struct {
 }
 
 func NewTokenClient(opts vcs.NewTokenClientOptions) (vcs.Client, error) {
-	url := fmt.Sprintf("https://%s", opts.Hostname)
+	var baseURL url.URL
+	if opts.APIURL != nil {
+		baseURL = *opts.APIURL
+	} else {
+		baseURL = url.URL{Scheme: "https", Host: opts.Hostname}
+	}
 	options := make([]forgejo.ClientOption, 0, 2)
 	options = append(options, forgejo.SetToken(opts.Token))
 	if opts.SkipTLSVerification {
@@ -37,7 +43,7 @@ func NewTokenClient(opts vcs.NewTokenClientOptions) (vcs.Client, error) {
 		}
 		options = append(options, forgejo.SetHTTPClient(client))
 	}
-	rv, err := forgejo.NewClient(url, options...)
+	rv, err := forgejo.NewClient(baseURL.String(), options...)
 	if err != nil {
 		return nil, err
 	}

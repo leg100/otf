@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 
 	"github.com/leg100/otf/internal"
 
@@ -56,10 +57,6 @@ func (a *tfe) createOAuthClient(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, &internal.ErrMissingParameter{Parameter: "service-provider"})
 		return
 	}
-
-	// TODO: these are required yet they are not used. Check that the TFE
-	// integration tests have any requirement on these parameters and if not
-	// then remove.
 	if params.APIURL == nil {
 		tfeapi.Error(w, &internal.ErrMissingParameter{Parameter: "api-url"})
 		return
@@ -94,11 +91,25 @@ func (a *tfe) createOAuthClient(w http.ResponseWriter, r *http.Request) {
 		params.Name = internal.Ptr("")
 	}
 
+	// parameters that need parsing
+	apiURL, err := url.Parse(*params.APIURL)
+	if err != nil {
+		tfeapi.Error(w, fmt.Errorf("unable to parse api-url: %s", *params.APIURL))
+		return
+	}
+	httpURL, err := url.Parse(*params.HTTPURL)
+	if err != nil {
+		tfeapi.Error(w, fmt.Errorf("unable to parse http-url: %s", *params.HTTPURL))
+		return
+	}
+
 	oauthClient, err := a.Create(r.Context(), CreateOptions{
 		Name:         *params.Name,
 		Organization: pathParams.Organization,
 		Token:        params.OAuthToken,
 		KindID:       kind.ID,
+		APIURL:       apiURL,
+		HTTPURL:      httpURL,
 	})
 	if err != nil {
 		tfeapi.Error(w, err)
@@ -164,12 +175,9 @@ func (a *tfe) deleteOAuthClient(w http.ResponseWriter, r *http.Request) {
 
 func (a *tfe) convert(from *Provider) *TFEOAuthClient {
 	to := &TFEOAuthClient{
-		ID:        from.ID,
-		CreatedAt: from.CreatedAt,
-		// Only github via github.com is supported currently, so hardcode these values.
-		ServiceProvider: ServiceProviderGithub,
-		APIURL:          GithubAPIURL,
-		HTTPURL:         GithubHTTPURL,
+		ID:              from.ID,
+		CreatedAt:       from.CreatedAt,
+		ServiceProvider: from.TFEServiceProvider,
 		// OTF has no corresponding concept of an OAuthToken, so just use the
 		// VCS provider ID (the go-tfe integration tests we use expect
 		// at least an ID).
@@ -177,8 +185,10 @@ func (a *tfe) convert(from *Provider) *TFEOAuthClient {
 			{ID: from.ID},
 		},
 		Organization: &organization.TFEOrganization{Name: from.Organization},
+		APIURL:       from.APIURL.String(),
+		HTTPURL:      from.HTTPURL.String(),
 	}
-	// an empty name in otf is equivalent to a nil name in tfe
+	// an empty name in OTF is equivalent to a nil name in tfe
 	if from.Name != "" {
 		to.Name = &from.Name
 	}

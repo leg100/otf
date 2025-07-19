@@ -27,7 +27,10 @@ type (
 	}
 
 	ClientOptions struct {
-		Hostname            string
+		// Hostname is the host (not the URL) of the API endpoint.
+		Hostname string
+		// BaseURL is the base URL for the API. If non-nil this overrides Hostname.
+		BaseURL             *url.URL
 		SkipTLSVerification bool
 
 		OAuthToken    *oauth2.Token
@@ -36,13 +39,17 @@ type (
 )
 
 func NewClient(cfg ClientOptions) (*Client, error) {
+	var baseURL url.URL
+	if cfg.BaseURL != nil {
+		baseURL = *cfg.BaseURL
+	} else {
+		baseURL = url.URL{Scheme: "https", Host: cfg.Hostname}
+	}
 	var (
 		client  *gitlab.Client
 		err     error
 		options = []gitlab.ClientOptionFunc{
-			gitlab.WithBaseURL(
-				(&url.URL{Scheme: "https", Host: cfg.Hostname}).String(),
-			),
+			gitlab.WithBaseURL(baseURL.String()),
 		}
 	)
 	if cfg.SkipTLSVerification {

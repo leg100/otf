@@ -37,7 +37,10 @@ type (
 	}
 
 	ClientOptions struct {
-		Hostname            string
+		// Hostname is the host (not the URL) of the API endpoint.
+		Hostname string
+		// APIURL is the base URL for the API. If non-nil this overrides Hostname.
+		APIURL              *url.URL
 		SkipTLSVerification bool
 
 		// Only specify one of the following
@@ -73,8 +76,15 @@ type (
 )
 
 func NewClient(cfg ClientOptions) (*Client, error) {
-	if cfg.Hostname == "" {
-		cfg.Hostname = DefaultHostname
+	var baseURL url.URL
+	if cfg.APIURL != nil {
+		baseURL = *cfg.APIURL
+	} else {
+		// TODO: should this ever be an empty string?
+		if cfg.Hostname == "" {
+			cfg.Hostname = DefaultHostname
+		}
+		baseURL = url.URL{Scheme: "https", Path: "/api/v3", Host: cfg.Hostname}
 	}
 	// build http roundtripper using provided credentials
 	var (
@@ -98,10 +108,7 @@ func NewClient(cfg ClientOptions) (*Client, error) {
 		if err != nil {
 			return nil, err
 		}
-		// ghinstallation defaults to https://api.github.com
-		if cfg.Hostname != DefaultHostname {
-			installTransport.BaseURL = (&url.URL{Scheme: "https", Path: "/api/v3", Host: cfg.Hostname}).String()
-		}
+		installTransport.BaseURL = baseURL.String()
 		tripper = installTransport
 	case cfg.PersonalToken != nil:
 		// personal token is actually an OAuth2 *access token, so wrap
@@ -118,10 +125,10 @@ func NewClient(cfg ClientOptions) (*Client, error) {
 	// create upstream client with roundtripper
 	client := github.NewClient(&http.Client{Transport: tripper})
 	// Assume github enterprise if using non-default hostname
-	if cfg.Hostname != DefaultHostname {
+	if baseURL.Host != DefaultHostname {
 		client, err = client.WithEnterpriseURLs(
-			"https://"+cfg.Hostname,
-			"https://"+cfg.Hostname,
+			baseURL.String(),
+			baseURL.Scheme+baseURL.Host,
 		)
 		if err != nil {
 			return nil, err
@@ -135,6 +142,7 @@ func NewTokenClient(opts vcs.NewTokenClientOptions) (vcs.Client, error) {
 		Hostname:            opts.Hostname,
 		PersonalToken:       &opts.Token,
 		SkipTLSVerification: opts.SkipTLSVerification,
+		APIURL:              opts.APIURL,
 	})
 }
 

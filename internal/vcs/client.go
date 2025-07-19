@@ -2,6 +2,7 @@ package vcs
 
 import (
 	"context"
+	"net/url"
 )
 
 type (
@@ -30,8 +31,11 @@ type (
 	// NewTokenClientOptions are options for creating a client using a personal
 	// access token (PAT).
 	NewTokenClientOptions struct {
-		Token               string
-		Hostname            string
+		Token string
+		// Hostname is the host (not the URL) of the API endpoint.
+		Hostname string
+		// APIURL is the base URL for the API. If non-nil this overrides Hostname.
+		APIURL              *url.URL
 		SkipTLSVerification bool
 	}
 

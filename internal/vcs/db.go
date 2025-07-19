@@ -2,6 +2,7 @@ package vcs
 
 import (
 	"context"
+	"net/url"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -25,6 +26,8 @@ func (db *pgdb) create(ctx context.Context, provider *Provider) error {
 		"name":         provider.Name,
 		"vcs_kind":     provider.Kind.ID,
 		"organization": provider.Organization,
+		"http_url":     provider.HTTPURL,
+		"api_url":      provider.APIURL,
 	}
 	if provider.Installation != nil {
 		args["install_app_id"] = provider.Installation.AppID
@@ -44,7 +47,9 @@ INSERT INTO vcs_providers (
     install_app_id,
     install_id,
     install_username,
-    install_organization
+    install_organization,
+	http_url,
+	api_url
 ) VALUES (
 	@id,
 	@token,
@@ -55,7 +60,9 @@ INSERT INTO vcs_providers (
     @install_app_id,
     @install_id,
     @install_username,
-    @install_organization
+    @install_organization,
+	@http_url,
+	@api_url
 )`, args)
 	return err
 }
@@ -154,6 +161,8 @@ type model struct {
 	InstallID           *int64            `db:"install_id"`
 	InstallUsername     *string           `db:"install_username"`
 	InstallOrganization *string           `db:"install_organization"`
+	HTTPURL             *string           `db:"http_url"`
+	APIURL              *string           `db:"api_url"`
 }
 
 func (db *pgdb) scanOne(ctx context.Context, row pgx.Rows) (*Provider, error) {
@@ -182,9 +191,7 @@ func (db *pgdb) scanMany(ctx context.Context, row pgx.Rows) ([]*Provider, error)
 }
 
 func (db *pgdb) toProvider(ctx context.Context, m model) (*Provider, error) {
-	cfg := Config{
-		Token: m.Token,
-	}
+	cfg := Config{Token: m.Token}
 	if m.InstallID != nil {
 		cfg.Installation = &Installation{
 			ID:           *m.InstallID,
@@ -209,6 +216,20 @@ func (db *pgdb) toProvider(ctx context.Context, m model) (*Provider, error) {
 		Kind:         kind,
 		Client:       client,
 		Config:       cfg,
+	}
+	if m.APIURL != nil {
+		apiURL, err := url.Parse(*m.APIURL)
+		if err != nil {
+			return nil, err
+		}
+		provider.APIURL = apiURL
+	}
+	if m.HTTPURL != nil {
+		httpURL, err := url.Parse(*m.HTTPURL)
+		if err != nil {
+			return nil, err
+		}
+		provider.HTTPURL = httpURL
 	}
 	return &provider, nil
 }
