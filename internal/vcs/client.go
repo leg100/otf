@@ -2,7 +2,8 @@ package vcs
 
 import (
 	"context"
-	"net/url"
+
+	"github.com/leg100/otf/internal"
 )
 
 type (
@@ -32,10 +33,8 @@ type (
 	// access token (PAT).
 	NewTokenClientOptions struct {
 		Token string
-		// Hostname is the host (not the URL) of the API endpoint.
-		Hostname string
-		// APIURL is the base URL for the API. If non-nil this overrides Hostname.
-		APIURL              *url.URL
+		// BaseURL is the base URL of the API endpoint.
+		BaseURL             *internal.URL
 		SkipTLSVerification bool
 	}
 

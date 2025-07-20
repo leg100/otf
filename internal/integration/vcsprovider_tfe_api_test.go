@@ -27,11 +27,9 @@ func TestIntegration_VCSProviderTFEAPI(t *testing.T) {
 		require.NoError(t, err)
 
 		created, err := client.OAuthClients.Create(ctx, org.Name.String(), tfe.OAuthClientCreateOptions{
-			OAuthToken: internal.Ptr("my-pat"),
-			// URLs are ignored by OTF but the go-tfe client checks that they
-			// are present.
-			APIURL:          internal.Ptr("http://gitlab.com"),
+			OAuthToken:      internal.Ptr("my-pat"),
 			HTTPURL:         internal.Ptr("http://gitlab.com"),
+			APIURL:          internal.Ptr("http://gitlab.com/api/v4"),
 			ServiceProvider: internal.Ptr(tfe.ServiceProviderGitlab),
 		})
 		require.NoError(t, err)
@@ -43,5 +41,7 @@ func TestIntegration_VCSProviderTFEAPI(t *testing.T) {
 
 		assert.Equal(t, retrieved.ID, created.ID)
 		assert.Equal(t, tfe.ServiceProviderGitlab, retrieved.ServiceProvider)
+		assert.Equal(t, "http://gitlab.com", retrieved.HTTPURL)
+		assert.Equal(t, "http://gitlab.com/api/v4", retrieved.APIURL)
 	})
 }

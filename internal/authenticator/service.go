@@ -108,7 +108,7 @@ func (a *Service) RegisterOAuthClient(cfg OpaqueHandlerConfig) error {
 		return err
 	}
 	a.clients = append(a.clients, client)
-	a.V(0).Info("activated OAuth client", "name", cfg.Name, "hostname", cfg.Hostname)
+	a.V(0).Info("activated OAuth client", "name", cfg.Name, "hostname", cfg.BaseURL)
 
 	return nil
 }

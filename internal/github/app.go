@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/a-h/templ"
+	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/vcs"
 	"golang.org/x/exp/slog"
 )
@@ -21,7 +22,7 @@ type (
 		// Organization is the name of the *github* organization that owns the
 		// app. If the app is owned by a user then this is nil.
 		Organization *string `db:"organization"`
-		Hostname     string
+		Hostname     *internal.URL
 
 		*Client
 	}
@@ -32,7 +33,7 @@ type (
 		PrivateKey          string
 		Slug                string
 		Organization        *string
-		Hostname            string
+		Hostname            *internal.URL
 		SkipTLSVerification bool
 	}
 )
@@ -47,7 +48,7 @@ func newApp(opts CreateAppOptions) (*App, error) {
 	}
 
 	client, err := NewClient(ClientOptions{
-		Hostname:            opts.Hostname,
+		BaseURL:             opts.Hostname,
 		SkipTLSVerification: opts.SkipTLSVerification,
 		AppCredentials: &AppCredentials{
 			ID:         app.ID,
@@ -75,7 +76,7 @@ func (a *App) NewInstallURL(hostname string) string {
 }
 
 func (a *App) InstallationLink() templ.SafeURL {
-	return templ.SafeURL(a.NewInstallURL(a.Hostname))
+	return templ.SafeURL(a.NewInstallURL(a.Hostname.Host))
 }
 
 // LogValue implements slog.LogValuer.

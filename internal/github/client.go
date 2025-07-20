@@ -37,10 +37,8 @@ type (
 	}
 
 	ClientOptions struct {
-		// Hostname is the host (not the URL) of the API endpoint.
-		Hostname string
-		// APIURL is the base URL for the API. If non-nil this overrides Hostname.
-		APIURL              *url.URL
+		// BaseURL is the base URL of the API endpoint.
+		BaseURL             *internal.URL
 		SkipTLSVerification bool
 
 		// Only specify one of the following
@@ -76,16 +74,6 @@ type (
 )
 
 func NewClient(cfg ClientOptions) (*Client, error) {
-	var baseURL url.URL
-	if cfg.APIURL != nil {
-		baseURL = *cfg.APIURL
-	} else {
-		// TODO: should this ever be an empty string?
-		if cfg.Hostname == "" {
-			cfg.Hostname = DefaultHostname
-		}
-		baseURL = url.URL{Scheme: "https", Path: "/api/v3", Host: cfg.Hostname}
-	}
 	// build http roundtripper using provided credentials
 	var (
 		tripper = http.DefaultTransport
@@ -108,7 +96,7 @@ func NewClient(cfg ClientOptions) (*Client, error) {
 		if err != nil {
 			return nil, err
 		}
-		installTransport.BaseURL = baseURL.String()
+		installTransport.BaseURL = cfg.BaseURL.String()
 		tripper = installTransport
 	case cfg.PersonalToken != nil:
 		// personal token is actually an OAuth2 *access token, so wrap
@@ -124,11 +112,11 @@ func NewClient(cfg ClientOptions) (*Client, error) {
 	}
 	// create upstream client with roundtripper
 	client := github.NewClient(&http.Client{Transport: tripper})
-	// Assume github enterprise if using non-default hostname
-	if baseURL.Host != DefaultHostname {
+	// Assume Github Enterprise if using non-default hostname
+	if cfg.BaseURL.Host != DefaultBaseURL.Host {
 		client, err = client.WithEnterpriseURLs(
-			baseURL.String(),
-			baseURL.Scheme+baseURL.Host,
+			cfg.BaseURL.String(),
+			cfg.BaseURL.Scheme+cfg.BaseURL.Host,
 		)
 		if err != nil {
 			return nil, err
@@ -139,16 +127,15 @@ func NewClient(cfg ClientOptions) (*Client, error) {
 
 func NewTokenClient(opts vcs.NewTokenClientOptions) (vcs.Client, error) {
 	return NewClient(ClientOptions{
-		Hostname:            opts.Hostname,
+		BaseURL:             opts.BaseURL,
 		PersonalToken:       &opts.Token,
 		SkipTLSVerification: opts.SkipTLSVerification,
-		APIURL:              opts.APIURL,
 	})
 }
 
 func NewOAuthClient(cfg authenticator.OAuthConfig, token *oauth2.Token) (authenticator.IdentityProviderClient, error) {
 	return NewClient(ClientOptions{
-		Hostname:            cfg.Hostname,
+		BaseURL:             cfg.BaseURL,
 		OAuthToken:          token,
 		SkipTLSVerification: cfg.SkipTLSVerification,
 	})

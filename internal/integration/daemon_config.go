@@ -3,6 +3,7 @@ package integration
 import (
 	"time"
 
+	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authenticator"
 	"github.com/leg100/otf/internal/daemon"
 	"github.com/leg100/otf/internal/engine"
@@ -47,7 +48,7 @@ func withGithubOptions(opts ...github.TestServerOption) configOption {
 
 func withGithubHostname(hostname string) configOption {
 	return func(cfg *config) {
-		cfg.GithubHostname = hostname
+		cfg.GithubHostname = internal.MustURL(hostname)
 	}
 }
 

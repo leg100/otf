@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/a-h/templ"
+	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/configversion/source"
 	"golang.org/x/exp/maps"
 )
@@ -24,8 +25,8 @@ type Kind struct {
 	// ID distinguishes this kind from other kinds. NOTE: This must have first
 	// been inserted into the vcs_kinds table via a database migration.
 	ID KindID
-	// Hostname is the hostname of the VCS host, not including scheme or path.
-	Hostname string
+	// BaseURL is the base URL of the VCS host.
+	BaseURL *internal.URL
 	// Icon renders an icon identifying the VCS host kind.
 	Icon templ.Component
 	// TokenKind provides info about the token the provider expects. Mutually

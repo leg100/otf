@@ -30,7 +30,7 @@ type webHandlers struct {
 	svc        webClient
 	authorizer *authz.Authorizer
 
-	GithubHostname string
+	GithubBaseURL *internal.URL
 	// toggle skipping TLS on connections to github (for testing purposes)
 	GithubSkipTLS bool
 }
@@ -99,7 +99,7 @@ func (h *webHandlers) new(w http.ResponseWriter, r *http.Request) {
 
 	props := newAppViewProps{
 		manifest:       string(marshaled),
-		githubHostname: h.GithubHostname,
+		githubHostname: h.GithubBaseURL.Host,
 	}
 	html.Render(newAppView(props), w, r)
 }
@@ -124,7 +124,7 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 	props := getAppsProps{
 		app:            app,
 		installations:  installs,
-		githubHostname: h.GithubHostname,
+		githubHostname: h.GithubBaseURL.Host,
 		canCreateApp:   h.authorizer.CanAccess(r.Context(), authz.CreateGithubAppAction, resource.SiteID),
 		canDeleteApp:   h.authorizer.CanAccess(r.Context(), authz.DeleteGithubAppAction, resource.SiteID),
 	}
@@ -142,7 +142,7 @@ func (h *webHandlers) exchangeCode(w http.ResponseWriter, r *http.Request) {
 
 	// exchange code for credentials using an anonymous client
 	client, err := NewClient(ClientOptions{
-		Hostname:            h.GithubHostname,
+		BaseURL:             h.GithubBaseURL,
 		SkipTLSVerification: h.GithubSkipTLS,
 	})
 	if err != nil {
