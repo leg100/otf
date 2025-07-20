@@ -22,7 +22,7 @@ type (
 		// Organization is the name of the *github* organization that owns the
 		// app. If the app is owned by a user then this is nil.
 		Organization *string `db:"organization"`
-		Hostname     *internal.URL
+		Hostname     *internal.WebURL
 
 		*Client
 	}
@@ -33,7 +33,7 @@ type (
 		PrivateKey          string
 		Slug                string
 		Organization        *string
-		Hostname            *internal.URL
+		Hostname            *internal.WebURL
 		SkipTLSVerification bool
 	}
 )

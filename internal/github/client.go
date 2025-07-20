@@ -38,7 +38,7 @@ type (
 
 	ClientOptions struct {
 		// BaseURL is the base URL of the API endpoint.
-		BaseURL             *internal.URL
+		BaseURL             *internal.WebURL
 		SkipTLSVerification bool
 
 		// Only specify one of the following
@@ -127,7 +127,7 @@ func NewClient(cfg ClientOptions) (*Client, error) {
 
 func NewTokenClient(opts vcs.NewTokenClientOptions) (vcs.Client, error) {
 	return NewClient(ClientOptions{
-		BaseURL:             opts.BaseURL,
+		BaseURL:             opts.APIURL,
 		PersonalToken:       &opts.Token,
 		SkipTLSVerification: opts.SkipTLSVerification,
 	})

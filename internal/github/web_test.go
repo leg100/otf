@@ -21,7 +21,7 @@ import (
 func TestWebHandlers_new(t *testing.T) {
 	h := &webHandlers{
 		HostnameService: internal.NewHostnameService("example.com"),
-		GithubBaseURL:   internal.MustURL("github.com"),
+		GithubBaseURL:   internal.MustWebURL("github.com"),
 	}
 
 	r := httptest.NewRequest("GET", "/?", nil)
@@ -33,7 +33,7 @@ func TestWebHandlers_new(t *testing.T) {
 func TestWebHandlers_get(t *testing.T) {
 	h := &webHandlers{
 		HostnameService: internal.NewHostnameService("example.com"),
-		GithubBaseURL:   internal.MustURL("github.com"),
+		GithubBaseURL:   internal.MustWebURL("github.com"),
 		svc: &fakeService{
 			app: &App{},
 			installs: []vcs.Installation{
@@ -51,7 +51,7 @@ func TestWebHandlers_get(t *testing.T) {
 
 func TestWebHandlers_exchangeCode(t *testing.T) {
 	// create stub github server with an exchange code handler
-	stubURL := func() *internal.URL {
+	stubURL := func() *internal.WebURL {
 		mux := http.NewServeMux()
 		mux.HandleFunc("/api/v3/app-manifests/the-code/conversions", func(w http.ResponseWriter, r *http.Request) {
 			out, err := json.Marshal(&github.AppConfig{
@@ -65,7 +65,7 @@ func TestWebHandlers_exchangeCode(t *testing.T) {
 		stub := httptest.NewTLSServer(mux)
 		t.Cleanup(stub.Close)
 
-		u, err := internal.NewURL(stub.URL)
+		u, err := internal.NewWebURL(stub.URL)
 		require.NoError(t, err)
 		return u
 	}()

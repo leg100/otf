@@ -7,7 +7,7 @@ import (
 
 func RegisterOAuthHandler(
 	authenticatorService *authenticator.Service,
-	hostname *internal.URL,
+	hostname *internal.WebURL,
 	clientID, clientSecret string,
 	skipTLSVerification bool,
 ) error {

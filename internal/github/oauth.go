@@ -16,7 +16,7 @@ var (
 
 func RegisterOAuthHandler(
 	authenticatorService *authenticator.Service,
-	baseURL *internal.URL,
+	baseURL *internal.WebURL,
 	clientID, clientSecret string,
 	skipTLSVerification bool,
 ) error {

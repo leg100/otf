@@ -11,7 +11,7 @@ import (
 // appDB is a github app database on postgres
 type appDB struct {
 	*sql.DB
-	baseURL             *internal.URL
+	baseURL             *internal.WebURL
 	skipTLSVerification bool
 }
 

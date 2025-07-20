@@ -33,8 +33,8 @@ type (
 	// access token (PAT).
 	NewTokenClientOptions struct {
 		Token string
-		// BaseURL is the base URL of the API endpoint.
-		BaseURL             *internal.URL
+		// APIURL is the base URL of the API.
+		APIURL              *internal.WebURL
 		SkipTLSVerification bool
 	}
 

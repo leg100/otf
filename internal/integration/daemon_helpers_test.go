@@ -82,7 +82,7 @@ func setup(t *testing.T, opts ...configOption) (*testDaemon, *organization.Organ
 	if cfg.GithubHostname == nil {
 		var githubURL *url.URL
 		githubServer, githubURL = github.NewTestServer(t, cfg.githubOptions...)
-		cfg.GithubHostname = &internal.URL{URL: githubURL}
+		cfg.GithubHostname = &internal.WebURL{URL: githubURL}
 	}
 
 	// Configure logger; discard logs by default

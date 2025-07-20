@@ -56,7 +56,7 @@ type (
 		// Name of oauth client. Should be a lowercase string because it is used
 		// in URL paths.
 		Name                string
-		BaseURL             *internal.URL
+		BaseURL             *internal.WebURL
 		ClientID            string
 		ClientSecret        string
 		Endpoint            oauth2.Endpoint

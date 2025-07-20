@@ -48,7 +48,7 @@ func withGithubOptions(opts ...github.TestServerOption) configOption {
 
 func withGithubHostname(hostname string) configOption {
 	return func(cfg *config) {
-		cfg.GithubHostname = internal.MustURL(hostname)
+		cfg.GithubHostname = internal.MustWebURL(hostname)
 	}
 }
 

@@ -36,7 +36,7 @@ func NewTokenClient(opts vcs.NewTokenClientOptions) (vcs.Client, error) {
 		}
 		options = append(options, forgejo.SetHTTPClient(client))
 	}
-	rv, err := forgejo.NewClient(opts.BaseURL.String(), options...)
+	rv, err := forgejo.NewClient(opts.APIURL.String(), options...)
 	if err != nil {
 		return nil, err
 	}

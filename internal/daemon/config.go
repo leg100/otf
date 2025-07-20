@@ -23,13 +23,13 @@ var ErrInvalidSecretLength = errors.New("secret must be 16 bytes in size")
 type Config struct {
 	RunnerConfig                 *runner.Config
 	CacheConfig                  *inmem.CacheConfig
-	GithubHostname               *internal.URL
+	GithubHostname               *internal.WebURL
 	GithubClientID               string
 	GithubClientSecret           string
-	GitlabHostname               *internal.URL
+	GitlabHostname               *internal.WebURL
 	GitlabClientID               string
 	GitlabClientSecret           string
-	ForgejoHostname              *internal.URL // TODO: forgejo is often self-hosted, and there may be more than one of them.  this should be a per-VCS setting
+	ForgejoHostname              *internal.WebURL // TODO: forgejo is often self-hosted, and there may be more than one of them.  this should be a per-VCS setting
 	OIDC                         authenticator.OIDCConfig
 	Secret                       []byte // 16-byte secret for signing URLs and encrypting payloads
 	SiteToken                    string

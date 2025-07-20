@@ -30,7 +30,7 @@ type webHandlers struct {
 	svc        webClient
 	authorizer *authz.Authorizer
 
-	GithubBaseURL *internal.URL
+	GithubBaseURL *internal.WebURL
 	// toggle skipping TLS on connections to github (for testing purposes)
 	GithubSkipTLS bool
 }

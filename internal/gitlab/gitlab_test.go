@@ -26,7 +26,7 @@ func setup(t *testing.T) (*http.ServeMux, *Client) {
 
 	// client is the Gitlab client being tested.
 	client, err := NewClient(ClientOptions{
-		BaseURL:             &internal.URL{URL: u},
+		BaseURL:             &internal.WebURL{URL: u},
 		SkipTLSVerification: true,
 	})
 	if err != nil {

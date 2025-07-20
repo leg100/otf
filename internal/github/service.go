@@ -29,7 +29,7 @@ type (
 		vcs.Publisher
 		*internal.HostnameService
 
-		GithubBaseURL       *internal.URL
+		GithubBaseURL       *internal.WebURL
 		SkipTLSVerification bool
 		Authorizer          *authz.Authorizer
 		VCSService          *vcs.Service

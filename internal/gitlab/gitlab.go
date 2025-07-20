@@ -7,7 +7,7 @@ import (
 )
 
 var (
-	DefaultBaseURL = internal.MustURL("https://gitlab.com/api/v4")
+	DefaultBaseURL = internal.MustWebURL("https://gitlab.com/api/v4")
 	OAuthEndpoint  = oauth2gitlab.Endpoint
 	OAuthScopes    = []string{"read_user", "read_api"}
 )

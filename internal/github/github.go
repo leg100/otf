@@ -3,4 +3,4 @@ package github
 
 import "github.com/leg100/otf/internal"
 
-var DefaultBaseURL = internal.MustURL("https://api.github.com/")
+var DefaultBaseURL = internal.MustWebURL("https://github.com/api/v3")

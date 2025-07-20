@@ -1,21 +1,37 @@
 package internal
 
-import "net/url"
+import (
+	"fmt"
+	"net/url"
+	"strings"
+)
 
-// URL wraps the stdlib url.URL
-type URL struct {
+// WebURL wraps the stdlib url.URL, restricting it to web URLs (i.e. those that
+// use the http(s) scheme.
+type WebURL struct {
 	*url.URL
 }
 
-func MustURL(rawURL string) *URL {
-	u, err := NewURL(rawURL)
+func MustWebURL(rawURL string) *WebURL {
+	u, err := NewWebURL(rawURL)
 	if err != nil {
 		panic(err.Error())
 	}
 	return u
 }
 
-func NewURL(rawURL string) (*URL, error) {
+// NewWebURL constructs a http(s) URL from a URL string. An error is returned if
+// the string starts with a scheme other than http(s). If there is no scheme
+// then the scheme is set to https.
+func NewWebURL(rawURL string) (*WebURL, error) {
+	scheme, _, hasScheme := strings.Cut(rawURL, "://")
+	if hasScheme {
+		if scheme != "https" && scheme != "http" {
+			return nil, fmt.Errorf("cannot construct web url from invalid non-web scheme: %s", scheme)
+		}
+	} else {
+		rawURL = "https://" + rawURL
+	}
 	u, err := url.Parse(rawURL)
 	if err != nil {
 		return nil, err
@@ -23,15 +39,15 @@ func NewURL(rawURL string) (*URL, error) {
 	if u.Scheme == "" {
 		u.Scheme = "https"
 	}
-	return &URL{URL: u}, nil
+	return &WebURL{URL: u}, nil
 }
 
 // Type implements pflag.Value
-func (*URL) Type() string { return "url" }
+func (*WebURL) Type() string { return "url" }
 
 // Set implements pflag.Value
-func (u *URL) Set(text string) error {
-	newURL, err := NewURL(text)
+func (u *WebURL) Set(text string) error {
+	newURL, err := NewWebURL(text)
 	if err != nil {
 		return err
 	}

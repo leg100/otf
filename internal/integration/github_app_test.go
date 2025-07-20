@@ -226,7 +226,7 @@ func TestIntegration_GithubAppsUI(t *testing.T) {
 			AppID:      123,
 			Slug:       "my-otf-app",
 			PrivateKey: string(testutils.ReadFile(t, "./fixtures/key.pem")),
-			Hostname:   internal.MustURL("github.com"),
+			Hostname:   internal.MustWebURL("github.com"),
 		})
 		require.NoError(t, err)
 

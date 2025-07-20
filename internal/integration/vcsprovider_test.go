@@ -66,7 +66,7 @@ func vcsProviderIsEqual(t *testing.T, want, got *vcs.Provider) {
 	assert.Equal(t, want.CreatedAt, got.CreatedAt)
 	assert.Equal(t, want.Organization, got.Organization)
 	assert.Equal(t, want.Kind.ID, got.Kind.ID)
-	assert.Equal(t, want.Kind.BaseURL, got.Kind.BaseURL)
+	assert.Equal(t, want.Kind.DefaultAPIURL, got.Kind.DefaultAPIURL)
 	assert.Equal(t, want.Kind.TokenKind, got.Kind.TokenKind)
 	assert.Equal(t, want.Kind.SkipRepohook, got.Kind.SkipRepohook)
 }

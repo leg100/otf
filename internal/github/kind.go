@@ -16,7 +16,7 @@ const (
 
 type kindProvider struct {
 	db                  *appDB
-	baseURL             *internal.URL
+	baseURL             *internal.WebURL
 	service             *Service
 	skipTLSVerification bool
 }
@@ -24,7 +24,7 @@ type kindProvider struct {
 func registerVCSKinds(
 	svc *Service,
 	vcsService *vcs.Service,
-	baseURL *internal.URL,
+	baseURL *internal.WebURL,
 	skipTLSVerification bool,
 ) {
 	provider := &kindProvider{
@@ -34,19 +34,19 @@ func registerVCSKinds(
 		skipTLSVerification: skipTLSVerification,
 	}
 	vcsService.RegisterKind(vcs.Kind{
-		ID:        AppKindID,
-		Icon:      Icon(),
-		BaseURL:   baseURL,
-		AppKind:   provider,
-		NewClient: provider.NewClient,
+		ID:            AppKindID,
+		Icon:          Icon(),
+		DefaultAPIURL: baseURL,
+		AppKind:       provider,
+		NewClient:     provider.NewClient,
 		// Github apps don't need webhooks on repositories.
 		SkipRepohook: true,
 		Source:       internal.Ptr(Source),
 	})
 	vcsService.RegisterKind(vcs.Kind{
-		ID:      TokenKindID,
-		Icon:    Icon(),
-		BaseURL: baseURL,
+		ID:            TokenKindID,
+		Icon:          Icon(),
+		DefaultAPIURL: baseURL,
 		TokenKind: &vcs.TokenKind{
 			Description: tokenDescription(baseURL.Host),
 		},

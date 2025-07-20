@@ -194,6 +194,24 @@ templ form(props formProps) {
 						@props.provider.TokenKind.Description
 					</span>
 				</div>
+				<div class="field">
+					<label for="url">URL</label>
+					<input
+						class="input w-96"
+						type="url"
+						name="url"
+						if props.edit {
+							value={ props.provider.APIURL.String() }
+						} else {
+							value={ props.provider.Kind.DefaultAPIURL.String() }
+						}
+						id="url"
+						required
+					/>
+					<span class="description">
+						The base URL of the API.
+					</span>
+				</div>
 			}
 			if app != nil {
 				if props.edit {
