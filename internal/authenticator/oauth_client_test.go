@@ -64,7 +64,7 @@ func newTestOAuthServerClient(t *testing.T, userID resource.TfeID) *OAuthClient 
 		&fakeTokensService{},
 		&fakeUserService{userID},
 		OAuthConfig{
-			BaseURL: u.Host,
+			BaseURL: &internal.URL{URL: u},
 			Endpoint: oauth2.Endpoint{
 				AuthURL:  srv.URL,
 				TokenURL: srv.URL,
