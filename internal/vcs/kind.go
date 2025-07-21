@@ -36,7 +36,7 @@ type Kind struct {
 	// Mutually exclusive with TokenKind.
 	AppKind AppKind
 	// NewClient constructs a client implementation.
-	NewClient func(context.Context, Config) (Client, error)
+	NewClient func(context.Context, ClientConfig) (Client, error)
 	// EventHandler handles incoming events from the VCS host before relaying
 	// them onwards for triggering actions like creating runs etc.
 	EventHandler func(r *http.Request, secret string) (*EventPayload, error)

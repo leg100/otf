@@ -16,7 +16,7 @@ func RegisterVCSKind(vcsService *vcs.Service, apiURL *internal.WebURL, skipTLSVe
 		},
 		DefaultAPIURL: apiURL,
 		EventHandler:  HandleEvent,
-		NewClient: func(ctx context.Context, cfg vcs.Config) (vcs.Client, error) {
+		NewClient: func(ctx context.Context, cfg vcs.ClientConfig) (vcs.Client, error) {
 			return NewTokenClient(vcs.NewTokenClientOptions{
 				Token:               *cfg.Token,
 				APIURL:              apiURL,

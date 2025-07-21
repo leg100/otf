@@ -37,8 +37,8 @@ type (
 	}
 
 	ClientOptions struct {
-		// BaseURL is the base URL of the API endpoint.
-		BaseURL             *internal.WebURL
+		// APIURL is the base URL of the API endpoint.
+		APIURL              *internal.WebURL
 		SkipTLSVerification bool
 
 		// Only specify one of the following
@@ -96,7 +96,7 @@ func NewClient(cfg ClientOptions) (*Client, error) {
 		if err != nil {
 			return nil, err
 		}
-		installTransport.BaseURL = cfg.BaseURL.String()
+		installTransport.BaseURL = cfg.APIURL.String()
 		tripper = installTransport
 	case cfg.PersonalToken != nil:
 		// personal token is actually an OAuth2 *access token, so wrap
@@ -113,10 +113,10 @@ func NewClient(cfg ClientOptions) (*Client, error) {
 	// create upstream client with roundtripper
 	client := github.NewClient(&http.Client{Transport: tripper})
 	// Assume Github Enterprise if using non-default hostname
-	if cfg.BaseURL.Host != DefaultBaseURL.Host {
+	if cfg.APIURL.Host != DefaultBaseURL.Host {
 		client, err = client.WithEnterpriseURLs(
-			cfg.BaseURL.String(),
-			cfg.BaseURL.Scheme+cfg.BaseURL.Host,
+			cfg.APIURL.String(),
+			cfg.APIURL.Scheme+cfg.APIURL.Host,
 		)
 		if err != nil {
 			return nil, err
@@ -127,7 +127,7 @@ func NewClient(cfg ClientOptions) (*Client, error) {
 
 func NewTokenClient(opts vcs.NewTokenClientOptions) (vcs.Client, error) {
 	return NewClient(ClientOptions{
-		BaseURL:             opts.APIURL,
+		APIURL:              opts.APIURL,
 		PersonalToken:       &opts.Token,
 		SkipTLSVerification: opts.SkipTLSVerification,
 	})
@@ -135,7 +135,7 @@ func NewTokenClient(opts vcs.NewTokenClientOptions) (vcs.Client, error) {
 
 func NewOAuthClient(cfg authenticator.OAuthConfig, token *oauth2.Token) (authenticator.IdentityProviderClient, error) {
 	return NewClient(ClientOptions{
-		BaseURL:             cfg.BaseURL,
+		APIURL:              cfg.APIURL,
 		OAuthToken:          token,
 		SkipTLSVerification: cfg.SkipTLSVerification,
 	})

@@ -179,7 +179,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		DB:                  db,
 		HostnameService:     hostnameService,
 		VCSService:          vcsService,
-		GithubBaseURL:       cfg.GithubHostname,
+		GithubAPIURL:        cfg.GithubHostname,
 		SkipTLSVerification: cfg.SkipTLSVerification,
 		VCSEventBroker:      vcsEventBroker,
 	})

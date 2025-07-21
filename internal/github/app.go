@@ -28,12 +28,12 @@ type (
 	}
 
 	CreateAppOptions struct {
+		APIURL              *internal.WebURL
 		AppID               int64
 		WebhookSecret       string
 		PrivateKey          string
 		Slug                string
 		Organization        *string
-		Hostname            *internal.WebURL
 		SkipTLSVerification bool
 	}
 )
@@ -48,7 +48,7 @@ func newApp(opts CreateAppOptions) (*App, error) {
 	}
 
 	client, err := NewClient(ClientOptions{
-		BaseURL:             opts.Hostname,
+		APIURL:              opts.APIURL,
 		SkipTLSVerification: opts.SkipTLSVerification,
 		AppCredentials: &AppCredentials{
 			ID:         app.ID,

@@ -9,19 +9,19 @@ import (
 
 const KindID vcs.KindID = "gitlab"
 
-func RegisterVCSKind(vcsService *vcs.Service, baseURL *internal.WebURL, skipTLSVerification bool) {
+func RegisterVCSKind(vcsService *vcs.Service, apiURL *internal.WebURL, skipTLSVerification bool) {
 	vcsService.RegisterKind(vcs.Kind{
 		ID:   KindID,
 		Icon: Icon(),
 		TokenKind: &vcs.TokenKind{
-			Description: tokenDescription(baseURL.Host),
+			Description: tokenDescription(apiURL.Host),
 		},
-		DefaultAPIURL: baseURL,
+		DefaultAPIURL: apiURL,
 		EventHandler:  HandleEvent,
-		NewClient: func(ctx context.Context, cfg vcs.Config) (vcs.Client, error) {
+		NewClient: func(ctx context.Context, cfg vcs.ClientConfig) (vcs.Client, error) {
 			return NewTokenClient(vcs.NewTokenClientOptions{
 				Token:               *cfg.Token,
-				APIURL:              baseURL,
+				APIURL:              apiURL,
 				SkipTLSVerification: skipTLSVerification,
 			})
 		},

@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"database/sql/driver"
 	"fmt"
 	"net/url"
 	"strings"
@@ -53,4 +54,34 @@ func (u *WebURL) Set(text string) error {
 	}
 	*u = *newURL
 	return nil
+}
+
+func (u *WebURL) Scan(text any) error {
+	if text == nil {
+		return nil
+	}
+	s, ok := text.(string)
+	if !ok {
+		return fmt.Errorf("expected database value to be a string: %#v", text)
+	}
+	return u.Set(s)
+}
+
+func (u *WebURL) Value() (driver.Value, error) {
+	if u == nil {
+		return nil, nil
+	}
+	return u.String(), nil
+}
+
+func (u WebURL) MarshalText() ([]byte, error) {
+	return []byte(u.String()), nil
+}
+
+func (u *WebURL) UnmarshalText(text []byte) error {
+	if len(text) == 0 {
+		return nil
+	}
+	s := string(text)
+	return u.Set(s)
 }

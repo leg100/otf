@@ -38,6 +38,14 @@ type (
 		SkipTLSVerification bool
 	}
 
+	// ClientConfig is configuration for the construction of a client.
+	ClientConfig struct {
+		Token        *string
+		Installation *Installation
+		// The base URL of the API of the provider. Optional.
+		APIURL *internal.WebURL
+	}
+
 	GetRepoTarballOptions struct {
 		Repo Repo    // repo identifier, <owner>/<repo>
 		Ref  *string // branch/tag/SHA ref, nil means default branch

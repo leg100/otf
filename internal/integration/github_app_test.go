@@ -186,6 +186,7 @@ func TestIntegration_GithubAppsUI(t *testing.T) {
 		})
 		daemon, _, _ := setup(t, withGithubOption(handler))
 		_, err := daemon.GithubApp.CreateApp(ctx, github.CreateAppOptions{
+			APIURL:     daemon.GithubHostname,
 			AppID:      123,
 			Slug:       "otf-123",
 			PrivateKey: string(testutils.ReadFile(t, "./fixtures/key.pem")),
@@ -226,7 +227,7 @@ func TestIntegration_GithubAppsUI(t *testing.T) {
 			AppID:      123,
 			Slug:       "my-otf-app",
 			PrivateKey: string(testutils.ReadFile(t, "./fixtures/key.pem")),
-			Hostname:   internal.MustWebURL("github.com"),
+			APIURL:     daemon.GithubHostname,
 		})
 		require.NoError(t, err)
 
@@ -279,7 +280,8 @@ func TestIntegration_GithubApp_Event(t *testing.T) {
 	// creating a github app requires site-admin role
 	ctx = authz.AddSubjectToContext(ctx, &user.SiteAdmin)
 	_, err := daemon.GithubApp.CreateApp(ctx, github.CreateAppOptions{
-		AppID: 123,
+		APIURL: daemon.GithubHostname,
+		AppID:  123,
 		// any key will do, the stub github server won't actually authenticate it.
 		PrivateKey:    string(testutils.ReadFile(t, "./fixtures/key.pem")),
 		Slug:          "test-app",

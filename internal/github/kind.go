@@ -16,7 +16,7 @@ const (
 
 type kindProvider struct {
 	db                  *appDB
-	baseURL             *internal.WebURL
+	apiURL              *internal.WebURL
 	service             *Service
 	skipTLSVerification bool
 }
@@ -24,19 +24,19 @@ type kindProvider struct {
 func registerVCSKinds(
 	svc *Service,
 	vcsService *vcs.Service,
-	baseURL *internal.WebURL,
+	apiURL *internal.WebURL,
 	skipTLSVerification bool,
 ) {
 	provider := &kindProvider{
 		service:             svc,
 		db:                  svc.db,
-		baseURL:             baseURL,
+		apiURL:              apiURL,
 		skipTLSVerification: skipTLSVerification,
 	}
 	vcsService.RegisterKind(vcs.Kind{
 		ID:            AppKindID,
 		Icon:          Icon(),
-		DefaultAPIURL: baseURL,
+		DefaultAPIURL: apiURL,
 		AppKind:       provider,
 		NewClient:     provider.NewClient,
 		// Github apps don't need webhooks on repositories.
@@ -46,9 +46,9 @@ func registerVCSKinds(
 	vcsService.RegisterKind(vcs.Kind{
 		ID:            TokenKindID,
 		Icon:          Icon(),
-		DefaultAPIURL: baseURL,
+		DefaultAPIURL: apiURL,
 		TokenKind: &vcs.TokenKind{
-			Description: tokenDescription(baseURL.Host),
+			Description: tokenDescription(apiURL.Host),
 		},
 		NewClient:    provider.NewClient,
 		EventHandler: HandleEvent,
@@ -58,9 +58,9 @@ func registerVCSKinds(
 	})
 }
 
-func (p *kindProvider) NewClient(ctx context.Context, cfg vcs.Config) (vcs.Client, error) {
+func (p *kindProvider) NewClient(ctx context.Context, cfg vcs.ClientConfig) (vcs.Client, error) {
 	opts := ClientOptions{
-		BaseURL:             p.baseURL,
+		APIURL:              p.apiURL,
 		SkipTLSVerification: p.skipTLSVerification,
 	}
 	if cfg.Token != nil {

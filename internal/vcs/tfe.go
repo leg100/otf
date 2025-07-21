@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"net/url"
 
 	"github.com/leg100/otf/internal"
 
@@ -91,25 +90,13 @@ func (a *tfe) createOAuthClient(w http.ResponseWriter, r *http.Request) {
 		params.Name = internal.Ptr("")
 	}
 
-	// parameters that need parsing
-	apiURL, err := url.Parse(*params.APIURL)
-	if err != nil {
-		tfeapi.Error(w, fmt.Errorf("unable to parse api-url: %s", *params.APIURL))
-		return
-	}
-	httpURL, err := url.Parse(*params.HTTPURL)
-	if err != nil {
-		tfeapi.Error(w, fmt.Errorf("unable to parse http-url: %s", *params.HTTPURL))
-		return
-	}
-
 	oauthClient, err := a.Create(r.Context(), CreateOptions{
 		Name:         *params.Name,
 		Organization: pathParams.Organization,
 		Token:        params.OAuthToken,
 		KindID:       kind.ID,
-		APIURL:       apiURL,
-		HTTPURL:      httpURL,
+		APIURL:       params.APIURL,
+		HTTPURL:      params.HTTPURL,
 	})
 	if err != nil {
 		tfeapi.Error(w, err)
@@ -186,7 +173,7 @@ func (a *tfe) convert(from *Provider) *TFEOAuthClient {
 		},
 		Organization: &organization.TFEOrganization{Name: from.Organization},
 		APIURL:       from.APIURL.String(),
-		HTTPURL:      from.HTTPURL.String(),
+		HTTPURL:      from.httpURL.String(),
 	}
 	// an empty name in OTF is equivalent to a nil name in tfe
 	if from.Name != "" {

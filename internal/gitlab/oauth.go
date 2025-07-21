@@ -15,7 +15,7 @@ func RegisterOAuthHandler(
 		ClientConstructor: NewOAuthClient,
 		OAuthConfig: authenticator.OAuthConfig{
 			Name:                "gitlab",
-			BaseURL:             hostname,
+			APIURL:              hostname,
 			Endpoint:            OAuthEndpoint,
 			Scopes:              OAuthScopes,
 			ClientID:            clientID,

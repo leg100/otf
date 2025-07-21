@@ -194,24 +194,6 @@ templ form(props formProps) {
 						@props.provider.TokenKind.Description
 					</span>
 				</div>
-				<div class="field">
-					<label for="url">URL</label>
-					<input
-						class="input w-96"
-						type="url"
-						name="url"
-						if props.edit {
-							value={ props.provider.APIURL.String() }
-						} else {
-							value={ props.provider.Kind.DefaultAPIURL.String() }
-						}
-						id="url"
-						required
-					/>
-					<span class="description">
-						The base URL of the API.
-					</span>
-				</div>
 			}
 			if app != nil {
 				if props.edit {
@@ -244,6 +226,28 @@ templ form(props formProps) {
 					}
 				}
 			}
+			<div class="field">
+				<label for="url">URL</label>
+				<input
+					class="input w-96"
+					type="url"
+					name="api_url"
+					if props.edit {
+						value={ props.provider.APIURL.String() }
+					} else {
+						value={ props.provider.DefaultAPIURL.String() }
+					}
+					readonly?={ app != nil }
+					id="url"
+					required
+				/>
+				<span class="description">
+					The base URL of the API.
+					if app != nil {
+						This cannot be changed for Github Apps.
+					}
+				</span>
+			</div>
 			if props.edit {
 				<button class="btn w-32">Update</button>
 			} else {

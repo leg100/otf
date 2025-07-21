@@ -79,7 +79,7 @@ func setup(t *testing.T, opts ...configOption) (*testDaemon, *organization.Organ
 
 	// Start stub github server, unless test has set its own github stub
 	var githubServer *github.TestServer
-	if cfg.GithubHostname == nil {
+	if !cfg.skipGithubStub {
 		var githubURL *url.URL
 		githubServer, githubURL = github.NewTestServer(t, cfg.githubOptions...)
 		cfg.GithubHostname = &internal.WebURL{URL: githubURL}

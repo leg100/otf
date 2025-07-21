@@ -25,6 +25,27 @@ func TestVCSProvider(t *testing.T) {
 		require.NoError(t, err)
 	})
 
+	t.Run("update", func(t *testing.T) {
+		svc, org, ctx := setup(t)
+		provider := svc.createVCSProvider(t, ctx, org, nil)
+
+		// Don't trust the provider returned from the Update function because
+		// it returns the provider from the provider.Update() function but we
+		// want the updated provider from the *database*.
+		_, err := svc.VCSProviders.Update(ctx, provider.ID, vcs.UpdateOptions{
+			Token:  internal.Ptr("somethingelse"),
+			APIURL: internal.MustWebURL("https://my-updated-server/api"),
+		})
+		require.NoError(t, err)
+
+		// Retrieve provider from database.
+		updated, err := svc.VCSProviders.Get(ctx, provider.ID)
+		require.NoError(t, err)
+
+		assert.NotEqual(t, updated.Token, provider.Token)
+		assert.NotEqual(t, updated.APIURL, provider.APIURL)
+	})
+
 	t.Run("get", func(t *testing.T) {
 		svc, _, ctx := setup(t)
 		want := svc.createVCSProvider(t, ctx, nil, nil)

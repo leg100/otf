@@ -107,7 +107,7 @@ func newTestServerClient(t *testing.T, opts ...TestServerOption) *Client {
 	_, u := NewTestServer(t, opts...)
 
 	client, err := NewClient(ClientOptions{
-		BaseURL:             &internal.WebURL{URL: u},
+		APIURL:              &internal.WebURL{URL: u},
 		SkipTLSVerification: true,
 		OAuthToken:          &oauth2.Token{AccessToken: "fake-token"},
 	})

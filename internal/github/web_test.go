@@ -21,7 +21,7 @@ import (
 func TestWebHandlers_new(t *testing.T) {
 	h := &webHandlers{
 		HostnameService: internal.NewHostnameService("example.com"),
-		GithubBaseURL:   internal.MustWebURL("github.com"),
+		githubAPIURL:    internal.MustWebURL("github.com"),
 	}
 
 	r := httptest.NewRequest("GET", "/?", nil)
@@ -33,7 +33,7 @@ func TestWebHandlers_new(t *testing.T) {
 func TestWebHandlers_get(t *testing.T) {
 	h := &webHandlers{
 		HostnameService: internal.NewHostnameService("example.com"),
-		GithubBaseURL:   internal.MustWebURL("github.com"),
+		githubAPIURL:    internal.MustWebURL("github.com"),
 		svc: &fakeService{
 			app: &App{},
 			installs: []vcs.Installation{
@@ -71,8 +71,8 @@ func TestWebHandlers_exchangeCode(t *testing.T) {
 	}()
 
 	h := &webHandlers{
-		GithubBaseURL: stubURL,
-		GithubSkipTLS: true,
+		githubAPIURL:  stubURL,
+		githubSkipTLS: true,
 		svc:           &fakeService{},
 	}
 
