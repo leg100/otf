@@ -5,11 +5,11 @@ ALTER TABLE vcs_providers
 	ADD COLUMN base_url TEXT;
 
 UPDATE vcs_providers
-SET base_url = 'https://github.com/api/v3'
+SET base_url = 'https://github.com'
 WHERE vcs_kind = 'github-app' OR vcs_kind = 'github-token';
 
 UPDATE vcs_providers
-SET base_url = 'https://gitlab.com/api/v4'
+SET base_url = 'https://gitlab.com'
 WHERE vcs_kind = 'gitlab';
 
 UPDATE vcs_providers
