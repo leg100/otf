@@ -16,7 +16,7 @@ var (
 
 func RegisterOAuthHandler(
 	authenticatorService *authenticator.Service,
-	apiURL *internal.WebURL,
+	baseURL *internal.WebURL,
 	clientID, clientSecret string,
 	skipTLSVerification bool,
 ) error {
@@ -24,7 +24,7 @@ func RegisterOAuthHandler(
 		ClientConstructor: NewOAuthClient,
 		OAuthConfig: authenticator.OAuthConfig{
 			Name:                "github",
-			APIURL:              apiURL,
+			BaseURL:             baseURL,
 			Endpoint:            OAuthEndpoint,
 			Scopes:              OAuthScopes,
 			ClientID:            clientID,

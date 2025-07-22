@@ -32,9 +32,8 @@ type (
 	// NewTokenClientOptions are options for creating a client using a personal
 	// access token (PAT).
 	NewTokenClientOptions struct {
-		Token string
-		// APIURL is the base URL of the API.
-		APIURL              *internal.WebURL
+		Token               string
+		BaseURL             *internal.WebURL
 		SkipTLSVerification bool
 	}
 
@@ -42,8 +41,7 @@ type (
 	ClientConfig struct {
 		Token        *string
 		Installation *Installation
-		// The base URL of the API of the provider. Optional.
-		APIURL *internal.WebURL
+		BaseURL      *internal.WebURL
 	}
 
 	GetRepoTarballOptions struct {

@@ -81,7 +81,7 @@ func newTestServerClientPair(t *testing.T, opts ...TestServerOption) (*Client, *
 	s, u := NewTestServer(t, opts...)
 
 	client, err := NewTokenClient(vcs.NewTokenClientOptions{
-		APIURL:              &internal.WebURL{URL: *u},
+		BaseURL:             &internal.WebURL{URL: *u},
 		SkipTLSVerification: true,
 	})
 	require.NoError(t, err)

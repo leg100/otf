@@ -141,7 +141,7 @@ func (h *webHandlers) exchangeCode(w http.ResponseWriter, r *http.Request) {
 
 	// exchange code for credentials using an anonymous client
 	client, err := NewClient(ClientOptions{
-		APIURL:              h.githubAPIURL,
+		BaseURL:             h.githubAPIURL,
 		SkipTLSVerification: h.skipTLSVerification,
 	})
 	if err != nil {
@@ -159,7 +159,7 @@ func (h *webHandlers) exchangeCode(w http.ResponseWriter, r *http.Request) {
 		Slug:          cfg.GetSlug(),
 		WebhookSecret: cfg.GetWebhookSecret(),
 		PrivateKey:    cfg.GetPEM(),
-		APIURL:        h.githubAPIURL,
+		BaseURL:       h.githubAPIURL,
 	}
 	if cfg.GetOwner().GetType() == "Organization" {
 		opts.Organization = cfg.GetOwner().Login

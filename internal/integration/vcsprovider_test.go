@@ -33,8 +33,8 @@ func TestVCSProvider(t *testing.T) {
 		// it returns the provider from the provider.Update() function but we
 		// want the updated provider from the *database*.
 		_, err := svc.VCSProviders.Update(ctx, provider.ID, vcs.UpdateOptions{
-			Token:  internal.Ptr("somethingelse"),
-			APIURL: internal.MustWebURL("https://my-updated-server/api"),
+			Token:   internal.Ptr("somethingelse"),
+			BaseURL: internal.MustWebURL("https://my-updated-server/api"),
 		})
 		require.NoError(t, err)
 
@@ -43,7 +43,7 @@ func TestVCSProvider(t *testing.T) {
 		require.NoError(t, err)
 
 		assert.NotEqual(t, updated.Token, provider.Token)
-		assert.NotEqual(t, updated.APIURL, provider.APIURL)
+		assert.NotEqual(t, updated.BaseURL, provider.BaseURL)
 	})
 
 	t.Run("get", func(t *testing.T) {
@@ -87,7 +87,7 @@ func vcsProviderIsEqual(t *testing.T, want, got *vcs.Provider) {
 	assert.Equal(t, want.CreatedAt, got.CreatedAt)
 	assert.Equal(t, want.Organization, got.Organization)
 	assert.Equal(t, want.Kind.ID, got.Kind.ID)
-	assert.Equal(t, want.Kind.DefaultAPIURL, got.Kind.DefaultAPIURL)
+	assert.Equal(t, want.Kind.DefaultURL, got.Kind.DefaultURL)
 	assert.Equal(t, want.Kind.TokenKind, got.Kind.TokenKind)
 	assert.Equal(t, want.Kind.SkipRepohook, got.Kind.SkipRepohook)
 }

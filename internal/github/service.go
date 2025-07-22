@@ -43,7 +43,7 @@ func NewService(opts Options) *Service {
 		Authorizer: opts.Authorizer,
 		db: &appDB{
 			DB:                  opts.DB,
-			apiURL:              opts.GithubAPIURL,
+			baseURL:             opts.GithubAPIURL,
 			skipTLSVerification: opts.SkipTLSVerification,
 		},
 	}

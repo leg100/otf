@@ -25,8 +25,8 @@ type Kind struct {
 	// ID distinguishes this kind from other kinds. NOTE: This must have first
 	// been inserted into the vcs_kinds table via a database migration.
 	ID KindID
-	// DefaultAPIURL is the default base URL for the API.
-	DefaultAPIURL *internal.WebURL
+	// DefaultURL is the default base URL for the provider.
+	DefaultURL *internal.WebURL
 	// Icon renders an icon identifying the VCS host kind.
 	Icon templ.Component
 	// TokenKind provides info about the token the provider expects. Mutually

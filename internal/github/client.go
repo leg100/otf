@@ -37,8 +37,8 @@ type (
 	}
 
 	ClientOptions struct {
-		// APIURL is the base URL of the API endpoint.
-		APIURL              *internal.WebURL
+		// BaseURL is the base URL for github.
+		BaseURL             *internal.WebURL
 		SkipTLSVerification bool
 
 		// Only specify one of the following
@@ -74,7 +74,7 @@ type (
 )
 
 func NewClient(cfg ClientOptions) (*Client, error) {
-	baseURL, uploadURL := setClientURLs(cfg.APIURL)
+	baseURL, uploadURL := setClientURLs(cfg.BaseURL)
 
 	// build http roundtripper using provided credentials
 	var (
@@ -152,7 +152,7 @@ func setClientURLs(githubURL *internal.WebURL) (*internal.WebURL, *internal.WebU
 
 func NewTokenClient(opts vcs.NewTokenClientOptions) (vcs.Client, error) {
 	return NewClient(ClientOptions{
-		APIURL:              opts.APIURL,
+		BaseURL:             opts.BaseURL,
 		PersonalToken:       &opts.Token,
 		SkipTLSVerification: opts.SkipTLSVerification,
 	})
@@ -160,7 +160,7 @@ func NewTokenClient(opts vcs.NewTokenClientOptions) (vcs.Client, error) {
 
 func NewOAuthClient(cfg authenticator.OAuthConfig, token *oauth2.Token) (authenticator.IdentityProviderClient, error) {
 	return NewClient(ClientOptions{
-		APIURL:              cfg.APIURL,
+		BaseURL:             cfg.BaseURL,
 		OAuthToken:          token,
 		SkipTLSVerification: cfg.SkipTLSVerification,
 	})

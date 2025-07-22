@@ -700,7 +700,7 @@ func form(props formProps) templ.Component {
 					}
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 44, "<div class=\"field\"><label for=\"url\">URL</label> <input class=\"input w-96\" type=\"url\" name=\"api_url\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 44, "<div class=\"field\"><label for=\"url\">URL</label> <input class=\"input w-96\" type=\"url\" name=\"base_url\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -710,9 +710,9 @@ func form(props formProps) templ.Component {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var28 string
-				templ_7745c5c3_Var28, templ_7745c5c3_Err = templ.JoinStringErrs(props.provider.APIURL.String())
+				templ_7745c5c3_Var28, templ_7745c5c3_Err = templ.JoinStringErrs(props.provider.BaseURL.String())
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/vcs/view.templ`, Line: 236, Col: 44}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/vcs/view.templ`, Line: 236, Col: 45}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var28))
 				if templ_7745c5c3_Err != nil {
@@ -728,9 +728,9 @@ func form(props formProps) templ.Component {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var29 string
-				templ_7745c5c3_Var29, templ_7745c5c3_Err = templ.JoinStringErrs(props.provider.DefaultAPIURL.String())
+				templ_7745c5c3_Var29, templ_7745c5c3_Err = templ.JoinStringErrs(props.provider.DefaultURL.String())
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/vcs/view.templ`, Line: 238, Col: 51}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/vcs/view.templ`, Line: 238, Col: 48}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var29))
 				if templ_7745c5c3_Err != nil {

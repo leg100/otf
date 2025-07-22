@@ -26,8 +26,8 @@ type (
 	}
 
 	ClientOptions struct {
-		// APIURL is the base URL for the API.
-		APIURL              *internal.WebURL
+		// BaseURL is the base URL for the API.
+		BaseURL             *internal.WebURL
 		SkipTLSVerification bool
 
 		OAuthToken    *oauth2.Token
@@ -40,7 +40,7 @@ func NewClient(cfg ClientOptions) (*Client, error) {
 		client  *gitlab.Client
 		err     error
 		options = []gitlab.ClientOptionFunc{
-			gitlab.WithBaseURL(cfg.APIURL.String()),
+			gitlab.WithBaseURL(cfg.BaseURL.String()),
 		}
 	)
 	if cfg.SkipTLSVerification {
@@ -64,7 +64,7 @@ func NewClient(cfg ClientOptions) (*Client, error) {
 
 func NewTokenClient(opts vcs.NewTokenClientOptions) (vcs.Client, error) {
 	return NewClient(ClientOptions{
-		APIURL:              opts.APIURL,
+		BaseURL:             opts.BaseURL,
 		PersonalToken:       &opts.Token,
 		SkipTLSVerification: opts.SkipTLSVerification,
 	})
@@ -72,7 +72,7 @@ func NewTokenClient(opts vcs.NewTokenClientOptions) (vcs.Client, error) {
 
 func NewOAuthClient(cfg authenticator.OAuthConfig, token *oauth2.Token) (authenticator.IdentityProviderClient, error) {
 	return NewClient(ClientOptions{
-		APIURL:              cfg.APIURL,
+		BaseURL:             cfg.BaseURL,
 		OAuthToken:          token,
 		SkipTLSVerification: cfg.SkipTLSVerification,
 	})

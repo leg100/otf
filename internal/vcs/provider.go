@@ -25,9 +25,8 @@ type (
 		Kind
 		// Client is the actual client for interacting with the VCS host.
 		Client
-
-		// The base URL of the API of the provider.
-		APIURL *internal.WebURL
+		// The base URL of the the provider.
+		BaseURL *internal.WebURL
 		// NOTE: OTF doesn't use this field but it's persisted in order to
 		// satisfy the go-tfe integration tests.
 		httpURL *internal.WebURL
@@ -44,14 +43,14 @@ type (
 		KindID       KindID `schema:"kind,required"`
 		Token        *string
 		InstallID    *int64           `schema:"install_id"`
-		APIURL       *internal.WebURL `schema:"api_url,required"`
+		BaseURL      *internal.WebURL `schema:"base_url,required"`
 		HTTPURL      *internal.WebURL
 	}
 
 	UpdateOptions struct {
-		Name   string
-		Token  *string
-		APIURL *internal.WebURL
+		Name    string
+		Token   *string
+		BaseURL *internal.WebURL
 	}
 
 	ListOptions struct {
@@ -95,15 +94,15 @@ func (f *factory) newProvider(ctx context.Context, opts CreateOptions) (*Provide
 	} else {
 		return nil, errors.New("an installation or a token must be specified")
 	}
-	if opts.APIURL != nil {
-		provider.APIURL = opts.APIURL
+	if opts.BaseURL != nil {
+		provider.BaseURL = opts.BaseURL
 	} else {
-		provider.APIURL = kind.DefaultAPIURL
+		provider.BaseURL = kind.DefaultURL
 	}
 	client, err := kind.NewClient(ctx, ClientConfig{
 		Token:        provider.Token,
 		Installation: provider.Installation,
-		APIURL:       provider.APIURL,
+		BaseURL:      provider.BaseURL,
 	})
 	if err != nil {
 		return nil, err
@@ -128,8 +127,8 @@ func (t *Provider) Update(opts UpdateOptions) error {
 		}
 		t.Token = opts.Token
 	}
-	if opts.APIURL != nil {
-		t.APIURL = opts.APIURL
+	if opts.BaseURL != nil {
+		t.BaseURL = opts.BaseURL
 	}
 	t.Name = opts.Name
 	return nil
@@ -142,7 +141,7 @@ func (t *Provider) LogValue() slog.Value {
 		slog.Any("organization", t.Organization),
 		slog.String("name", t.String()),
 		slog.String("kind", string(t.Kind.ID)),
-		slog.Any("api_url", t.APIURL),
+		slog.Any("api_url", t.BaseURL),
 	}
 	if t.Installation != nil {
 		attrs = append(attrs, slog.Int64("install_id", t.Installation.ID))

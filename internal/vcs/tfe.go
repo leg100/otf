@@ -95,7 +95,7 @@ func (a *tfe) createOAuthClient(w http.ResponseWriter, r *http.Request) {
 		Organization: pathParams.Organization,
 		Token:        params.OAuthToken,
 		KindID:       kind.ID,
-		APIURL:       params.APIURL,
+		BaseURL:      params.APIURL,
 		HTTPURL:      params.HTTPURL,
 	})
 	if err != nil {
@@ -172,7 +172,7 @@ func (a *tfe) convert(from *Provider) *TFEOAuthClient {
 			{ID: from.ID},
 		},
 		Organization: &organization.TFEOrganization{Name: from.Organization},
-		APIURL:       from.APIURL.String(),
+		APIURL:       from.BaseURL.String(),
 		HTTPURL:      from.httpURL.String(),
 	}
 	// an empty name in OTF is equivalent to a nil name in tfe

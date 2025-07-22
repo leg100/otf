@@ -99,10 +99,10 @@ func (h *webHandlers) edit(w http.ResponseWriter, r *http.Request) {
 
 func (h *webHandlers) update(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		ID     resource.TfeID   `schema:"vcs_provider_id,required"`
-		Token  string           `schema:"token"`
-		Name   string           `schema:"name"`
-		APIURL *internal.WebURL `schema:"api_url,required"`
+		ID      resource.TfeID   `schema:"vcs_provider_id,required"`
+		Token   string           `schema:"token"`
+		Name    string           `schema:"name"`
+		BaseURL *internal.WebURL `schema:"base_url,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -110,8 +110,8 @@ func (h *webHandlers) update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	opts := UpdateOptions{
-		Name:   params.Name,
-		APIURL: params.APIURL,
+		Name:    params.Name,
+		BaseURL: params.BaseURL,
 	}
 	// Because token is sensitive it's not sent to the browser, and so when this
 	// handler is called, the token will be an empty string if user has not
@@ -164,7 +164,7 @@ func (h *webHandlers) delete(w http.ResponseWriter, r *http.Request) {
 }
 
 func RepoURL(provider *Provider, repo Repo) templ.SafeURL {
-	b := urlbuilder.New(provider.APIURL.Scheme, provider.APIURL.Host)
+	b := urlbuilder.New(provider.BaseURL.Scheme, provider.BaseURL.Host)
 	for segment := range strings.SplitSeq(repo.owner, "/") {
 		b.Path(segment)
 	}

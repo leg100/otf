@@ -14,12 +14,12 @@ func RegisterVCSKind(vcsService *vcs.Service, apiURL *internal.WebURL, skipTLSVe
 		TokenKind: &vcs.TokenKind{
 			Description: tokenDescription(apiURL.Host),
 		},
-		DefaultAPIURL: apiURL,
-		EventHandler:  HandleEvent,
+		DefaultURL:   apiURL,
+		EventHandler: HandleEvent,
 		NewClient: func(ctx context.Context, cfg vcs.ClientConfig) (vcs.Client, error) {
 			return NewTokenClient(vcs.NewTokenClientOptions{
 				Token:               *cfg.Token,
-				APIURL:              apiURL,
+				BaseURL:             apiURL,
 				SkipTLSVerification: skipTLSVerification,
 			})
 		},

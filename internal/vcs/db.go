@@ -27,7 +27,7 @@ func (db *pgdb) create(ctx context.Context, provider *Provider) error {
 		"vcs_kind":     provider.Kind.ID,
 		"organization": provider.Organization,
 		"http_url":     provider.httpURL,
-		"api_url":      provider.APIURL,
+		"base_url":     provider.BaseURL,
 	}
 	if provider.Installation != nil {
 		args["install_app_id"] = provider.Installation.AppID
@@ -49,7 +49,7 @@ INSERT INTO vcs_providers (
     install_username,
     install_organization,
 	http_url,
-	api_url
+	base_url
 ) VALUES (
 	@id,
 	@token,
@@ -62,7 +62,7 @@ INSERT INTO vcs_providers (
     @install_username,
     @install_organization,
 	@http_url,
-	@api_url
+	@base_url
 )`, args)
 	return err
 }
@@ -83,10 +83,10 @@ FOR UPDATE OF v
 		fn,
 		func(ctx context.Context, provider *Provider) error {
 			args := pgx.NamedArgs{
-				"id":      provider.ID,
-				"token":   provider.Token,
-				"name":    provider.Name,
-				"api_url": provider.APIURL,
+				"id":       provider.ID,
+				"token":    provider.Token,
+				"name":     provider.Name,
+				"base_url": provider.BaseURL,
 			}
 			if provider.Installation != nil {
 				args["install_app_id"] = provider.Installation.AppID
@@ -99,7 +99,7 @@ UPDATE vcs_providers
 SET
 	name = @name,
 	token = @token,
-	api_url = @api_url,
+	base_url = @base_url,
 	install_app_id = @install_app_id,
 	install_id = @install_id,
 	install_username = @install_username,
@@ -163,8 +163,8 @@ type model struct {
 	InstallID           *int64            `db:"install_id"`
 	InstallUsername     *string           `db:"install_username"`
 	InstallOrganization *string           `db:"install_organization"`
+	BaseURL             *internal.WebURL  `db:"base_url"`
 	HTTPURL             *internal.WebURL  `db:"http_url"`
-	APIURL              *internal.WebURL  `db:"api_url"`
 }
 
 func (db *pgdb) scanOne(ctx context.Context, row pgx.Rows) (*Provider, error) {
@@ -194,8 +194,8 @@ func (db *pgdb) scanMany(ctx context.Context, row pgx.Rows) ([]*Provider, error)
 
 func (db *pgdb) toProvider(ctx context.Context, m model) (*Provider, error) {
 	cfg := ClientConfig{
-		Token:  m.Token,
-		APIURL: m.APIURL,
+		Token:   m.Token,
+		BaseURL: m.BaseURL,
 	}
 	if m.InstallID != nil {
 		cfg.Installation = &Installation{
@@ -222,7 +222,7 @@ func (db *pgdb) toProvider(ctx context.Context, m model) (*Provider, error) {
 		Client:       client,
 		Token:        m.Token,
 		Installation: cfg.Installation,
-		APIURL:       m.APIURL,
+		BaseURL:      m.BaseURL,
 		httpURL:      m.HTTPURL,
 	}
 	return &provider, nil

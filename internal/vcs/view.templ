@@ -231,11 +231,11 @@ templ form(props formProps) {
 				<input
 					class="input w-96"
 					type="url"
-					name="api_url"
+					name="base_url"
 					if props.edit {
-						value={ props.provider.APIURL.String() }
+						value={ props.provider.BaseURL.String() }
 					} else {
-						value={ props.provider.DefaultAPIURL.String() }
+						value={ props.provider.DefaultURL.String() }
 					}
 					readonly?={ app != nil }
 					id="url"

@@ -28,7 +28,7 @@ func NewWebURL(rawURL string) (*WebURL, error) {
 	scheme, _, hasScheme := strings.Cut(rawURL, "://")
 	if hasScheme {
 		if scheme != "https" && scheme != "http" {
-			return nil, fmt.Errorf("cannot construct web url from invalid non-web scheme: %s", scheme)
+			return nil, fmt.Errorf("cannot construct web url from non-http(s) scheme: %s", scheme)
 		}
 	} else {
 		rawURL = "https://" + rawURL

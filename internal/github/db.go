@@ -11,7 +11,7 @@ import (
 // appDB is a github app database on postgres
 type appDB struct {
 	*sql.DB
-	apiURL              *internal.WebURL
+	baseURL             *internal.WebURL
 	skipTLSVerification bool
 }
 
@@ -55,7 +55,7 @@ func (db *appDB) get(ctx context.Context) (*App, error) {
 	}
 
 	client, err := NewClient(ClientOptions{
-		APIURL:              db.apiURL,
+		BaseURL:             db.baseURL,
 		SkipTLSVerification: db.skipTLSVerification,
 		AppCredentials: &AppCredentials{
 			ID:         m.ID,
@@ -73,7 +73,7 @@ func (db *appDB) get(ctx context.Context) (*App, error) {
 		PrivateKey:    m.PrivateKey,
 		Organization:  m.Organization,
 		Client:        client,
-		GithubURL:     db.apiURL,
+		GithubURL:     db.baseURL,
 	}, nil
 }
 
