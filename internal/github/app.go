@@ -22,7 +22,7 @@ type (
 		// Organization is the name of the *github* organization that owns the
 		// app. If the app is owned by a user then this is nil.
 		Organization *string `db:"organization"`
-		Hostname     *internal.WebURL
+		GithubURL    *internal.WebURL
 
 		*Client
 	}
@@ -76,7 +76,7 @@ func (a *App) NewInstallURL(hostname string) string {
 }
 
 func (a *App) InstallationLink() templ.SafeURL {
-	return templ.SafeURL(a.NewInstallURL(a.Hostname.Host))
+	return templ.SafeURL(a.NewInstallURL(a.GithubURL.Host))
 }
 
 // LogValue implements slog.LogValuer.
@@ -93,7 +93,9 @@ func (a *App) AdvancedURL() templ.SafeURL {
 	if a.Organization != nil {
 		path = fmt.Sprintf("/organizations/%s%s", *a.Organization, path)
 	}
-	return templ.SafeURL(fmt.Sprintf("https://%s%s", a.Hostname, path))
+	u := *a.GithubURL
+	u.Path = path
+	return templ.SafeURL(u.String())
 }
 
 // ListInstallations lists installations of the currently authenticated app.

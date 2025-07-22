@@ -10,7 +10,7 @@ import (
 // WebURL wraps the stdlib url.URL, restricting it to web URLs (i.e. those that
 // use the http(s) scheme.
 type WebURL struct {
-	*url.URL
+	url.URL
 }
 
 func MustWebURL(rawURL string) *WebURL {
@@ -40,7 +40,7 @@ func NewWebURL(rawURL string) (*WebURL, error) {
 	if u.Scheme == "" {
 		u.Scheme = "https"
 	}
-	return &WebURL{URL: u}, nil
+	return &WebURL{URL: *u}, nil
 }
 
 // Type implements pflag.Value

@@ -71,9 +71,9 @@ func TestWebHandlers_exchangeCode(t *testing.T) {
 	}()
 
 	h := &webHandlers{
-		githubAPIURL:  stubURL,
-		githubSkipTLS: true,
-		svc:           &fakeService{},
+		githubAPIURL:        stubURL,
+		skipTLSVerification: true,
+		svc:                 &fakeService{},
 	}
 
 	r := httptest.NewRequest("GET", "/?code=the-code", nil)
@@ -85,7 +85,9 @@ func TestWebHandlers_exchangeCode(t *testing.T) {
 func TestWebHandlers_deleteApp(t *testing.T) {
 	h := &webHandlers{
 		svc: &fakeService{
-			app: &App{},
+			app: &App{
+				GithubURL: DefaultBaseURL,
+			},
 		},
 	}
 

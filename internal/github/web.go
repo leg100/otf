@@ -30,8 +30,8 @@ type webHandlers struct {
 	svc        webClient
 	authorizer *authz.Authorizer
 
-	githubAPIURL  *internal.WebURL
-	githubSkipTLS bool
+	githubAPIURL        *internal.WebURL
+	skipTLSVerification bool
 }
 
 // webClient provides web handlers with access to github app service endpoints
@@ -142,7 +142,7 @@ func (h *webHandlers) exchangeCode(w http.ResponseWriter, r *http.Request) {
 	// exchange code for credentials using an anonymous client
 	client, err := NewClient(ClientOptions{
 		APIURL:              h.githubAPIURL,
-		SkipTLSVerification: h.githubSkipTLS,
+		SkipTLSVerification: h.skipTLSVerification,
 	})
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)

@@ -73,7 +73,7 @@ func (db *appDB) get(ctx context.Context) (*App, error) {
 		PrivateKey:    m.PrivateKey,
 		Organization:  m.Organization,
 		Client:        client,
-		Hostname:      db.apiURL,
+		GithubURL:     db.apiURL,
 	}, nil
 }
 

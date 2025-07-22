@@ -74,6 +74,8 @@ type (
 )
 
 func NewClient(cfg ClientOptions) (*Client, error) {
+	baseURL, uploadURL := setClientURLs(cfg.APIURL)
+
 	// build http roundtripper using provided credentials
 	var (
 		tripper = http.DefaultTransport
@@ -96,7 +98,7 @@ func NewClient(cfg ClientOptions) (*Client, error) {
 		if err != nil {
 			return nil, err
 		}
-		installTransport.BaseURL = cfg.APIURL.String()
+		installTransport.BaseURL = baseURL.String()
 		tripper = installTransport
 	case cfg.PersonalToken != nil:
 		// personal token is actually an OAuth2 *access token, so wrap
@@ -112,17 +114,40 @@ func NewClient(cfg ClientOptions) (*Client, error) {
 	}
 	// create upstream client with roundtripper
 	client := github.NewClient(&http.Client{Transport: tripper})
-	// Assume Github Enterprise if using non-default hostname
-	if cfg.APIURL.Host != DefaultBaseURL.Host {
-		client, err = client.WithEnterpriseURLs(
-			cfg.APIURL.String(),
-			cfg.APIURL.Scheme+cfg.APIURL.Host,
-		)
-		if err != nil {
-			return nil, err
-		}
-	}
+
+	client.BaseURL = &baseURL.URL
+	client.UploadURL = &uploadURL.URL
+
 	return &Client{client: client, iat: iat}, nil
+}
+
+func setClientURLs(githubURL *internal.WebURL) (*internal.WebURL, *internal.WebURL) {
+	cloned := *githubURL
+	// If using public github (github.com) then use api.github.com
+	if cloned.Host == DefaultBaseURL.Host {
+		cloned.Host = "api." + cloned.Host
+	}
+
+	baseURL := cloned
+	if !strings.HasSuffix(baseURL.Path, "/") {
+		baseURL.Path += "/"
+	}
+	if !strings.HasSuffix(baseURL.Path, "/api/v3/") &&
+		!strings.HasPrefix(baseURL.Host, "api.") &&
+		!strings.Contains(baseURL.Host, ".api.") {
+		baseURL.Path += "api/v3/"
+	}
+
+	uploadURL := cloned
+	if !strings.HasSuffix(uploadURL.Path, "/") {
+		uploadURL.Path += "/"
+	}
+	if !strings.HasSuffix(uploadURL.Path, "/api/uploads/") &&
+		!strings.HasPrefix(uploadURL.Host, "api.") &&
+		!strings.Contains(uploadURL.Host, ".api.") {
+		uploadURL.Path += "api/uploads/"
+	}
+	return &baseURL, &uploadURL
 }
 
 func NewTokenClient(opts vcs.NewTokenClientOptions) (vcs.Client, error) {

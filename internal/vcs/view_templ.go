@@ -747,7 +747,7 @@ func form(props formProps) templ.Component {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 50, " id=\"url\" required> <span class=\"description\">The base URL of the API. ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 50, " id=\"url\" required> <span class=\"description\">The provider's homepage URL. ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

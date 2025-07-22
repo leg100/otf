@@ -48,10 +48,11 @@ func NewService(opts Options) *Service {
 		},
 	}
 	svc.web = &webHandlers{
-		authorizer:      opts.Authorizer,
-		HostnameService: opts.HostnameService,
-		githubAPIURL:    opts.GithubAPIURL,
-		svc:             &svc,
+		authorizer:          opts.Authorizer,
+		HostnameService:     opts.HostnameService,
+		githubAPIURL:        opts.GithubAPIURL,
+		svc:                 &svc,
+		skipTLSVerification: opts.SkipTLSVerification,
 	}
 	registerVCSKinds(&svc, opts.VCSService, opts.GithubAPIURL, opts.SkipTLSVerification)
 
