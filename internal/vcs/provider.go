@@ -19,12 +19,17 @@ type (
 		Name         string
 		CreatedAt    time.Time
 		Organization organization.Name
+		Token        *string
+		Installation *Installation
 		// The kind of provider
 		Kind
-		// Config for constructing a client
-		Config
 		// Client is the actual client for interacting with the VCS host.
 		Client
+		// The base URL of the the provider.
+		BaseURL *internal.WebURL
+		// NOTE: OTF doesn't use this field but it's persisted in order to
+		// satisfy the go-tfe integration tests.
+		httpURL *internal.WebURL
 	}
 
 	// factory produces providers
@@ -37,12 +42,15 @@ type (
 		Name         string
 		KindID       KindID `schema:"kind,required"`
 		Token        *string
-		InstallID    *int64 `schema:"install_id"`
+		InstallID    *int64           `schema:"install_id"`
+		BaseURL      *internal.WebURL `schema:"base_url,required"`
+		HTTPURL      *internal.WebURL
 	}
 
 	UpdateOptions struct {
-		Name  string
-		Token *string
+		Name    string
+		Token   *string
+		BaseURL *internal.WebURL
 	}
 
 	ListOptions struct {
@@ -62,6 +70,7 @@ func (f *factory) newProvider(ctx context.Context, opts CreateOptions) (*Provide
 		CreatedAt:    internal.CurrentTimestamp(nil),
 		Organization: opts.Organization,
 		Kind:         kind,
+		httpURL:      opts.HTTPURL,
 	}
 	if kind.AppKind != nil {
 		if opts.InstallID == nil {
@@ -75,16 +84,26 @@ func (f *factory) newProvider(ctx context.Context, opts CreateOptions) (*Provide
 		if err != nil {
 			return nil, err
 		}
-		provider.Config = Config{Installation: &install}
+		provider.Token = opts.Token
+		provider.Installation = &install
 	} else if kind.TokenKind != nil {
 		if opts.Token == nil {
 			return nil, errors.New("token required for client")
 		}
-		provider.Config = Config{Token: opts.Token}
+		provider.Token = opts.Token
 	} else {
 		return nil, errors.New("an installation or a token must be specified")
 	}
-	client, err := kind.NewClient(ctx, provider.Config)
+	if opts.BaseURL != nil {
+		provider.BaseURL = opts.BaseURL
+	} else {
+		provider.BaseURL = kind.DefaultURL
+	}
+	client, err := kind.NewClient(ctx, ClientConfig{
+		Token:        provider.Token,
+		Installation: provider.Installation,
+		BaseURL:      provider.BaseURL,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -108,6 +127,9 @@ func (t *Provider) Update(opts UpdateOptions) error {
 		}
 		t.Token = opts.Token
 	}
+	if opts.BaseURL != nil {
+		t.BaseURL = opts.BaseURL
+	}
 	t.Name = opts.Name
 	return nil
 }
@@ -119,6 +141,7 @@ func (t *Provider) LogValue() slog.Value {
 		slog.Any("organization", t.Organization),
 		slog.String("name", t.String()),
 		slog.String("kind", string(t.Kind.ID)),
+		slog.Any("api_url", t.BaseURL),
 	}
 	if t.Installation != nil {
 		attrs = append(attrs, slog.Int64("install_id", t.Installation.ID))

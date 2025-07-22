@@ -2,6 +2,8 @@ package vcs
 
 import (
 	"context"
+
+	"github.com/leg100/otf/internal"
 )
 
 type (
@@ -31,8 +33,15 @@ type (
 	// access token (PAT).
 	NewTokenClientOptions struct {
 		Token               string
-		Hostname            string
+		BaseURL             *internal.WebURL
 		SkipTLSVerification bool
+	}
+
+	// ClientConfig is configuration for the construction of a client.
+	ClientConfig struct {
+		Token        *string
+		Installation *Installation
+		BaseURL      *internal.WebURL
 	}
 
 	GetRepoTarballOptions struct {

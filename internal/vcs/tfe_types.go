@@ -3,6 +3,7 @@ package vcs
 import (
 	"time"
 
+	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 )
@@ -60,10 +61,10 @@ type TFEOAuthClientCreateOptions struct {
 	Name *string `jsonapi:"attribute" json:"name"`
 
 	// Required: The base URL of your VCS provider's API.
-	APIURL *string `jsonapi:"attribute" json:"api-url"`
+	APIURL *internal.WebURL `jsonapi:"attribute" json:"api-url"`
 
 	// Required: The homepage of your VCS provider.
-	HTTPURL *string `jsonapi:"attribute" json:"http-url"`
+	HTTPURL *internal.WebURL `jsonapi:"attribute" json:"http-url"`
 
 	// Optional: The OAuth Client key.
 	Key *string `jsonapi:"attribute" json:"key,omitempty"`

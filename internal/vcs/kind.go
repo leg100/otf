@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/a-h/templ"
+	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/configversion/source"
 	"golang.org/x/exp/maps"
 )
@@ -24,8 +25,8 @@ type Kind struct {
 	// ID distinguishes this kind from other kinds. NOTE: This must have first
 	// been inserted into the vcs_kinds table via a database migration.
 	ID KindID
-	// Hostname is the hostname of the VCS host, not including scheme or path.
-	Hostname string
+	// DefaultURL is the default base URL for the provider.
+	DefaultURL *internal.WebURL
 	// Icon renders an icon identifying the VCS host kind.
 	Icon templ.Component
 	// TokenKind provides info about the token the provider expects. Mutually
@@ -35,7 +36,7 @@ type Kind struct {
 	// Mutually exclusive with TokenKind.
 	AppKind AppKind
 	// NewClient constructs a client implementation.
-	NewClient func(context.Context, Config) (Client, error)
+	NewClient func(context.Context, ClientConfig) (Client, error)
 	// EventHandler handles incoming events from the VCS host before relaying
 	// them onwards for triggering actions like creating runs etc.
 	EventHandler func(r *http.Request, secret string) (*EventPayload, error)

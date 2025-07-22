@@ -72,17 +72,16 @@ func setup(t *testing.T, opts ...configOption) (*testDaemon, *organization.Organ
 	// stub TLS servers with self-certified certs.
 	cfg.SkipTLSVerification = true
 
-	//daemon.ApplyDefaults(&cfg.Config)
 	cfg.SSL = true
 	cfg.CertFile = "./fixtures/cert.pem"
 	cfg.KeyFile = "./fixtures/key.pem"
 
 	// Start stub github server, unless test has set its own github stub
 	var githubServer *github.TestServer
-	if cfg.GithubHostname == "" {
+	if !cfg.skipGithubStub {
 		var githubURL *url.URL
 		githubServer, githubURL = github.NewTestServer(t, cfg.githubOptions...)
-		cfg.GithubHostname = githubURL.Host
+		cfg.GithubHostname = &internal.WebURL{URL: *githubURL}
 	}
 
 	// Configure logger; discard logs by default

@@ -56,7 +56,7 @@ type (
 		// Name of oauth client. Should be a lowercase string because it is used
 		// in URL paths.
 		Name                string
-		Hostname            string
+		BaseURL             *internal.WebURL
 		ClientID            string
 		ClientSecret        string
 		Endpoint            oauth2.Endpoint
@@ -82,12 +82,12 @@ func newOAuthClient(
 	}
 	// if OAuth provider hostname specified then update its OAuth endpoint
 	// accordingly.
-	if cfg.Hostname != "" {
-		authURL, err := updateHost(cfg.Endpoint.AuthURL, cfg.Hostname)
+	if cfg.BaseURL != nil {
+		authURL, err := updateHost(cfg.Endpoint.AuthURL, cfg.BaseURL.Host)
 		if err != nil {
 			return nil, err
 		}
-		tokenURL, err := updateHost(cfg.Endpoint.TokenURL, cfg.Hostname)
+		tokenURL, err := updateHost(cfg.Endpoint.TokenURL, cfg.BaseURL.Host)
 		if err != nil {
 			return nil, err
 		}

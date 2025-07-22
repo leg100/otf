@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"codeberg.org/mvdkleijn/forgejo-sdk/forgejo/v2"
+	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/stretchr/testify/assert"
@@ -80,7 +81,7 @@ func newTestServerClientPair(t *testing.T, opts ...TestServerOption) (*Client, *
 	s, u := NewTestServer(t, opts...)
 
 	client, err := NewTokenClient(vcs.NewTokenClientOptions{
-		Hostname:            u.Host,
+		BaseURL:             &internal.WebURL{URL: *u},
 		SkipTLSVerification: true,
 	})
 	require.NoError(t, err)

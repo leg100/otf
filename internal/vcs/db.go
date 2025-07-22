@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
@@ -25,6 +26,8 @@ func (db *pgdb) create(ctx context.Context, provider *Provider) error {
 		"name":         provider.Name,
 		"vcs_kind":     provider.Kind.ID,
 		"organization": provider.Organization,
+		"http_url":     provider.httpURL,
+		"base_url":     provider.BaseURL,
 	}
 	if provider.Installation != nil {
 		args["install_app_id"] = provider.Installation.AppID
@@ -44,7 +47,9 @@ INSERT INTO vcs_providers (
     install_app_id,
     install_id,
     install_username,
-    install_organization
+    install_organization,
+	http_url,
+	base_url
 ) VALUES (
 	@id,
 	@token,
@@ -55,7 +60,9 @@ INSERT INTO vcs_providers (
     @install_app_id,
     @install_id,
     @install_username,
-    @install_organization
+    @install_organization,
+	@http_url,
+	@base_url
 )`, args)
 	return err
 }
@@ -76,9 +83,10 @@ FOR UPDATE OF v
 		fn,
 		func(ctx context.Context, provider *Provider) error {
 			args := pgx.NamedArgs{
-				"id":    provider.ID,
-				"token": provider.Token,
-				"name":  provider.Name,
+				"id":       provider.ID,
+				"token":    provider.Token,
+				"name":     provider.Name,
+				"base_url": provider.BaseURL,
 			}
 			if provider.Installation != nil {
 				args["install_app_id"] = provider.Installation.AppID
@@ -91,6 +99,7 @@ UPDATE vcs_providers
 SET
 	name = @name,
 	token = @token,
+	base_url = @base_url,
 	install_app_id = @install_app_id,
 	install_id = @install_id,
 	install_username = @install_username,
@@ -154,6 +163,8 @@ type model struct {
 	InstallID           *int64            `db:"install_id"`
 	InstallUsername     *string           `db:"install_username"`
 	InstallOrganization *string           `db:"install_organization"`
+	BaseURL             *internal.WebURL  `db:"base_url"`
+	HTTPURL             *internal.WebURL  `db:"http_url"`
 }
 
 func (db *pgdb) scanOne(ctx context.Context, row pgx.Rows) (*Provider, error) {
@@ -182,8 +193,9 @@ func (db *pgdb) scanMany(ctx context.Context, row pgx.Rows) ([]*Provider, error)
 }
 
 func (db *pgdb) toProvider(ctx context.Context, m model) (*Provider, error) {
-	cfg := Config{
-		Token: m.Token,
+	cfg := ClientConfig{
+		Token:   m.Token,
+		BaseURL: m.BaseURL,
 	}
 	if m.InstallID != nil {
 		cfg.Installation = &Installation{
@@ -208,7 +220,10 @@ func (db *pgdb) toProvider(ctx context.Context, m model) (*Provider, error) {
 		Name:         m.Name,
 		Kind:         kind,
 		Client:       client,
-		Config:       cfg,
+		Token:        m.Token,
+		Installation: cfg.Installation,
+		BaseURL:      m.BaseURL,
+		httpURL:      m.HTTPURL,
 	}
 	return &provider, nil
 }

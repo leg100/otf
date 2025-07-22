@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"testing"
 
+	"github.com/leg100/otf/internal"
 	"github.com/stretchr/testify/require"
 )
 
@@ -25,7 +26,7 @@ func setup(t *testing.T) (*http.ServeMux, *Client) {
 
 	// client is the Gitlab client being tested.
 	client, err := NewClient(ClientOptions{
-		Hostname:            u.Host,
+		BaseURL:             &internal.WebURL{URL: *u},
 		SkipTLSVerification: true,
 	})
 	if err != nil {

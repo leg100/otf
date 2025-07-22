@@ -37,7 +37,8 @@ type (
 	}
 
 	ClientOptions struct {
-		Hostname            string
+		// BaseURL is the base URL for github.
+		BaseURL             *internal.WebURL
 		SkipTLSVerification bool
 
 		// Only specify one of the following
@@ -73,9 +74,8 @@ type (
 )
 
 func NewClient(cfg ClientOptions) (*Client, error) {
-	if cfg.Hostname == "" {
-		cfg.Hostname = DefaultHostname
-	}
+	baseURL, uploadURL := setClientURLs(cfg.BaseURL)
+
 	// build http roundtripper using provided credentials
 	var (
 		tripper = http.DefaultTransport
@@ -98,10 +98,7 @@ func NewClient(cfg ClientOptions) (*Client, error) {
 		if err != nil {
 			return nil, err
 		}
-		// ghinstallation defaults to https://api.github.com
-		if cfg.Hostname != DefaultHostname {
-			installTransport.BaseURL = (&url.URL{Scheme: "https", Path: "/api/v3", Host: cfg.Hostname}).String()
-		}
+		installTransport.BaseURL = baseURL.String()
 		tripper = installTransport
 	case cfg.PersonalToken != nil:
 		// personal token is actually an OAuth2 *access token, so wrap
@@ -117,22 +114,45 @@ func NewClient(cfg ClientOptions) (*Client, error) {
 	}
 	// create upstream client with roundtripper
 	client := github.NewClient(&http.Client{Transport: tripper})
-	// Assume github enterprise if using non-default hostname
-	if cfg.Hostname != DefaultHostname {
-		client, err = client.WithEnterpriseURLs(
-			"https://"+cfg.Hostname,
-			"https://"+cfg.Hostname,
-		)
-		if err != nil {
-			return nil, err
-		}
-	}
+
+	client.BaseURL = &baseURL.URL
+	client.UploadURL = &uploadURL.URL
+
 	return &Client{client: client, iat: iat}, nil
+}
+
+func setClientURLs(githubURL *internal.WebURL) (*internal.WebURL, *internal.WebURL) {
+	cloned := *githubURL
+	// If using public github (github.com) then use api.github.com
+	if cloned.Host == DefaultBaseURL.Host {
+		cloned.Host = "api." + cloned.Host
+	}
+
+	baseURL := cloned
+	if !strings.HasSuffix(baseURL.Path, "/") {
+		baseURL.Path += "/"
+	}
+	if !strings.HasSuffix(baseURL.Path, "/api/v3/") &&
+		!strings.HasPrefix(baseURL.Host, "api.") &&
+		!strings.Contains(baseURL.Host, ".api.") {
+		baseURL.Path += "api/v3/"
+	}
+
+	uploadURL := cloned
+	if !strings.HasSuffix(uploadURL.Path, "/") {
+		uploadURL.Path += "/"
+	}
+	if !strings.HasSuffix(uploadURL.Path, "/api/uploads/") &&
+		!strings.HasPrefix(uploadURL.Host, "api.") &&
+		!strings.Contains(uploadURL.Host, ".api.") {
+		uploadURL.Path += "api/uploads/"
+	}
+	return &baseURL, &uploadURL
 }
 
 func NewTokenClient(opts vcs.NewTokenClientOptions) (vcs.Client, error) {
 	return NewClient(ClientOptions{
-		Hostname:            opts.Hostname,
+		BaseURL:             opts.BaseURL,
 		PersonalToken:       &opts.Token,
 		SkipTLSVerification: opts.SkipTLSVerification,
 	})
@@ -140,7 +160,7 @@ func NewTokenClient(opts vcs.NewTokenClientOptions) (vcs.Client, error) {
 
 func NewOAuthClient(cfg authenticator.OAuthConfig, token *oauth2.Token) (authenticator.IdentityProviderClient, error) {
 	return NewClient(ClientOptions{
-		Hostname:            cfg.Hostname,
+		BaseURL:             cfg.BaseURL,
 		OAuthToken:          token,
 		SkipTLSVerification: cfg.SkipTLSVerification,
 	})
