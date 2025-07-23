@@ -2,7 +2,6 @@ package integration
 
 import (
 	"fmt"
-	"net/http"
 	"os"
 	"path/filepath"
 	"testing"
@@ -12,6 +11,7 @@ import (
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/variable"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -48,11 +48,18 @@ func TestDynamicCredentials(t *testing.T) {
 		t.Skip("OTF_INTEGRATION_DYNAMIC_CREDENTIALS_ORGANIZATION needed for dynamic credentials integration test")
 	}
 
-	daemon, org, ctx := setup(t,
+	daemon, _, ctx := setup(t,
 		withKeyPairPaths(privateKeyPath, publicKeyPath),
 		withHostname(issuer),
 		skipDefaultOrganization(),
 	)
+
+	// check endpoints are exposed
+	configResp := daemon.getLocalURL(t, "/.well-known/openid-configuration")
+	assert.Equal(t, 200, configResp.StatusCode)
+
+	jwksResp := daemon.getLocalURL(t, "/.well-known/jwks")
+	assert.Equal(t, 200, jwksResp.StatusCode)
 
 	// create an organization with a specific name that matches the assertion
 	// condition in GCP, e.g. `attribute.terraform_organization_name="acme"`
@@ -98,13 +105,4 @@ data "google_project" "my-project" {}
 
 	run := daemon.createRun(t, ctx, ws1, cv1, nil)
 	daemon.waitRunStatus(t, ctx, run.ID, runstatus.PlannedAndFinished)
-
-	// check endpoints are exposed
-	resp, err := http.Get(daemon.System.URL("/.well-known/openid-configuration"))
-	require.NoError(t, err)
-	require.Equal(t, 200, resp.StatusCode)
-
-	resp, err = http.Get(daemon.System.URL("/.well-known/jwks"))
-	require.NoError(t, err)
-	require.Equal(t, 200, resp.StatusCode)
 }

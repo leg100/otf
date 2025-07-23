@@ -68,6 +68,10 @@ type (
 		Connections   *connections.Service
 		System        *internal.HostnameService
 
+		// ListenAddress is thelistening address of the daemon's http server,
+		// e.g. localhost:8080
+		ListenAddress *net.TCPAddr
+
 		handlers []internal.Handlers
 		listener *sql.Listener
 		runner   *runner.Runner
@@ -446,13 +450,14 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 	if err != nil {
 		return err
 	}
+	d.ListenAddress = ln.Addr().(*net.TCPAddr)
+
 	defer ln.Close()
 
 	// Unless user has set a hostname, set the hostname to the listening address
 	// of the http server.
 	if d.Host == "" {
-		listenAddress := ln.Addr().(*net.TCPAddr)
-		d.System.SetHostname(internal.NormalizeAddress(listenAddress))
+		d.System.SetHostname(internal.NormalizeAddress(d.ListenAddress))
 	}
 
 	d.V(0).Info("set system hostname", "hostname", d.System.Hostname())

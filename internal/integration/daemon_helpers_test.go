@@ -3,6 +3,8 @@ package integration
 import (
 	"bytes"
 	"context"
+	"fmt"
+	"net/http"
 	"net/url"
 	"os"
 	"os/exec"
@@ -534,4 +536,20 @@ func (s *testDaemon) otfCLI(t *testing.T, ctx context.Context, args ...string) s
 
 	require.NoError(t, err, "otf cli failed: %s", buf.String())
 	return buf.String()
+}
+
+// getLocalURL retrieves a response from the URL of the daemon under test.
+//
+// NOTE: it takes care to use the local listening address rather than the
+// hostname that might have been assigned to the daemon, which might skew the
+// test.
+func (s *testDaemon) getLocalURL(t *testing.T, path string) *http.Response {
+	localURL := &url.URL{
+		Scheme: "https",
+		Host:   fmt.Sprintf("localhost:%d", s.ListenAddress.Port),
+		Path:   path,
+	}
+	resp, err := http.Get(localURL.String())
+	require.NoError(t, err)
+	return resp
 }
