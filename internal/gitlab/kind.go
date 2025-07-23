@@ -25,6 +25,10 @@ func RegisterVCSKind(vcsService *vcs.Service, apiURL *internal.WebURL, skipTLSVe
 				SkipTLSVerification: skipTLSVerification,
 			})
 		},
-		TFEServiceProvider: vcs.ServiceProviderGitlab,
+		TFEServiceProviders: []vcs.TFEServiceProviderType{
+			vcs.ServiceProviderGitlab,
+			vcs.ServiceProviderGitlabCE,
+			vcs.ServiceProviderGitlabEE,
+		},
 	})
 }

@@ -42,6 +42,9 @@ func registerVCSKinds(
 		// Github apps don't need webhooks on repositories.
 		SkipRepohook: true,
 		Source:       internal.Ptr(Source),
+		TFEServiceProviders: []vcs.TFEServiceProviderType{
+			vcs.ServiceProviderGithubApp,
+		},
 	})
 	vcsService.RegisterKind(vcs.Kind{
 		ID:         TokenKindID,
@@ -52,9 +55,11 @@ func registerVCSKinds(
 		},
 		NewClient:    provider.NewClient,
 		EventHandler: HandleEvent,
-		// Github token kind vcs providers can be created via the TFE API.
-		TFEServiceProvider: vcs.ServiceProviderGithub,
-		Source:             internal.Ptr(Source),
+		TFEServiceProviders: []vcs.TFEServiceProviderType{
+			vcs.ServiceProviderGithub,
+			vcs.ServiceProviderGithubEE,
+		},
+		Source: internal.Ptr(Source),
 	})
 }
 

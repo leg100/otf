@@ -23,5 +23,8 @@ func RegisterVCSKind(vcsService *vcs.Service, apiURL *internal.WebURL, skipTLSVe
 				SkipTLSVerification: skipTLSVerification,
 			})
 		},
+		TFEServiceProviders: []vcs.TFEServiceProviderType{
+			vcs.ServiceProviderForgejo,
+		},
 	})
 }

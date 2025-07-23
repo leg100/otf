@@ -27,9 +27,10 @@ type (
 		Client
 		// The base URL of the the provider.
 		BaseURL *internal.WebURL
-		// NOTE: OTF doesn't use this field but it's persisted in order to
-		// satisfy the go-tfe integration tests.
-		httpURL *internal.WebURL
+		// NOTE: OTF doesn't use these fields but they're persisted in order to
+		// satisfy the go-tfe integration tests and/or the tfe API.
+		apiURL              *internal.WebURL
+		serviceProviderType TFEServiceProviderType
 	}
 
 	// factory produces providers
@@ -41,10 +42,15 @@ type (
 		Organization organization.Name `schema:"organization_name,required"`
 		Name         string
 		KindID       KindID `schema:"kind,required"`
-		Token        *string
-		InstallID    *int64           `schema:"install_id"`
-		BaseURL      *internal.WebURL `schema:"base_url,required"`
-		HTTPURL      *internal.WebURL
+		// Token and InstallID are mutually exclusive.
+		Token     *string
+		InstallID *int64 `schema:"install_id"`
+		// Optional.
+		BaseURL *internal.WebURL `schema:"base_url,required"`
+		// Optional.
+		tfeServiceProviderType *TFEServiceProviderType
+		// Optional.
+		apiURL *internal.WebURL
 	}
 
 	UpdateOptions struct {
@@ -70,7 +76,7 @@ func (f *factory) newProvider(ctx context.Context, opts CreateOptions) (*Provide
 		CreatedAt:    internal.CurrentTimestamp(nil),
 		Organization: opts.Organization,
 		Kind:         kind,
-		httpURL:      opts.HTTPURL,
+		BaseURL:      opts.BaseURL,
 	}
 	if kind.AppKind != nil {
 		if opts.InstallID == nil {
@@ -94,10 +100,25 @@ func (f *factory) newProvider(ctx context.Context, opts CreateOptions) (*Provide
 	} else {
 		return nil, errors.New("an installation or a token must be specified")
 	}
+	// If caller hasn't specified a base URL then use the kind's default.
 	if opts.BaseURL != nil {
 		provider.BaseURL = opts.BaseURL
 	} else {
 		provider.BaseURL = kind.DefaultURL
+	}
+	// If caller hasn't specified a TFE service provider type to assign to the
+	// provider then retrieve the first type that the kind supports.
+	if opts.tfeServiceProviderType == nil {
+		provider.serviceProviderType = kind.TFEServiceProviders[0]
+	} else {
+		provider.serviceProviderType = *opts.tfeServiceProviderType
+	}
+	// If caller hasn't specified an apiURL then set it to the same value as the
+	// BaseURL
+	if opts.apiURL == nil {
+		provider.apiURL = provider.BaseURL
+	} else {
+		provider.apiURL = opts.apiURL
 	}
 	client, err := kind.NewClient(ctx, ClientConfig{
 		Token:        provider.Token,

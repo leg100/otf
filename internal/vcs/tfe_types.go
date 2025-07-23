@@ -23,6 +23,7 @@ const (
 	ServiceProviderForgejo               TFEServiceProviderType = "forgejo"
 	ServiceProviderGithub                TFEServiceProviderType = "github"
 	ServiceProviderGithubEE              TFEServiceProviderType = "github_enterprise"
+	ServiceProviderGithubApp             TFEServiceProviderType = "github_app"
 	ServiceProviderGitlab                TFEServiceProviderType = "gitlab_hosted"
 	ServiceProviderGitlabCE              TFEServiceProviderType = "gitlab_community_edition"
 	ServiceProviderGitlabEE              TFEServiceProviderType = "gitlab_enterprise_edition"

@@ -20,14 +20,15 @@ type pgdb struct {
 
 func (db *pgdb) create(ctx context.Context, provider *Provider) error {
 	args := pgx.NamedArgs{
-		"id":           provider.ID,
-		"token":        provider.Token,
-		"created_at":   provider.CreatedAt,
-		"name":         provider.Name,
-		"vcs_kind":     provider.Kind.ID,
-		"organization": provider.Organization,
-		"http_url":     provider.httpURL,
-		"base_url":     provider.BaseURL,
+		"id":                   provider.ID,
+		"token":                provider.Token,
+		"created_at":           provider.CreatedAt,
+		"name":                 provider.Name,
+		"vcs_kind":             provider.Kind.ID,
+		"organization":         provider.Organization,
+		"base_url":             provider.BaseURL,
+		"api_url":              provider.apiURL,
+		"tfe_service_provider": provider.serviceProviderType,
 	}
 	if provider.Installation != nil {
 		args["install_app_id"] = provider.Installation.AppID
@@ -48,8 +49,9 @@ INSERT INTO vcs_providers (
     install_id,
     install_username,
     install_organization,
-	http_url,
-	base_url
+	base_url,
+	api_url,
+	tfe_service_provider
 ) VALUES (
 	@id,
 	@token,
@@ -61,8 +63,9 @@ INSERT INTO vcs_providers (
     @install_id,
     @install_username,
     @install_organization,
-	@http_url,
-	@base_url
+	@base_url,
+	@api_url,
+	@tfe_service_provider
 )`, args)
 	return err
 }
@@ -157,14 +160,15 @@ type model struct {
 	Token               *string
 	CreatedAt           time.Time `db:"created_at"`
 	Name                string
-	VCSKind             KindID            `db:"vcs_kind"`
-	OrganizationName    organization.Name `db:"organization_name"`
-	InstallAppID        *int64            `db:"install_app_id"`
-	InstallID           *int64            `db:"install_id"`
-	InstallUsername     *string           `db:"install_username"`
-	InstallOrganization *string           `db:"install_organization"`
-	BaseURL             *internal.WebURL  `db:"base_url"`
-	HTTPURL             *internal.WebURL  `db:"http_url"`
+	VCSKind             KindID                 `db:"vcs_kind"`
+	OrganizationName    organization.Name      `db:"organization_name"`
+	InstallAppID        *int64                 `db:"install_app_id"`
+	InstallID           *int64                 `db:"install_id"`
+	InstallUsername     *string                `db:"install_username"`
+	InstallOrganization *string                `db:"install_organization"`
+	BaseURL             *internal.WebURL       `db:"base_url"`
+	APIURL              *internal.WebURL       `db:"api_url"`
+	TFEServiceProvider  TFEServiceProviderType `db:"tfe_service_provider"`
 }
 
 func (db *pgdb) scanOne(ctx context.Context, row pgx.Rows) (*Provider, error) {
@@ -214,16 +218,17 @@ func (db *pgdb) toProvider(ctx context.Context, m model) (*Provider, error) {
 		return nil, err
 	}
 	provider := Provider{
-		ID:           m.VCSProviderID,
-		CreatedAt:    m.CreatedAt,
-		Organization: m.OrganizationName,
-		Name:         m.Name,
-		Kind:         kind,
-		Client:       client,
-		Token:        m.Token,
-		Installation: cfg.Installation,
-		BaseURL:      m.BaseURL,
-		httpURL:      m.HTTPURL,
+		ID:                  m.VCSProviderID,
+		CreatedAt:           m.CreatedAt,
+		Organization:        m.OrganizationName,
+		Name:                m.Name,
+		Kind:                kind,
+		Client:              client,
+		Token:               m.Token,
+		Installation:        cfg.Installation,
+		BaseURL:             m.BaseURL,
+		apiURL:              m.APIURL,
+		serviceProviderType: m.TFEServiceProvider,
 	}
 	return &provider, nil
 }
