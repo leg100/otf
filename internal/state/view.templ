@@ -51,7 +51,15 @@ templ get(f *File) {
 						<tr>
 							<td>{ k }</td>
 							<td>{ v.Type() }</td>
-							<td><span class="bg-base-300">{ v.StringValue() }</span></td>
+							<td>
+								<span class="bg-base-300">
+									if v.Sensitive {
+										******
+									} else {
+										{ v.StringValue() }
+									}
+								</span>
+							</td>
 						</tr>
 					}
 					if len(f.Outputs) == 0 {

@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"testing"
 
 	"github.com/google/go-github/v65/github"
@@ -22,6 +21,7 @@ import (
 func TestWebHandlers_new(t *testing.T) {
 	h := &webHandlers{
 		HostnameService: internal.NewHostnameService("example.com"),
+		githubAPIURL:    internal.MustWebURL("github.com"),
 	}
 
 	r := httptest.NewRequest("GET", "/?", nil)
@@ -33,6 +33,7 @@ func TestWebHandlers_new(t *testing.T) {
 func TestWebHandlers_get(t *testing.T) {
 	h := &webHandlers{
 		HostnameService: internal.NewHostnameService("example.com"),
+		githubAPIURL:    internal.MustWebURL("github.com"),
 		svc: &fakeService{
 			app: &App{},
 			installs: []vcs.Installation{
@@ -50,7 +51,7 @@ func TestWebHandlers_get(t *testing.T) {
 
 func TestWebHandlers_exchangeCode(t *testing.T) {
 	// create stub github server with an exchange code handler
-	githubStubHostname := func() string {
+	stubURL := func() *internal.WebURL {
 		mux := http.NewServeMux()
 		mux.HandleFunc("/api/v3/app-manifests/the-code/conversions", func(w http.ResponseWriter, r *http.Request) {
 			out, err := json.Marshal(&github.AppConfig{
@@ -64,15 +65,15 @@ func TestWebHandlers_exchangeCode(t *testing.T) {
 		stub := httptest.NewTLSServer(mux)
 		t.Cleanup(stub.Close)
 
-		u, err := url.Parse(stub.URL)
+		u, err := internal.NewWebURL(stub.URL)
 		require.NoError(t, err)
-		return u.Host
+		return u
 	}()
 
 	h := &webHandlers{
-		GithubHostname: githubStubHostname,
-		GithubSkipTLS:  true,
-		svc:            &fakeService{},
+		githubAPIURL:        stubURL,
+		skipTLSVerification: true,
+		svc:                 &fakeService{},
 	}
 
 	r := httptest.NewRequest("GET", "/?code=the-code", nil)
@@ -84,7 +85,9 @@ func TestWebHandlers_exchangeCode(t *testing.T) {
 func TestWebHandlers_deleteApp(t *testing.T) {
 	h := &webHandlers{
 		svc: &fakeService{
-			app: &App{},
+			app: &App{
+				GithubURL: DefaultBaseURL,
+			},
 		},
 	}
 

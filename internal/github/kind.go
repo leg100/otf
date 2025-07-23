@@ -16,7 +16,7 @@ const (
 
 type kindProvider struct {
 	db                  *appDB
-	hostname            string
+	baseURL             *internal.WebURL
 	service             *Service
 	skipTLSVerification bool
 }
@@ -24,43 +24,48 @@ type kindProvider struct {
 func registerVCSKinds(
 	svc *Service,
 	vcsService *vcs.Service,
-	hostname string,
+	baseURL *internal.WebURL,
 	skipTLSVerification bool,
 ) {
 	provider := &kindProvider{
 		service:             svc,
 		db:                  svc.db,
-		hostname:            hostname,
+		baseURL:             baseURL,
 		skipTLSVerification: skipTLSVerification,
 	}
 	vcsService.RegisterKind(vcs.Kind{
-		ID:        AppKindID,
-		Icon:      Icon(),
-		Hostname:  hostname,
-		AppKind:   provider,
-		NewClient: provider.NewClient,
+		ID:         AppKindID,
+		Icon:       Icon(),
+		DefaultURL: baseURL,
+		AppKind:    provider,
+		NewClient:  provider.NewClient,
 		// Github apps don't need webhooks on repositories.
 		SkipRepohook: true,
 		Source:       internal.Ptr(Source),
+		TFEServiceProviders: []vcs.TFEServiceProviderType{
+			vcs.ServiceProviderGithubApp,
+		},
 	})
 	vcsService.RegisterKind(vcs.Kind{
-		ID:       TokenKindID,
-		Icon:     Icon(),
-		Hostname: hostname,
+		ID:         TokenKindID,
+		Icon:       Icon(),
+		DefaultURL: baseURL,
 		TokenKind: &vcs.TokenKind{
-			Description: tokenDescription(hostname),
+			Description: tokenDescription(baseURL.Host),
 		},
 		NewClient:    provider.NewClient,
 		EventHandler: HandleEvent,
-		// Github token kind vcs providers can be created via the TFE API.
-		TFEServiceProvider: vcs.ServiceProviderGithub,
-		Source:             internal.Ptr(Source),
+		TFEServiceProviders: []vcs.TFEServiceProviderType{
+			vcs.ServiceProviderGithub,
+			vcs.ServiceProviderGithubEE,
+		},
+		Source: internal.Ptr(Source),
 	})
 }
 
-func (p *kindProvider) NewClient(ctx context.Context, cfg vcs.Config) (vcs.Client, error) {
+func (p *kindProvider) NewClient(ctx context.Context, cfg vcs.ClientConfig) (vcs.Client, error) {
 	opts := ClientOptions{
-		Hostname:            p.hostname,
+		BaseURL:             p.baseURL,
 		SkipTLSVerification: p.skipTLSVerification,
 	}
 	if cfg.Token != nil {

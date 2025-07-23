@@ -30,9 +30,8 @@ type webHandlers struct {
 	svc        webClient
 	authorizer *authz.Authorizer
 
-	GithubHostname string
-	// toggle skipping TLS on connections to github (for testing purposes)
-	GithubSkipTLS bool
+	githubAPIURL        *internal.WebURL
+	skipTLSVerification bool
 }
 
 // webClient provides web handlers with access to github app service endpoints
@@ -99,7 +98,7 @@ func (h *webHandlers) new(w http.ResponseWriter, r *http.Request) {
 
 	props := newAppViewProps{
 		manifest:       string(marshaled),
-		githubHostname: h.GithubHostname,
+		githubHostname: h.githubAPIURL.Host,
 	}
 	html.Render(newAppView(props), w, r)
 }
@@ -124,7 +123,7 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 	props := getAppsProps{
 		app:            app,
 		installations:  installs,
-		githubHostname: h.GithubHostname,
+		githubHostname: h.githubAPIURL.Host,
 		canCreateApp:   h.authorizer.CanAccess(r.Context(), authz.CreateGithubAppAction, resource.SiteID),
 		canDeleteApp:   h.authorizer.CanAccess(r.Context(), authz.DeleteGithubAppAction, resource.SiteID),
 	}
@@ -142,8 +141,8 @@ func (h *webHandlers) exchangeCode(w http.ResponseWriter, r *http.Request) {
 
 	// exchange code for credentials using an anonymous client
 	client, err := NewClient(ClientOptions{
-		Hostname:            h.GithubHostname,
-		SkipTLSVerification: h.GithubSkipTLS,
+		BaseURL:             h.githubAPIURL,
+		SkipTLSVerification: h.skipTLSVerification,
 	})
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -160,6 +159,7 @@ func (h *webHandlers) exchangeCode(w http.ResponseWriter, r *http.Request) {
 		Slug:          cfg.GetSlug(),
 		WebhookSecret: cfg.GetWebhookSecret(),
 		PrivateKey:    cfg.GetPEM(),
+		BaseURL:       h.githubAPIURL,
 	}
 	if cfg.GetOwner().GetType() == "Organization" {
 		opts.Organization = cfg.GetOwner().Login

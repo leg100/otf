@@ -73,7 +73,7 @@ templ (p pageInfo[T]) summary() {
 		lastItemNumber = max(0, firstItemNumber+len(p.Items)-1)
 	}
 	}}
-	<div class="badge badge-outline badge-neutral" id="page-info">
+	<div class="badge" id="page-info">
 		{ fmt.Sprintf("%d-%d of %d", firstItemNumber, lastItemNumber, p.TotalCount) }
 	</div>
 }

@@ -1,4 +1,6 @@
 // Package github provides github related code
 package github
 
-const DefaultHostname = "github.com"
+import "github.com/leg100/otf/internal"
+
+var DefaultBaseURL = internal.MustWebURL("https://github.com")

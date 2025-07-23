@@ -199,7 +199,7 @@ func (p pageInfo[T]) summary() templ.Component {
 			firstItemNumber = ((p.CurrentPage - 1) * size) + 1
 			lastItemNumber = max(0, firstItemNumber+len(p.Items)-1)
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "<div class=\"badge badge-outline badge-neutral\" id=\"page-info\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "<div class=\"badge\" id=\"page-info\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

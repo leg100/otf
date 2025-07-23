@@ -3,6 +3,7 @@ package integration
 import (
 	"time"
 
+	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authenticator"
 	"github.com/leg100/otf/internal/daemon"
 	"github.com/leg100/otf/internal/engine"
@@ -15,6 +16,8 @@ type config struct {
 	daemon.Config
 	// skip creation of default organization
 	skipDefaultOrganization bool
+	// skip setting up an automatic github server stub
+	skipGithubStub bool
 	// github stub server options
 	githubOptions []github.TestServerOption
 }
@@ -47,7 +50,10 @@ func withGithubOptions(opts ...github.TestServerOption) configOption {
 
 func withGithubHostname(hostname string) configOption {
 	return func(cfg *config) {
-		cfg.GithubHostname = hostname
+		cfg.GithubHostname = internal.MustWebURL(hostname)
+		// setting a hostname implies the test is setting up its own stub so
+		// skip setting up another stub
+		cfg.skipGithubStub = true
 	}
 }
 

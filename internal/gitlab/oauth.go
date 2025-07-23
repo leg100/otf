@@ -1,10 +1,13 @@
 package gitlab
 
-import "github.com/leg100/otf/internal/authenticator"
+import (
+	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authenticator"
+)
 
 func RegisterOAuthHandler(
 	authenticatorService *authenticator.Service,
-	hostname string,
+	hostname *internal.WebURL,
 	clientID, clientSecret string,
 	skipTLSVerification bool,
 ) error {
@@ -12,7 +15,7 @@ func RegisterOAuthHandler(
 		ClientConstructor: NewOAuthClient,
 		OAuthConfig: authenticator.OAuthConfig{
 			Name:                "gitlab",
-			Hostname:            hostname,
+			BaseURL:             hostname,
 			Endpoint:            OAuthEndpoint,
 			Scopes:              OAuthScopes,
 			ClientID:            clientID,
