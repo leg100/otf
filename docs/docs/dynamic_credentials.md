@@ -24,6 +24,9 @@ Thus far the following cloud providers are supported in OTF:
 * AWS
 * Azure
 
+!!! warning
+    Only GCP support has been fully tested by the developers. Please report success or bugs with the AWS and Azure providers on Github Issues / Slack.
+
 There are a few pre-requisites specific to OTF you need to first carry out:
 
 1. Generate a public key pair:

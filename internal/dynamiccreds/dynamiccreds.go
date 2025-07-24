@@ -20,23 +20,6 @@ type TokenGenerator interface {
 	GenerateDynamicCredentialsToken(ctx context.Context, jobID resource.TfeID, audience string) ([]byte, error)
 }
 
-// multiConfig permits the configuration of multiple provider blocks: for each
-// cloud it permits one for the default provider, and one for each alias
-// provider.
-//
-// Once marshaled to json and written to the workspace the user can then
-// reference these as terraform variables and assign them to each provider
-// block.
-//
-// NOTE: this is only persisted if the user has enabled dynamic credentials for
-// at least one aliased provider block. Otherwise environment variables are
-// added to the environment to configure the default provider alone instead.
-//type multiConfig struct {
-//	AWS   providerConfigs[awsVariablesSharedConfigFile]    `json:"tfc_aws_dynamic_credentials,omitzero"`
-//	Azure providerConfigs[azureVariablesCredentialsConfig] `json:"tfc_azure_dynamic_credentials,omitzero"`
-//	GCP   providerConfigs[gcpVariablesCredentialsPath]     `json:"tfc_gcp_dynamic_credentials,omitzero"`
-//}
-
 type providerConfig[T any] struct {
 	Default T            `json:"default,omitzero"`
 	Aliases map[string]T `json:"aliases,omitzero"`
