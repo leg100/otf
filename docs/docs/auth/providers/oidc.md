@@ -24,6 +24,8 @@ Optionally, you can set additional flags to override defaults:
 * `--oidc-username-claim=<claim>` - this determines which claim is mapped to a username in OTF. It defaults to `name`. You can set it to `name`, `email`, or `sub`.
 
 !!! note
+    The choice of `--oidc-username-claim` has important security implications.  If users can log into the OIDC provider and modify their own `name` (full name) or `email`, those claims should not be used for OIDC authentication.  When combined with the `--site-admins` argument, users could gain administrative access simply by changing their full name or email to match yours.
+    The [OIDC specification](https://openid.net/specs/openid-connect-core-1_0.html#ClaimStability) strongly recommends the use of `sub` for uniquely identifying users.
     If you override the claim you may well need to override the scopes too, e.g. the `email` claim often needs the `email` scope configured.
 
 Now when you start `otfd`, navigate to its URL in your browser and you'll be prompted to login with your OIDC provider:
