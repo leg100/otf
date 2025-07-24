@@ -160,3 +160,18 @@ func (c *remoteClient) finishJob(ctx context.Context, jobID resource.TfeID, opts
 	}
 	return nil
 }
+
+func (c *remoteClient) GenerateDynamicCredentialsToken(ctx context.Context, jobID resource.TfeID, audience string) ([]byte, error) {
+	u := fmt.Sprintf("jobs/%s/dynamic-credentials", jobID)
+	req, err := c.newRequest("POST", u, generateDynamicCredentialsTokenParams{
+		Audience: audience,
+	})
+	if err != nil {
+		return nil, err
+	}
+	var buf bytes.Buffer
+	if err := c.Do(ctx, req, &buf); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}

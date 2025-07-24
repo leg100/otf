@@ -81,6 +81,9 @@ func parseFlags(ctx context.Context, args []string, out io.Writer) error {
 	cmd.Flags().StringVar(&cfg.WebhookHost, "webhook-hostname", "", "External hostname for otf webhooks")
 	cmd.Flags().StringVar(&cfg.AllowedOrigins, "allowed-origins", "", "Allowed origins for websocket upgrades")
 
+	cmd.Flags().StringVar(&cfg.PublicKeyPath, "public-key-path", "", "Path to public key for dynamic credentials.")
+	cmd.Flags().StringVar(&cfg.PrivateKeyPath, "private-key-path", "", "Path to private key for dynamic credentials.")
+
 	cmd.Flags().IntVar(&cfg.CacheConfig.Size, "cache-size", 0, "Maximum cache size in MB. 0 means unlimited size.")
 	cmd.Flags().DurationVar(&cfg.CacheConfig.TTL, "cache-expiry", internal.DefaultCacheTTL, "Cache entry TTL.")
 
