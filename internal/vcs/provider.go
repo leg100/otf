@@ -19,12 +19,18 @@ type (
 		Name         string
 		CreatedAt    time.Time
 		Organization organization.Name
+		Token        *string
+		Installation *Installation
 		// The kind of provider
 		Kind
-		// Config for constructing a client
-		Config
 		// Client is the actual client for interacting with the VCS host.
 		Client
+		// The base URL of the the provider.
+		BaseURL *internal.WebURL
+		// NOTE: OTF doesn't use these fields but they're persisted in order to
+		// satisfy the go-tfe integration tests and/or the tfe API.
+		apiURL              *internal.WebURL
+		serviceProviderType TFEServiceProviderType
 	}
 
 	// factory produces providers
@@ -36,13 +42,21 @@ type (
 		Organization organization.Name `schema:"organization_name,required"`
 		Name         string
 		KindID       KindID `schema:"kind,required"`
-		Token        *string
-		InstallID    *int64 `schema:"install_id"`
+		// Token and InstallID are mutually exclusive.
+		Token     *string
+		InstallID *int64 `schema:"install_id"`
+		// Optional.
+		BaseURL *internal.WebURL `schema:"base_url,required"`
+		// Optional.
+		tfeServiceProviderType *TFEServiceProviderType
+		// Optional.
+		apiURL *internal.WebURL
 	}
 
 	UpdateOptions struct {
-		Name  string
-		Token *string
+		Name    string
+		Token   *string
+		BaseURL *internal.WebURL
 	}
 
 	ListOptions struct {
@@ -62,6 +76,7 @@ func (f *factory) newProvider(ctx context.Context, opts CreateOptions) (*Provide
 		CreatedAt:    internal.CurrentTimestamp(nil),
 		Organization: opts.Organization,
 		Kind:         kind,
+		BaseURL:      opts.BaseURL,
 	}
 	if kind.AppKind != nil {
 		if opts.InstallID == nil {
@@ -75,16 +90,41 @@ func (f *factory) newProvider(ctx context.Context, opts CreateOptions) (*Provide
 		if err != nil {
 			return nil, err
 		}
-		provider.Config = Config{Installation: &install}
+		provider.Token = opts.Token
+		provider.Installation = &install
 	} else if kind.TokenKind != nil {
 		if opts.Token == nil {
 			return nil, errors.New("token required for client")
 		}
-		provider.Config = Config{Token: opts.Token}
+		provider.Token = opts.Token
 	} else {
 		return nil, errors.New("an installation or a token must be specified")
 	}
-	client, err := kind.NewClient(ctx, provider.Config)
+	// If caller hasn't specified a base URL then use the kind's default.
+	if opts.BaseURL != nil {
+		provider.BaseURL = opts.BaseURL
+	} else {
+		provider.BaseURL = kind.DefaultURL
+	}
+	// If caller hasn't specified a TFE service provider type to assign to the
+	// provider then retrieve the first type that the kind supports.
+	if opts.tfeServiceProviderType == nil {
+		provider.serviceProviderType = kind.TFEServiceProviders[0]
+	} else {
+		provider.serviceProviderType = *opts.tfeServiceProviderType
+	}
+	// If caller hasn't specified an apiURL then set it to the same value as the
+	// BaseURL
+	if opts.apiURL == nil {
+		provider.apiURL = provider.BaseURL
+	} else {
+		provider.apiURL = opts.apiURL
+	}
+	client, err := kind.NewClient(ctx, ClientConfig{
+		Token:        provider.Token,
+		Installation: provider.Installation,
+		BaseURL:      provider.BaseURL,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -108,6 +148,9 @@ func (t *Provider) Update(opts UpdateOptions) error {
 		}
 		t.Token = opts.Token
 	}
+	if opts.BaseURL != nil {
+		t.BaseURL = opts.BaseURL
+	}
 	t.Name = opts.Name
 	return nil
 }
@@ -119,6 +162,7 @@ func (t *Provider) LogValue() slog.Value {
 		slog.Any("organization", t.Organization),
 		slog.String("name", t.String()),
 		slog.String("kind", string(t.Kind.ID)),
+		slog.Any("api_url", t.BaseURL),
 	}
 	if t.Installation != nil {
 		attrs = append(attrs, slog.Int64("install_id", t.Installation.ID))

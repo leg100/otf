@@ -16,6 +16,7 @@ import (
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/connections"
 	"github.com/leg100/otf/internal/disco"
+	"github.com/leg100/otf/internal/dynamiccreds"
 	"github.com/leg100/otf/internal/engine"
 	"github.com/leg100/otf/internal/forgejo"
 	"github.com/leg100/otf/internal/github"
@@ -66,6 +67,10 @@ type (
 		Runners       *runner.Service
 		Connections   *connections.Service
 		System        *internal.HostnameService
+
+		// ListenAddress is thelistening address of the daemon's http server,
+		// e.g. localhost:8080
+		ListenAddress *net.TCPAddr
 
 		handlers []internal.Handlers
 		listener *sql.Listener
@@ -179,7 +184,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		DB:                  db,
 		HostnameService:     hostnameService,
 		VCSService:          vcsService,
-		GithubHostname:      cfg.GithubHostname,
+		GithubAPIURL:        cfg.GithubHostname,
 		SkipTLSVerification: cfg.SkipTLSVerification,
 		VCSEventBroker:      vcsEventBroker,
 	})
@@ -267,15 +272,26 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		WorkspaceService: workspaceService,
 		RunClient:        runService,
 	})
+	dynamiccredsService, err := dynamiccreds.NewService(dynamiccreds.Options{
+		HostnameService: hostnameService,
+		PublicKeyPath:   cfg.PublicKeyPath,
+		PrivateKeyPath:  cfg.PrivateKeyPath,
+		Logger:          logger,
+	})
+	if err != nil {
+		return nil, err
+	}
 	runnerService := runner.NewService(runner.ServiceOptions{
-		Logger:           logger,
-		Authorizer:       authorizer,
-		DB:               db,
-		Responder:        responder,
-		RunService:       runService,
-		WorkspaceService: workspaceService,
-		TokensService:    tokensService,
-		Listener:         listener,
+		Logger:                    logger,
+		Authorizer:                authorizer,
+		DB:                        db,
+		Responder:                 responder,
+		RunService:                runService,
+		WorkspaceService:          workspaceService,
+		TokensService:             tokensService,
+		Listener:                  listener,
+		DynamicCredentialsService: dynamiccredsService,
+		HostnameService:           hostnameService,
 	})
 	authenticatorService, err := authenticator.NewAuthenticatorService(ctx, authenticator.Options{
 		Logger:               logger,
@@ -378,6 +394,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 			GithubApps: githubAppService,
 			VCSService: vcsService,
 		},
+		dynamiccredsService,
 	}
 
 	return &Daemon{
@@ -433,13 +450,14 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 	if err != nil {
 		return err
 	}
+	d.ListenAddress = ln.Addr().(*net.TCPAddr)
+
 	defer ln.Close()
 
 	// Unless user has set a hostname, set the hostname to the listening address
 	// of the http server.
 	if d.Host == "" {
-		listenAddress := ln.Addr().(*net.TCPAddr)
-		d.System.SetHostname(internal.NormalizeAddress(listenAddress))
+		d.System.SetHostname(internal.NormalizeAddress(d.ListenAddress))
 	}
 
 	d.V(0).Info("set system hostname", "hostname", d.System.Hostname())

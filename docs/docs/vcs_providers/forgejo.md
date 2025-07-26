@@ -42,6 +42,11 @@ The following OTF parameters make sense:
 * `--oidc-scopes` should be `openid,profile`.
 * `--oidc-client-id` is the client ID value provided by forgejo.
 * `--oidc-client-secret` is the client secret value provided by forgejo.
+* `--oidc-username-claim=sub` tells it to use the `sub` field for usernames.
+
+!!! note
+    `--oidc-username-claim=sub` is the only secure setting for the Forgejo OIDC Provider, because users are able to modify their own fullname and email fields.  Recent versions of Gitea have a bit more control over that, see the `USER_DISABLED_FEATURES` setting in [the admin section](https://docs.gitea.com/administration/config-cheat-sheet#admin-admin).
+    Unfortunately, in Gitea/Forgejo, the `sub` field returns a numeric ID, not a username, which means `--site-admins` must also be specified numerically.
 
 If all goes well, OTF's web UI should redirect you to log in using forgejo.
 

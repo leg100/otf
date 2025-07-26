@@ -3,6 +3,8 @@ package integration
 import (
 	"bytes"
 	"context"
+	"fmt"
+	"net/http"
 	"net/url"
 	"os"
 	"os/exec"
@@ -72,17 +74,16 @@ func setup(t *testing.T, opts ...configOption) (*testDaemon, *organization.Organ
 	// stub TLS servers with self-certified certs.
 	cfg.SkipTLSVerification = true
 
-	//daemon.ApplyDefaults(&cfg.Config)
 	cfg.SSL = true
 	cfg.CertFile = "./fixtures/cert.pem"
 	cfg.KeyFile = "./fixtures/key.pem"
 
 	// Start stub github server, unless test has set its own github stub
 	var githubServer *github.TestServer
-	if cfg.GithubHostname == "" {
+	if !cfg.skipGithubStub {
 		var githubURL *url.URL
 		githubServer, githubURL = github.NewTestServer(t, cfg.githubOptions...)
-		cfg.GithubHostname = githubURL.Host
+		cfg.GithubHostname = &internal.WebURL{URL: *githubURL}
 	}
 
 	// Configure logger; discard logs by default
@@ -345,18 +346,21 @@ func (s *testDaemon) createRun(t *testing.T, ctx context.Context, ws *workspace.
 	return run
 }
 
-func (s *testDaemon) createVariable(t *testing.T, ctx context.Context, ws *workspace.Workspace) *variable.Variable {
+func (s *testDaemon) createVariable(t *testing.T, ctx context.Context, ws *workspace.Workspace, opts *variable.CreateVariableOptions) *variable.Variable {
 	t.Helper()
 
 	if ws == nil {
 		ws = s.createWorkspace(t, ctx, nil)
 	}
 
-	v, err := s.Variables.CreateWorkspaceVariable(ctx, ws.ID, variable.CreateVariableOptions{
-		Key:      internal.Ptr("key-" + internal.GenerateRandomString(4)),
-		Value:    internal.Ptr("val-" + internal.GenerateRandomString(4)),
-		Category: internal.Ptr(variable.CategoryTerraform),
-	})
+	if opts == nil {
+		opts = &variable.CreateVariableOptions{
+			Key:      internal.Ptr("key-" + internal.GenerateRandomString(4)),
+			Value:    internal.Ptr("val-" + internal.GenerateRandomString(4)),
+			Category: internal.Ptr(variable.CategoryTerraform),
+		}
+	}
+	v, err := s.Variables.CreateWorkspaceVariable(ctx, ws.ID, *opts)
 	require.NoError(t, err)
 	return v
 }
@@ -532,4 +536,20 @@ func (s *testDaemon) otfCLI(t *testing.T, ctx context.Context, args ...string) s
 
 	require.NoError(t, err, "otf cli failed: %s", buf.String())
 	return buf.String()
+}
+
+// getLocalURL retrieves a response from the URL of the daemon under test.
+//
+// NOTE: it takes care to use the local listening address rather than the
+// hostname that might have been assigned to the daemon, which might skew the
+// test.
+func (s *testDaemon) getLocalURL(t *testing.T, path string) *http.Response {
+	localURL := &url.URL{
+		Scheme: "https",
+		Host:   fmt.Sprintf("localhost:%d", s.ListenAddress.Port),
+		Path:   path,
+	}
+	resp, err := http.Get(localURL.String())
+	require.NoError(t, err)
+	return resp
 }

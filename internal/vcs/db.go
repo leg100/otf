@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
@@ -19,12 +20,15 @@ type pgdb struct {
 
 func (db *pgdb) create(ctx context.Context, provider *Provider) error {
 	args := pgx.NamedArgs{
-		"id":           provider.ID,
-		"token":        provider.Token,
-		"created_at":   provider.CreatedAt,
-		"name":         provider.Name,
-		"vcs_kind":     provider.Kind.ID,
-		"organization": provider.Organization,
+		"id":                   provider.ID,
+		"token":                provider.Token,
+		"created_at":           provider.CreatedAt,
+		"name":                 provider.Name,
+		"vcs_kind":             provider.Kind.ID,
+		"organization":         provider.Organization,
+		"base_url":             provider.BaseURL,
+		"api_url":              provider.apiURL,
+		"tfe_service_provider": provider.serviceProviderType,
 	}
 	if provider.Installation != nil {
 		args["install_app_id"] = provider.Installation.AppID
@@ -44,7 +48,10 @@ INSERT INTO vcs_providers (
     install_app_id,
     install_id,
     install_username,
-    install_organization
+    install_organization,
+	base_url,
+	api_url,
+	tfe_service_provider
 ) VALUES (
 	@id,
 	@token,
@@ -55,7 +62,10 @@ INSERT INTO vcs_providers (
     @install_app_id,
     @install_id,
     @install_username,
-    @install_organization
+    @install_organization,
+	@base_url,
+	@api_url,
+	@tfe_service_provider
 )`, args)
 	return err
 }
@@ -76,9 +86,10 @@ FOR UPDATE OF v
 		fn,
 		func(ctx context.Context, provider *Provider) error {
 			args := pgx.NamedArgs{
-				"id":    provider.ID,
-				"token": provider.Token,
-				"name":  provider.Name,
+				"id":       provider.ID,
+				"token":    provider.Token,
+				"name":     provider.Name,
+				"base_url": provider.BaseURL,
 			}
 			if provider.Installation != nil {
 				args["install_app_id"] = provider.Installation.AppID
@@ -91,6 +102,7 @@ UPDATE vcs_providers
 SET
 	name = @name,
 	token = @token,
+	base_url = @base_url,
 	install_app_id = @install_app_id,
 	install_id = @install_id,
 	install_username = @install_username,
@@ -148,12 +160,15 @@ type model struct {
 	Token               *string
 	CreatedAt           time.Time `db:"created_at"`
 	Name                string
-	VCSKind             KindID            `db:"vcs_kind"`
-	OrganizationName    organization.Name `db:"organization_name"`
-	InstallAppID        *int64            `db:"install_app_id"`
-	InstallID           *int64            `db:"install_id"`
-	InstallUsername     *string           `db:"install_username"`
-	InstallOrganization *string           `db:"install_organization"`
+	VCSKind             KindID                 `db:"vcs_kind"`
+	OrganizationName    organization.Name      `db:"organization_name"`
+	InstallAppID        *int64                 `db:"install_app_id"`
+	InstallID           *int64                 `db:"install_id"`
+	InstallUsername     *string                `db:"install_username"`
+	InstallOrganization *string                `db:"install_organization"`
+	BaseURL             *internal.WebURL       `db:"base_url"`
+	APIURL              *internal.WebURL       `db:"api_url"`
+	TFEServiceProvider  TFEServiceProviderType `db:"tfe_service_provider"`
 }
 
 func (db *pgdb) scanOne(ctx context.Context, row pgx.Rows) (*Provider, error) {
@@ -182,8 +197,9 @@ func (db *pgdb) scanMany(ctx context.Context, row pgx.Rows) ([]*Provider, error)
 }
 
 func (db *pgdb) toProvider(ctx context.Context, m model) (*Provider, error) {
-	cfg := Config{
-		Token: m.Token,
+	cfg := ClientConfig{
+		Token:   m.Token,
+		BaseURL: m.BaseURL,
 	}
 	if m.InstallID != nil {
 		cfg.Installation = &Installation{
@@ -202,13 +218,17 @@ func (db *pgdb) toProvider(ctx context.Context, m model) (*Provider, error) {
 		return nil, err
 	}
 	provider := Provider{
-		ID:           m.VCSProviderID,
-		CreatedAt:    m.CreatedAt,
-		Organization: m.OrganizationName,
-		Name:         m.Name,
-		Kind:         kind,
-		Client:       client,
-		Config:       cfg,
+		ID:                  m.VCSProviderID,
+		CreatedAt:           m.CreatedAt,
+		Organization:        m.OrganizationName,
+		Name:                m.Name,
+		Kind:                kind,
+		Client:              client,
+		Token:               m.Token,
+		Installation:        cfg.Installation,
+		BaseURL:             m.BaseURL,
+		apiURL:              m.APIURL,
+		serviceProviderType: m.TFEServiceProvider,
 	}
 	return &provider, nil
 }

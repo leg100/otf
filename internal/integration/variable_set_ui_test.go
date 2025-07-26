@@ -109,6 +109,42 @@ func TestIntegration_VariableSetUI_Edit(t *testing.T) {
 	})
 }
 
+// TestIntegration_VariableSetUI_Delete tests deleting a variable set variable via the UI.
+func TestIntegration_VariableSetUI_VariableDelete(t *testing.T) {
+	integrationTest(t)
+
+	svc, org, ctx := setup(t)
+
+	set, err := svc.Variables.CreateVariableSet(ctx, org.Name, variable.CreateVariableSetOptions{
+		Name:   "global-1",
+		Global: true,
+	})
+	require.NoError(t, err)
+
+	_, err = svc.Variables.CreateVariableSetVariable(ctx, set.ID, variable.CreateVariableOptions{
+		Key:      internal.Ptr("varset-var-1"),
+		Value:    internal.Ptr("foo"),
+		Category: internal.Ptr(variable.CategoryTerraform),
+	})
+	require.NoError(t, err)
+
+	// Delete variable set variable set in browser
+	browser.New(t, ctx, func(page playwright.Page) {
+		// go to variable set's page
+		setURL := "https://" + svc.System.Hostname() + "/app/variable-sets/" + set.ID.String() + "/edit"
+		_, err := page.Goto(setURL)
+		require.NoError(t, err)
+
+		// delete variable
+		err = page.Locator(`//tr[@id='item-variable-varset-var-1']//button[@id='delete-button']`).Click()
+		require.NoError(t, err)
+
+		// confirm variable set variable deleted
+		err = expect.Locator(page.GetByRole("alert")).ToHaveText("deleted variable: varset-var-1")
+		require.NoError(t, err)
+	})
+}
+
 // TestIntegration_VariableSetUI_NewEdit_WorkspaceScoped tests creating a
 // workspace-scoped variable set via the UI.
 func TestIntegration_VariableSetUI_New_WorkspaceScoped(t *testing.T) {

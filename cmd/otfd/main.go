@@ -13,9 +13,6 @@ import (
 	"github.com/leg100/otf/internal/authenticator"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/daemon"
-	"github.com/leg100/otf/internal/forgejo"
-	"github.com/leg100/otf/internal/github"
-	"github.com/leg100/otf/internal/gitlab"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/runner"
 	"github.com/pkg/errors"
@@ -84,6 +81,9 @@ func parseFlags(ctx context.Context, args []string, out io.Writer) error {
 	cmd.Flags().StringVar(&cfg.WebhookHost, "webhook-hostname", "", "External hostname for otf webhooks")
 	cmd.Flags().StringVar(&cfg.AllowedOrigins, "allowed-origins", "", "Allowed origins for websocket upgrades")
 
+	cmd.Flags().StringVar(&cfg.PublicKeyPath, "public-key-path", "", "Path to public key for dynamic credentials.")
+	cmd.Flags().StringVar(&cfg.PrivateKeyPath, "private-key-path", "", "Path to private key for dynamic credentials.")
+
 	cmd.Flags().IntVar(&cfg.CacheConfig.Size, "cache-size", 0, "Maximum cache size in MB. 0 means unlimited size.")
 	cmd.Flags().DurationVar(&cfg.CacheConfig.TTL, "cache-expiry", internal.DefaultCacheTTL, "Cache entry TTL.")
 
@@ -92,16 +92,16 @@ func parseFlags(ctx context.Context, args []string, out io.Writer) error {
 	cmd.Flags().StringVar(&cfg.KeyFile, "key-file", "", "Path to SSL key (required if enabling SSL)")
 	cmd.Flags().BoolVar(&cfg.EnableRequestLogging, "log-http-requests", false, "Log HTTP requests")
 
-	cmd.Flags().StringVar(&cfg.GithubHostname, "github-hostname", github.DefaultHostname, "github hostname")
+	cmd.Flags().Var(cfg.GithubHostname, "github-hostname", "github hostname")
 	cmd.Flags().StringVar(&cfg.GithubClientID, "github-client-id", "", "github client ID")
 	cmd.Flags().StringVar(&cfg.GithubClientSecret, "github-client-secret", "", "github client secret")
 
-	cmd.Flags().StringVar(&cfg.GitlabHostname, "gitlab-hostname", gitlab.DefaultHostname, "gitlab hostname")
+	cmd.Flags().Var(cfg.GitlabHostname, "gitlab-hostname", "gitlab hostname")
 	cmd.Flags().StringVar(&cfg.GitlabClientID, "gitlab-client-id", "", "gitlab client ID")
 	cmd.Flags().StringVar(&cfg.GitlabClientSecret, "gitlab-client-secret", "", "gitlab client secret")
 
 	// TODO: forgejo is often self-hosted, and there may be more than one of them.  this should be a per-VCS setting
-	cmd.Flags().StringVar(&cfg.ForgejoHostname, "forgejo-hostname", forgejo.DefaultHostname, "forgejo hostname")
+	cmd.Flags().Var(cfg.ForgejoHostname, "forgejo-hostname", "forgejo hostname")
 
 	cmd.Flags().StringVar(&cfg.OIDC.Name, "oidc-name", "", "User friendly OIDC name")
 	cmd.Flags().StringVar(&cfg.OIDC.IssuerURL, "oidc-issuer-url", "", "OIDC issuer URL")

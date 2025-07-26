@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"slices"
 	"sync"
 
 	"github.com/a-h/templ"
+	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/configversion/source"
 	"golang.org/x/exp/maps"
 )
@@ -24,8 +26,8 @@ type Kind struct {
 	// ID distinguishes this kind from other kinds. NOTE: This must have first
 	// been inserted into the vcs_kinds table via a database migration.
 	ID KindID
-	// Hostname is the hostname of the VCS host, not including scheme or path.
-	Hostname string
+	// DefaultURL is the default base URL for the provider.
+	DefaultURL *internal.WebURL
 	// Icon renders an icon identifying the VCS host kind.
 	Icon templ.Component
 	// TokenKind provides info about the token the provider expects. Mutually
@@ -35,19 +37,27 @@ type Kind struct {
 	// Mutually exclusive with TokenKind.
 	AppKind AppKind
 	// NewClient constructs a client implementation.
-	NewClient func(context.Context, Config) (Client, error)
+	NewClient func(context.Context, ClientConfig) (Client, error)
 	// EventHandler handles incoming events from the VCS host before relaying
 	// them onwards for triggering actions like creating runs etc.
 	EventHandler func(r *http.Request, secret string) (*EventPayload, error)
 	// SkipRepohook if true skips the creation of a repository-level webhook.
 	SkipRepohook bool
-	// TFEServiceProvider optionally registers the kind with the TFE API, permitting vcs
+	// TFEServiceProviders registers the kind with the TFE API, permitting vcs
 	// providers of this kind to be created via the TFE API. The value specified
 	// here is the value that should be be provided by API clients via the
 	// "service-provider" attribute:
 	//
 	// https://developer.hashicorp.com/terraform/cloud-docs/api-docs/oauth-clients#request-body
-	TFEServiceProvider TFEServiceProviderType
+	//
+	// Must provide at least one type. A kind can register more than one type,
+	// e.g. gitlab-ce and gitlab-ee, in which case if a client specifies either
+	// of these types then OTF creates a provider of the gitlab kind. Note that
+	// OTF makes no distinction between multiple types but it's merely there to
+	// support the TFE API and the various values that clients might provide
+	// according to the API documentation (though OTF may in future make a
+	// distinction!).
+	TFEServiceProviders []TFEServiceProviderType
 	// Source sets the source identifier for this kind, to inform users which
 	// kind is the source of a run configuration. By default the ID is used as
 	// the source identifier but Source takes precedence if it is non-nil.
@@ -120,12 +130,14 @@ func (db *kindDB) GetKind(id KindID) (Kind, error) {
 	return kind, nil
 }
 
+// GetKindByTFEServiceProviderType retrieves a kind by its TFE service provider
+// type.
 func (db *kindDB) GetKindByTFEServiceProviderType(sp TFEServiceProviderType) (Kind, error) {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
 	for _, kind := range db.kinds {
-		if kind.TFEServiceProvider == sp {
+		if slices.Contains(kind.TFEServiceProviders, sp) {
 			return kind, nil
 		}
 	}

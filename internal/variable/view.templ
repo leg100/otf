@@ -97,8 +97,8 @@ templ listWorkspaceVariables(props listWorkspaceVariablesProps) {
 	}) {
 		@components.UnpaginatedTable(
 			&table{
-				canDeleteVariable:     props.canCreateVariable,
-				showVariableSetColumn: true,
+				canDeleteVariable:       props.canCreateVariable,
+				workspaceVariablesTable: true,
 			},
 			props.rows,
 			"variables-table",
@@ -412,14 +412,16 @@ templ variableSetForm(props variableSetFormProps) {
 	</form>
 }
 
+// table of variables
 type table struct {
-	canDeleteVariable     bool
-	showVariableSetColumn bool
+	canDeleteVariable bool
+	// workspaceVariablesTable is true if this is a table of variables for a
+	// workspace, or false if this is a table of variables for a variable set.
+	workspaceVariablesTable bool
 }
 
-// table of variables
 templ (t table) Header() {
-	if t.showVariableSetColumn {
+	if t.showVariableSetColumn() {
 		<th>Set</th>
 	}
 	<th>Key</th>
@@ -428,9 +430,15 @@ templ (t table) Header() {
 	<th>Actions</th>
 }
 
+func (t table) showVariableSetColumn() bool {
+	// Only show a column containing the name of the variable set on the
+	// workspace variables table.
+	return t.workspaceVariablesTable
+}
+
 templ (t table) Row(v variableRow) {
 	<tr id={ "item-variable-" + v.Key } x-data={ components.BlockLink(t.editPath(v)) }>
-		if t.showVariableSetColumn {
+		if t.showVariableSetColumn() {
 			<td class="">
 				if v.set != nil {
 					<a class="link" href={ paths.EditVariableSet(v.set.ID) }>
@@ -461,7 +469,10 @@ templ (t table) Row(v variableRow) {
 			<form title="Edit variable" action={ t.editPath(v) } method="GET">
 				@components.EditButton()
 			</form>
-			if t.showDeleteButton(v) && t.canDeleteVariable {
+			// Hide the delete button when this is a workspace variables table
+			// and this is a variable set variable - users must instead go the
+			// variable set's page to delete the variable.
+			if !(t.workspaceVariablesTable && v.set != nil) && t.canDeleteVariable {
 				<form title="Delete variable" action={ t.deletePath(v) } method="POST">
 					@components.DeleteButton()
 				</form>
@@ -482,11 +493,6 @@ func (t table) deletePath(row variableRow) templ.SafeURL {
 		return paths.DeleteVariableSetVariable(row.ID)
 	}
 	return paths.DeleteVariable(row.ID)
-}
-
-func (t table) showDeleteButton(row variableRow) bool {
-	// hide delete button for variable belonging to sets - users can only delete set variables on the relevant variable set page.
-	return row.set == nil
 }
 
 func toJSON(v any) string {

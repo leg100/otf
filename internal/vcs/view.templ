@@ -226,6 +226,28 @@ templ form(props formProps) {
 					}
 				}
 			}
+			<div class="field">
+				<label for="url">URL</label>
+				<input
+					class="input w-96"
+					type="url"
+					name="base_url"
+					if props.edit {
+						value={ props.provider.BaseURL.String() }
+					} else {
+						value={ props.provider.DefaultURL.String() }
+					}
+					readonly?={ app != nil }
+					id="url"
+					required
+				/>
+				<span class="description">
+					The provider's homepage URL.
+					if app != nil {
+						This cannot be changed for Github Apps.
+					}
+				</span>
+			</div>
 			if props.edit {
 				<button class="btn w-32">Update</button>
 			} else {

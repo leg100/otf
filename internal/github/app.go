@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/a-h/templ"
+	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/vcs"
 	"golang.org/x/exp/slog"
 )
@@ -21,18 +22,18 @@ type (
 		// Organization is the name of the *github* organization that owns the
 		// app. If the app is owned by a user then this is nil.
 		Organization *string `db:"organization"`
-		Hostname     string
+		GithubURL    *internal.WebURL
 
 		*Client
 	}
 
 	CreateAppOptions struct {
+		BaseURL             *internal.WebURL
 		AppID               int64
 		WebhookSecret       string
 		PrivateKey          string
 		Slug                string
 		Organization        *string
-		Hostname            string
 		SkipTLSVerification bool
 	}
 )
@@ -47,7 +48,7 @@ func newApp(opts CreateAppOptions) (*App, error) {
 	}
 
 	client, err := NewClient(ClientOptions{
-		Hostname:            opts.Hostname,
+		BaseURL:             opts.BaseURL,
 		SkipTLSVerification: opts.SkipTLSVerification,
 		AppCredentials: &AppCredentials{
 			ID:         app.ID,
@@ -75,7 +76,7 @@ func (a *App) NewInstallURL(hostname string) string {
 }
 
 func (a *App) InstallationLink() templ.SafeURL {
-	return templ.SafeURL(a.NewInstallURL(a.Hostname))
+	return templ.SafeURL(a.NewInstallURL(a.GithubURL.Host))
 }
 
 // LogValue implements slog.LogValuer.
@@ -92,7 +93,9 @@ func (a *App) AdvancedURL() templ.SafeURL {
 	if a.Organization != nil {
 		path = fmt.Sprintf("/organizations/%s%s", *a.Organization, path)
 	}
-	return templ.SafeURL(fmt.Sprintf("https://%s%s", a.Hostname, path))
+	u := *a.GithubURL
+	u.Path = path
+	return templ.SafeURL(u.String())
 }
 
 // ListInstallations lists installations of the currently authenticated app.

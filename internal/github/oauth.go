@@ -1,6 +1,7 @@
 package github
 
 import (
+	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authenticator"
 
 	oauth2github "golang.org/x/oauth2/github"
@@ -15,7 +16,7 @@ var (
 
 func RegisterOAuthHandler(
 	authenticatorService *authenticator.Service,
-	hostname string,
+	baseURL *internal.WebURL,
 	clientID, clientSecret string,
 	skipTLSVerification bool,
 ) error {
@@ -23,7 +24,7 @@ func RegisterOAuthHandler(
 		ClientConstructor: NewOAuthClient,
 		OAuthConfig: authenticator.OAuthConfig{
 			Name:                "github",
-			Hostname:            hostname,
+			BaseURL:             baseURL,
 			Endpoint:            OAuthEndpoint,
 			Scopes:              OAuthScopes,
 			ClientID:            clientID,

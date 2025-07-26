@@ -4,13 +4,14 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/sql"
 )
 
 // appDB is a github app database on postgres
 type appDB struct {
 	*sql.DB
-	hostname            string
+	baseURL             *internal.WebURL
 	skipTLSVerification bool
 }
 
@@ -54,7 +55,7 @@ func (db *appDB) get(ctx context.Context) (*App, error) {
 	}
 
 	client, err := NewClient(ClientOptions{
-		Hostname:            db.hostname,
+		BaseURL:             db.baseURL,
 		SkipTLSVerification: db.skipTLSVerification,
 		AppCredentials: &AppCredentials{
 			ID:         m.ID,
@@ -72,7 +73,7 @@ func (db *appDB) get(ctx context.Context) (*App, error) {
 		PrivateKey:    m.PrivateKey,
 		Organization:  m.Organization,
 		Client:        client,
-		Hostname:      db.hostname,
+		GithubURL:     db.baseURL,
 	}, nil
 }
 
