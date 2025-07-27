@@ -16,7 +16,6 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/logr"
-	"github.com/leg100/otf/internal/resource"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -91,9 +90,6 @@ func New(
 func (r *Runner) Start(ctx context.Context) error {
 	r.logger.V(r.v).Info("starting runner", "version", internal.Version)
 
-	// Initialize tracker, to keep track of active jobs.
-	tracker := &jobTracker{mapping: make(map[resource.TfeID]cancelable)}
-
 	// Authenticate as unregistered runner with the registration endpoint. This
 	// is only necessary for the server runner; the agent runner relies on
 	// middleware to authenticate as an unregistered runner on the server.
@@ -145,7 +141,7 @@ func (r *Runner) Start(ctx context.Context) error {
 			case <-ticker.C:
 				// send runner status update
 				status := RunnerIdle
-				if tracker.totalJobs() > 0 {
+				if r.spawner.currentJobs() > 0 {
 					status = RunnerBusy
 				}
 				if err := r.client.updateStatus(ctx, registrationMetadata.ID, status); err != nil {
@@ -174,16 +170,6 @@ func (r *Runner) Start(ctx context.Context) error {
 	})
 
 	g.Go(func() (err error) {
-		defer func() {
-			if tracker.totalJobs() > 0 {
-				r.logger.Info("gracefully canceling in-progress jobs", "total", tracker.totalJobs())
-				// NOTE: The interrupt sent to the main process is also sent to
-				// any forked terraform processes, which is what we want, but it
-				// is also necessary to instruct operations to stop.
-				tracker.stopAll()
-			}
-		}()
-
 		// fetch jobs allocated to this runner and spawn operations to do jobs; also
 		// handle cancelation signals for jobs
 		for {

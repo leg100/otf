@@ -174,7 +174,7 @@ func (c *Client) finishJob(ctx context.Context, jobID resource.TfeID, opts finis
 	return nil
 }
 
-func (c *remoteClient) GenerateDynamicCredentialsToken(ctx context.Context, jobID resource.TfeID, audience string) ([]byte, error) {
+func (c *Client) GenerateDynamicCredentialsToken(ctx context.Context, jobID resource.TfeID, audience string) ([]byte, error) {
 	u := fmt.Sprintf("jobs/%s/dynamic-credentials", jobID)
 	req, err := c.newRequest("POST", u, generateDynamicCredentialsTokenParams{
 		Audience: audience,

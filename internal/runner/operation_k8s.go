@@ -73,3 +73,8 @@ func (s *KubeOperationSpawner) SpawnOperation(ctx context.Context, _ *errgroup.G
 	}
 	return nil
 }
+
+func (s *KubeOperationSpawner) currentJobs() int {
+	// list k8s jobs match runner
+	return 0
+}

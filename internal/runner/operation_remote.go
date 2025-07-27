@@ -17,6 +17,7 @@ type RemoteOperationSpawner struct {
 	Config OperationConfig
 	Logger logr.Logger
 	URL    string
+	n      int
 }
 
 func (s *RemoteOperationSpawner) SpawnOperation(ctx context.Context, g *errgroup.Group, job *Job, jobToken []byte) error {
@@ -30,30 +31,10 @@ func (s *RemoteOperationSpawner) SpawnOperation(ctx context.Context, g *errgroup
 	if err != nil {
 		return err
 	}
-	DoRemoteOperation(
-		ctx,
-		s.Logger,
-		g,
-		s.Config,
-		client,
-		job,
-		jobToken,
-	)
-	return nil
-}
-
-func DoRemoteOperation(
-	ctx context.Context,
-	logger logr.Logger,
-	g *errgroup.Group,
-	config OperationConfig,
-	client *otfapi.Client,
-	job *Job,
-	jobToken []byte,
-) {
+	s.n++
 	doOperation(ctx, g, operationOptions{
-		logger:          logger,
-		OperationConfig: config,
+		logger:          s.Logger,
+		OperationConfig: s.Config,
 		job:             job,
 		jobToken:        jobToken,
 		runs:            &run.Client{Client: client},
@@ -64,4 +45,10 @@ func DoRemoteOperation(
 		configs:         &configversion.Client{Client: client},
 		server:          client,
 	})
+	s.n--
+	return nil
+}
+
+func (s *RemoteOperationSpawner) currentJobs() int {
+	return s.n
 }

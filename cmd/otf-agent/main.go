@@ -63,7 +63,7 @@ func run(ctx context.Context, args []string) error {
 			// Construct and start the runner.
 			runner, err := runner.New(
 				logger,
-				&remoteClient{Client: client},
+				&runner.Client{Client: client},
 				&runner.RemoteOperationSpawner{
 					Logger: logger,
 					Config: config.OperationConfig,
