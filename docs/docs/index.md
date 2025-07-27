@@ -13,7 +13,7 @@ OTF is an open-source alternative to Terraform Enterprise, sharing many of its f
 * Compatible with much of the [Terraform Enterprise/Cloud API](tfe_api.md)
 * Minimal dependencies: requires only PostgreSQL
 * Stateless: horizontally scale servers in pods on Kubernetes, etc
-* Module registry (provider registry coming soon)
+* Module registry
 
 ...and full support for [OpenTofu](engines.md).
 
