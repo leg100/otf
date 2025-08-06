@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.1](https://github.com/leg100/otf/compare/v0.4.0...v0.4.1) (2025-08-06)
+
+
+### Bug Fixes
+
+* **ui:** remove extra semicolons ([#818](https://github.com/leg100/otf/issues/818)) ([1ee991c](https://github.com/leg100/otf/commit/1ee991cbbd20bb39394f2d4375f9249a9292328c)), closes [#817](https://github.com/leg100/otf/issues/817)
+
 ## [0.4.0](https://github.com/leg100/otf/compare/v0.3.27...v0.4.0) (2025-07-24)
 
 
