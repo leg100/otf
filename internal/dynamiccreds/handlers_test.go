@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestHandlers(t *testing.T) {
+func TestHandlers_jwks(t *testing.T) {
 	key, err := jwk.ParseKey(testutils.ReadFile(t, "./testdata/public_key.pem"), jwk.WithPEM(true))
 	require.NoError(t, err)
 
