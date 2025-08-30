@@ -12,9 +12,10 @@ type workdir struct {
 	relative string // relative path to working directory
 }
 
-func newWorkdir(workingDirectory string) (*workdir, error) {
-	// create dedicated directory for operation
-	rootDir, err := os.MkdirTemp("", "otf-config-")
+func newWorkdir(workingDirectory string, RunID string) (*workdir, error) {
+	// create dedicated directory for run
+	rootDir := path.Join(os.TempDir(), "otf-runs", RunID)
+	err := os.MkdirAll(rootDir, 0o700)
 	if err != nil {
 		return nil, err
 	}
