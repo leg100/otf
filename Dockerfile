@@ -23,6 +23,7 @@ RUN adduser -D -H -u 4096 otf
 # bubblewrap is for sandboxing, and git permits pulling modules via
 # the git protocol
 # tini manages init and signal handling
+# hadolint ignore=DL3019
 RUN --mount=type=cache,target=/etc/apk/cache \
   apk add bubblewrap=~0.11.0 git=~2.49.1 tini=~0.19.0
 

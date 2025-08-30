@@ -1,9 +1,8 @@
 VERSION = $(shell git describe --tags --dirty --always)
 GIT_COMMIT = $(shell git rev-parse HEAD)
-RANDOM_SUFFIX := $(shell cat /dev/urandom | tr -dc 'a-z0-9' | head -c5)
 IMAGE_NAME = leg100/otfd
 IMAGE_NAME_AGENT = leg100/otf-agent
-IMAGE_TAG ?= $(VERSION)-$(RANDOM_SUFFIX)
+IMAGE_TAG ?= $(VERSION)
 DBSTRING=postgres:///otf
 LD_FLAGS = " \
     -s -w \
@@ -31,6 +30,10 @@ test:
 build:
 	CGO_ENABLED=0 go build -o _build/ -ldflags $(LD_FLAGS) ./...
 	chmod -R +x _build/*
+
+.PHONY: clean
+clean:
+	rm -rf _build/ internal/integration/screenshots mirror/registry.*
 
 .PHONY: install
 install:
@@ -84,8 +87,8 @@ vet:
 
 # Build docker image
 .PHONY: image
-image: build
-	docker build -f Dockerfile -t $(IMAGE_NAME):$(IMAGE_TAG) -t $(IMAGE_NAME):latest ./_build
+image:
+	docker build -f Dockerfile -t $(IMAGE_NAME):$(IMAGE_TAG) -t $(IMAGE_NAME):latest --target otfd .
 
 # Build and load image into k8s kind
 .PHONY: load
@@ -94,8 +97,8 @@ load: image
 
 # Build docker image for otf-agent
 .PHONY: image-agent
-image-agent: build
-	docker build -f ./Dockerfile.agent -t $(IMAGE_NAME_AGENT):$(IMAGE_TAG) -t $(IMAGE_NAME_AGENT):latest ./_build
+image-agent:
+	docker build -f Dockerfile -t $(IMAGE_NAME_AGENT):$(IMAGE_TAG) -t $(IMAGE_NAME_AGENT):latest --target otf-agent .
 
 # Build and load otf-agent image into k8s kind
 .PHONY: load-agent
