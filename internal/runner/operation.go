@@ -258,7 +258,7 @@ func (o *operation) do() error {
 	if err != nil {
 		return fmt.Errorf("retreiving workspace: %w", err)
 	}
-	wd, err := newWorkdir(ws.WorkingDirectory)
+	wd, err := newWorkdir(ws.WorkingDirectory, o.job.RunID.String())
 	if err != nil {
 		return fmt.Errorf("constructing working directory: %w", err)
 	}
