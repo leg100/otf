@@ -129,6 +129,18 @@ serviceAccount:
 # -- Add annotations to otfd pod
 podAnnotations: {}
 
+# -- Set security context for container
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop: [ALL]
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  seccompProfile:
+    type: RuntimeDefault
+
 # -- Set security context for otfd pod
 podSecurityContext: {}
   # fsGroup: 2000
@@ -160,7 +172,7 @@ ingress:
 serviceMonitor:
   enabled: false
 
-# -- Enable sandboxing of terraform apply - note, this will run pods as privileged
+# -- Enable sandboxing of terraform apply - note, this will run pods as privileged and clear securityContext of the container
 sandbox: false
 
 caCerts:

@@ -87,9 +87,10 @@ Note: you should only use this for testing purposes.
 | proxy | string | `nil` | Specify an http(s) proxy for outbound connections. |
 | replicaCount | int | `1` | Number of otfd nodes to cluster |
 | resources | object | `{}` |  |
-| sandbox | bool | `false` | Enable sandboxing of terraform apply - note, this will run pods as privileged |
+| sandbox | bool | `false` | Enable sandboxing of terraform apply - note, this will run pods as privileged and clear securityContext of the container |
 | secret | string | `""` | Cryptographic secret. Must be a hex-encoded 16-byte string. See [docs](https://docs.otf.ninja/config/flags/#-secret). |
 | secretFromSecret | object | `{}` | Source cryptographic secret from a kubernetes secret instead. |
+| securityContext | object | `{"allowPrivilegeEscalation":false,"capabilities":{"drop":["ALL"]},"readOnlyRootFilesystem":true,"runAsGroup":1000,"runAsNonRoot":true,"runAsUser":1000,"seccompProfile":{"type":"RuntimeDefault"}}` | Set security context for container |
 | service.annotations | object | `{}` |  |
 | service.port | int | `80` | Service port for otf |
 | service.type | string | `"ClusterIP"` | Service type for otf |
