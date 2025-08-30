@@ -72,5 +72,7 @@ services:
       - HTTPS_PROXY=squid:3128
       - SSL_CERT_FILE=/fixtures/cert.pem
       - OTF_HOSTNAME=otf.local
+      - OTF_PUBLIC_KEY_PATH=/fixtures/public_key.pem
+      - OTF_PRIVATE_KEY_PATH=/fixtures/key.pem
     volumes:
       - ./internal/integration/fixtures:/fixtures
