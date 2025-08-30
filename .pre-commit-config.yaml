@@ -4,6 +4,7 @@ repos:
     hooks:
     -   id: check-json
     -   id: check-yaml
+        exclude: '^charts/[^/]*/templates/.*'
     -   id: trailing-whitespace
     -   id: end-of-file-fixer
         exclude: '.tfstate|run|testdata'
