@@ -12,9 +12,14 @@ type workdir struct {
 	relative string // relative path to working directory
 }
 
-func newWorkdir(workingDirectory string) (*workdir, error) {
-	// create dedicated directory for operation
-	rootDir, err := os.MkdirTemp("", "otf-config-")
+func newWorkdir(workingDirectory string, RunID string) (*workdir, error) {
+	// create dedicated directory for run
+	// The absolute path needs to be consistent between operations, in order to
+	// avoid errors during apply for resources/variables that reference it since
+	// the saved plan locks in those values.
+	// ref: https://github.com/leg100/otf/pull/822
+	rootDir := path.Join(os.TempDir(), "otf-runs", RunID)
+	err := os.MkdirAll(rootDir, 0o700)
 	if err != nil {
 		return nil, err
 	}
