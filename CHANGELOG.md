@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.2](https://github.com/leg100/otf/compare/v0.4.1...v0.4.2) (2025-09-23)
+
+
+### Bug Fixes
+
+* AWS dynamic provider credentials invalid apply absolute paths ([#822](https://github.com/leg100/otf/issues/822)) ([fc3162a](https://github.com/leg100/otf/commit/fc3162a35e8b51ff5d155f0eb097c3f96a03786e))
+* handle tfe provider agent pool ID empty string gracefully ([48c7f45](https://github.com/leg100/otf/commit/48c7f45a3e2ac729a7ad8051d0dd3ed9629aa9a9))
+
 ## [0.4.1](https://github.com/leg100/otf/compare/v0.4.0...v0.4.1) (2025-08-27)
 
 
