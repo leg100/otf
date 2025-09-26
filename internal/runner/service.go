@@ -534,14 +534,12 @@ func (s *Service) GenerateDynamicCredentialsToken(ctx context.Context, jobID res
 		if err != nil {
 			return nil, err
 		}
-		return dynamiccreds.GenerateToken(
-			s.dynamiccreds.PrivateKey(),
+		return s.dynamiccreds.GenerateToken(
 			s.hostnames.URL(""),
 			job.Organization,
 			job.WorkspaceID,
 			workspace.Name,
 			job.RunID,
-			jobID,
 			job.Phase,
 			audience,
 		)
