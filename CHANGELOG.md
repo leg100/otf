@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.3](https://github.com/leg100/otf/compare/v0.4.2...v0.4.3) (2025-09-27)
+
+
+### Bug Fixes
+
+* azure dyn cred provider no kid found error ([#828](https://github.com/leg100/otf/issues/828)) ([6d55d8e](https://github.com/leg100/otf/commit/6d55d8e78fcb1e787a150c6a3e9bbb241e1147dc))
+
 ## [0.4.2](https://github.com/leg100/otf/compare/v0.4.1...v0.4.2) (2025-09-23)
 
 
