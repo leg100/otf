@@ -76,7 +76,6 @@ func (h *Handlers) wellKnown(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handlers) jwks(w http.ResponseWriter, r *http.Request) {
 	set := jwk.NewSet()
-	jwk.AssignKeyID(h.publicKey)
 	set.AddKey(h.publicKey)
 	encoder := json.NewEncoder(w)
 	encoder.SetIndent("", "  ")

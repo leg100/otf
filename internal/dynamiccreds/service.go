@@ -9,6 +9,9 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/logr"
+	"github.com/leg100/otf/internal/organization"
+	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/run"
 	"github.com/lestrrat-go/jwx/v2/jwk"
 	"golang.org/x/crypto/ssh"
 )
@@ -50,6 +53,11 @@ func NewService(opts Options) (*Service, error) {
 			if err != nil {
 				return nil, err
 			}
+
+			// Assign kid to public key. The AWS provider insists on this
+			// being present on the JWKS endpoint.
+			jwk.AssignKeyID(key)
+
 			svc.handlers = &Handlers{
 				hostnameService: opts.HostnameService,
 				publicKey:       key,
@@ -69,6 +77,11 @@ func NewService(opts Options) (*Service, error) {
 			if err != nil {
 				return nil, err
 			}
+
+			// Assign kid to private key. The Azure provider insists on this
+			// being present in the headers of the generated JWT.
+			jwk.AssignKeyID(key)
+
 			svc.privateKey = key
 		}
 		opts.Logger.Info("enabled dynamic provider credentials")
@@ -83,4 +96,25 @@ func (s *Service) AddHandlers(r *mux.Router) {
 	if s.privateKey != nil {
 		s.handlers.addHandlers(r)
 	}
+}
+
+func (s *Service) GenerateToken(
+	issuer string,
+	organization organization.Name,
+	workspaceID resource.TfeID,
+	workspaceName string,
+	runID resource.TfeID,
+	phase run.PhaseType,
+	audience string,
+) ([]byte, error) {
+	return generateToken(
+		s.privateKey,
+		issuer,
+		organization,
+		workspaceID,
+		workspaceName,
+		runID,
+		phase,
+		audience,
+	)
 }

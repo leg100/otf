@@ -5,20 +5,20 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/leg100/otf/internal/testutils"
-	"github.com/lestrrat-go/jwx/v2/jwk"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestHandlers(t *testing.T) {
-	key, err := jwk.ParseKey(testutils.ReadFile(t, "./testdata/public_key.pem"), jwk.WithPEM(true))
+	svc, err := NewService(Options{
+		PublicKeyPath:  "./testdata/public_key.pem",
+		PrivateKeyPath: "./testdata/private_key.pem",
+	})
 	require.NoError(t, err)
 
-	handlers := &Handlers{publicKey: key}
 	req := httptest.NewRequest("GET", "/", nil)
 	w := httptest.NewRecorder()
-	handlers.jwks(w, req)
+	svc.handlers.jwks(w, req)
 
 	resp := w.Result()
 	body, _ := io.ReadAll(resp.Body)
