@@ -20,7 +20,6 @@ type (
 	Service struct {
 		handlers   *Handlers
 		privateKey jwk.Key
-		publicKey  jwk.Key
 	}
 
 	Options struct {
