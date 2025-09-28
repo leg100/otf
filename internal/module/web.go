@@ -231,7 +231,7 @@ func (h *webHandlers) publish(w http.ResponseWriter, r *http.Request) {
 		Repo:          Repo(params.Repo),
 		VCSProviderID: params.VCSProviderID,
 	})
-	if err != nil && errors.Is(err, vcs.ErrInvalidRepo) || errors.Is(err, ErrInvalidModuleRepo) {
+	if errors.Is(err, vcs.ErrInvalidRepo) || errors.Is(err, ErrInvalidModuleRepo) {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	} else if err != nil {

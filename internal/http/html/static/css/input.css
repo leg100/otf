@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "./runstatus.css";
+@plugin "@tailwindcss/typography";
 @plugin "../../../../../daisyui.js" {
 	themes: all;
 }
