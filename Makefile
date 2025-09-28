@@ -166,7 +166,7 @@ install-playwright-arch: install-playwright
 # run templ generation in watch mode to detect all .templ files and
 # re-create _templ.txt files on change, then send reload event to browser.
 # Default url: http://localhost:7331
-live/templ: install-templ
+live/templ:
 	go tool templ generate --watch --proxy="https://localhost:8080" --open-browser=false --cmd="go run ./cmd/otfd/main.go"
 
 # run tailwindcss to generate the styles.css bundle in watch mode.
@@ -189,10 +189,7 @@ live/sync_assets:
 live:
 	make -j live/tailwind live/sync_assets live/templ
 
-install-templ:
-	go get -tool github.com/a-h/templ/cmd/templ@v0.3.906
-
-generate-templates: install-templ
+generate-templates:
 	go tool templ generate
 
 check-no-diff: paths actions generate-templates
