@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.4.4](https://github.com/leg100/otf/compare/v0.4.3...v0.4.4) (2025-09-29)
+
+
+### Bug Fixes
+
+* module markdown rendering ([#831](https://github.com/leg100/otf/issues/831)) ([90700f1](https://github.com/leg100/otf/commit/90700f142a6ec6b81f82ad86ddc040b658a8dceb)), closes [#820](https://github.com/leg100/otf/issues/820)
+* remove unnecessary tool install make tasks ([acd9d6f](https://github.com/leg100/otf/commit/acd9d6f19ddd2ba9ceb9ffc6c564ed50571f15c2))
+
+
+### Miscellaneous
+
+* bump daisyui version ([dfd3904](https://github.com/leg100/otf/commit/dfd3904bffa72a4347cd9c054c32e43bc377de12))
+* bump templ version ([15768e0](https://github.com/leg100/otf/commit/15768e0992164e28d86c2a8d3b5ee6266f23787c))
+
 ## [0.4.3](https://github.com/leg100/otf/compare/v0.4.2...v0.4.3) (2025-09-27)
 
 
