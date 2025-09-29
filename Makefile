@@ -123,24 +123,16 @@ doc-screenshots: # update documentation screenshots
 tunnel:
 	cloudflared tunnel run otf
 
-.PHONY: install-goimports
-install-goimports:
-	go get -tool golang.org/x/tools/cmd/goimports@v0.32.0
-
 # Generate path helpers
 .PHONY: paths
-paths: install-goimports
+paths:
 	go generate ./internal/http/html/paths
 	go tool goimports -w ./internal/http/html/paths
 	go tool goimports -w ./internal/http/html/components/paths
 
-.PHONY: install-stringer
-install-stringer:
-	go get -tool golang.org/x/tools/cmd/stringer@v0.32.0
-
 # Re-generate RBAC action strings
 .PHONY: actions
-actions: install-stringer
+actions:
 	go tool stringer -type Action ./internal/authz
 
 .PHONY: debug
@@ -151,22 +143,18 @@ debug:
 connect:
 	dlv connect 127.0.0.1:4300 .
 
-.PHONY: install-playwright
-install-playwright:
-	go get -tool github.com/playwright-community/playwright-go/cmd/playwright@v0.5200.0
-
 .PHONY: playwright-ubuntu
-install-playwright-ubuntu: install-playwright
+install-playwright-ubuntu:
 	go tool playwright install chromium --with-deps
 
 .PHONY: playwright-arch
-install-playwright-arch: install-playwright
+install-playwright-arch:
 	go tool playwright install chromium
 
 # run templ generation in watch mode to detect all .templ files and
 # re-create _templ.txt files on change, then send reload event to browser.
 # Default url: https://localhost:7331
-live/templ: install-templ
+live/templ:
 	go tool templ generate --watch --proxy="https://localhost:8080" --open-browser=false --cmd="go run ./cmd/otfd/main.go"
 
 # run tailwindcss to generate the styles.css bundle in watch mode.
