@@ -811,23 +811,23 @@ func get(props getProps) templ.Component {
 						return templ_7745c5c3_Err
 					}
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 43, "</div><div><h3 class=\"font-semibold\"></h3><div class=\"flex flex-col gap-2\"><label for=\"usage\">Usage</label> <textarea class=\"textarea font-normal font-mono\" id=\"usage\" cols=\"60\" rows=\"5\" readonly wrap=\"off\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 43, "</div><div><h3 class=\"font-semibold\"></h3><div class=\"flex flex-col gap-2\"><label for=\"usage\">Usage</label><div><div class=\"whitespace-pre overflow-auto border-1 p-1 font-mono\" id=\"usage\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var36 string
-				templ_7745c5c3_Var36, templ_7745c5c3_Err = templ.JoinStringErrs(`module "{ ` + props.module.Name + `}" {
-	source = "{ ` + props.hostname + ` }/{ ` + props.module.Organization.String() + ` }/{ ` + props.module.Name + ` }/{ ` + props.module.Provider + ` }"
-	version = "{ ` + props.currentVersion.Version + ` }"
+				templ_7745c5c3_Var36, templ_7745c5c3_Err = templ.JoinStringErrs(`module "` + props.module.Name + `" {
+	source = "` + props.hostname + `/` + props.module.Organization.String() + `/` + props.module.Name + `/` + props.module.Provider + `"
+	version = "` + props.currentVersion.Version + `"
 }`)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/module/view.templ`, Line: 224, Col: 2}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/module/view.templ`, Line: 225, Col: 2}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var36))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 44, "</textarea></div></div><div>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 44, "</div></div></div></div><div class=\"prose\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -847,7 +847,7 @@ func get(props getProps) templ.Component {
 					var templ_7745c5c3_Var37 string
 					templ_7745c5c3_Var37, templ_7745c5c3_Err = templ.JoinStringErrs(resource)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/module/view.templ`, Line: 235, Col: 44}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/module/view.templ`, Line: 237, Col: 44}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var37))
 					if templ_7745c5c3_Err != nil {
@@ -870,7 +870,7 @@ func get(props getProps) templ.Component {
 					var templ_7745c5c3_Var38 string
 					templ_7745c5c3_Var38, templ_7745c5c3_Err = templ.JoinStringErrs(v)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/module/view.templ`, Line: 243, Col: 37}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/module/view.templ`, Line: 245, Col: 37}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var38))
 					if templ_7745c5c3_Err != nil {
@@ -893,7 +893,7 @@ func get(props getProps) templ.Component {
 					var templ_7745c5c3_Var39 string
 					templ_7745c5c3_Var39, templ_7745c5c3_Err = templ.JoinStringErrs(output)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/module/view.templ`, Line: 251, Col: 42}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/module/view.templ`, Line: 253, Col: 42}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var39))
 					if templ_7745c5c3_Err != nil {
@@ -916,7 +916,7 @@ func get(props getProps) templ.Component {
 			var templ_7745c5c3_Var40 templ.SafeURL
 			templ_7745c5c3_Var40, templ_7745c5c3_Err = templ.JoinURLErrs(paths.DeleteModule(props.module.ID))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/module/view.templ`, Line: 256, Col: 79}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/module/view.templ`, Line: 258, Col: 79}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var40))
 			if templ_7745c5c3_Err != nil {

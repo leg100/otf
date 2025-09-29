@@ -78,6 +78,15 @@ func TestModuleE2E(t *testing.T) {
 		// should show vcs repo source
 		err = expect.Locator(page.Locator(`//span[@id='vcs-repo']`)).ToHaveText(regexp.MustCompile(`.*/terraform-aws-mod`))
 		require.NoError(t, err)
+
+		// should show usage
+		err = expect.Locator(page.Locator(`//div[@id='usage']`)).ToHaveText(fmt.Sprintf(`
+module "mod" {
+	source = "%s/%s/mod/aws"
+	version = "0.1.0"
+}
+`, svc.System.Hostname(), org.Name))
+		require.NoError(t, err)
 	})
 
 	// Now we test the webhook functionality by sending an event to the daemon
