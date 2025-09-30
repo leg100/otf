@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.5](https://github.com/leg100/otf/compare/v0.4.4...v0.4.5) (2025-09-30)
+
+
+### Bug Fixes
+
+* swap out bitnami postgres helm chart ([539cd9c](https://github.com/leg100/otf/commit/539cd9c8c8fe9f074350c467a3430aee74dfb510))
+
 ## [0.4.4](https://github.com/leg100/otf/compare/v0.4.3...v0.4.4) (2025-09-29)
 
 
