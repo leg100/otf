@@ -83,7 +83,7 @@ Note: you should only use this for testing purposes.
 | oidc.usernameClaim | string | `""` | Override OIDC claim used for username. See [docs](https://docs.otf.ninja/auth/providers/oidc/). |
 | podAnnotations | object | `{}` | Add annotations to otfd pod |
 | podSecurityContext | object | `{}` | Set security context for otfd pod |
-| postgres.enabled | bool | `false` | Install postgres chart dependency. |
+| postgres.enabled | bool | `false` | Install postgres chart dependency. NOTE: this should only be used for testing purposes. |
 | proxy | string | `nil` | Specify an http(s) proxy for outbound connections. |
 | replicaCount | int | `1` | Number of otfd nodes to cluster |
 | resources | object | `{}` |  |

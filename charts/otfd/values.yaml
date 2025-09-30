@@ -23,7 +23,7 @@ fullnameOverride: ""
 hostname: ""
 
 postgres:
-  # -- Install postgres chart dependency.
+  # -- Install postgres chart dependency. NOTE: this should only be used for testing purposes.
   enabled: false
 
 # -- Postgres connection string
