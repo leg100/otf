@@ -21,18 +21,18 @@ func TestMetricsCollector_bootstrap(t *testing.T) {
 
 	mc := &MetricsCollector{}
 	mc.bootstrap(
-		status{id: testutils.ParseID(t, "run-1"), status: runstatus.Pending},
-		status{id: testutils.ParseID(t, "run-2"), status: runstatus.Pending},
-		status{id: testutils.ParseID(t, "run-3"), status: runstatus.Pending},
-		status{id: testutils.ParseID(t, "run-4"), status: runstatus.Pending},
-		status{id: testutils.ParseID(t, "run-5"), status: runstatus.Planning},
-		status{id: testutils.ParseID(t, "run-6"), status: runstatus.Planning},
-		status{id: testutils.ParseID(t, "run-7"), status: runstatus.Planning},
-		status{id: testutils.ParseID(t, "run-8"), status: runstatus.Planning},
-		status{id: testutils.ParseID(t, "run-9"), status: runstatus.Applied},
-		status{id: testutils.ParseID(t, "run-10"), status: runstatus.Applied},
-		status{id: testutils.ParseID(t, "run-11"), status: runstatus.Applied},
-		status{id: testutils.ParseID(t, "run-12"), status: runstatus.Applied},
+		status{ID: testutils.ParseID(t, "run-1"), Status: runstatus.Pending},
+		status{ID: testutils.ParseID(t, "run-2"), Status: runstatus.Pending},
+		status{ID: testutils.ParseID(t, "run-3"), Status: runstatus.Pending},
+		status{ID: testutils.ParseID(t, "run-4"), Status: runstatus.Pending},
+		status{ID: testutils.ParseID(t, "run-5"), Status: runstatus.Planning},
+		status{ID: testutils.ParseID(t, "run-6"), Status: runstatus.Planning},
+		status{ID: testutils.ParseID(t, "run-7"), Status: runstatus.Planning},
+		status{ID: testutils.ParseID(t, "run-8"), Status: runstatus.Planning},
+		status{ID: testutils.ParseID(t, "run-9"), Status: runstatus.Applied},
+		status{ID: testutils.ParseID(t, "run-10"), Status: runstatus.Applied},
+		status{ID: testutils.ParseID(t, "run-11"), Status: runstatus.Applied},
+		status{ID: testutils.ParseID(t, "run-12"), Status: runstatus.Applied},
 	)
 	assert.Len(t, mc.currentStatuses, 12)
 	want := `
