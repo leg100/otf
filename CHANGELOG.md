@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.4.6](https://github.com/leg100/otf/compare/v0.4.5...v0.4.6) (2025-10-01)
+
+
+### Bug Fixes
+
+* add caching to speed up run listings ([cbfeceb](https://github.com/leg100/otf/commit/cbfeceb054162e6e2a7243391265f30003bea761))
+* add indices to boost perf and reduce db load ([04678fc](https://github.com/leg100/otf/commit/04678fc3a8d852d8619305ae181424e47a296090))
+* avoid websocket handler infinite loop ([92ea015](https://github.com/leg100/otf/commit/92ea01547fd9c954bb7b56b66ac0e8ba331c6363))
+* improve performance of run metrics collector ([d421c16](https://github.com/leg100/otf/commit/d421c16756e1f2bd050b4ecb6cf97e43b57264e0))
+* update helm chart lock file ([b5aa360](https://github.com/leg100/otf/commit/b5aa360a255d5d2b7c2f378124bd2b7c1e0d4fd6))
+
+
+### Miscellaneous
+
+* change default engine notice wording ([620672f](https://github.com/leg100/otf/commit/620672fdabfa5a77095c96d6b8e21be35b49354f))
+
 ## [0.4.5](https://github.com/leg100/otf/compare/v0.4.4...v0.4.5) (2025-09-30)
 
 
