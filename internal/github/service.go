@@ -29,7 +29,7 @@ type (
 		vcs.Publisher
 		*internal.HostnameService
 
-		GithubHostname      string
+		GithubAPIURL        *internal.WebURL
 		SkipTLSVerification bool
 		Authorizer          *authz.Authorizer
 		VCSService          *vcs.Service
@@ -43,18 +43,18 @@ func NewService(opts Options) *Service {
 		Authorizer: opts.Authorizer,
 		db: &appDB{
 			DB:                  opts.DB,
-			hostname:            opts.GithubHostname,
+			baseURL:             opts.GithubAPIURL,
 			skipTLSVerification: opts.SkipTLSVerification,
 		},
 	}
 	svc.web = &webHandlers{
-		authorizer:      opts.Authorizer,
-		HostnameService: opts.HostnameService,
-		GithubHostname:  opts.GithubHostname,
-		GithubSkipTLS:   opts.SkipTLSVerification,
-		svc:             &svc,
+		authorizer:          opts.Authorizer,
+		HostnameService:     opts.HostnameService,
+		githubAPIURL:        opts.GithubAPIURL,
+		svc:                 &svc,
+		skipTLSVerification: opts.SkipTLSVerification,
 	}
-	registerVCSKinds(&svc, opts.VCSService, opts.GithubHostname, opts.SkipTLSVerification)
+	registerVCSKinds(&svc, opts.VCSService, opts.GithubAPIURL, opts.SkipTLSVerification)
 
 	// delete github app vcs providers when the app is uninstalled
 	opts.VCSEventBroker.Subscribe(func(event vcs.Event) {

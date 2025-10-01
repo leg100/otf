@@ -1,5 +1,97 @@
 # Changelog
 
+## [0.4.5](https://github.com/leg100/otf/compare/v0.4.4...v0.4.5) (2025-09-30)
+
+
+### Bug Fixes
+
+* swap out bitnami postgres helm chart ([539cd9c](https://github.com/leg100/otf/commit/539cd9c8c8fe9f074350c467a3430aee74dfb510))
+
+## [0.4.4](https://github.com/leg100/otf/compare/v0.4.3...v0.4.4) (2025-09-29)
+
+
+### Bug Fixes
+
+* module markdown rendering ([#831](https://github.com/leg100/otf/issues/831)) ([90700f1](https://github.com/leg100/otf/commit/90700f142a6ec6b81f82ad86ddc040b658a8dceb)), closes [#820](https://github.com/leg100/otf/issues/820)
+* remove unnecessary tool install make tasks ([acd9d6f](https://github.com/leg100/otf/commit/acd9d6f19ddd2ba9ceb9ffc6c564ed50571f15c2))
+
+
+### Miscellaneous
+
+* bump daisyui version ([dfd3904](https://github.com/leg100/otf/commit/dfd3904bffa72a4347cd9c054c32e43bc377de12))
+* bump templ version ([15768e0](https://github.com/leg100/otf/commit/15768e0992164e28d86c2a8d3b5ee6266f23787c))
+
+## [0.4.3](https://github.com/leg100/otf/compare/v0.4.2...v0.4.3) (2025-09-27)
+
+
+### Bug Fixes
+
+* azure dyn cred provider no kid found error ([#828](https://github.com/leg100/otf/issues/828)) ([6d55d8e](https://github.com/leg100/otf/commit/6d55d8e78fcb1e787a150c6a3e9bbb241e1147dc))
+
+## [0.4.2](https://github.com/leg100/otf/compare/v0.4.1...v0.4.2) (2025-09-23)
+
+
+### Bug Fixes
+
+* AWS dynamic provider credentials invalid apply absolute paths ([#822](https://github.com/leg100/otf/issues/822)) ([fc3162a](https://github.com/leg100/otf/commit/fc3162a35e8b51ff5d155f0eb097c3f96a03786e))
+* handle tfe provider agent pool ID empty string gracefully ([48c7f45](https://github.com/leg100/otf/commit/48c7f45a3e2ac729a7ad8051d0dd3ed9629aa9a9))
+
+## [0.4.1](https://github.com/leg100/otf/compare/v0.4.0...v0.4.1) (2025-08-27)
+
+
+### Bug Fixes
+
+* AWS dynamic provider credentials requires kid field (Key ID) in JWK ([7d1bc8b](https://github.com/leg100/otf/commit/7d1bc8bd149b537d9205e2a6d24dc2411961e353))
+* **ui:** remove extra semicolons ([#818](https://github.com/leg100/otf/issues/818)) ([1ee991c](https://github.com/leg100/otf/commit/1ee991cbbd20bb39394f2d4375f9249a9292328c)), closes [#817](https://github.com/leg100/otf/issues/817)
+
+## [0.4.0](https://github.com/leg100/otf/compare/v0.3.27...v0.4.0) (2025-07-24)
+
+
+### ⚠ BREAKING CHANGES
+
+* 
+
+### Features
+
+* allow user to specify URL per VCS provider ([#813](https://github.com/leg100/otf/issues/813)) ([c792756](https://github.com/leg100/otf/commit/c792756a308514e491e5b0a531ab72556dd98d4e))
+* dynamic provider credentials ([#806](https://github.com/leg100/otf/issues/806)) ([aab0a9b](https://github.com/leg100/otf/commit/aab0a9b80ce9d97ec3ed487c1ecfadac3cc14c81))
+* extend helm charts values to add volumes, volumeMounts and sidecars ([#807](https://github.com/leg100/otf/issues/807)) ([94147b5](https://github.com/leg100/otf/commit/94147b548cf02e78d0e5b6b59acec603ec89bcfc))
+
+
+### Bug Fixes
+
+* **ui:** hide sensitive outputs on the workspace page ([#810](https://github.com/leg100/otf/issues/810)) ([87dcc61](https://github.com/leg100/otf/commit/87dcc61bb2e920a1c074578c82a3fc7aacf8a529))
+* **ui:** no delete button for variable set variable ([88449cd](https://github.com/leg100/otf/commit/88449cd0a6c8c6f01b8d02af613ed88e7e00a905))
+* **ui:** page metadata info hard to see in dark mode ([1ac8cd5](https://github.com/leg100/otf/commit/1ac8cd5a872729b7ce4b227947c3f6c65699f7bc))
+
+## [0.3.27](https://github.com/leg100/otf/compare/v0.3.26...v0.3.27) (2025-07-06)
+
+
+### Bug Fixes
+
+* **ui:** cannot unassign team permissions ([b4415b4](https://github.com/leg100/otf/commit/b4415b401c0a1367ed4d888c4008936f9c10727e))
+* **ui:** edit variable set variable link 404 ([5eed13a](https://github.com/leg100/otf/commit/5eed13a8dbcee53a8ec18560834e2b1a8f48c791))
+
+## [0.3.26](https://github.com/leg100/otf/compare/v0.3.25...v0.3.26) (2025-07-01)
+
+
+### Features
+
+* **ui:** add workspace overview sub menu link ([892381f](https://github.com/leg100/otf/commit/892381f1b96b00db54151546b63743f3b18b369f))
+
+
+### Bug Fixes
+
+* github app connected workspaces not sending status updates ([42e2ce7](https://github.com/leg100/otf/commit/42e2ce7ab039709a4c29b11001e642abac251be4))
+* **ui:** make page size selector fully visible when set to 100 ([5ec4f84](https://github.com/leg100/otf/commit/5ec4f84132ceef293452d3ed32d1fb5c5e906674))
+
+
+### Miscellaneous
+
+* bump templ version ([cbd6f3c](https://github.com/leg100/otf/commit/cbd6f3c329a3edfca15c9d8bea266700991a4b15))
+* remove debug statements ([c93b542](https://github.com/leg100/otf/commit/c93b5422af1c102c3d94c1dc5fa122e06803beb4))
+* remove unnecessary source ptr func ([0ef66e9](https://github.com/leg100/otf/commit/0ef66e9478ad0ffafdf54f1e06a97337cc9646aa))
+
 ## [0.3.25](https://github.com/leg100/otf/compare/v0.3.24...v0.3.25) (2025-06-24)
 
 

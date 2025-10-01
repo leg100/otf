@@ -85,15 +85,23 @@ func (h *webHandlers) createTeam(w http.ResponseWriter, r *http.Request) {
 
 func (h *webHandlers) updateTeam(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		TeamID resource.TfeID `schema:"team_id,required"`
-		UpdateTeamOptions
+		TeamID           resource.TfeID `schema:"team_id,required"`
+		ManageWorkspaces bool           `schema:"manage_workspaces"`
+		ManageVCS        bool           `schema:"manage_vcs"`
+		ManageModules    bool           `schema:"manage_modules"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	team, err := h.teams.Update(r.Context(), params.TeamID, params.UpdateTeamOptions)
+	team, err := h.teams.Update(r.Context(), params.TeamID, UpdateTeamOptions{
+		OrganizationAccessOptions: OrganizationAccessOptions{
+			ManageWorkspaces: &params.ManageWorkspaces,
+			ManageVCS:        &params.ManageVCS,
+			ManageModules:    &params.ManageModules,
+		},
+	})
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return

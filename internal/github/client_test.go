@@ -107,11 +107,93 @@ func newTestServerClient(t *testing.T, opts ...TestServerOption) *Client {
 	_, u := NewTestServer(t, opts...)
 
 	client, err := NewClient(ClientOptions{
-		Hostname:            u.Host,
+		BaseURL:             &internal.WebURL{URL: *u},
 		SkipTLSVerification: true,
 		OAuthToken:          &oauth2.Token{AccessToken: "fake-token"},
 	})
 	require.NoError(t, err)
 
 	return client
+}
+
+func TestSetClientURLs(t *testing.T) {
+	for _, test := range []struct {
+		name          string
+		url           string
+		wantBaseURL   string
+		wantUploadURL string
+	}{
+		{
+			name:          "URL is the default public github URL, prefix host with api.",
+			url:           "https://github.com/",
+			wantBaseURL:   "https://api.github.com/",
+			wantUploadURL: "https://api.github.com/",
+		},
+		{
+			name:          "does not modify properly formed URLs",
+			url:           "https://custom-url/",
+			wantBaseURL:   "https://custom-url/api/v3/",
+			wantUploadURL: "https://custom-url/api/uploads/",
+		},
+		{
+			name:          "adds trailing slash",
+			url:           "https://custom-url/",
+			wantBaseURL:   "https://custom-url/api/v3/",
+			wantUploadURL: "https://custom-url/api/uploads/",
+		},
+		{
+			name:          "adds enterprise suffix",
+			url:           "https://custom-url/",
+			wantBaseURL:   "https://custom-url/api/v3/",
+			wantUploadURL: "https://custom-url/api/uploads/",
+		},
+		{
+			name:          "adds enterprise suffix and trailing slash",
+			url:           "https://custom-url",
+			wantBaseURL:   "https://custom-url/api/v3/",
+			wantUploadURL: "https://custom-url/api/uploads/",
+		},
+		{
+			name:          "URL has existing API prefix, adds trailing slash",
+			url:           "https://api.custom-url",
+			wantBaseURL:   "https://api.custom-url/",
+			wantUploadURL: "https://api.custom-url/",
+		},
+		{
+			name:          "URL has existing API prefix and trailing slash",
+			url:           "https://api.custom-url/",
+			wantBaseURL:   "https://api.custom-url/",
+			wantUploadURL: "https://api.custom-url/",
+		},
+		{
+			name:          "URL has API subdomain, adds trailing slash",
+			url:           "https://catalog.api.custom-url",
+			wantBaseURL:   "https://catalog.api.custom-url/",
+			wantUploadURL: "https://catalog.api.custom-url/",
+		},
+		{
+			name:          "URL has API subdomain and trailing slash",
+			url:           "https://catalog.api.custom-url/",
+			wantBaseURL:   "https://catalog.api.custom-url/",
+			wantUploadURL: "https://catalog.api.custom-url/",
+		},
+		{
+			name:          "URL is not a proper API subdomain, adds enterprise suffix and slash",
+			url:           "https://cloud-api.custom-url",
+			wantBaseURL:   "https://cloud-api.custom-url/api/v3/",
+			wantUploadURL: "https://cloud-api.custom-url/api/uploads/",
+		},
+		{
+			name:          "URL is not a proper API subdomain, adds enterprise suffix",
+			url:           "https://cloud-api.custom-url/",
+			wantBaseURL:   "https://cloud-api.custom-url/api/v3/",
+			wantUploadURL: "https://cloud-api.custom-url/api/uploads/",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			baseURL, uploadURL := setClientURLs(internal.MustWebURL(test.url))
+			assert.Equal(t, test.wantBaseURL, baseURL.String())
+			assert.Equal(t, test.wantUploadURL, uploadURL.String())
+		})
+	}
 }

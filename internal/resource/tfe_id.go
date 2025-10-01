@@ -61,6 +61,10 @@ func (id TfeID) String() string {
 	return fmt.Sprintf("%s-%s", id.kind, id.id)
 }
 
+func (id TfeID) IsZero() bool {
+	return id.id == "" && id.kind == ""
+}
+
 func (id TfeID) Kind() Kind {
 	return id.kind
 }
@@ -104,6 +108,12 @@ func (id *TfeID) Value() (driver.Value, error) {
 	}
 	return id.String(), nil
 }
+
+// Type implements pflag.Value
+func (*TfeID) Type() string { return "id" }
+
+// Set implements pflag.Value
+func (id *TfeID) Set(text string) error { return id.Scan(text) }
 
 // GenerateRandomStringFromAlphabet generates a random string of a given size
 // using characters from the given alphabet.

@@ -56,10 +56,6 @@ func (a *tfe) createOAuthClient(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, &internal.ErrMissingParameter{Parameter: "service-provider"})
 		return
 	}
-
-	// TODO: these are required yet they are not used. Check that the TFE
-	// integration tests have any requirement on these parameters and if not
-	// then remove.
 	if params.APIURL == nil {
 		tfeapi.Error(w, &internal.ErrMissingParameter{Parameter: "api-url"})
 		return
@@ -95,10 +91,13 @@ func (a *tfe) createOAuthClient(w http.ResponseWriter, r *http.Request) {
 	}
 
 	oauthClient, err := a.Create(r.Context(), CreateOptions{
-		Name:         *params.Name,
-		Organization: pathParams.Organization,
-		Token:        params.OAuthToken,
-		KindID:       kind.ID,
+		Name:                   *params.Name,
+		Organization:           pathParams.Organization,
+		Token:                  params.OAuthToken,
+		KindID:                 kind.ID,
+		BaseURL:                params.HTTPURL,
+		apiURL:                 params.APIURL,
+		tfeServiceProviderType: params.ServiceProvider,
 	})
 	if err != nil {
 		tfeapi.Error(w, err)
@@ -164,12 +163,9 @@ func (a *tfe) deleteOAuthClient(w http.ResponseWriter, r *http.Request) {
 
 func (a *tfe) convert(from *Provider) *TFEOAuthClient {
 	to := &TFEOAuthClient{
-		ID:        from.ID,
-		CreatedAt: from.CreatedAt,
-		// Only github via github.com is supported currently, so hardcode these values.
-		ServiceProvider: ServiceProviderGithub,
-		APIURL:          GithubAPIURL,
-		HTTPURL:         GithubHTTPURL,
+		ID:              from.ID,
+		CreatedAt:       from.CreatedAt,
+		ServiceProvider: from.serviceProviderType,
 		// OTF has no corresponding concept of an OAuthToken, so just use the
 		// VCS provider ID (the go-tfe integration tests we use expect
 		// at least an ID).
@@ -177,8 +173,10 @@ func (a *tfe) convert(from *Provider) *TFEOAuthClient {
 			{ID: from.ID},
 		},
 		Organization: &organization.TFEOrganization{Name: from.Organization},
+		APIURL:       from.apiURL.String(),
+		HTTPURL:      from.BaseURL.String(),
 	}
-	// an empty name in otf is equivalent to a nil name in tfe
+	// an empty name in OTF is equivalent to a nil name in TFE
 	if from.Name != "" {
 		to.Name = &from.Name
 	}

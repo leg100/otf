@@ -117,7 +117,8 @@ func (a *CLI) workspaceEditCommand() *cobra.Command {
 		organization organization.Name
 		opts         UpdateOptions
 		mode         string
-		poolID       string
+		poolID       resource.TfeID
+		poolIDFlag   = "agent-pool-id"
 	)
 
 	cmd := &cobra.Command{
@@ -131,12 +132,9 @@ func (a *CLI) workspaceEditCommand() *cobra.Command {
 			if mode != "" {
 				opts.ExecutionMode = (*ExecutionMode)(&mode)
 			}
-			if poolID != "" {
-				poolResourceID, err := resource.ParseTfeID(poolID)
-				if err != nil {
-					return err
-				}
-				opts.AgentPoolID = &poolResourceID
+			// Set agent pool ID if user set it.
+			if cmd.Flags().Changed(poolIDFlag) {
+				opts.AgentPoolID = &poolID
 			}
 			ws, err := a.client.GetByName(cmd.Context(), organization, name)
 			if err != nil {
@@ -152,7 +150,7 @@ func (a *CLI) workspaceEditCommand() *cobra.Command {
 	}
 
 	cmd.Flags().StringVarP(&mode, "execution-mode", "m", "", "Which execution mode to use. Valid values are remote, local, and agent")
-	cmd.Flags().StringVar(&poolID, "agent-pool-id", "", "ID of the agent pool to use for runs. Required if execution-mode is set to agent.")
+	cmd.Flags().Var(&poolID, poolIDFlag, "ID of the agent pool to use for runs. Required if execution-mode is set to agent.")
 
 	cmd.Flags().Var(&organization, "organization", "Organization workspace belongs to")
 	cmd.MarkFlagRequired("organization")

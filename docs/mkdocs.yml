@@ -56,7 +56,9 @@ nav:
     - auth/user_token.md
     - auth/org_token.md
   - Topics:
+    - tfe_api.md
     - engines.md
+    - dynamic_credentials.md
     - rbac.md
     - VCS Providers:
         - vcs_providers/index.md

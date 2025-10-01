@@ -8,6 +8,9 @@ import (
 	"github.com/leg100/otf/internal/authenticator"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/engine"
+	"github.com/leg100/otf/internal/forgejo"
+	"github.com/leg100/otf/internal/github"
+	"github.com/leg100/otf/internal/gitlab"
 	"github.com/leg100/otf/internal/inmem"
 	"github.com/leg100/otf/internal/runner"
 	"github.com/leg100/otf/internal/tokens"
@@ -20,15 +23,17 @@ var ErrInvalidSecretLength = errors.New("secret must be 16 bytes in size")
 type Config struct {
 	RunnerConfig                 *runner.Config
 	CacheConfig                  *inmem.CacheConfig
-	GithubHostname               string
+	GithubHostname               *internal.WebURL
 	GithubClientID               string
 	GithubClientSecret           string
-	GitlabHostname               string
+	GitlabHostname               *internal.WebURL
 	GitlabClientID               string
 	GitlabClientSecret           string
-	ForgejoHostname              string // TODO: forgejo is often self-hosted, and there may be more than one of them.  this should be a per-VCS setting
+	ForgejoHostname              *internal.WebURL // TODO: forgejo is often self-hosted, and there may be more than one of them.  this should be a per-VCS setting
 	OIDC                         authenticator.OIDCConfig
 	Secret                       []byte // 16-byte secret for signing URLs and encrypting payloads
+	PublicKeyPath                string
+	PrivateKeyPath               string
 	SiteToken                    string
 	Host                         string
 	WebhookHost                  string
@@ -57,10 +62,13 @@ type Config struct {
 // NewConfig constructs an otfd configuration with defaults.
 func NewConfig() Config {
 	return Config{
-		RunnerConfig:  runner.NewConfig(),
-		CacheConfig:   &inmem.CacheConfig{},
-		MaxConfigSize: configversion.DefaultConfigMaxSize,
-		DefaultEngine: engine.Default,
+		RunnerConfig:    runner.NewConfig(),
+		CacheConfig:     &inmem.CacheConfig{},
+		MaxConfigSize:   configversion.DefaultConfigMaxSize,
+		DefaultEngine:   engine.Default,
+		GithubHostname:  github.DefaultBaseURL,
+		GitlabHostname:  gitlab.DefaultBaseURL,
+		ForgejoHostname: forgejo.DefaultBaseURL,
 	}
 }
 

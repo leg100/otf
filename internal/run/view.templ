@@ -292,11 +292,9 @@ templ getPreContent() {
 templ getPostContent(props getProps) {
 	if !props.planLogs.IsEnd() {
 		@templ.JSFuncCall("setupTail", paths.TailRun(props.run.ID), "plan", props.planLogs.NextOffset())
-		;
 	}
 	if !props.applyLogs.IsEnd() {
 		@templ.JSFuncCall("setupTail", paths.TailRun(props.run.ID), "apply", props.applyLogs.NextOffset())
-		;
 	}
 }
 

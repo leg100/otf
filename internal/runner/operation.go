@@ -20,6 +20,7 @@ import (
 	"github.com/fatih/color"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
+	"github.com/leg100/otf/internal/dynamiccreds"
 	"github.com/leg100/otf/internal/engine"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/resource"
@@ -54,18 +55,19 @@ type (
 		Debug       bool // toggle debug mode
 		PluginCache bool // toggle use of engine's shared plugin cache
 
-		job          *Job
-		run          *runpkg.Run
-		canceled     bool
-		ctx          context.Context
-		cancelfn     context.CancelFunc
-		out          io.Writer
-		enginePath   string
-		envs         []string
-		proc         *os.Process
-		downloader   downloader
-		isAgent      bool
-		engineBinDir string
+		job           *Job
+		run           *runpkg.Run
+		canceled      bool
+		ctx           context.Context
+		cancelfn      context.CancelFunc
+		out           io.Writer
+		enginePath    string
+		envs          []string
+		terraformVars []*variable.Variable
+		proc          *os.Process
+		downloader    downloader
+		isAgent       bool
+		engineBinDir  string
 
 		runs       runClient
 		workspaces workspaceClient
@@ -103,6 +105,7 @@ type (
 	operationJobsClient interface {
 		awaitJobSignal(ctx context.Context, jobID resource.TfeID) func() (jobSignal, error)
 		finishJob(ctx context.Context, jobID resource.TfeID, opts finishJobOptions) error
+		GenerateDynamicCredentialsToken(ctx context.Context, jobID resource.TfeID, audience string) ([]byte, error)
 	}
 
 	// downloader downloads engine versions
@@ -255,7 +258,7 @@ func (o *operation) do() error {
 	if err != nil {
 		return fmt.Errorf("retreiving workspace: %w", err)
 	}
-	wd, err := newWorkdir(ws.WorkingDirectory)
+	wd, err := newWorkdir(ws.WorkingDirectory, o.job.RunID.String())
 	if err != nil {
 		return fmt.Errorf("constructing working directory: %w", err)
 	}
@@ -294,7 +297,9 @@ func (o *operation) do() error {
 	steps := []step{
 		o.downloadEngine,
 		o.downloadConfig,
-		o.writeVars,
+		o.readVars,
+		o.setupDynamicCredentials,
+		o.writeTerraformVars,
 		o.deleteBackendConfig,
 		o.downloadState,
 	}
@@ -501,23 +506,46 @@ func (o *operation) downloadLockFile(ctx context.Context) error {
 	return o.writeFile(lockFilename, lockFile)
 }
 
-func (o *operation) writeVars(ctx context.Context) error {
-	// retrieve variables and add them to the environment
+// readVars retrieves terraform and environment variables and adds them to the
+// operation
+func (o *operation) readVars(ctx context.Context) error {
 	variables, err := o.variables.ListEffectiveVariables(o.ctx, o.run.ID)
 	if err != nil {
 		return fmt.Errorf("retrieving variables: %w", err)
 	}
-	// append variables that are environment variables to the list of
-	// environment variables
 	for _, v := range variables {
 		if v.Category == variable.CategoryEnv {
 			ev := fmt.Sprintf("%s=%s", v.Key, v.Value)
 			o.envs = append(o.envs, ev)
 		}
+		if v.Category == variable.CategoryTerraform {
+			o.terraformVars = append(o.terraformVars, v)
+		}
 	}
-	if err := variable.WriteTerraformVars(o.workdir.String(), variables); err != nil {
+	return nil
+}
+
+// writeTerraformVars writes out terraform variables to a local hcl file
+func (o *operation) writeTerraformVars(ctx context.Context) error {
+	if err := variable.WriteTerraformVars(o.workdir.String(), o.terraformVars); err != nil {
 		return fmt.Errorf("writing terraform.fvars: %w", err)
 	}
+	return nil
+}
+
+func (o *operation) setupDynamicCredentials(ctx context.Context) error {
+	envs, err := dynamiccreds.Setup(
+		ctx,
+		o.jobs,
+		o.workdir.String(),
+		o.job.ID,
+		o.job.Phase,
+		o.envs,
+	)
+	if err != nil {
+		return err
+	}
+	o.envs = append(o.envs, envs...)
 	return nil
 }
 

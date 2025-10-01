@@ -32,6 +32,7 @@ type (
 	Service struct {
 		logr.Logger
 		authz.Interface
+		*MetricsCollector
 
 		workspaces             *workspace.Service
 		cache                  internal.Cache
@@ -78,6 +79,9 @@ func NewService(opts Options) *Service {
 		db:         db,
 		cache:      opts.Cache,
 		Interface:  opts.Authorizer,
+	}
+	svc.MetricsCollector = &MetricsCollector{
+		service: &svc,
 	}
 	svc.factory = &factory{
 		organizations: opts.OrganizationService,
@@ -230,6 +234,10 @@ func (s *Service) List(ctx context.Context, opts ListOptions) (*resource.Page[*R
 	s.V(9).Info("listed runs", "count", len(page.Items), "subject", subject)
 
 	return page, nil
+}
+
+func (s *Service) listStatuses(ctx context.Context) ([]status, error) {
+	return s.db.listStatuses(ctx)
 }
 
 // EnqueuePlan enqueues a plan for the run.

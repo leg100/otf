@@ -471,6 +471,19 @@ AND (($8::text IS NULL) OR ia.sender_username = $8)
 	return resource.NewPage(items, opts.PageOptions, internal.Ptr(count)), nil
 }
 
+// listStatuses lists the ID and status of every run.
+func (db *pgdb) listStatuses(ctx context.Context) ([]status, error) {
+	rows := db.Query(ctx, `
+SELECT run_id, status
+FROM runs
+`)
+	items, err := sql.CollectRows[status](rows, pgx.RowToStructByName)
+	if err != nil {
+		return nil, fmt.Errorf("querying runs: %w", err)
+	}
+	return items, nil
+}
+
 // get retrieves a run using the get options
 func (db *pgdb) get(ctx context.Context, runID resource.ID) (*Run, error) {
 	rows := db.Query(ctx, `

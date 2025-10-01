@@ -45,6 +45,10 @@ func TestIntegration_VCSProviderTokenUI(t *testing.T) {
 		err = page.Locator("textarea#token").Fill("fake-github-personal-token")
 		require.NoError(t, err)
 
+		// expect default github API URL
+		err = expect.Locator(page.Locator(`//input[@name='base_url']`)).ToHaveValue(daemon.GithubHostname.String())
+		require.NoError(t, err)
+
 		// submit form to create provider
 		err = page.GetByRole("button").Filter(playwright.LocatorFilterOptions{
 			HasText: "Create",
@@ -67,6 +71,7 @@ func TestIntegration_VCSProviderTokenUI(t *testing.T) {
 		require.NoError(t, err)
 		err = expect.Locator(page.GetByRole("alert")).ToHaveText("updated provider: my-token")
 		require.NoError(t, err)
+
 		// change token
 		err = page.Locator(`//button[@id='edit-button']`).Click()
 		require.NoError(t, err)
@@ -93,10 +98,26 @@ func TestIntegration_VCSProviderTokenUI(t *testing.T) {
 		err = expect.Locator(page.GetByRole("alert")).ToHaveText(`updated provider: Github-Token`)
 		require.NoError(t, err)
 
-		// delete token
+		// change API URL
 		err = page.Locator(`//button[@id='edit-button']`).Click()
 		require.NoError(t, err)
 
+		err = page.Locator(`//input[@name='base_url']`).Fill("http://my-overpriced-github-enterprise-server/api")
+		require.NoError(t, err)
+
+		err = page.Locator(`//button[text()='Update']`).Click()
+		require.NoError(t, err)
+
+		err = expect.Locator(page.GetByRole("alert")).ToHaveText(`updated provider: Github-Token`)
+		require.NoError(t, err)
+
+		err = page.Locator(`//button[@id='edit-button']`).Click()
+		require.NoError(t, err)
+
+		err = expect.Locator(page.Locator(`//input[@name='base_url']`)).ToHaveValue(`http://my-overpriced-github-enterprise-server/api`)
+		require.NoError(t, err)
+
+		// delete token
 		err = page.Locator(`//button[@id='delete-vcs-provider-button']`).Click()
 		require.NoError(t, err)
 
@@ -156,6 +177,7 @@ func TestIntegration_VCSProviderAppUI(t *testing.T) {
 
 	// create app
 	_, err := daemon.GithubApp.CreateApp(ctx, github.CreateAppOptions{
+		BaseURL:    daemon.GithubHostname,
 		AppID:      456,
 		Slug:       "otf-123",
 		PrivateKey: string(testutils.ReadFile(t, "./fixtures/key.pem")),

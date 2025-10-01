@@ -52,8 +52,8 @@ func (a *agentCLI) agentTokenCommand() *cobra.Command {
 
 func (a *agentCLI) agentTokenNewCommand() *cobra.Command {
 	var (
-		poolIDStr string
-		opts      = CreateAgentTokenOptions{}
+		poolID resource.TfeID
+		opts   = CreateAgentTokenOptions{}
 	)
 	cmd := &cobra.Command{
 		Use:           "new",
@@ -61,10 +61,6 @@ func (a *agentCLI) agentTokenNewCommand() *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			poolID, err := resource.ParseTfeID(poolIDStr)
-			if err != nil {
-				return err
-			}
 			_, token, err := a.CreateAgentToken(cmd.Context(), poolID, opts)
 			if err != nil {
 				return err
@@ -75,7 +71,7 @@ func (a *agentCLI) agentTokenNewCommand() *cobra.Command {
 			return nil
 		},
 	}
-	cmd.Flags().StringVar(&poolIDStr, "agent-pool-id", "", "ID of the agent pool in which the token is to be created.")
+	cmd.Flags().Var(&poolID, "agent-pool-id", "ID of the agent pool in which the token is to be created.")
 	cmd.MarkFlagRequired("agent-pool-id")
 
 	cmd.Flags().StringVar(&opts.Description, "description", "", "Provide a description for the token.")

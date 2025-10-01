@@ -161,7 +161,7 @@ func (a *tfe) createVariableSet(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	set, err := a.Service.createVariableSet(r.Context(), pathParams.Organization, CreateVariableSetOptions{
+	set, err := a.Service.CreateVariableSet(r.Context(), pathParams.Organization, CreateVariableSetOptions{
 		Name:        params.Name,
 		Description: params.Description,
 		Global:      params.Global,
@@ -304,7 +304,7 @@ func (a *tfe) addVariableToSet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	v, err := a.Service.createVariableSetVariable(r.Context(), setID, CreateVariableOptions{
+	v, err := a.Service.CreateVariableSetVariable(r.Context(), setID, CreateVariableOptions{
 		Key:         opts.Key,
 		Value:       opts.Value,
 		Description: opts.Description,

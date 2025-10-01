@@ -32,6 +32,10 @@ type (
 
 		JobID resource.TfeID `json:"job_id"`
 	}
+
+	generateDynamicCredentialsTokenParams struct {
+		Audience string
+	}
 )
 
 func (a *api) addHandlers(r *mux.Router) {
@@ -44,6 +48,7 @@ func (a *api) addHandlers(r *mux.Router) {
 	r.HandleFunc("/jobs/start", a.startJob).Methods("POST")
 	r.HandleFunc("/jobs/finish", a.finishJob).Methods("POST")
 	r.HandleFunc("/jobs/{job_id}/await-signal", a.awaitJobSignal).Methods("GET")
+	r.HandleFunc("/jobs/{job_id}/dynamic-credentials", a.generateDynamicCredentialsToken).Methods("POST")
 
 	// agent tokens
 	r.HandleFunc("/agent-tokens/{pool_id}/create", a.createAgentToken).Methods("POST")
@@ -175,4 +180,25 @@ func (a *api) finishJob(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
+}
+
+func (a *api) generateDynamicCredentialsToken(w http.ResponseWriter, r *http.Request) {
+	var params struct {
+		JobID resource.TfeID `schema:"job_id"`
+		generateDynamicCredentialsTokenParams
+	}
+	if err := decode.All(&params, r); err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+	token, err := a.Service.GenerateDynamicCredentialsToken(
+		r.Context(),
+		params.JobID,
+		params.generateDynamicCredentialsTokenParams.Audience,
+	)
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+	w.Write(token)
 }

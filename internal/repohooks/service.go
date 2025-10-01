@@ -73,7 +73,7 @@ func (s *Service) CreateRepohook(ctx context.Context, opts CreateRepohookOptions
 	if err != nil {
 		return uuid.UUID{}, fmt.Errorf("retrieving vcs provider: %w", err)
 	}
-	if vcsProvider.Kind.SkipRepohook {
+	if vcsProvider.SkipRepohook {
 		return uuid.UUID{}, nil
 	}
 	hook, err := newRepohook(newRepohookOptions{

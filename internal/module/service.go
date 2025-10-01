@@ -2,6 +2,7 @@ package module
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -148,7 +149,8 @@ func (s *Service) publishModule(ctx context.Context, organization organization.N
 		return nil
 	}()
 	if err != nil {
-		return s.updateModuleStatus(ctx, mod, ModuleStatusSetupFailed)
+		mod, updateErr := s.updateModuleStatus(ctx, mod, ModuleStatusSetupFailed)
+		return mod, errors.Join(err, updateErr)
 	}
 	if len(tags) == 0 {
 		return s.updateModuleStatus(ctx, mod, ModuleStatusNoVersionTags)

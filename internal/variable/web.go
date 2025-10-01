@@ -33,13 +33,13 @@ type (
 		UpdateWorkspaceVariable(ctx context.Context, variableID resource.TfeID, opts UpdateVariableOptions) (*WorkspaceVariable, error)
 		DeleteWorkspaceVariable(ctx context.Context, variableID resource.TfeID) (*WorkspaceVariable, error)
 
-		createVariableSet(ctx context.Context, organization organization.Name, opts CreateVariableSetOptions) (*VariableSet, error)
+		CreateVariableSet(ctx context.Context, organization organization.Name, opts CreateVariableSetOptions) (*VariableSet, error)
 		updateVariableSet(ctx context.Context, setID resource.TfeID, opts UpdateVariableSetOptions) (*VariableSet, error)
 		getVariableSet(ctx context.Context, setID resource.TfeID) (*VariableSet, error)
 		getVariableSetByVariableID(ctx context.Context, variableID resource.TfeID) (*VariableSet, error)
 		listVariableSets(ctx context.Context, organization organization.Name) ([]*VariableSet, error)
 		deleteVariableSet(ctx context.Context, setID resource.TfeID) (*VariableSet, error)
-		createVariableSetVariable(ctx context.Context, setID resource.TfeID, opts CreateVariableOptions) (*Variable, error)
+		CreateVariableSetVariable(ctx context.Context, setID resource.TfeID, opts CreateVariableOptions) (*Variable, error)
 		updateVariableSetVariable(ctx context.Context, variableID resource.TfeID, opts UpdateVariableOptions) (*VariableSet, error)
 		deleteVariableSetVariable(ctx context.Context, variableID resource.TfeID) (*VariableSet, error)
 	}
@@ -356,7 +356,7 @@ func (h *web) createVariableSet(w http.ResponseWriter, r *http.Request) {
 		workspaceIDs[i] = ws.ID
 	}
 
-	set, err := h.variables.createVariableSet(r.Context(), params.Organization, CreateVariableSetOptions{
+	set, err := h.variables.CreateVariableSet(r.Context(), params.Organization, CreateVariableSetOptions{
 		Name:        *params.Name,
 		Description: params.Description,
 		Global:      params.Global,
@@ -505,7 +505,7 @@ func (h *web) createVariableSetVariable(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	variable, err := h.variables.createVariableSetVariable(r.Context(), params.SetID, CreateVariableOptions{
+	variable, err := h.variables.CreateVariableSetVariable(r.Context(), params.SetID, CreateVariableOptions{
 		Key:         params.Key,
 		Value:       params.Value,
 		Description: params.Description,

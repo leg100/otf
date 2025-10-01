@@ -106,7 +106,10 @@ func (h *WebsocketListHandler[Resource, ResourceEvent, Options]) Handler(w http.
 			// Then consume any remaining events.
 			for {
 				select {
-				case <-sub:
+				case _, ok := <-sub:
+					if !ok {
+						goto done
+					}
 				default:
 					goto done
 				}

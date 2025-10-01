@@ -1,3 +1,5 @@
 package forgejo
 
-const DefaultHostname = "next.forgejo.org"
+import "github.com/leg100/otf/internal"
+
+var DefaultBaseURL = internal.MustWebURL("https://next.forgejo.org")

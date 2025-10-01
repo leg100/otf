@@ -133,7 +133,7 @@ jobs:
         run: |
           kubectl -n otfd-test get all
           kubectl -n otfd-test describe pod
-          kubectl -n otfd-test logs -l app.kubernetes.io/name=postgresql
+          kubectl -n otfd-test logs -l app.kubernetes.io/name=postgres
           kubectl -n otfd-test logs -l app.kubernetes.io/name=otfd
       - name: Checkout charts repo
         uses: actions/checkout@v4
