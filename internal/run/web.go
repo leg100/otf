@@ -51,8 +51,12 @@ type (
 		Watch(ctx context.Context) (<-chan pubsub.Event[*workspace.Event], func())
 	}
 
+	webWorkspaceGetClient interface {
+		Get(ctx context.Context, workspaceID resource.TfeID) (*workspace.Workspace, error)
+	}
+
 	webUsersClient interface {
-		GetUser(ctx context.Context, username user.UserSpec) (*user.User, error)
+		GetUser(ctx context.Context, spec user.UserSpec) (*user.User, error)
 	}
 
 	webAuthorizer interface {
@@ -122,8 +126,8 @@ func (h *webHandlers) listByOrganization(w http.ResponseWriter, r *http.Request)
 			Logger: h.logger,
 			Client: h.runs,
 			Populator: table{
-				workspaceClient: h.workspaces,
-				users:           h.users,
+				workspaceClient: newWorkspaceCache(h.workspaces),
+				users:           newUserCache(h.users),
 			},
 			ID: "page-results",
 		}
@@ -139,7 +143,7 @@ func (h *webHandlers) listByWorkspace(w http.ResponseWriter, r *http.Request) {
 			Logger: h.logger,
 			Client: h.runs,
 			Populator: table{
-				users: h.users,
+				users: newUserCache(h.users),
 			},
 			ID: "page-results",
 		}

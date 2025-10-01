@@ -126,7 +126,7 @@ func list(props listProps) templ.Component {
 }
 
 type table struct {
-	workspaceClient webWorkspaceClient
+	workspaceClient webWorkspaceGetClient
 	users           webUsersClient
 }
 
