@@ -43,6 +43,7 @@ services:
       - ./internal/integration/fixtures:/etc/squid/certs
   pubsub:
     image: google/cloud-sdk:494.0.0-emulators
+    platform: linux/amd64
     ports:
       - 8085
     stop_signal: SIGINT
@@ -72,5 +73,7 @@ services:
       - HTTPS_PROXY=squid:3128
       - SSL_CERT_FILE=/fixtures/cert.pem
       - OTF_HOSTNAME=otf.local
+      - OTF_PUBLIC_KEY_PATH=/fixtures/public_key.pem
+      - OTF_PRIVATE_KEY_PATH=/fixtures/key.pem
     volumes:
       - ./internal/integration/fixtures:/fixtures

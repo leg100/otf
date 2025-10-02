@@ -1,9 +1,0 @@
-FROM alpine:3.17.2
-
-# bubblewrap is for sandboxing, and git permits pulling modules via
-# the git protocol
-RUN apk add --no-cache bubblewrap git
-
-COPY otf-agent /usr/local/bin/otf-agent
-
-ENTRYPOINT ["/usr/local/bin/otf-agent"]
