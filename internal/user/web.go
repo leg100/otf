@@ -91,12 +91,12 @@ func (h *webHandlers) logout(w http.ResponseWriter, r *http.Request) {
 func (h *webHandlers) listOrganizationUsers(w http.ResponseWriter, r *http.Request) {
 	var params ListOptions
 	if err := decode.All(&params, r); err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(r, w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 	users, err := h.users.ListOrganizationUsers(r.Context(), params.Organization)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(r, w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -120,19 +120,18 @@ func (h *webHandlers) adminLoginPromptHandler(w http.ResponseWriter, r *http.Req
 func (h *webHandlers) adminLogin(w http.ResponseWriter, r *http.Request) {
 	token, err := decode.Param("token", r)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(r, w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	if token != h.siteToken {
-		html.FlashError(w, "incorrect token")
-		http.Redirect(w, r, paths.AdminLogin(), http.StatusFound)
+		html.Error(r, w, "incorrect token", http.StatusUnauthorized)
 		return
 	}
 
 	err = h.tokens.StartSession(w, r, SiteAdminID)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(r, w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 }
@@ -149,13 +148,13 @@ func (h *webHandlers) addTeamMember(w http.ResponseWriter, r *http.Request) {
 		Username *Username      `schema:"username,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(r, w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	err := h.users.AddTeamMembership(r.Context(), params.TeamID, []Username{*params.Username})
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(r, w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -169,13 +168,13 @@ func (h *webHandlers) removeTeamMember(w http.ResponseWriter, r *http.Request) {
 		Username Username       `schema:"username,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(r, w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	err := h.users.RemoveTeamMembership(r.Context(), params.TeamID, []Username{params.Username})
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(r, w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -186,20 +185,20 @@ func (h *webHandlers) removeTeamMember(w http.ResponseWriter, r *http.Request) {
 func (h *webHandlers) getTeam(w http.ResponseWriter, r *http.Request) {
 	teamID, err := decode.ID("team_id", r)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(r, w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	team, err := h.teams.GetByID(r.Context(), teamID)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(r, w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	// get usernames of team members
 	members, err := h.users.ListTeamUsers(r.Context(), teamID)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(r, w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	usernames := make([]Username, len(members))
@@ -214,7 +213,7 @@ func (h *webHandlers) getTeam(w http.ResponseWriter, r *http.Request) {
 	if h.authorizer.CanAccess(r.Context(), authz.ListUsersAction, resource.SiteID) {
 		users, err := h.users.List(r.Context())
 		if err != nil {
-			html.Error(w, err.Error(), http.StatusInternalServerError)
+			html.Error(r, w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		nonMembers := diffUsers(members, users)
@@ -254,17 +253,17 @@ func (h *webHandlers) newUserToken(w http.ResponseWriter, r *http.Request) {
 func (h *webHandlers) createUserToken(w http.ResponseWriter, r *http.Request) {
 	var opts CreateUserTokenOptions
 	if err := decode.Form(&opts, r); err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(r, w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 	_, token, err := h.users.CreateToken(r.Context(), opts)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(r, w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	if err := components.TokenFlashMessage(w, token); err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(r, w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	http.Redirect(w, r, paths.Tokens(), http.StatusFound)
@@ -273,7 +272,7 @@ func (h *webHandlers) createUserToken(w http.ResponseWriter, r *http.Request) {
 func (h *webHandlers) userTokens(w http.ResponseWriter, r *http.Request) {
 	tokens, err := h.users.ListTokens(r.Context())
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(r, w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -288,11 +287,11 @@ func (h *webHandlers) userTokens(w http.ResponseWriter, r *http.Request) {
 func (h *webHandlers) deleteUserToken(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.ID("id", r)
 	if err != nil {
-		html.Error(w, "missing id", http.StatusUnprocessableEntity)
+		html.Error(r, w, "missing id", http.StatusUnprocessableEntity)
 		return
 	}
 	if err := h.users.DeleteToken(r.Context(), id); err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(r, w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	html.FlashSuccess(w, "Deleted token")

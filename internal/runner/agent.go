@@ -70,7 +70,6 @@ func (s *remoteOperationSpawner) newOperation(job *Job, jobToken []byte) (*opera
 	return newOperation(operationOptions{
 		logger:       s.logger,
 		Debug:        s.config.Debug,
-		Sandbox:      s.config.Sandbox,
 		PluginCache:  s.config.PluginCache,
 		engineBinDir: s.config.EngineBinDir,
 		job:          job,

@@ -17,6 +17,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/components"
+	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/json"
 )
 
@@ -127,6 +128,14 @@ func NewServer(logger logr.Logger, cfg ServerConfig) (*Server, error) {
 			})
 		})
 	}
+
+	// Apply caching to UI responses
+	//
+	// TODO: consider applying to all responses, including API.
+	r.Use((&etagMiddleware{
+		logger: logger,
+		prefix: paths.UIPrefix,
+	}).middleware)
 
 	components.SetAllowedOrigins(cfg.AllowedOrigins)
 

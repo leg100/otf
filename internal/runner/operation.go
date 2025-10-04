@@ -51,7 +51,6 @@ type (
 		logr.Logger
 		*workdir
 
-		Sandbox     bool // isolate privileged ops within sandbox
 		Debug       bool // toggle debug mode
 		PluginCache bool // toggle use of engine's shared plugin cache
 
@@ -79,7 +78,6 @@ type (
 	}
 
 	operationOptions struct {
-		Sandbox      bool   // isolate privileged ops within sandbox
 		Debug        bool   // toggle debug mode
 		PluginCache  bool   // toggle use of engine's shared plugin cache
 		engineBinDir string // destination directory for engine binaries
@@ -162,7 +160,6 @@ func newOperation(opts operationOptions) *operation {
 
 	return &operation{
 		Logger:       opts.logger.WithValues("job", opts.job),
-		Sandbox:      opts.Sandbox,
 		Debug:        opts.Debug,
 		job:          opts.job,
 		engineBinDir: opts.engineBinDir,
@@ -287,7 +284,6 @@ func (o *operation) do() error {
 		fmt.Fprintln(o.out, "------------------")
 		fmt.Fprintf(o.out, "Hostname: %s\n", hostname)
 		fmt.Fprintf(o.out, "External agent: %t\n", o.isAgent)
-		fmt.Fprintf(o.out, "Sandbox mode: %t\n", o.Sandbox)
 		fmt.Fprintln(o.out, "------------------")
 		fmt.Fprintln(o.out)
 	}
@@ -366,20 +362,11 @@ func (o *operation) cancel(force, sendSignal bool) {
 type (
 	// executionOptions are options that modify the execution of a process.
 	executionOptions struct {
-		sandboxIfEnabled bool
-		redirectStdout   *string
+		redirectStdout *string
 	}
 
 	executionOptionFunc func(*executionOptions)
 )
-
-// sandboxIfEnabled sandboxes the execution process *if* the daemon is configured
-// with a sandbox.
-func sandboxIfEnabled() executionOptionFunc {
-	return func(e *executionOptions) {
-		e.sandboxIfEnabled = true
-	}
-}
 
 // redirectStdout redirects stdout to the destination path.
 func redirectStdout(dst string) executionOptionFunc {
@@ -396,9 +383,6 @@ func (o *operation) execute(args []string, funcs ...executionOptionFunc) error {
 	var opts executionOptions
 	for _, fn := range funcs {
 		fn(&opts)
-	}
-	if opts.sandboxIfEnabled && o.Sandbox {
-		args = o.addSandboxWrapper(args)
 	}
 	cmd := exec.Command(args[0], args[1:]...)
 	cmd.Dir = o.workdir.String()
@@ -430,29 +414,6 @@ func (o *operation) execute(args []string, funcs ...executionOptionFunc) error {
 		return fmt.Errorf("%w: %s", err, cleanStderr(stderr.String()))
 	}
 	return nil
-}
-
-// addSandboxWrapper wraps the args within a bubblewrap sandbox.
-func (o *operation) addSandboxWrapper(args []string) []string {
-	bargs := []string{
-		"bwrap",
-		"--ro-bind", args[0], path.Join("/bin", path.Base(args[0])),
-		"--bind", o.root, "/config",
-		// for DNS lookups
-		"--ro-bind", "/etc/resolv.conf", "/etc/resolv.conf",
-		// for verifying SSL connections
-		"--ro-bind", internal.SSLCertsDir(), internal.SSLCertsDir(),
-		"--chdir", path.Join("/config", o.relative),
-		// terraform v1.0.10 (but not v1.2.2) reads /proc/self/exe.
-		"--proc", "/proc",
-		// avoids provider error "failed to read schema..."
-		"--tmpfs", "/tmp",
-	}
-	if o.PluginCache {
-		bargs = append(bargs, "--ro-bind", PluginCacheDir, PluginCacheDir)
-	}
-	bargs = append(bargs, path.Join("/bin", path.Base(args[0])))
-	return append(bargs, args[1:]...)
 }
 
 func (o *operation) downloadEngine(ctx context.Context) error {
@@ -595,7 +556,7 @@ func (o *operation) apply(ctx context.Context) (err error) {
 		args = append(args, "-destroy")
 	}
 	args = append(args, planFilename)
-	return o.execute(append([]string{o.enginePath}, args...), sandboxIfEnabled())
+	return o.execute(append([]string{o.enginePath}, args...))
 }
 
 func (o *operation) convertPlanToJSON(ctx context.Context) error {

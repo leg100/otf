@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"time"
 
@@ -28,7 +27,6 @@ type (
 	Runner struct {
 		*RunnerMeta
 
-		Sandbox         bool   // isolate privileged ops within sandbox
 		Debug           bool   // toggle debug mode
 		PluginCache     bool   // toggle use of terraform's shared plugin cache
 		TerraformBinDir string // destination directory for terraform binaries
@@ -72,12 +70,6 @@ func newRunner(
 	}
 	if cfg.Debug {
 		r.logger.V(r.v).Info("enabled debug mode")
-	}
-	if cfg.Sandbox {
-		if _, err := exec.LookPath("bwrap"); errors.Is(err, exec.ErrNotFound) {
-			return nil, fmt.Errorf("sandbox mode requires bubblewrap: %w", err)
-		}
-		r.logger.V(r.v).Info("enabled sandbox mode")
 	}
 	if cfg.PluginCache {
 		if err := os.MkdirAll(PluginCacheDir, 0o755); err != nil {

@@ -206,13 +206,6 @@ Sets the amount of time a run is permitted to be in the `planning` state before 
 
 Restricts the ability to create organizations to users possessing the site admin role. By default _any_ user can create organizations.
 
-## `--sandbox`
-
-* System: `otfd`
-* Default: false
-
-Enable sandbox box; isolates `terraform apply` using [bubblewrap](https://github.com/containers/bubblewrap) for additional security.
-
 ## `--secret`
 
 * **Required**
