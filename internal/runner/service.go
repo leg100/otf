@@ -338,8 +338,7 @@ func (s *Service) cancelJob(ctx context.Context, run *otfrun.Run) error {
 	})
 	if err != nil {
 		if errors.Is(err, internal.ErrResourceNotFound) {
-			s.Error(err, "not found", "run", run)
-			// ignore when no job has yet been created for the run.
+			// Don't raise error when no job has yet been created for the run.
 			return nil
 		}
 		s.Error(err, "canceling job for run", "run", run)
