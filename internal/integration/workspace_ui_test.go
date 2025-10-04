@@ -22,24 +22,52 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 
 	t.Run("create", func(t *testing.T) {
 		daemon, org, ctx := setup(t)
-		browser.New(t, ctx, func(page playwright.Page) {
-			_, err := page.Goto(organizationURL(daemon.System.Hostname(), org.Name))
-			require.NoError(t, err)
 
-			err = page.Locator("#menu-item-workspaces > a").Click()
-			require.NoError(t, err)
+		t.Run("create with no error", func(t *testing.T) {
+			browser.New(t, ctx, func(page playwright.Page) {
+				_, err := page.Goto(organizationURL(daemon.System.Hostname(), org.Name))
+				require.NoError(t, err)
 
-			err = page.Locator("#new-workspace-button").Click()
-			require.NoError(t, err)
+				err = page.Locator("#menu-item-workspaces > a").Click()
+				require.NoError(t, err)
 
-			err = page.Locator("input#name").Fill("workspace-1")
-			require.NoError(t, err)
+				err = page.Locator("#new-workspace-button").Click()
+				require.NoError(t, err)
 
-			err = page.Locator("#create-workspace-button").Click()
-			require.NoError(t, err)
+				err = page.Locator("input#name").Fill("workspace-1")
+				require.NoError(t, err)
 
-			err = expect.Locator(page.GetByRole("alert")).ToHaveText("created workspace: workspace-1")
-			require.NoError(t, err)
+				err = page.Locator("#create-workspace-button").Click()
+				require.NoError(t, err)
+
+				err = expect.Locator(page.GetByRole("alert")).ToHaveText("created workspace: workspace-1")
+				require.NoError(t, err)
+			})
+		})
+
+		t.Run("create with error", func(t *testing.T) {
+			browser.New(t, ctx, func(page playwright.Page) {
+				_, err := page.Goto(organizationURL(daemon.System.Hostname(), org.Name))
+				require.NoError(t, err)
+
+				err = page.Locator("#menu-item-workspaces > a").Click()
+				require.NoError(t, err)
+
+				err = page.Locator("#new-workspace-button").Click()
+				require.NoError(t, err)
+
+				// invalid name
+				err = page.Locator("input#name").Fill("$&$*(&*(@")
+				require.NoError(t, err)
+
+				err = page.Locator("#create-workspace-button").Click()
+				require.NoError(t, err)
+
+				err = expect.Locator(page.GetByRole("alert")).ToHaveText("invalid value for name")
+				require.NoError(t, err)
+				err = expect.Locator(page.GetByRole("alert")).ToContainClass("alert-error")
+				require.NoError(t, err)
+			})
 		})
 	})
 

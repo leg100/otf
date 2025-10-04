@@ -71,17 +71,17 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 		ProviderFilterVisible bool `schema:"provider_filter_visible"`
 	}
 	if err := decode.All(&params, r); err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(r, w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 	modules, err := h.client.ListModules(r.Context(), params.ListOptions)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(r, w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	providers, err := h.client.listProviders(r.Context(), params.Organization)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(r, w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -102,13 +102,13 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 		Version *string        `schema:"version"`
 	}
 	if err := decode.All(&params, r); err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(r, w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	module, err := h.client.GetModuleByID(r.Context(), params.ID)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(r, w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -125,7 +125,7 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 	if modver != nil {
 		tfmod, err = h.client.GetModuleInfo(r.Context(), modver.ID)
 		if err != nil {
-			html.Error(w, err.Error(), http.StatusInternalServerError)
+			html.Error(r, w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 	}
@@ -152,12 +152,12 @@ func (h *webHandlers) new(w http.ResponseWriter, r *http.Request) {
 		Organization organization.Name `schema:"organization_name"`
 	}
 	if err := decode.All(&params, r); err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(r, w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 	providers, err := h.vcsproviders.List(r.Context(), params.Organization)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(r, w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	props := newViewProps{
@@ -173,19 +173,19 @@ func (h *webHandlers) connect(w http.ResponseWriter, r *http.Request) {
 		// TODO: filters, public/private, etc
 	}
 	if err := decode.All(&params, r); err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(r, w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	provider, err := h.vcsproviders.Get(r.Context(), params.VCSProviderID)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(r, w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	client, err := h.vcsproviders.Get(r.Context(), params.VCSProviderID)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(r, w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -195,7 +195,7 @@ func (h *webHandlers) connect(w http.ResponseWriter, r *http.Request) {
 		PageSize: resource.MaxPageSize,
 	})
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(r, w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	filtered := make([]vcs.Repo, 0, len(results))
@@ -204,7 +204,7 @@ func (h *webHandlers) connect(w http.ResponseWriter, r *http.Request) {
 		if err == ErrInvalidModuleRepo {
 			continue // skip repo
 		} else if err != nil {
-			html.Error(w, err.Error(), http.StatusInternalServerError)
+			html.Error(r, w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		filtered = append(filtered, res)
@@ -223,7 +223,7 @@ func (h *webHandlers) publish(w http.ResponseWriter, r *http.Request) {
 		Repo          vcs.Repo       `schema:"identifier,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(r, w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
@@ -232,10 +232,10 @@ func (h *webHandlers) publish(w http.ResponseWriter, r *http.Request) {
 		VCSProviderID: params.VCSProviderID,
 	})
 	if errors.Is(err, vcs.ErrInvalidRepo) || errors.Is(err, ErrInvalidModuleRepo) {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(r, w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	} else if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(r, w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -246,13 +246,13 @@ func (h *webHandlers) publish(w http.ResponseWriter, r *http.Request) {
 func (h *webHandlers) delete(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.ID("module_id", r)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(r, w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	deleted, err := h.client.DeleteModule(r.Context(), id)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(r, w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 

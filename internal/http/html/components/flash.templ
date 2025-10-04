@@ -60,7 +60,7 @@ templ Flashes() {
 
 templ renderFlashes(flashes []html.Flash) {
 	for _, flash := range flashes {
-		<div role="alert" class={ "alert", flashColors[flash.Type] }>
+		<div role="alert" class={ "alert", "alert-soft", flashColors[flash.Type] }>
 			@flashIcons[flash.Type]
 			<span>
 				@templ.Raw(flash.Message)

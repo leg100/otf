@@ -49,13 +49,13 @@ func (h *webHandlers) new(w http.ResponseWriter, r *http.Request) {
 		KindID       KindID            `schema:"kind,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(r, w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	kind, err := h.client.GetKind(params.KindID)
 	if err != nil {
-		html.Error(w, "schema not found", http.StatusUnprocessableEntity)
+		html.Error(r, w, "schema not found", http.StatusUnprocessableEntity)
 		return
 	}
 
@@ -69,12 +69,12 @@ func (h *webHandlers) new(w http.ResponseWriter, r *http.Request) {
 func (h *webHandlers) create(w http.ResponseWriter, r *http.Request) {
 	var params CreateOptions
 	if err := decode.All(&params, r); err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(r, w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 	provider, err := h.client.Create(r.Context(), params)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(r, w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	html.FlashSuccess(w, "created provider: "+provider.String())
@@ -84,13 +84,13 @@ func (h *webHandlers) create(w http.ResponseWriter, r *http.Request) {
 func (h *webHandlers) edit(w http.ResponseWriter, r *http.Request) {
 	providerID, err := decode.ID("vcs_provider_id", r)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(r, w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	provider, err := h.client.Get(r.Context(), providerID)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(r, w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -105,7 +105,7 @@ func (h *webHandlers) update(w http.ResponseWriter, r *http.Request) {
 		BaseURL *internal.WebURL `schema:"base_url,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(r, w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
@@ -121,7 +121,7 @@ func (h *webHandlers) update(w http.ResponseWriter, r *http.Request) {
 	}
 	provider, err := h.client.Update(r.Context(), params.ID, opts)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(r, w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	html.FlashSuccess(w, "updated provider: "+provider.String())
@@ -131,12 +131,12 @@ func (h *webHandlers) update(w http.ResponseWriter, r *http.Request) {
 func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 	var params ListOptions
 	if err := decode.All(&params, r); err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(r, w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 	providers, err := h.client.List(r.Context(), params.Organization)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(r, w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	props := listProps{
@@ -150,13 +150,13 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 func (h *webHandlers) delete(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.ID("vcs_provider_id", r)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(r, w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	provider, err := h.client.Delete(r.Context(), id)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(r, w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	html.FlashSuccess(w, "deleted provider: "+provider.String())

@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
@@ -49,7 +48,7 @@ func (h *webHandlers) newTeam(w http.ResponseWriter, r *http.Request) {
 		Organization *organization.Name `schema:"organization_name,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(r, w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
@@ -62,20 +61,15 @@ func (h *webHandlers) createTeam(w http.ResponseWriter, r *http.Request) {
 		Organization *organization.Name `schema:"organization_name,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(r, w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	team, err := h.teams.Create(r.Context(), *params.Organization, CreateTeamOptions{
 		Name: params.Name,
 	})
-	if err == internal.ErrResourceAlreadyExists {
-		html.FlashError(w, "team already exists")
-		http.Redirect(w, r, paths.NewTeam(params.Organization), http.StatusFound)
-		return
-	}
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(r, w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -91,7 +85,7 @@ func (h *webHandlers) updateTeam(w http.ResponseWriter, r *http.Request) {
 		ManageModules    bool           `schema:"manage_modules"`
 	}
 	if err := decode.All(&params, r); err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(r, w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
@@ -103,7 +97,7 @@ func (h *webHandlers) updateTeam(w http.ResponseWriter, r *http.Request) {
 		},
 	})
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(r, w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -114,13 +108,13 @@ func (h *webHandlers) updateTeam(w http.ResponseWriter, r *http.Request) {
 func (h *webHandlers) listTeams(w http.ResponseWriter, r *http.Request) {
 	var params ListOptions
 	if err := decode.All(&params, r); err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(r, w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	teams, err := h.teams.List(r.Context(), params.Organization)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(r, w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -135,18 +129,18 @@ func (h *webHandlers) listTeams(w http.ResponseWriter, r *http.Request) {
 func (h *webHandlers) deleteTeam(w http.ResponseWriter, r *http.Request) {
 	teamID, err := decode.ID("team_id", r)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(r, w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	team, err := h.teams.GetByID(r.Context(), teamID)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(r, w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	err = h.teams.Delete(r.Context(), teamID)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(r, w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 

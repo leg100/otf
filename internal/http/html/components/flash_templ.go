@@ -187,7 +187,7 @@ func renderFlashes(flashes []html.Flash) templ.Component {
 		}
 		ctx = templ.ClearChildren(ctx)
 		for _, flash := range flashes {
-			var templ_7745c5c3_Var6 = []any{"alert", flashColors[flash.Type]}
+			var templ_7745c5c3_Var6 = []any{"alert", "alert-soft", flashColors[flash.Type]}
 			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var6...)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err

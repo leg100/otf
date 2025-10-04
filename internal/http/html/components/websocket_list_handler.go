@@ -35,7 +35,7 @@ type websocketListHandlerClient[Resource, ResourceEvent, Options any] interface 
 func (h *WebsocketListHandler[Resource, ResourceEvent, Options]) Handler(w http.ResponseWriter, r *http.Request) {
 	var opts Options
 	if err := decode.All(&opts, r); err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(r, w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
