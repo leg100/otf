@@ -121,12 +121,6 @@ func withRunnerDebug() runnerConfigOption {
 	}
 }
 
-func withServerRunnerDebug() configOption {
-	return func(cfg *config) {
-		cfg.RunnerConfig.Debug = true
-	}
-}
-
 func withKeyPairPaths(private, public string) configOption {
 	return func(cfg *config) {
 		cfg.PrivateKeyPath = private
