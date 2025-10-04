@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/gorilla/websocket"
-
 	"github.com/a-h/templ"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
@@ -133,11 +131,6 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 }
 
 func (h *webHandlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
-	if websocket.IsWebSocketUpgrade(r) {
-		h.websocketListHandler.Handler(w, r)
-		return
-	}
-
 	var params struct {
 		ListOptions
 		StatusFilterVisible bool `schema:"status_filter_visible"`
@@ -163,6 +156,12 @@ func (h *webHandlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 		tagStrings[i] = tag.Name
 	}
 
+	page, err := h.client.List(r.Context(), params.ListOptions)
+	if err != nil {
+		html.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	props := listProps{
 		organization:        *params.Organization,
 		allTags:             tagStrings,
@@ -177,6 +176,7 @@ func (h *webHandlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 			params.Organization,
 		),
 		pageOptions: params.PageOptions,
+		page:        page,
 	}
 
 	html.Render(list(props), w, r)

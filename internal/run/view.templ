@@ -20,7 +20,9 @@ type listProps struct {
 	status              []runstatus.Status
 	statusFilterVisible bool
 	canUpdateWorkspace  bool
+	table               table
 	pageOptions         resource.PageOptions
+	page                *resource.Page[*Run]
 }
 
 templ list(props listProps) {
@@ -40,14 +42,14 @@ templ list(props listProps) {
 	}}
 	@components.Layout(layoutProps) {
 		<div class="flex flex-col gap-2">
-			<form
-				hx-ext="ws"
-				ws-connect={ components.CurrentURL(ctx) }
-				action={ templ.SafeURL(components.CurrentURL(ctx)) }
-			>
+			<form action={ templ.SafeURL(components.CurrentURL(ctx)) }>
 				@runstatus.Filter(props.status, props.statusFilterVisible)
 			</form>
-			<div id="page-results"></div>
+			<div id="page-results" hx-get={ components.CurrentURL(ctx) } hx-trigger="every 10s">
+				@templ.Fragment("page-results") {
+					@components.Table(props.table, props.page, "page-results-inner-container")
+				}
+			</div>
 		</div>
 	}
 }

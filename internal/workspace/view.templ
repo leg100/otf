@@ -47,6 +47,7 @@ type listProps struct {
 	statusFilterVisible bool
 	tagFilterVisible    bool
 	pageOptions         resource.PageOptions
+	page                *resource.Page[*Workspace]
 }
 
 templ list(props listProps) {
@@ -61,11 +62,7 @@ templ list(props listProps) {
 	}
 	}}
 	@components.Layout(layoutProps) {
-		<form
-			action={ paths.Workspaces(props.organization) }
-			hx-ext="ws"
-			ws-connect={ components.CurrentURL(ctx) }
-		>
+		<form action={ paths.Workspaces(props.organization) }>
 			<div class="flex flex-col gap-2">
 				<div class="">
 					<input
@@ -96,7 +93,9 @@ templ list(props listProps) {
 				})
 			</div>
 		</form>
-		<div id="page-results"></div>
+		<div id="page-results">
+			@components.Table(table{}, props.page, "page-results-inner-container")
+		</div>
 	}
 }
 

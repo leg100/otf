@@ -167,6 +167,10 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 		status:              opts.Statuses,
 		statusFilterVisible: opts.StatusFilterVisible,
 		pageOptions:         opts.PageOptions,
+		table: table{
+			workspaceClient: newWorkspaceCache(h.workspaces),
+			users:           newUserCache(h.users),
+		},
 	}
 
 	if opts.ListOptions.WorkspaceID != nil {
@@ -184,6 +188,13 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, "must provide either organization_name or workspace_id", http.StatusUnprocessableEntity)
 		return
 	}
+
+	page, err := h.runs.List(r.Context(), opts.ListOptions)
+	if err != nil {
+		html.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	props.page = page
 
 	html.Render(list(props), w, r)
 }
