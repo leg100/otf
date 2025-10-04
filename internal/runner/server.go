@@ -60,7 +60,6 @@ func (s *localOperationSpawner) newOperation(job *Job, jobToken []byte) (*operat
 	return newOperation(operationOptions{
 		logger:       s.logger,
 		Debug:        s.config.Debug,
-		Sandbox:      s.config.Sandbox,
 		PluginCache:  s.config.PluginCache,
 		job:          job,
 		jobToken:     jobToken,

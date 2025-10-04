@@ -160,9 +160,6 @@ ingress:
 serviceMonitor:
   enabled: false
 
-# -- Enable sandboxing of terraform apply - note, this will run pods as privileged
-sandbox: false
-
 caCerts:
   # -- Mount a secret containing CA certificates and make them available to both terraform and otfd, allowing them to communicate with API endpoints that use custom CA certificates.
   enabled: false

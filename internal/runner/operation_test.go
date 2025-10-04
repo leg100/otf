@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"io"
 	"os"
-	"os/exec"
 	"path"
 	"testing"
 
@@ -39,21 +38,6 @@ func TestExecutor_execute(t *testing.T) {
 		got, err := os.ReadFile(dst)
 		require.NoError(t, err)
 		assert.Equal(t, "some output\n", string(got))
-	})
-
-	t.Run("sandbox", func(t *testing.T) {
-		if _, err := exec.LookPath("bwrap"); err != nil {
-			t.Skip("Skipping test that requires bwrap")
-		}
-
-		w := &operation{
-			Sandbox: true,
-			out:     io.Discard,
-			workdir: &workdir{root: "."},
-		}
-
-		err := w.execute([]string{"./testdata/staticbin"}, sandboxIfEnabled())
-		require.NoError(t, err)
 	})
 
 	t.Run("stderr", func(t *testing.T) {
@@ -106,68 +90,5 @@ func TestExecutor_execute(t *testing.T) {
 		// send force cancel
 		op.cancel(true, true)
 		assert.Error(t, <-done)
-	})
-}
-
-func TestExecutor_addSandboxWrapper(t *testing.T) {
-	t.Run("without plugin cache", func(t *testing.T) {
-		w := operation{
-			workdir: &workdir{root: "/root"},
-		}
-		want := []string{
-			"bwrap",
-			"--ro-bind", "/tmp/tf-bins/1.1.1/terraform", "/bin/terraform",
-			"--bind", "/root", "/config",
-			"--ro-bind", "/etc/resolv.conf", "/etc/resolv.conf",
-			"--ro-bind", "/etc/ssl/certs/ca-certificates.crt", "/etc/ssl/certs/ca-certificates.crt",
-			"--chdir", "/config",
-			"--proc", "/proc",
-			"--tmpfs", "/tmp",
-			"/bin/terraform", "apply",
-			"-input=false", "-no-color",
-		}
-		assert.Equal(t, want, w.addSandboxWrapper([]string{"/tmp/tf-bins/1.1.1/terraform", "apply", "-input=false", "-no-color"}))
-	})
-
-	t.Run("with plugin cache", func(t *testing.T) {
-		w := operation{
-			PluginCache: true,
-			workdir:     &workdir{root: "/root"},
-		}
-		want := []string{
-			"bwrap",
-			"--ro-bind", "/tmp/tf-bins/1.1.1/terraform", "/bin/terraform",
-			"--bind", "/root", "/config",
-			"--ro-bind", "/etc/resolv.conf", "/etc/resolv.conf",
-			"--ro-bind", "/etc/ssl/certs/ca-certificates.crt", "/etc/ssl/certs/ca-certificates.crt",
-			"--chdir", "/config",
-			"--proc", "/proc",
-			"--tmpfs", "/tmp",
-			"--ro-bind", "/tmp/plugin-cache", "/tmp/plugin-cache",
-			"/bin/terraform", "apply",
-			"-input=false", "-no-color",
-		}
-		assert.Equal(t, want, w.addSandboxWrapper([]string{"/tmp/tf-bins/1.1.1/terraform", "apply", "-input=false", "-no-color"}))
-	})
-
-	t.Run("with relative working directory", func(t *testing.T) {
-		w := operation{
-			PluginCache: true,
-			workdir:     &workdir{root: "/root", relative: "/relative"},
-		}
-		want := []string{
-			"bwrap",
-			"--ro-bind", "/tmp/tf-bins/1.1.1/terraform", "/bin/terraform",
-			"--bind", "/root", "/config",
-			"--ro-bind", "/etc/resolv.conf", "/etc/resolv.conf",
-			"--ro-bind", "/etc/ssl/certs/ca-certificates.crt", "/etc/ssl/certs/ca-certificates.crt",
-			"--chdir", "/config/relative",
-			"--proc", "/proc",
-			"--tmpfs", "/tmp",
-			"--ro-bind", "/tmp/plugin-cache", "/tmp/plugin-cache",
-			"/bin/terraform", "apply",
-			"-input=false", "-no-color",
-		}
-		assert.Equal(t, want, w.addSandboxWrapper([]string{"/tmp/tf-bins/1.1.1/terraform", "apply", "-input=false", "-no-color"}))
 	})
 }
