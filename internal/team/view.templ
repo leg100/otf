@@ -46,7 +46,7 @@ templ listTeams(props listTeamsProps) {
 		ContentActions: listTeamsActions(props),
 	}) {
 		<div id="content-list">
-			@components.Table(&table{}, props.teams, "page-results")
+			@components.Table(&table{}, props.teams)
 		</div>
 	}
 }

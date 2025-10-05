@@ -34,7 +34,6 @@ templ newView(props newViewProps) {
 		@components.UnpaginatedTable(
 			&vcs.Table{Actions: selectVCSProviderAction},
 			props.providers,
-			"providers",
 		)
 	}
 }
@@ -77,7 +76,6 @@ templ connect(props connectProps) {
 				}.action,
 			},
 			props.repos,
-			"repos-table",
 		)
 	}
 }
@@ -126,7 +124,7 @@ templ list(props listProps) {
 				},
 			})
 		</form>
-		@components.Table(&table{}, props.page, "page-results")
+		@components.Table(&table{}, props.page)
 	}
 }
 

@@ -12,6 +12,7 @@ import (
 type listRunnersProps struct {
 	organization      organization.Name
 	hideServerRunners bool
+	page              *resource.Page[*RunnerMeta]
 }
 
 templ listRunners(props listRunnersProps) {
@@ -34,8 +35,8 @@ templ listRunners(props listRunnersProps) {
 				</label>
 			</fieldset>
 		</form>
-		<div hx-ext="ws" ws-connect={ components.CurrentURL(ctx) }>
-			<div id={ runnersTableID }></div>
+		<div>
+			@components.PollingTable(table{}, props.page, "runners-table")
 		</div>
 	}
 }
@@ -143,7 +144,7 @@ templ listAgentPools(props listAgentPoolProps) {
 			</form>
 			<hr class="my-4"/>
 		</details>
-		@components.Table(&agentPoolsTable{}, props.pools, "page-results")
+		@components.Table(&agentPoolsTable{}, props.pools)
 	}
 }
 
@@ -292,7 +293,7 @@ templ getAgentPool(props getAgentPoolProps) {
 				</div>
 			</form>
 		</details>
-		@components.UnpaginatedTable(agentTokensTable{}, props.tokens, "page-results")
+		@components.UnpaginatedTable(agentTokensTable{}, props.tokens)
 		<hr class="my-4"/>
 		<h3 class="font-semibold text-lg mb-2">Agents</h3>
 		<div hx-ext="ws" ws-connect={ components.CurrentURL(ctx) }>

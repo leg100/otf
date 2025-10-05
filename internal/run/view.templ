@@ -45,11 +45,7 @@ templ list(props listProps) {
 			<form action={ templ.SafeURL(components.CurrentURL(ctx)) }>
 				@runstatus.Filter(props.status, props.statusFilterVisible)
 			</form>
-			<div id="page-results" hx-get={ components.CurrentURL(ctx) } hx-trigger="every 10s">
-				@templ.Fragment("page-results") {
-					@components.Table(props.table, props.page, "page-results-inner-container")
-				}
-			</div>
+			@components.PollingTable(props.table, props.page, "runs-table")
 		</div>
 	}
 }
@@ -306,7 +302,7 @@ type event struct {
 
 templ (e *event) view(run *Run) {
 	// render single-row table
-	@components.UnpaginatedTable(&table{users: e.users}, []*Run{run}, "run-item-"+run.ID.String())
+	@components.UnpaginatedTable(&table{users: e.users}, []*Run{run})
 	@phaseStatus(run.Plan)
 	@phaseStatus(run.Apply)
 	@periodReport(run)

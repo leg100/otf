@@ -93,9 +93,7 @@ templ list(props listProps) {
 				})
 			</div>
 		</form>
-		<div id="page-results">
-			@components.Table(table{}, props.page, "page-results-inner-container")
-		</div>
+		@components.PollingTable(table{}, props.page, "workspaces-table")
 	}
 }
 
@@ -755,7 +753,6 @@ templ listVCSProviders(ws *Workspace, providers []*vcs.Provider) {
 				Actions: vcsProviderSelector{workspaceID: ws.ID}.action,
 			},
 			providers,
-			"vcs-providers-table",
 		)
 		if len(providers) == 0 {
 			<span>
@@ -806,7 +803,6 @@ templ listVCSRepos(ws *Workspace, vcsProviderID resource.TfeID, repos []vcs.Repo
 				}.action,
 			},
 			repos,
-			"repos-table",
 		)
 	}
 }

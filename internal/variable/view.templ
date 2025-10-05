@@ -101,7 +101,6 @@ templ listWorkspaceVariables(props listWorkspaceVariablesProps) {
 				workspaceVariablesTable: true,
 			},
 			props.rows,
-			"variables-table",
 		)
 		if props.canCreateVariable {
 			<form class="mt-2" action={ paths.NewVariable(props.ws.ID) } method="GET">
@@ -127,7 +126,7 @@ templ listVariableSets(props listVariableSetsProps) {
 		},
 	}) {
 		<div id="content-list">
-			@components.Table(&listVariableSetsTable{}, props.sets, "page-results")
+			@components.Table(&listVariableSetsTable{}, props.sets)
 		</div>
 	}
 }
@@ -226,7 +225,6 @@ templ editVariableSet(props editVariableSetProps) {
 				canDeleteVariable: props.canDeleteVariable,
 			},
 			props.rows,
-			"variables-table",
 		)
 		<form class="mt-2" action={ paths.NewVariableSetVariable(props.set.ID) } method="GET">
 			<button class="btn" id="add-variable-button">Add variable</button>

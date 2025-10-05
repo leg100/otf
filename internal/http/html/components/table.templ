@@ -14,44 +14,50 @@ type TablePopulator[T any] interface {
 	Row(T) templ.Component
 }
 
-templ UnpaginatedTable[T any](populator TablePopulator[T], resources []T, id string) {
-	<div id={ id }>
-		<div class="border-t border-b border-base-content/20">
-			<table class="table overflow-x-auto">
-				<thead>
+templ UnpaginatedTable[T any](populator TablePopulator[T], resources []T) {
+	<div class="border-t border-b border-base-content/20">
+		<table class="table overflow-x-auto">
+			<thead>
+				<tr>
+					@populator.Header()
+				</tr>
+			</thead>
+			<tbody>
+				for _, item := range resources {
+					@populator.Row(item)
+				}
+				if len(resources) == 0 {
 					<tr>
-						@populator.Header()
+						<td id="no-items-found" colspan="100%">
+							No items found
+						</td>
 					</tr>
-				</thead>
-				<tbody>
-					for _, item := range resources {
-						@populator.Row(item)
-					}
-					if len(resources) == 0 {
-						<tr>
-							<td id="no-items-found" colspan="100%">
-								No items found
-							</td>
-						</tr>
-					}
-				</tbody>
-			</table>
-		</div>
-		{ children... }
+				}
+			</tbody>
+		</table>
 	</div>
+	{ children... }
 }
 
-templ Table[T any](populator TablePopulator[T], page *resource.Page[T], id string) {
+templ Table[T any](populator TablePopulator[T], page *resource.Page[T]) {
 	{{
 		info := pageInfo[T]{Page: page}
 	}}
-	@UnpaginatedTable(populator, page.Items, id) {
+	@UnpaginatedTable(populator, page.Items) {
 		<div class="flex p-4 gap-2 justify-between items-center">
 			@info.pageSizeSelector()
 			@info.summary()
 			@info.navigationButtons()
 		</div>
 	}
+}
+
+templ PollingTable[T any](populator TablePopulator[T], page *resource.Page[T], id string) {
+	<div id={ id } hx-get={ CurrentURL(ctx) } hx-trigger="every 10s">
+		@templ.Fragment(id) {
+			@Table(populator, page)
+		}
+	</div>
 }
 
 type pageInfo[T any] struct {

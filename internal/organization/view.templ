@@ -44,7 +44,7 @@ templ list(props listProps) {
 	}
 	}}
 	@components.Layout(layoutProps) {
-		@components.Table(&table{}, props.Page, "organization-table")
+		@components.Table(&table{}, props.Page)
 	}
 }
 
@@ -128,7 +128,6 @@ templ getToken(organization Name, token *OrganizationToken) {
 			@components.UnpaginatedTable(
 				&tokenTable{},
 				[]*OrganizationToken{token},
-				"org-token-table",
 			)
 		} else {
 			<form class="mt-2" action={ paths.CreateOrganizationToken(organization) } method="POST">
