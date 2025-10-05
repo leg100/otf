@@ -77,8 +77,8 @@ func newWebHandlers(service *Service, opts Options) *webHandlers {
 func (h *webHandlers) addHandlers(r *mux.Router) {
 	r = html.UIRouter(r)
 
-	r.HandleFunc("/organizations/{organization_name}/runs", h.listByOrganization).Methods("GET")
-	r.HandleFunc("/workspaces/{workspace_id}/runs", h.listByWorkspace).Methods("GET")
+	r.HandleFunc("/organizations/{organization_name}/runs", h.list).Methods("GET")
+	r.HandleFunc("/workspaces/{workspace_id}/runs", h.list).Methods("GET")
 	r.HandleFunc("/workspaces/{workspace_id}/start-run", h.createRun).Methods("POST")
 	r.HandleFunc("/workspaces/{workspace_id}/runs/watch-latest", h.watchLatest).Methods("GET")
 	r.HandleFunc("/runs/{run_id}", h.get).Methods("GET")
@@ -119,39 +119,6 @@ func (h *webHandlers) createRun(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, paths.Run(run.ID), http.StatusFound)
 }
 
-func (h *webHandlers) listByOrganization(w http.ResponseWriter, r *http.Request) {
-	if websocket.IsWebSocketUpgrade(r) {
-		h := &components.WebsocketListHandler[*Run, *Event, ListOptions]{
-			Logger: h.logger,
-			Client: h.runs,
-			Populator: table{
-				workspaceClient: newWorkspaceCache(h.workspaces),
-				users:           newUserCache(h.users),
-			},
-			ID: "page-results",
-		}
-		h.Handler(w, r)
-		return
-	}
-	h.list(w, r)
-}
-
-func (h *webHandlers) listByWorkspace(w http.ResponseWriter, r *http.Request) {
-	if websocket.IsWebSocketUpgrade(r) {
-		h := &components.WebsocketListHandler[*Run, *Event, ListOptions]{
-			Logger: h.logger,
-			Client: h.runs,
-			Populator: table{
-				users: newUserCache(h.users),
-			},
-			ID: "page-results",
-		}
-		h.Handler(w, r)
-		return
-	}
-	h.list(w, r)
-}
-
 func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 	var opts struct {
 		ListOptions
@@ -190,7 +157,7 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 
 	page, err := h.runs.List(r.Context(), opts.ListOptions)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(r, w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	props.page = page
@@ -262,7 +229,6 @@ func (h *webHandlers) getWidget(w http.ResponseWriter, r *http.Request) {
 	table := components.UnpaginatedTable(
 		&table{users: h.users},
 		[]*Run{run},
-		"run-item-"+run.ID.String(),
 	)
 
 	html.Render(table, w, r)
@@ -453,7 +419,6 @@ func (h *webHandlers) watchLatest(w http.ResponseWriter, r *http.Request) {
 			return components.UnpaginatedTable(
 				&table{users: h.users},
 				[]*Run{run},
-				"latest-run",
 			)
 		},
 	)

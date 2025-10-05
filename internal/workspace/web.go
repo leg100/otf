@@ -46,12 +46,11 @@ type (
 	webHandlers struct {
 		*uiHelpers
 
-		teams                webTeamClient
-		vcsproviders         webVCSProvidersClient
-		client               webClient
-		authorizer           webAuthorizer
-		releases             engineClient
-		websocketListHandler *components.WebsocketListHandler[*Workspace, *Event, ListOptions]
+		teams        webTeamClient
+		vcsproviders webVCSProvidersClient
+		client       webClient
+		authorizer   webAuthorizer
+		releases     engineClient
 	}
 
 	webTeamClient interface {
@@ -96,12 +95,6 @@ func newWebHandlers(service *Service, opts Options) *webHandlers {
 		client:       service,
 		uiHelpers: &uiHelpers{
 			authorizer: opts.Authorizer,
-		},
-		websocketListHandler: &components.WebsocketListHandler[*Workspace, *Event, ListOptions]{
-			Logger:    opts.Logger,
-			Client:    service,
-			Populator: &table{},
-			ID:        "page-results",
 		},
 		releases: opts.EngineService,
 	}
@@ -158,7 +151,7 @@ func (h *webHandlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 
 	page, err := h.client.List(r.Context(), params.ListOptions)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(r, w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 

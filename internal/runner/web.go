@@ -8,7 +8,6 @@ import (
 	"slices"
 
 	"github.com/gorilla/mux"
-	"github.com/gorilla/websocket"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
@@ -26,11 +25,10 @@ const runnersTableID = "runners-table"
 
 // webHandlers provides handlers for the web UI
 type webHandlers struct {
-	svc                  webClient
-	workspaces           *workspacepkg.Service
-	logger               logr.Logger
-	authorizer           authz.Interface
-	websocketListHandler *components.WebsocketListHandler[*RunnerMeta, *RunnerEvent, ListOptions]
+	svc        webClient
+	workspaces *workspacepkg.Service
+	logger     logr.Logger
+	authorizer authz.Interface
 }
 
 // webClient gives web handlers access to the agents service endpoints
@@ -77,12 +75,6 @@ func newWebHandlers(svc *Service, opts ServiceOptions) *webHandlers {
 		logger:     opts.Logger,
 		svc:        svc,
 		workspaces: opts.WorkspaceService,
-		websocketListHandler: &components.WebsocketListHandler[*RunnerMeta, *RunnerEvent, ListOptions]{
-			Logger:    opts.Logger,
-			Client:    svc,
-			Populator: table{},
-			ID:        runnersTableID,
-		},
 	}
 }
 
@@ -108,19 +100,21 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 // runner handlers
 
 func (h *webHandlers) listRunners(w http.ResponseWriter, r *http.Request) {
-	if websocket.IsWebSocketUpgrade(r) {
-		h.websocketListHandler.Handler(w, r)
-		return
-	}
-
 	var params ListOptions
 	if err := decode.All(&params, r); err != nil {
 		html.Error(r, w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
+	runners, err := h.svc.listRunners(r.Context(), params)
+	if err != nil {
+		html.Error(r, w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	props := listRunnersProps{
 		organization:      *params.Organization,
 		hideServerRunners: params.HideServerRunners,
+		page:              resource.NewPage(runners, resource.PageOptions{}, nil),
 	}
 	html.Render(listRunners(props), w, r)
 }
@@ -208,11 +202,6 @@ func (h *webHandlers) listAgentPools(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) getAgentPool(w http.ResponseWriter, r *http.Request) {
-	if websocket.IsWebSocketUpgrade(r) {
-		h.websocketListHandler.Handler(w, r)
-		return
-	}
-
 	poolID, err := decode.ID("pool_id", r)
 	if err != nil {
 		html.Error(r, w, err.Error(), http.StatusUnprocessableEntity)

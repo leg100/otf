@@ -17,6 +17,7 @@ import (
 	"strings"
 
 	"github.com/go-logr/logr"
+	"github.com/gorilla/websocket"
 )
 
 type etagResponseWriter struct {
@@ -39,6 +40,10 @@ type etagMiddleware struct {
 func (e *etagMiddleware) middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !strings.HasPrefix(r.URL.Path, e.prefix) {
+			next.ServeHTTP(w, r)
+			return
+		}
+		if websocket.IsWebSocketUpgrade(r) {
 			next.ServeHTTP(w, r)
 			return
 		}
