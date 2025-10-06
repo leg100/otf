@@ -92,7 +92,7 @@ func (h *webHandlers) new(w http.ResponseWriter, r *http.Request) {
 	}
 	marshaled, err := json.Marshal(&m)
 	if err != nil {
-		html.Error(r, w, err.Error(), http.StatusInternalServerError)
+		html.Error(r, w, err.Error())
 		return
 	}
 
@@ -109,13 +109,13 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 	if errors.Is(err, internal.ErrResourceNotFound) {
 		// app not found, which is ok.
 	} else if err != nil {
-		html.Error(r, w, err.Error(), http.StatusInternalServerError)
+		html.Error(r, w, err.Error())
 		return
 	} else {
 		// App found, now get installs
 		installs, err = h.svc.ListInstallations(r.Context())
 		if err != nil {
-			html.Error(r, w, err.Error(), http.StatusInternalServerError)
+			html.Error(r, w, err.Error())
 			return
 		}
 	}
@@ -135,7 +135,7 @@ func (h *webHandlers) exchangeCode(w http.ResponseWriter, r *http.Request) {
 		Code string `schema:"code,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
-		html.Error(r, w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
@@ -145,12 +145,12 @@ func (h *webHandlers) exchangeCode(w http.ResponseWriter, r *http.Request) {
 		SkipTLSVerification: h.skipTLSVerification,
 	})
 	if err != nil {
-		html.Error(r, w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 	cfg, err := client.ExchangeCode(r.Context(), params.Code)
 	if err != nil {
-		html.Error(r, w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
@@ -166,7 +166,7 @@ func (h *webHandlers) exchangeCode(w http.ResponseWriter, r *http.Request) {
 	}
 	_, err = h.svc.CreateApp(r.Context(), opts)
 	if err != nil {
-		html.Error(r, w, err.Error(), http.StatusInternalServerError)
+		html.Error(r, w, err.Error())
 		return
 	}
 
@@ -177,17 +177,17 @@ func (h *webHandlers) exchangeCode(w http.ResponseWriter, r *http.Request) {
 func (h *webHandlers) delete(w http.ResponseWriter, r *http.Request) {
 	app, err := h.svc.GetApp(r.Context())
 	if err != nil {
-		html.Error(r, w, err.Error(), http.StatusInternalServerError)
+		html.Error(r, w, err.Error())
 		return
 	}
 	if err := h.svc.DeleteApp(r.Context()); err != nil {
-		html.Error(r, w, err.Error(), http.StatusInternalServerError)
+		html.Error(r, w, err.Error())
 		return
 	}
 	// render a small templated flash message
 	buf := new(bytes.Buffer)
 	if err := deleteMessage(app).Render(r.Context(), buf); err != nil {
-		html.Error(r, w, err.Error(), http.StatusInternalServerError)
+		html.Error(r, w, err.Error())
 		return
 	}
 	html.FlashSuccess(w, buf.String())
@@ -200,12 +200,12 @@ func (h *webHandlers) deleteInstall(w http.ResponseWriter, r *http.Request) {
 		InstallID int64 `schema:"install_id,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
-		html.Error(r, w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 	err := h.svc.DeleteInstallation(r.Context(), params.InstallID)
 	if err != nil {
-		html.Error(r, w, err.Error(), http.StatusInternalServerError)
+		html.Error(r, w, err.Error())
 		return
 	}
 	html.FlashSuccess(w, fmt.Sprintf("deleted installation: %d", params.InstallID))

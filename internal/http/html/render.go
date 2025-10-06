@@ -18,9 +18,7 @@ func Render(c templ.Component, w http.ResponseWriter, r *http.Request) {
 	// handle errors
 	errHandler := templ.WithErrorHandler(func(r *http.Request, err error) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// TODO: not sure this is correct; a rendering error more likely
-			// means a server side error, so should be an internal server error?
-			Error(r, w, err.Error(), http.StatusBadRequest)
+			Error(r, w, err.Error())
 		})
 	})
 	templ.Handler(c, errHandler).ServeHTTP(w, r.WithContext(ctx))
