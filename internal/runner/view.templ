@@ -36,7 +36,7 @@ templ listRunners(props listRunnersProps) {
 			</fieldset>
 		</form>
 		<div>
-			@components.PollingTable(table{}, props.page, "runners-table")
+			@components.PollingTable(table{}, props.page)
 		</div>
 	}
 }
@@ -300,9 +300,7 @@ templ getAgentPool(props getAgentPoolProps) {
 		@components.UnpaginatedTable(agentTokensTable{}, props.tokens)
 		<hr class="my-4"/>
 		<h3 class="font-semibold text-lg mb-2">Agents</h3>
-		<div hx-ext="ws" ws-connect={ components.CurrentURL(ctx) }>
-			<div id={ runnersTableID }></div>
-		</div>
+		@components.PollingTable(table{}, props.agents)
 		if props.canDeleteAgentPool {
 			<hr class="my-4"/>
 			<h3 class="font-semibold text-lg mb-2">Advanced</h3>

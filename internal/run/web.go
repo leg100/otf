@@ -157,7 +157,7 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 
 	page, err := h.runs.List(r.Context(), opts.ListOptions)
 	if err != nil {
-		html.Error(r, w, err.Error(), http.StatusInternalServerError)
+		html.Error(r, w, err.Error())
 		return
 	}
 	props.page = page

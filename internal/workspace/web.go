@@ -151,7 +151,7 @@ func (h *webHandlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 
 	page, err := h.client.List(r.Context(), params.ListOptions)
 	if err != nil {
-		html.Error(r, w, err.Error(), http.StatusInternalServerError)
+		html.Error(r, w, err.Error())
 		return
 	}
 

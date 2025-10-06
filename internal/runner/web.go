@@ -107,7 +107,7 @@ func (h *webHandlers) listRunners(w http.ResponseWriter, r *http.Request) {
 	}
 	runners, err := h.svc.listRunners(r.Context(), params)
 	if err != nil {
-		html.Error(r, w, err.Error(), http.StatusInternalServerError)
+		html.Error(r, w, err.Error())
 		return
 	}
 

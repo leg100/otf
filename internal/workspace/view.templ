@@ -72,8 +72,10 @@ templ list(props listProps) {
 						value={ props.search }
 						style={ magnifyingGlassStyle(ctx) }
 						placeholder="Search workspaces"
-						hx-trigger="keyup changed delay:500ms"
-						ws-send
+						hx-trigger="keyup changed delay:500ms, keyup[key=='Enter']"
+						hx-get={ components.CurrentURL(ctx) }
+						hx-target="#polling-table"
+						hx-push-url="true"
 						id="workspace-search"
 						onblur="if (this.defaultValue != this.value) { this.form.submit() }"
 					/>
@@ -93,7 +95,7 @@ templ list(props listProps) {
 				})
 			</div>
 		</form>
-		@components.PollingTable(table{}, props.page, "workspaces-table")
+		@components.PollingTable(table{}, props.page)
 	}
 }
 

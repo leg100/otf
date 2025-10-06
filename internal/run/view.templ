@@ -45,7 +45,7 @@ templ list(props listProps) {
 			<form action={ templ.SafeURL(components.CurrentURL(ctx)) }>
 				@runstatus.Filter(props.status, props.statusFilterVisible)
 			</form>
-			@components.PollingTable(props.table, props.page, "runs-table")
+			@components.PollingTable(props.table, props.page)
 		</div>
 	}
 }

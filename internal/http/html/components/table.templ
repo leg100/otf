@@ -52,9 +52,10 @@ templ Table[T any](populator TablePopulator[T], page *resource.Page[T]) {
 	}
 }
 
-templ PollingTable[T any](populator TablePopulator[T], page *resource.Page[T], id string) {
-	<div id={ id } hx-get={ CurrentURL(ctx) } hx-trigger="every 2s" hx-swap="morph:innerHTML">
-		@templ.Fragment(id) {
+// PollingTable renders a table that polls for updates every X seconds.
+templ PollingTable[T any](populator TablePopulator[T], page *resource.Page[T]) {
+	<div id="polling-table" hx-get={ CurrentURL(ctx) } hx-trigger="every 10s" hx-swap="morph:innerHTML">
+		@templ.Fragment("polling-table") {
 			@Table(populator, page)
 		}
 	</div>
