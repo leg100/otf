@@ -150,9 +150,11 @@ templ (t listVariableSetsTable) Header() {
 }
 
 templ (t listVariableSetsTable) Row(vs *VariableSet) {
-	<tr id={ "item-variable-set-" + vs.Name } x-data={ components.BlockLink(paths.EditVariableSet(vs.ID)) }>
+	<tr id={ "item-variable-set-" + vs.Name }>
 		<td>
-			{ vs.Name }
+			<a class="link" href={ paths.EditVariableSet(vs.ID) }>
+				{ vs.Name }
+			</a>
 		</td>
 		<td>
 			@components.Identifier(vs.ID)
@@ -435,7 +437,7 @@ func (t table) showVariableSetColumn() bool {
 }
 
 templ (t table) Row(v variableRow) {
-	<tr id={ "item-variable-" + v.Key } x-data={ components.BlockLink(t.editPath(v)) }>
+	<tr id={ "item-variable-" + v.Key }>
 		if t.showVariableSetColumn() {
 			<td class="">
 				if v.set != nil {

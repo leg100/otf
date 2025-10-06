@@ -27,7 +27,7 @@ func TestIntegration_TeamUI(t *testing.T) {
 		err = page.Locator(`#menu-item-teams > a`).Click()
 		require.NoError(t, err)
 		// go to owners team page
-		err = page.Locator(`//*[@id='item-team-owners']`).Click()
+		err = page.Locator(`//tr[@id='item-team-owners']/td[1]/a`).Click()
 		require.NoError(t, err)
 		screenshot(t, page, "owners_team_page")
 

@@ -157,8 +157,12 @@ templ (t agentPoolsTable) Header() {
 }
 
 templ (t agentPoolsTable) Row(pool *Pool) {
-	<tr id={ pool.ID.String() } x-data={ components.BlockLink(paths.AgentPool(pool.ID)) }>
-		<td>{ pool.Name }</td>
+	<tr id={ pool.ID.String() }>
+		<td>
+			<a class="link" href={ paths.AgentPool(pool.ID) }>
+				{ pool.Name }
+			</a>
+		</td>
 		<td>
 			@components.Identifier(pool.ID)
 		</td>

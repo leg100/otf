@@ -59,9 +59,11 @@ templ (t table) Header() {
 }
 
 templ (t table) Row(team *Team) {
-	<tr id={ "item-team-" + team.Name } x-data={ components.BlockLink(paths.Team(team.ID)) }>
+	<tr id={ "item-team-" + team.Name }>
 		<td>
-			{ team.Name }
+			<a class="link" href={ paths.Team(team.ID) }>
+				{ team.Name }
+			</a>
 		</td>
 		<td>
 			@components.Identifier(team.ID)

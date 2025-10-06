@@ -501,33 +501,33 @@ func (t agentPoolsTable) Row(pool *Pool) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "\" x-data=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "\"><td><a class=\"link\" href=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var24 string
-		templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinStringErrs(components.BlockLink(paths.AgentPool(pool.ID)))
+		var templ_7745c5c3_Var24 templ.SafeURL
+		templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinURLErrs(paths.AgentPool(pool.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/view.templ`, Line: 160, Col: 84}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/view.templ`, Line: 162, Col: 50}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var24))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, "\"><td>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, "\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var25 string
 		templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinStringErrs(pool.Name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/view.templ`, Line: 161, Col: 17}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/view.templ`, Line: 163, Col: 15}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var25))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 32, "</td><td>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 32, "</a></td><td>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -589,7 +589,7 @@ func agentPoolListAllowed(props agentPoolListAllowedProps) templ.Component {
 			var templ_7745c5c3_Var27 string
 			templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinStringErrs(pool.ID.String())
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/view.templ`, Line: 179, Col: 35}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/view.templ`, Line: 183, Col: 35}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var27))
 			if templ_7745c5c3_Err != nil {
@@ -612,7 +612,7 @@ func agentPoolListAllowed(props agentPoolListAllowedProps) templ.Component {
 			var templ_7745c5c3_Var28 string
 			templ_7745c5c3_Var28, templ_7745c5c3_Err = templ.JoinStringErrs(pool.Name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/view.templ`, Line: 179, Col: 125}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/view.templ`, Line: 183, Col: 125}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var28))
 			if templ_7745c5c3_Err != nil {
@@ -689,7 +689,7 @@ func getAgentPool(props getAgentPoolProps) templ.Component {
 			var templ_7745c5c3_Var31 templ.SafeURL
 			templ_7745c5c3_Var31, templ_7745c5c3_Err = templ.JoinURLErrs(paths.UpdateAgentPool(props.pool.ID))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/view.templ`, Line: 206, Col: 62}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/view.templ`, Line: 210, Col: 62}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var31))
 			if templ_7745c5c3_Err != nil {
@@ -702,7 +702,7 @@ func getAgentPool(props getAgentPoolProps) templ.Component {
 			var templ_7745c5c3_Var32 string
 			templ_7745c5c3_Var32, templ_7745c5c3_Err = templ.JoinStringErrs(props.pool.Name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/view.templ`, Line: 209, Col: 87}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/view.templ`, Line: 213, Col: 87}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var32))
 			if templ_7745c5c3_Err != nil {
@@ -735,7 +735,7 @@ func getAgentPool(props getAgentPoolProps) templ.Component {
 			var templ_7745c5c3_Var33 string
 			templ_7745c5c3_Var33, templ_7745c5c3_Err = templ.JoinStringErrs(components.AssetPath(ctx, "/static/js/dropdown.js"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/view.templ`, Line: 221, Col: 70}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/view.templ`, Line: 225, Col: 70}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var33))
 			if templ_7745c5c3_Err != nil {
@@ -748,7 +748,7 @@ func getAgentPool(props getAgentPoolProps) templ.Component {
 			var templ_7745c5c3_Var34 string
 			templ_7745c5c3_Var34, templ_7745c5c3_Err = templ.JoinStringErrs("dropdown(" + toJSON(props.allowedButUnassignedWorkspaces) + ", " + toJSON(props.availableWorkspaces) + ")")
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/view.templ`, Line: 224, Col: 122}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/view.templ`, Line: 228, Col: 122}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var34))
 			if templ_7745c5c3_Err != nil {
@@ -761,7 +761,7 @@ func getAgentPool(props getAgentPoolProps) templ.Component {
 			var templ_7745c5c3_Var35 string
 			templ_7745c5c3_Var35, templ_7745c5c3_Err = templ.JoinStringErrs(toJSON(props.assignedWorkspaces))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/view.templ`, Line: 266, Col: 121}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/view.templ`, Line: 270, Col: 121}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var35))
 			if templ_7745c5c3_Err != nil {
@@ -779,7 +779,7 @@ func getAgentPool(props getAgentPoolProps) templ.Component {
 				var templ_7745c5c3_Var36 templ.SafeURL
 				templ_7745c5c3_Var36, templ_7745c5c3_Err = templ.JoinURLErrs(paths.EditWorkspace(ws.ID))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/view.templ`, Line: 268, Col: 100}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/view.templ`, Line: 272, Col: 100}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var36))
 				if templ_7745c5c3_Err != nil {
@@ -792,7 +792,7 @@ func getAgentPool(props getAgentPoolProps) templ.Component {
 				var templ_7745c5c3_Var37 string
 				templ_7745c5c3_Var37, templ_7745c5c3_Err = templ.JoinStringErrs(ws.Name)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/view.templ`, Line: 268, Col: 112}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/view.templ`, Line: 272, Col: 112}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var37))
 				if templ_7745c5c3_Err != nil {
@@ -810,7 +810,7 @@ func getAgentPool(props getAgentPoolProps) templ.Component {
 			var templ_7745c5c3_Var38 templ.SafeURL
 			templ_7745c5c3_Var38, templ_7745c5c3_Err = templ.JoinURLErrs(paths.CreateAgentToken(props.pool.ID))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/view.templ`, Line: 285, Col: 83}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/view.templ`, Line: 289, Col: 83}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var38))
 			if templ_7745c5c3_Err != nil {
@@ -831,7 +831,7 @@ func getAgentPool(props getAgentPoolProps) templ.Component {
 			var templ_7745c5c3_Var39 string
 			templ_7745c5c3_Var39, templ_7745c5c3_Err = templ.JoinStringErrs(components.CurrentURL(ctx))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/view.templ`, Line: 299, Col: 58}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/view.templ`, Line: 303, Col: 58}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var39))
 			if templ_7745c5c3_Err != nil {
@@ -844,7 +844,7 @@ func getAgentPool(props getAgentPoolProps) templ.Component {
 			var templ_7745c5c3_Var40 string
 			templ_7745c5c3_Var40, templ_7745c5c3_Err = templ.JoinStringErrs(runnersTableID)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/view.templ`, Line: 300, Col: 27}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/view.templ`, Line: 304, Col: 27}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var40))
 			if templ_7745c5c3_Err != nil {
@@ -872,7 +872,7 @@ func getAgentPool(props getAgentPoolProps) templ.Component {
 						var templ_7745c5c3_Var41 templ.SafeURL
 						templ_7745c5c3_Var41, templ_7745c5c3_Err = templ.JoinURLErrs(paths.EditWorkspace(ws.ID))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/view.templ`, Line: 309, Col: 97}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/view.templ`, Line: 313, Col: 97}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var41))
 						if templ_7745c5c3_Err != nil {
@@ -885,7 +885,7 @@ func getAgentPool(props getAgentPoolProps) templ.Component {
 						var templ_7745c5c3_Var42 string
 						templ_7745c5c3_Var42, templ_7745c5c3_Err = templ.JoinStringErrs(ws.Name)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/view.templ`, Line: 309, Col: 109}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/view.templ`, Line: 313, Col: 109}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var42))
 						if templ_7745c5c3_Err != nil {
@@ -908,7 +908,7 @@ func getAgentPool(props getAgentPoolProps) templ.Component {
 				var templ_7745c5c3_Var43 templ.SafeURL
 				templ_7745c5c3_Var43, templ_7745c5c3_Err = templ.JoinURLErrs(paths.DeleteAgentPool(props.pool.ID))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/view.templ`, Line: 313, Col: 67}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/view.templ`, Line: 317, Col: 67}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var43))
 				if templ_7745c5c3_Err != nil {
@@ -1005,7 +1005,7 @@ func (t agentTokensTable) Row(token *agentToken) templ.Component {
 		var templ_7745c5c3_Var46 string
 		templ_7745c5c3_Var46, templ_7745c5c3_Err = templ.JoinStringErrs(token.Description)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/view.templ`, Line: 333, Col: 25}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/view.templ`, Line: 337, Col: 25}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var46))
 		if templ_7745c5c3_Err != nil {
@@ -1034,7 +1034,7 @@ func (t agentTokensTable) Row(token *agentToken) templ.Component {
 		var templ_7745c5c3_Var47 templ.SafeURL
 		templ_7745c5c3_Var47, templ_7745c5c3_Err = templ.JoinURLErrs(paths.DeleteAgentToken(token.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/view.templ`, Line: 341, Col: 74}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/view.templ`, Line: 345, Col: 74}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var47))
 		if templ_7745c5c3_Err != nil {

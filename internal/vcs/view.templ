@@ -64,7 +64,9 @@ templ (t Table) Row(provider *Provider) {
 		<td>
 			<div class="flex gap-2">
 				@provider.Icon
-				{ provider.String() }
+				<a class="link" href={ paths.EditVCSProvider(provider.ID) }>
+					{ provider.String() }
+				</a>
 			</div>
 		</td>
 		<td>

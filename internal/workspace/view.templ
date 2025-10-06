@@ -106,7 +106,7 @@ templ (t table) Header() {
 }
 
 templ (t table) Row(ws *Workspace) {
-	<tr id={ "item-workspace-" + ws.Name } x-data={ components.BlockLink(paths.Workspace(ws.ID)) }>
+	<tr id={ "item-workspace-" + ws.Name }>
 		<td>
 			<a class="link" href={ paths.Workspace(ws.ID) }>{ ws.Name }</a>
 		</td>

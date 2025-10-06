@@ -56,19 +56,24 @@ type table struct {
 }
 
 templ (t table) Header() {
+	<th>Run</th>
 	<!-- add workspace column if not filtered by workspace ID -->
 	if t.workspaceClient != nil {
 		<th>Workspace</th>
 	}
-	<th class="hidden xl:block">ID</th>
 	<th>Source</th>
 	<th>Status</th>
-	<th>Created</th>
+	<th class="hidden xl:block">Created</th>
 	<th>Actions</th>
 }
 
 templ (t table) Row(run *Run) {
-	<tr id={ "run-item-" + run.ID.String() } x-data={ components.BlockLink(paths.Run(run.ID)) }>
+	<tr id={ "run-item-" + run.ID.String() }>
+		<td>
+			<a class="link" href={ paths.Run(run.ID) }>
+				{ run.ID.String() }
+			</a>
+		</td>
 		<!-- provide workspace name if not filtered by workspace ID -->
 		if t.workspaceClient != nil {
 			<td>
@@ -77,9 +82,6 @@ templ (t table) Row(run *Run) {
 				</a>
 			</td>
 		}
-		<td class="hidden xl:block">
-			@components.Identifier(run.ID)
-		</td>
 		<td>
 			<div class="flex flex gap-2">
 				@t.avatar(run)
@@ -144,7 +146,7 @@ templ (t table) Row(run *Run) {
 				</div>
 			</div>
 		</td>
-		<td class="align-top">
+		<td class="align-top hidden xl:block">
 			@components.Ago(run.CreatedAt)
 		</td>
 		<td class="align-top">
@@ -244,6 +246,9 @@ templ get(props getProps) {
 			<div class="flex gap-1 items-center" id="elapsed-time">
 				Elapsed time
 				<span class="badge badge-soft" id={ "running-time-" + props.run.ID.String() }></span>
+			</div>
+			<div class="flex gap-1 items-center z-20" id="run-identifier">
+				@components.Identifier(props.run.ID)
 			</div>
 		</div>
 		<div id="period-report"></div>

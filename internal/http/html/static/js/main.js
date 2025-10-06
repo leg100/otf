@@ -15,26 +15,6 @@ window.addEventListener("load", (e) => {
 	});
 });
 
-// https://css-tricks.com/block-links-the-search-for-a-perfect-solution/#method-4-sprinkle-javascript-on-the-second-method
-document.addEventListener("alpine:init", () => {
-	Alpine.data("block_link", (block, link) => ({
-		init() {
-			block.classList.add("cursor-pointer", "hover:bg-base-200");
-			block.addEventListener("click", (e) => {
-				console.info(e);
-				isTextSelected = window.getSelection().toString();
-				if (!isTextSelected) {
-					location = link;
-				}
-			});
-			links = block.querySelectorAll("a, button");
-			links.forEach((link) => {
-				link.addEventListener("click", (e) => e.stopPropagation());
-			});
-		},
-	}));
-});
-
 window.addEventListener("htmx:wsConfigSend", function (evt) {
 	const msg = evt.detail.parameters;
 
