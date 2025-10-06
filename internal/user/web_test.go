@@ -136,6 +136,7 @@ func TestAdminLoginHandler(t *testing.T) {
 
 			r := httptest.NewRequest("POST", "/admin/login", form)
 			r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+			r.Header.Add("Referer", "http://otf.server/admin/login")
 			w := httptest.NewRecorder()
 			h.adminLogin(w, r)
 

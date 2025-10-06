@@ -15,15 +15,15 @@ func Render(c templ.Component, w http.ResponseWriter, r *http.Request) {
 	ctx := context.WithValue(r.Context(), requestKey{}, r)
 	// add response to context for templates to access
 	ctx = context.WithValue(ctx, responseKey{}, w)
+	// handle errors
 	opts := []func(*templ.ComponentHandler){
 		templ.WithErrorHandler(func(r *http.Request, err error) http.Handler {
 			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				// TODO: not sure this is correct; a rendering error more likely
-				// means a server side error, so should be an internal server error?
-				Error(r, w, err.Error(), http.StatusBadRequest)
+				Error(r, w, err.Error())
 			})
 		}),
 	}
+	// render only a fragment if ajax request.
 	if r.Header.Get("HX-Target") != "" {
 		opts = append(opts, templ.WithFragments(r.Header.Get("Hx-Target")))
 	}
