@@ -153,7 +153,7 @@ templ (t table) Header() {
 }
 
 templ (t table) Row(module *Module) {
-	<tr id={ "mod-item-" + module.Name } x-data={ components.BlockLink(paths.Module(module.ID)) }>
+	<tr id={ "mod-item-" + module.Name }>
 		<td>
 			<a class="link" href={ paths.Module(module.ID) }>
 				{ module.Name }
