@@ -75,7 +75,6 @@ templ list(props listProps) {
 						hx-trigger="keyup changed delay:500ms, keyup[key=='Enter']"
 						hx-get={ components.CurrentURL(ctx) }
 						hx-target="#polling-table"
-						hx-push-url="true"
 						id="workspace-search"
 						onblur="if (this.defaultValue != this.value) { this.form.submit() }"
 					/>
