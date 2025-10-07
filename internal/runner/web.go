@@ -19,10 +19,6 @@ import (
 	workspacepkg "github.com/leg100/otf/internal/workspace"
 )
 
-// runnersTableID is the CSS ID of the DOM element containing the table of
-// runners.
-const runnersTableID = "runners-table"
-
 // webHandlers provides handlers for the web UI
 type webHandlers struct {
 	svc        webClient

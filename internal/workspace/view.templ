@@ -62,23 +62,21 @@ templ list(props listProps) {
 	}
 	}}
 	@components.Layout(layoutProps) {
-		<form action={ paths.Workspaces(props.organization) }>
+		<form action={ paths.Workspaces(props.organization) } hx-include="this">
 			<div class="flex flex-col gap-2">
-				<div class="">
-					<input
-						class="input w-60 bg-[size:14px] bg-[10px] bg-no-repeat pl-10"
-						type="search"
-						name="search[name]"
-						value={ props.search }
-						style={ magnifyingGlassStyle(ctx) }
-						placeholder="Search workspaces"
-						hx-trigger="keyup changed delay:500ms, keyup[key=='Enter']"
-						hx-get={ components.CurrentURL(ctx) }
-						hx-target="#polling-table"
-						id="workspace-search"
-						onblur="if (this.defaultValue != this.value) { this.form.submit() }"
-					/>
-				</div>
+				<input
+					class="input w-60 bg-[size:14px] bg-[10px] bg-no-repeat pl-10"
+					type="search"
+					name="search[name]"
+					value={ props.search }
+					style={ magnifyingGlassStyle(ctx) }
+					placeholder="Search workspaces"
+					hx-trigger="keyup changed delay:500ms, keyup[key=='Enter']"
+					hx-get={ components.CurrentPath(ctx) }
+					hx-target="#polling-table"
+					id="workspace-search"
+					onblur="if (this.defaultValue != this.value) { this.form.submit() }"
+				/>
 				@runstatus.Filter(props.status, props.statusFilterVisible)
 				@components.Filter(components.FilterProps[string]{
 					Title:            "Filter by tag",
@@ -93,8 +91,8 @@ templ list(props listProps) {
 					},
 				})
 			</div>
+			@components.PollingTable(table{}, props.page)
 		</form>
-		@components.PollingTable(table{}, props.page)
 	}
 }
 
