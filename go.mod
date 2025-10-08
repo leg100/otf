@@ -150,11 +150,6 @@ require (
 	honnef.co/go/tools v0.6.1 // indirect
 )
 
-replace (
-	github.com/jaschaephraim/lrserver => github.com/sowiner/lrserver v0.0.0-20230123160823-795409868576
-	github.com/r3labs/sse/v2 => github.com/leg100/sse/v2 v2.0.0-20220910081853-79ffbd7c2fad
-)
-
 //replace github.com/leg100/go-tfe => ../go-tfe
 
 tool (
