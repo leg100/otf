@@ -26,6 +26,7 @@ type Client struct {
 func NewTokenClient(opts vcs.NewTokenClientOptions) (vcs.Client, error) {
 	options := make([]forgejo.ClientOption, 0, 2)
 	options = append(options, forgejo.SetToken(opts.Token))
+	options = append(options, forgejo.SetForgejoVersion("")) // disable version probes
 	if opts.SkipTLSVerification {
 		transport := http.DefaultTransport.(*http.Transport).Clone()
 		transport.TLSClientConfig = &tls.Config{
