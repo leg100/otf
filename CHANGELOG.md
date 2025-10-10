@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.4.7](https://github.com/leg100/otf/compare/v0.4.6...v0.4.7) (2025-10-10)
+
+
+### Features
+
+* **ui:** let browser cache responses for better perf ([c76a29a](https://github.com/leg100/otf/commit/c76a29a8e4934a78cfccfec253b3587f3471b8b6))
+* **ui:** use flash messages for POST errors ([23a969f](https://github.com/leg100/otf/commit/23a969ff1712139fbc233f93ff0e26d3f30fb718))
+
+
+### Bug Fixes
+
+* exclude websockets from etag middleware ([2d2567c](https://github.com/leg100/otf/commit/2d2567c9cc6763f3f3af841dbdab23651d9e7f47))
+* UI crashes when forgejo VCS provider fails to connect ([#838](https://github.com/leg100/otf/issues/838)) ([d4ba67e](https://github.com/leg100/otf/commit/d4ba67e5958ab33e5d87c342f6151e2116473f16)), closes [#837](https://github.com/leg100/otf/issues/837)
+
+
+### Miscellaneous
+
+* don't raise error unnecessarilyi ([720b93b](https://github.com/leg100/otf/commit/720b93b6a8e9d9e35eacefd91889d91753a64591))
+* drop bubblewrap support ([eb747d1](https://github.com/leg100/otf/commit/eb747d16a8a2dd4dd661a8b72647d8ba717a0276))
+* fix linting errors ([e7a75a9](https://github.com/leg100/otf/commit/e7a75a99cb128904f8fc7eff54d2b291e2cde5f8))
+* remove unused go.mod replace directives ([74505b3](https://github.com/leg100/otf/commit/74505b3714947ed601af303129ae99c089508872))
+* use constants where they already exist ([4551222](https://github.com/leg100/otf/commit/45512221b1708a3fbd00881f225d698753b0b83a))
+
 ## [0.4.6](https://github.com/leg100/otf/compare/v0.4.5...v0.4.6) (2025-10-01)
 
 
