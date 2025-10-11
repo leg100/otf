@@ -26,7 +26,7 @@ func TestWebHandlers_new(t *testing.T) {
 
 	r := httptest.NewRequest("GET", "/?", nil)
 	w := httptest.NewRecorder()
-	h.new(w, r)
+	h.newGithubApp(w, r)
 	assert.Equal(t, 200, w.Code, w.Body.String())
 }
 
@@ -45,7 +45,7 @@ func TestWebHandlers_get(t *testing.T) {
 	r := httptest.NewRequest("GET", "/?", nil)
 	r = r.WithContext(authz.AddSubjectToContext(context.Background(), &user.SiteAdmin))
 	w := httptest.NewRecorder()
-	h.get(w, r)
+	h.getGithubApp(w, r)
 	assert.Equal(t, 200, w.Code, w.Body.String())
 }
 
