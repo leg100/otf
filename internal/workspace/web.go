@@ -243,20 +243,23 @@ func (h *webHandlers) getWorkspace(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	tags, err := resource.ListAll(func(opts resource.PageOptions) (*resource.Page[*Tag], error) {
-		return h.client.ListTags(r.Context(), ws.Organization, ListTagsOptions{
-			PageOptions: opts,
+	// retrieve tags that are available to be assigned to the workspace
+	// (excluding those already assigned to the workspace).
+	var availableTags []string
+	{
+		tags, err := resource.ListAll(func(opts resource.PageOptions) (*resource.Page[*Tag], error) {
+			return h.client.ListTags(r.Context(), ws.Organization, ListTagsOptions{
+				PageOptions: opts,
+			})
 		})
-	})
-	if err != nil {
-		html.Error(r, w, err.Error())
-		return
-	}
-	getTagNames := func() (names []string) {
-		for _, t := range tags {
-			names = append(names, t.Name)
+		if err != nil {
+			html.Error(r, w, err.Error())
+			return
 		}
-		return
+		names := internal.Map(tags, func(t *Tag) string {
+			return t.Name
+		})
+		availableTags = internal.Diff(names, ws.Tags)
 	}
 
 	lockInfo, err := h.lockButtonHelper(r.Context(), ws, user)
@@ -278,7 +281,7 @@ func (h *webHandlers) getWorkspace(w http.ResponseWriter, r *http.Request) {
 		canUpdateWorkspace: h.authorizer.CanAccess(r.Context(), authz.UpdateWorkspaceAction, ws.ID),
 		tagsDropdown: components.SearchDropdownProps{
 			Name:        "tag_name",
-			Available:   internal.Diff(getTagNames(), ws.Tags),
+			Available:   availableTags,
 			Existing:    ws.Tags,
 			Action:      templ.SafeURL(paths.CreateTagWorkspace(ws.ID)),
 			Placeholder: "Add tags",
