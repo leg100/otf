@@ -1,4 +1,4 @@
-package run
+package ui
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 	"github.com/leg100/otf/internal/http/html/components/paths"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/workspace"
@@ -53,14 +54,14 @@ templ list(props listProps) {
 }
 
 type table struct {
-	workspaceClient webWorkspaceGetClient
-	users           webUsersClient
+	workspaceGetClient runWorkspaceGetClient
+	users           runUsersClient
 }
 
 templ (t table) Header() {
 	<th>Run</th>
 	<!-- add workspace column if not filtered by workspace ID -->
-	if t.workspaceClient != nil {
+	if t.workspaceGetClient != nil {
 		<th>Workspace</th>
 	}
 	<th>Source</th>
@@ -69,7 +70,7 @@ templ (t table) Header() {
 	<th>Actions</th>
 }
 
-templ (t table) Row(run *Run) {
+templ (t table) Row(run *run.Run) {
 	<tr id={ "run-item-" + run.ID.String() }>
 		<td>
 			<a class="link" href={ paths.Run(run.ID) }>
@@ -77,7 +78,7 @@ templ (t table) Row(run *Run) {
 			</a>
 		</td>
 		<!-- provide workspace name if not filtered by workspace ID -->
-		if t.workspaceClient != nil {
+		if t.workspaceGetClient != nil {
 			<td>
 				<a class="link" href={ paths.Workspace(run.WorkspaceID) }>
 					{ t.getWorkspaceName(ctx, run) }
@@ -182,15 +183,15 @@ templ (t table) Row(run *Run) {
 	</tr>
 }
 
-func (t table) getWorkspaceName(ctx context.Context, run *Run) (string, error) {
-	ws, err := t.workspaceClient.Get(ctx, run.WorkspaceID)
+func (t table) getWorkspaceName(ctx context.Context, run *run.Run) (string, error) {
+	ws, err := t.workspaceGetClient.Get(ctx, run.WorkspaceID)
 	if err != nil {
 		return "", err
 	}
 	return ws.Name, nil
 }
 
-templ (t table) avatar(run *Run) {
+templ (t table) avatar(run *run.Run) {
 	<div class="avatar">
 		<div class="size-14 rounded">
 			if run.CreatedBy != nil {
@@ -209,10 +210,10 @@ templ (t table) avatar(run *Run) {
 }
 
 type getProps struct {
-	run       *Run
+	run       *run.Run
 	ws        *workspace.Workspace
-	planLogs  Chunk
-	applyLogs Chunk
+	planLogs  run.Chunk
+	applyLogs run.Chunk
 }
 
 templ get(props getProps) {
@@ -304,18 +305,18 @@ templ getPostContent(props getProps) {
 }
 
 type event struct {
-	users webUsersClient
+	users runUsersClient
 }
 
-templ (e *event) view(run *Run) {
+templ (e *event) view(runItem *run.Run) {
 	// render single-row table
-	@components.UnpaginatedTable(&table{users: e.users}, []*Run{run}, "run-item-"+run.ID.String())
-	@phaseStatus(run.Plan)
-	@phaseStatus(run.Apply)
-	@periodReport(run)
-	@runningTime(run)
-	@runningTime(&run.Plan)
-	@runningTime(&run.Apply)
+	@components.UnpaginatedTable(&table{users: e.users}, []*run.Run{runItem}, "run-item-"+runItem.ID.String())
+	@phaseStatus(runItem.Plan)
+	@phaseStatus(runItem.Apply)
+	@periodReport(runItem)
+	@runningTime(runItem)
+	@runningTime(&runItem.Plan)
+	@runningTime(&runItem.Apply)
 }
 
 type task interface {
@@ -342,7 +343,7 @@ templ runningTime(tsk task) {
 	}
 }
 
-templ periodReport(run *Run) {
+templ periodReport(run *run.Run) {
 	{{ report := run.PeriodReport(time.Now()) }}
 	<div id="period-report" class="relative h-3 w-full group">
 		for i, period := range report.Periods {
@@ -365,23 +366,23 @@ templ periodReport(run *Run) {
 	</div>
 }
 
-templ resourceReport(report *Report) {
+templ resourceReport(report *run.Report) {
 	<div class="font-mono text-md" id="resource-summary">
 		<span class="text-green-700">+{ report.Additions }</span><span class="text-blue-700">~{ report.Changes }</span><span class="text-red-700">-{ report.Destructions }</span>
 	</div>
 }
 
-var phaseBadges = map[PhaseStatus]string{
-	PhasePending:     "badge-primary",
-	PhaseQueued:      "badge-secondary",
-	PhaseRunning:     "badge-primary",
-	PhaseFinished:    "badge-success",
-	PhaseCanceled:    "badge-warning",
-	PhaseErrored:     "badge-error",
-	PhaseUnreachable: "badge-neutral",
+var phaseBadges = map[run.PhaseStatus]string{
+	run.PhasePending:     "badge-primary",
+	run.PhaseQueued:      "badge-secondary",
+	run.PhaseRunning:     "badge-primary",
+	run.PhaseFinished:    "badge-success",
+	run.PhaseCanceled:    "badge-warning",
+	run.PhaseErrored:     "badge-error",
+	run.PhaseUnreachable: "badge-neutral",
 }
 
-templ phaseStatus(phase Phase) {
+templ phaseStatus(phase run.Phase) {
 	<span id={ string(phase.PhaseType) + "-status" } class={ "badge", phaseBadges[phase.Status] }>
 		{ phase.Status.String() }
 	</span>

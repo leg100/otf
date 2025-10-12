@@ -1,4 +1,4 @@
-package run
+package ui
 
 import (
 	"context"
@@ -19,62 +19,65 @@ import (
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/workspace"
 )
 
 type (
-	webHandlers struct {
+	runHandlers struct {
 		logger     logr.Logger
-		runs       webRunClient
-		workspaces webWorkspaceClient
-		users      webUsersClient
-		authorizer webAuthorizer
+		runs       runClient
+		workspaces runWorkspaceClient
+		users      runUsersClient
+		authorizer runAuthorizer
 	}
 
-	webRunClient interface {
-		Create(ctx context.Context, workspaceID resource.TfeID, opts CreateOptions) (*Run, error)
-		List(ctx context.Context, opts ListOptions) (*resource.Page[*Run], error)
-		Get(ctx context.Context, id resource.TfeID) (*Run, error)
+	runClient interface {
+		Create(ctx context.Context, workspaceID resource.TfeID, opts run.CreateOptions) (*run.Run, error)
+		List(ctx context.Context, opts run.ListOptions) (*resource.Page[*run.Run], error)
+		Get(ctx context.Context, id resource.TfeID) (*run.Run, error)
 		Delete(ctx context.Context, runID resource.TfeID) error
 		Cancel(ctx context.Context, runID resource.TfeID) error
 		ForceCancel(ctx context.Context, runID resource.TfeID) error
 		Apply(ctx context.Context, runID resource.TfeID) error
 		Discard(ctx context.Context, runID resource.TfeID) error
-		Watch(ctx context.Context) (<-chan pubsub.Event[*Event], func())
-		Tail(ctx context.Context, opts TailOptions) (<-chan Chunk, error)
-		GetChunk(ctx context.Context, opts GetChunkOptions) (Chunk, error)
+		Watch(ctx context.Context) (<-chan pubsub.Event[*run.Event], func())
+		Tail(ctx context.Context, opts run.TailOptions) (<-chan run.Chunk, error)
+		GetChunk(ctx context.Context, opts run.GetChunkOptions) (run.Chunk, error)
 	}
 
-	webWorkspaceClient interface {
+	runWorkspaceClient interface {
 		Get(ctx context.Context, workspaceID resource.TfeID) (*workspace.Workspace, error)
 		Watch(ctx context.Context) (<-chan pubsub.Event[*workspace.Event], func())
 	}
 
-	webWorkspaceGetClient interface {
+	runWorkspaceGetClient interface {
 		Get(ctx context.Context, workspaceID resource.TfeID) (*workspace.Workspace, error)
 	}
 
-	webUsersClient interface {
+	runUsersClient interface {
 		GetUser(ctx context.Context, spec user.UserSpec) (*user.User, error)
 	}
 
-	webAuthorizer interface {
+	runAuthorizer interface {
 		CanAccess(context.Context, authz.Action, resource.ID) bool
 	}
 )
 
-func newWebHandlers(service *Service, opts Options) *webHandlers {
-	return &webHandlers{
-		authorizer: opts.Authorizer,
-		logger:     opts.Logger,
-		runs:       service,
-		workspaces: opts.WorkspaceService,
-		users:      opts.UsersService,
+// AddRunHandlers registers run UI handlers with the router
+func AddRunHandlers(r *mux.Router, logger logr.Logger, runs runClient, workspaces runWorkspaceClient, users runUsersClient, authorizer runAuthorizer) {
+	h := &runHandlers{
+		authorizer: authorizer,
+		logger:     logger,
+		runs:       runs,
+		workspaces: workspaces,
+		users:      users,
 	}
+	h.addHandlers(r)
 }
 
-func (h *webHandlers) addHandlers(r *mux.Router) {
+func (h *runHandlers) addHandlers(r *mux.Router) {
 	r = html.UIRouter(r)
 
 	r.HandleFunc("/organizations/{organization_name}/runs", h.listByOrganization).Methods("GET")
@@ -96,19 +99,19 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 	r.HandleFunc("/{organization_name}/{workspace_id}/runs/{run_id}", h.get).Methods("GET")
 }
 
-func (h *webHandlers) createRun(w http.ResponseWriter, r *http.Request) {
+func (h *runHandlers) createRun(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		WorkspaceID resource.TfeID `schema:"workspace_id,required"`
-		Operation   Operation      `schema:"operation,required"`
+		WorkspaceID resource.TfeID   `schema:"workspace_id,required"`
+		Operation   run.Operation    `schema:"operation,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
-	run, err := h.runs.Create(r.Context(), params.WorkspaceID, CreateOptions{
-		IsDestroy: internal.Ptr(params.Operation == DestroyAllOperation),
-		PlanOnly:  internal.Ptr(params.Operation == PlanOnlyOperation),
+	createdRun, err := h.runs.Create(r.Context(), params.WorkspaceID, run.CreateOptions{
+		IsDestroy: internal.Ptr(params.Operation == run.DestroyAllOperation),
+		PlanOnly:  internal.Ptr(params.Operation == run.PlanOnlyOperation),
 		Source:    source.UI,
 	})
 	if err != nil {
@@ -116,16 +119,16 @@ func (h *webHandlers) createRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, paths.Run(run.ID), http.StatusFound)
+	http.Redirect(w, r, paths.Run(createdRun.ID), http.StatusFound)
 }
 
-func (h *webHandlers) listByOrganization(w http.ResponseWriter, r *http.Request) {
+func (h *runHandlers) listByOrganization(w http.ResponseWriter, r *http.Request) {
 	if websocket.IsWebSocketUpgrade(r) {
-		h := &components.WebsocketListHandler[*Run, *Event, ListOptions]{
+		h := &components.WebsocketListHandler[*run.Run, *run.Event, run.ListOptions]{
 			Logger: h.logger,
 			Client: h.runs,
 			Populator: table{
-				workspaceClient: newWorkspaceCache(h.workspaces),
+				workspaceGetClient: newWorkspaceCache(h.workspaces),
 				users:           newUserCache(h.users),
 			},
 			ID: "page-results",
@@ -136,9 +139,9 @@ func (h *webHandlers) listByOrganization(w http.ResponseWriter, r *http.Request)
 	h.list(w, r)
 }
 
-func (h *webHandlers) listByWorkspace(w http.ResponseWriter, r *http.Request) {
+func (h *runHandlers) listByWorkspace(w http.ResponseWriter, r *http.Request) {
 	if websocket.IsWebSocketUpgrade(r) {
-		h := &components.WebsocketListHandler[*Run, *Event, ListOptions]{
+		h := &components.WebsocketListHandler[*run.Run, *run.Event, run.ListOptions]{
 			Logger: h.logger,
 			Client: h.runs,
 			Populator: table{
@@ -152,9 +155,9 @@ func (h *webHandlers) listByWorkspace(w http.ResponseWriter, r *http.Request) {
 	h.list(w, r)
 }
 
-func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
+func (h *runHandlers) list(w http.ResponseWriter, r *http.Request) {
 	var opts struct {
-		ListOptions
+		run.ListOptions
 		StatusFilterVisible bool `schema:"status_filter_visible"`
 	}
 	if err := decode.All(&opts, r); err != nil {
@@ -187,37 +190,37 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 	html.Render(list(props), w, r)
 }
 
-func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
+func (h *runHandlers) get(w http.ResponseWriter, r *http.Request) {
 	runID, err := decode.ID("run_id", r)
 	if err != nil {
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
-	run, err := h.runs.Get(r.Context(), runID)
+	runResult, err := h.runs.Get(r.Context(), runID)
 	if err != nil {
 		html.Error(r, w, "retrieving run: "+err.Error())
 		return
 	}
 
-	ws, err := h.workspaces.Get(r.Context(), run.WorkspaceID)
+	ws, err := h.workspaces.Get(r.Context(), runResult.WorkspaceID)
 	if err != nil {
 		html.Error(r, w, "retrieving workspace: "+err.Error())
 		return
 	}
 
 	// Get existing logs thus far received for each phase.
-	planLogs, err := h.runs.GetChunk(r.Context(), GetChunkOptions{
-		RunID: run.ID,
-		Phase: PlanPhase,
+	planLogs, err := h.runs.GetChunk(r.Context(), run.GetChunkOptions{
+		RunID: runResult.ID,
+		Phase: run.PlanPhase,
 	})
 	if err != nil {
 		html.Error(r, w, "retrieving plan logs: "+err.Error())
 		return
 	}
-	applyLogs, err := h.runs.GetChunk(r.Context(), GetChunkOptions{
-		RunID: run.ID,
-		Phase: ApplyPhase,
+	applyLogs, err := h.runs.GetChunk(r.Context(), run.GetChunkOptions{
+		RunID: runResult.ID,
+		Phase: run.ApplyPhase,
 	})
 	if err != nil {
 		html.Error(r, w, "retrieving apply logs: "+err.Error())
@@ -225,24 +228,24 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 	}
 
 	props := getProps{
-		run:       run,
+		run:       runResult,
 		ws:        ws,
-		planLogs:  Chunk{Data: planLogs.Data},
-		applyLogs: Chunk{Data: applyLogs.Data},
+		planLogs:  run.Chunk{Data: planLogs.Data},
+		applyLogs: run.Chunk{Data: applyLogs.Data},
 	}
 	html.Render(get(props), w, r)
 }
 
 // getWidget renders a run "widget", i.e. the container that
 // contains info about a run. Intended for use with an ajax request.
-func (h *webHandlers) getWidget(w http.ResponseWriter, r *http.Request) {
+func (h *runHandlers) getWidget(w http.ResponseWriter, r *http.Request) {
 	runID, err := decode.ID("run_id", r)
 	if err != nil {
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
-	run, err := h.runs.Get(r.Context(), runID)
+	runItem, err := h.runs.Get(r.Context(), runID)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -250,21 +253,21 @@ func (h *webHandlers) getWidget(w http.ResponseWriter, r *http.Request) {
 
 	table := components.UnpaginatedTable(
 		&table{users: h.users},
-		[]*Run{run},
-		"run-item-"+run.ID.String(),
+		[]*run.Run{runItem},
+		"run-item-"+runItem.ID.String(),
 	)
 
 	html.Render(table, w, r)
 }
 
-func (h *webHandlers) delete(w http.ResponseWriter, r *http.Request) {
+func (h *runHandlers) delete(w http.ResponseWriter, r *http.Request) {
 	runID, err := decode.ID("run_id", r)
 	if err != nil {
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
-	run, err := h.runs.Get(r.Context(), runID)
+	runItem, err := h.runs.Get(r.Context(), runID)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -274,10 +277,10 @@ func (h *webHandlers) delete(w http.ResponseWriter, r *http.Request) {
 		html.Error(r, w, err.Error())
 		return
 	}
-	http.Redirect(w, r, paths.Workspace(run.WorkspaceID), http.StatusFound)
+	http.Redirect(w, r, paths.Workspace(runItem.WorkspaceID), http.StatusFound)
 }
 
-func (h *webHandlers) cancel(w http.ResponseWriter, r *http.Request) {
+func (h *runHandlers) cancel(w http.ResponseWriter, r *http.Request) {
 	runID, err := decode.ID("run_id", r)
 	if err != nil {
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
@@ -292,7 +295,7 @@ func (h *webHandlers) cancel(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, paths.Run(runID), http.StatusFound)
 }
 
-func (h *webHandlers) forceCancel(w http.ResponseWriter, r *http.Request) {
+func (h *runHandlers) forceCancel(w http.ResponseWriter, r *http.Request) {
 	runID, err := decode.ID("run_id", r)
 	if err != nil {
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
@@ -307,7 +310,7 @@ func (h *webHandlers) forceCancel(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, paths.Run(runID), http.StatusFound)
 }
 
-func (h *webHandlers) apply(w http.ResponseWriter, r *http.Request) {
+func (h *runHandlers) apply(w http.ResponseWriter, r *http.Request) {
 	runID, err := decode.ID("run_id", r)
 	if err != nil {
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
@@ -322,7 +325,7 @@ func (h *webHandlers) apply(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, paths.Run(runID)+"#apply", http.StatusFound)
 }
 
-func (h *webHandlers) discard(w http.ResponseWriter, r *http.Request) {
+func (h *runHandlers) discard(w http.ResponseWriter, r *http.Request) {
 	runID, err := decode.ID("run_id", r)
 	if err != nil {
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
@@ -337,23 +340,23 @@ func (h *webHandlers) discard(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, paths.Run(runID), http.StatusFound)
 }
 
-func (h *webHandlers) retry(w http.ResponseWriter, r *http.Request) {
+func (h *runHandlers) retry(w http.ResponseWriter, r *http.Request) {
 	runID, err := decode.ID("run_id", r)
 	if err != nil {
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
-	run, err := h.runs.Get(r.Context(), runID)
+	existingRun, err := h.runs.Get(r.Context(), runID)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
 	}
 
-	run, err = h.runs.Create(r.Context(), run.WorkspaceID, CreateOptions{
-		ConfigurationVersionID: &run.ConfigurationVersionID,
-		IsDestroy:              &run.IsDestroy,
-		PlanOnly:               &run.PlanOnly,
+	newRun, err := h.runs.Create(r.Context(), existingRun.WorkspaceID, run.CreateOptions{
+		ConfigurationVersionID: &existingRun.ConfigurationVersionID,
+		IsDestroy:              &existingRun.IsDestroy,
+		PlanOnly:               &existingRun.PlanOnly,
 		Source:                 source.UI,
 	})
 	if err != nil {
@@ -361,10 +364,10 @@ func (h *webHandlers) retry(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, paths.Run(run.ID), http.StatusFound)
+	http.Redirect(w, r, paths.Run(newRun.ID), http.StatusFound)
 }
 
-func (h *webHandlers) watchRun(w http.ResponseWriter, r *http.Request) {
+func (h *runHandlers) watchRun(w http.ResponseWriter, r *http.Request) {
 	runID, err := decode.ID("run_id", r)
 	if err != nil {
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
@@ -426,7 +429,7 @@ func (h *webHandlers) watchRun(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *webHandlers) watchLatest(w http.ResponseWriter, r *http.Request) {
+func (h *runHandlers) watchLatest(w http.ResponseWriter, r *http.Request) {
 	workspaceID, err := decode.ID("workspace_id", r)
 	if err != nil {
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
@@ -438,10 +441,10 @@ func (h *webHandlers) watchLatest(w http.ResponseWriter, r *http.Request) {
 	conn, err := components.NewWebsocket(
 		h.logger, w, r,
 		h.runs,
-		func(run *Run) templ.Component {
+		func(runItem *run.Run) templ.Component {
 			return components.UnpaginatedTable(
 				&table{users: h.users},
-				[]*Run{run},
+				[]*run.Run{runItem},
 				"latest-run",
 			)
 		},
@@ -510,8 +513,8 @@ const (
 	EventLogFinished string = "log_finished"
 )
 
-func (h *webHandlers) tailRun(w http.ResponseWriter, r *http.Request) {
-	var params TailOptions
+func (h *runHandlers) tailRun(w http.ResponseWriter, r *http.Request) {
+	var params run.TailOptions
 	if err := decode.All(&params, r); err != nil {
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
 		return

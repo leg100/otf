@@ -1,4 +1,4 @@
-package run
+package ui
 
 import (
 	"context"
@@ -11,10 +11,10 @@ import (
 // workspaceCache is a caching client for retrieving workspaces
 type workspaceCache struct {
 	cache  map[resource.TfeID]*workspace.Workspace
-	getter webWorkspaceGetClient
+	getter runWorkspaceGetClient
 }
 
-func newWorkspaceCache(getter webWorkspaceGetClient) *workspaceCache {
+func newWorkspaceCache(getter runWorkspaceGetClient) *workspaceCache {
 	return &workspaceCache{
 		cache:  make(map[resource.TfeID]*workspace.Workspace),
 		getter: getter,
@@ -36,10 +36,10 @@ func (c *workspaceCache) Get(ctx context.Context, workspaceID resource.TfeID) (*
 // userCache is a caching client for retrieving users
 type userCache struct {
 	cache  map[user.Username]*user.User
-	getter webUsersClient
+	getter runUsersClient
 }
 
-func newUserCache(getter webUsersClient) *userCache {
+func newUserCache(getter runUsersClient) *userCache {
 	return &userCache{
 		cache:  make(map[user.Username]*user.User),
 		getter: getter,

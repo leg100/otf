@@ -36,6 +36,7 @@ import (
 	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/tokens"
+	"github.com/leg100/otf/internal/ui"
 	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/variable"
 	"github.com/leg100/otf/internal/vcs"
@@ -388,6 +389,12 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		disco.Service{},
 		&api.Handlers{},
 		&tfeapi.Handlers{},
+		&ui.Handlers{
+			Logger:     logger,
+			Runs:       runService,
+			Workspaces: workspaceService,
+			Users:      userService,
+		},
 		&github.AppEventHandler{
 			Logger:     logger,
 			Publisher:  vcsEventBroker,
