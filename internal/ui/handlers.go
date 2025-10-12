@@ -3,7 +3,10 @@ package ui
 import (
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/run"
+	"github.com/leg100/otf/internal/team"
+	"github.com/leg100/otf/internal/tokens"
 	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/workspace"
 )
@@ -14,9 +17,15 @@ type Handlers struct {
 	Runs       *run.Service
 	Workspaces *workspace.Service
 	Users      *user.Service
+	Teams      *team.Service
+	Tokens     *tokens.Service
+	Authorizer *authz.Authorizer
+	SiteToken  string
 }
 
 // AddHandlers registers all UI handlers with the router
 func (h *Handlers) AddHandlers(r *mux.Router) {
 	AddRunHandlers(r, h.Logger, h.Runs, h.Workspaces, h.Users, h.Runs)
+	AddTeamHandlers(r, h.Teams, h.Tokens, h.Teams)
+	AddUserHandlers(r, h.Users, h.Teams, h.Tokens, h.Authorizer, h.SiteToken)
 }

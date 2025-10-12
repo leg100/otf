@@ -29,7 +29,6 @@ type (
 		db *pgdb
 
 		api          *api
-		web          *webHandlers
 		vcsproviders *vcs.Service
 		connections  *connections.Service
 	}
@@ -61,12 +60,6 @@ func NewService(opts Options) *Service {
 		svc:    &svc,
 		Signer: opts.Signer,
 	}
-	svc.web = &webHandlers{
-		authorizer:   opts.Authorizer,
-		client:       &svc,
-		vcsproviders: opts.VCSProviderService,
-		system:       opts.HostnameService,
-	}
 	publisher := &publisher{
 		Logger:       opts.Logger.WithValues("component", "publisher"),
 		vcsproviders: opts.VCSProviderService,
@@ -80,7 +73,6 @@ func NewService(opts Options) *Service {
 
 func (s *Service) AddHandlers(r *mux.Router) {
 	s.api.addHandlers(r)
-	s.web.addHandlers(r)
 }
 
 // PublishModule publishes a new module from a VCS repository, enumerating through

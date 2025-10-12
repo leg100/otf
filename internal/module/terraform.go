@@ -43,3 +43,8 @@ func unmarshalTerraformModule(tarball []byte) (*TerraformModule, error) {
 	// valid module
 	return tfmod, nil
 }
+
+// GetReadme returns the module's readme content
+func (t *TerraformModule) GetReadme() []byte {
+	return t.readme
+}

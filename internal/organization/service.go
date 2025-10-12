@@ -23,7 +23,6 @@ type (
 		logr.Logger
 
 		db           *pgdb
-		web          *web
 		tfeapi       *tfe
 		api          *api
 		tokenFactory *tokenFactory
@@ -57,10 +56,6 @@ func NewService(opts Options) *Service {
 		db:                           &pgdb{opts.DB},
 		tokenFactory:                 &tokenFactory{tokens: opts.TokensService},
 	}
-	svc.web = &web{
-		RestrictCreation: opts.RestrictOrganizationCreation,
-		svc:              &svc,
-	}
 	svc.tfeapi = &tfe{
 		Service:   &svc,
 		Responder: opts.Responder,
@@ -82,7 +77,6 @@ func NewService(opts Options) *Service {
 }
 
 func (s *Service) AddHandlers(r *mux.Router) {
-	s.web.addHandlers(r)
 	s.tfeapi.addHandlers(r)
 	s.api.addHandlers(r)
 }

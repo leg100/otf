@@ -394,6 +394,10 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 			Runs:       runService,
 			Workspaces: workspaceService,
 			Users:      userService,
+			Teams:      teamService,
+			Tokens:     tokensService,
+			Authorizer: authorizer,
+			SiteToken:  cfg.SiteToken,
 		},
 		&github.AppEventHandler{
 			Logger:     logger,
