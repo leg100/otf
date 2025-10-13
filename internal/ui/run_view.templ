@@ -15,7 +15,7 @@ import (
 	"time"
 )
 
-type listProps struct {
+type runListProps struct {
 	organization        organization.Name
 	ws                  *workspace.Workspace
 	status              []runstatus.Status
@@ -24,7 +24,7 @@ type listProps struct {
 	pageOptions         resource.PageOptions
 }
 
-templ list(props listProps) {
+templ runList(props runListProps) {
 	{{
 	layoutProps := components.LayoutProps{
 		Title:        "runs",
@@ -53,12 +53,12 @@ templ list(props listProps) {
 	}
 }
 
-type table struct {
+type runTable struct {
 	workspaceGetClient runWorkspaceGetClient
 	users           runUsersClient
 }
 
-templ (t table) Header() {
+templ (t runTable) Header() {
 	<th>Run</th>
 	<!-- add workspace column if not filtered by workspace ID -->
 	if t.workspaceGetClient != nil {
@@ -70,7 +70,7 @@ templ (t table) Header() {
 	<th>Actions</th>
 }
 
-templ (t table) Row(run *run.Run) {
+templ (t runTable) Row(run *run.Run) {
 	<tr id={ "run-item-" + run.ID.String() }>
 		<td>
 			<a class="link" href={ paths.Run(run.ID) }>
@@ -183,7 +183,7 @@ templ (t table) Row(run *run.Run) {
 	</tr>
 }
 
-func (t table) getWorkspaceName(ctx context.Context, run *run.Run) (string, error) {
+func (t runTable) getWorkspaceName(ctx context.Context, run *run.Run) (string, error) {
 	ws, err := t.workspaceGetClient.Get(ctx, run.WorkspaceID)
 	if err != nil {
 		return "", err
@@ -191,7 +191,7 @@ func (t table) getWorkspaceName(ctx context.Context, run *run.Run) (string, erro
 	return ws.Name, nil
 }
 
-templ (t table) avatar(run *run.Run) {
+templ (t runTable) avatar(run *run.Run) {
 	<div class="avatar">
 		<div class="size-14 rounded">
 			if run.CreatedBy != nil {
@@ -209,14 +209,14 @@ templ (t table) avatar(run *run.Run) {
 	</div>
 }
 
-type getProps struct {
+type runGetProps struct {
 	run       *run.Run
 	ws        *workspace.Workspace
 	planLogs  run.Chunk
 	applyLogs run.Chunk
 }
 
-templ get(props getProps) {
+templ runGet(props runGetProps) {
 	{{
 	layoutProps := components.LayoutProps{
 		Title:        props.run.ID.String(),
@@ -295,7 +295,7 @@ templ getPreContent() {
 	<script src={ components.AssetPath(ctx, "/static/js/running_time.js") }></script>
 }
 
-templ getPostContent(props getProps) {
+templ getPostContent(props runGetProps) {
 	if !props.planLogs.IsEnd() {
 		@templ.JSFuncCall("setupTail", paths.TailRun(props.run.ID), "plan", props.planLogs.NextOffset())
 	}
@@ -310,7 +310,7 @@ type event struct {
 
 templ (e *event) view(runItem *run.Run) {
 	// render single-row table
-	@components.UnpaginatedTable(&table{users: e.users}, []*run.Run{runItem}, "run-item-"+runItem.ID.String())
+	@components.UnpaginatedTable(&runTable{users: e.users}, []*run.Run{runItem}, "run-item-"+runItem.ID.String())
 	@phaseStatus(runItem.Plan)
 	@phaseStatus(runItem.Apply)
 	@periodReport(runItem)
@@ -333,7 +333,7 @@ templ runningTime(tsk task) {
 		<span
 			id={ "running-time-" + tsk.String() }
 			class="badge badge-soft"
-			x-data={ fmt.Sprintf("running_time(Date.parse('%s'), %d, %s)", tsk.StartedAt(), elapsed.Milliseconds(), boolString(tsk.Done())) }
+			x-data={ fmt.Sprintf("running_time(Date.parse('%s'), %d, %s)", tsk.StartedAt(), elapsed.Milliseconds(), runBoolString(tsk.Done())) }
 			x-text="formatDuration(elapsed)"
 		>
 			{ int(elapsed) }
@@ -388,7 +388,7 @@ templ phaseStatus(phase run.Phase) {
 	</span>
 }
 
-func boolString(b bool) string {
+func runBoolString(b bool) string {
 	if b {
 		return "true"
 	}

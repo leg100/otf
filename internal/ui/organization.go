@@ -62,7 +62,7 @@ func (a *organizationHandlers) addHandlers(r *mux.Router) {
 }
 
 func (a *organizationHandlers) new(w http.ResponseWriter, r *http.Request) {
-	html.Render(new(), w, r)
+	html.Render(organizationNew(), w, r)
 }
 
 func (a *organizationHandlers) create(w http.ResponseWriter, r *http.Request) {
@@ -109,7 +109,7 @@ func (a *organizationHandlers) list(w http.ResponseWriter, r *http.Request) {
 		Page:      organizations,
 		CanCreate: canCreate,
 	}
-	html.Render(list(props), w, r)
+	html.Render(organizationList(props), w, r)
 }
 
 func (a *organizationHandlers) get(w http.ResponseWriter, r *http.Request) {
@@ -138,7 +138,7 @@ func (a *organizationHandlers) edit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	html.Render(edit(org), w, r)
+	html.Render(organizationEdit(org), w, r)
 }
 
 func (a *organizationHandlers) update(w http.ResponseWriter, r *http.Request) {

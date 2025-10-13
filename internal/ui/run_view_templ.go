@@ -23,7 +23,7 @@ import (
 	"time"
 )
 
-type listProps struct {
+type runListProps struct {
 	organization        organization.Name
 	ws                  *workspace.Workspace
 	status              []runstatus.Status
@@ -32,7 +32,7 @@ type listProps struct {
 	pageOptions         resource.PageOptions
 }
 
-func list(props listProps) templ.Component {
+func runList(props runListProps) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -126,12 +126,12 @@ func list(props listProps) templ.Component {
 	})
 }
 
-type table struct {
+type runTable struct {
 	workspaceGetClient runWorkspaceGetClient
 	users              runUsersClient
 }
 
-func (t table) Header() templ.Component {
+func (t runTable) Header() templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -170,7 +170,7 @@ func (t table) Header() templ.Component {
 	})
 }
 
-func (t table) Row(run *run.Run) templ.Component {
+func (t runTable) Row(run *run.Run) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -641,7 +641,7 @@ func (t table) Row(run *run.Run) templ.Component {
 	})
 }
 
-func (t table) getWorkspaceName(ctx context.Context, run *run.Run) (string, error) {
+func (t runTable) getWorkspaceName(ctx context.Context, run *run.Run) (string, error) {
 	ws, err := t.workspaceGetClient.Get(ctx, run.WorkspaceID)
 	if err != nil {
 		return "", err
@@ -649,7 +649,7 @@ func (t table) getWorkspaceName(ctx context.Context, run *run.Run) (string, erro
 	return ws.Name, nil
 }
 
-func (t table) avatar(run *run.Run) templ.Component {
+func (t runTable) avatar(run *run.Run) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -711,14 +711,14 @@ func (t table) avatar(run *run.Run) templ.Component {
 	})
 }
 
-type getProps struct {
+type runGetProps struct {
 	run       *run.Run
 	ws        *workspace.Workspace
 	planLogs  run.Chunk
 	applyLogs run.Chunk
 }
 
-func get(props getProps) templ.Component {
+func runGet(props runGetProps) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -963,7 +963,7 @@ func getPreContent() templ.Component {
 	})
 }
 
-func getPostContent(props getProps) templ.Component {
+func getPostContent(props runGetProps) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -1025,7 +1025,7 @@ func (e *event) view(runItem *run.Run) templ.Component {
 			templ_7745c5c3_Var43 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = components.UnpaginatedTable(&table{users: e.users}, []*run.Run{runItem}, "run-item-"+runItem.ID.String()).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = components.UnpaginatedTable(&runTable{users: e.users}, []*run.Run{runItem}, "run-item-"+runItem.ID.String()).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1106,9 +1106,9 @@ func runningTime(tsk task) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var46 string
-			templ_7745c5c3_Var46, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("running_time(Date.parse('%s'), %d, %s)", tsk.StartedAt(), elapsed.Milliseconds(), boolString(tsk.Done())))
+			templ_7745c5c3_Var46, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("running_time(Date.parse('%s'), %d, %s)", tsk.StartedAt(), elapsed.Milliseconds(), runBoolString(tsk.Done())))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 336, Col: 130}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 336, Col: 133}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var46))
 			if templ_7745c5c3_Err != nil {
@@ -1434,7 +1434,7 @@ func phaseStatus(phase run.Phase) templ.Component {
 	})
 }
 
-func boolString(b bool) string {
+func runBoolString(b bool) string {
 	if b {
 		return "true"
 	}

@@ -65,16 +65,16 @@ templ userList(props userListProps) {
 			{Name: "Users"},
 		},
 	}) {
-		@components.Table(&table{}, props.users, "page-results")
+		@components.Table(&userTable{}, props.users, "page-results")
 	}
 }
 
-type table struct {
+type userTable struct {
 	canRemoveMember bool
 	teamID          *resource.TfeID
 }
 
-templ (t table) Header() {
+templ (t userTable) Header() {
 	<th>Name</th>
 	<th>ID</th>
 	<th>Site Admin</th>
@@ -83,7 +83,7 @@ templ (t table) Header() {
 	}
 }
 
-templ (t table) Row(user *user.User) {
+templ (t userTable) Row(user *user.User) {
 	<tr id={ "item-user-" + user.Username.String() }>
 		<td id="username">
 			{ user.Username.String() }
@@ -191,7 +191,7 @@ templ getTeam(props getTeamProps) {
 		<h3 class="font-semibold my-2 text-lg">Members</h3>
 		<div id="content-list">
 			@components.UnpaginatedTable(
-				&table{teamID: &props.team.ID, canRemoveMember: props.canRemoveMember},
+				&userTable{teamID: &props.team.ID, canRemoveMember: props.canRemoveMember},
 				props.members,
 				"team-members",
 			)

@@ -1,6 +1,7 @@
-package workspace
+package ui
 
 import (
+    "github.com/leg100/otf/internal/workspace"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -16,7 +17,7 @@ import (
 	"github.com/leg100/otf/internal/vcs"
 )
 
-templ new(organization organization.Name) {
+templ workspaceNew(organization organization.Name) {
 	@components.Layout(components.LayoutProps{
 		Title:        "new workspace",
 		Organization: organization,
@@ -37,7 +38,7 @@ templ new(organization organization.Name) {
 	}
 }
 
-type listProps struct {
+type workspaceListProps struct {
 	organization        organization.Name
 	search              string
 	status              []runstatus.Status
@@ -49,12 +50,12 @@ type listProps struct {
 	pageOptions         resource.PageOptions
 }
 
-templ list(props listProps) {
+templ workspaceList(props workspaceListProps) {
 	{{
 	layoutProps := components.LayoutProps{
 		Title:        "workspaces",
 		Organization: props.organization,
-		ContentLinks: listActions(props.organization, props.canCreate),
+		ContentLinks: workspaceListActions(props.organization, props.canCreate),
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "Workspaces"},
 		},
@@ -100,15 +101,15 @@ templ list(props listProps) {
 	}
 }
 
-type table struct{}
+type workspaceTable struct{}
 
-templ (t table) Header() {
+templ (t workspaceTable) Header() {
 	<th>Name</th>
 	<th>Status</th>
 	<th>Tags</th>
 }
 
-templ (t table) Row(ws *Workspace) {
+templ (t workspaceTable) Row(ws *workspace.Workspace) {
 	<tr id={ "item-workspace-" + ws.Name }>
 		<td>
 			<a class="link" href={ paths.Workspace(ws.ID) }>{ ws.Name }</a>
@@ -145,7 +146,7 @@ templ tag(name string) {
 	</span>
 }
 
-templ listActions(organization organization.Name, canCreate bool) {
+templ workspaceListActions(organization organization.Name, canCreate bool) {
 	if canCreate {
 		<form action={ paths.NewWorkspace(organization) } method="GET">
 			<button class="btn" id="new-workspace-button">New Workspace</button>
@@ -153,9 +154,9 @@ templ listActions(organization organization.Name, canCreate bool) {
 	}
 }
 
-type getProps struct {
-	ws                 *Workspace
-	lockInfo           lockInfo
+type workspaceGetProps struct {
+	ws                 *workspace.Workspace
+	workspaceLockInfo           workspaceLockInfo
 	vcsProvider        *vcs.Provider
 	canApply           bool
 	canAddTags         bool
@@ -168,7 +169,7 @@ type getProps struct {
 	tagsDropdown       components.SearchDropdownProps
 }
 
-templ get(props getProps) {
+templ workspaceGet(props workspaceGetProps) {
 	{{
 	layoutProps := components.LayoutProps{
 		Title:        "workspaces",
@@ -186,7 +187,7 @@ templ get(props getProps) {
 				<div>
 					@lockWidget(lockWidgetProps{
 						ws:   props.ws,
-						info: props.lockInfo,
+						info: props.workspaceLockInfo,
 					})
 				</div>
 				<div>
@@ -293,8 +294,8 @@ templ get(props getProps) {
 }
 
 type lockWidgetProps struct {
-	ws   *Workspace
-	info lockInfo
+	ws   *workspace.Workspace
+	info workspaceLockInfo
 }
 
 templ lockWidget(props lockWidgetProps) {
@@ -371,9 +372,9 @@ templ unlockedIcon() {
 	</svg>
 }
 
-type editProps struct {
-	ws                 *Workspace
-	assigned           []perm
+type workspaceEditProps struct {
+	ws                 *workspace.Workspace
+	assigned           []workspacePerm
 	unassigned         []*team.Team
 	roles              []authz.Role
 	vcsProvider        *vcs.Provider
@@ -391,12 +392,12 @@ type editProps struct {
 	poolsURL           string
 }
 
-type perm struct {
+type workspacePerm struct {
 	role authz.Role
 	team *team.Team
 }
 
-templ edit(props editProps) {
+templ workspaceEdit(props workspaceEditProps) {
 	{{
 	layoutProps := components.LayoutProps{
 		Title:        "edit | " + props.ws.ID.String(),
@@ -507,7 +508,7 @@ templ edit(props editProps) {
 				<button id="queue-destroy-plan-button" class="btn btn-error btn-outline" onclick="return confirm('This will destroy all infrastructure in this workspace. Please confirm.')">
 					Queue destroy plan
 				</button>
-				<input type="hidden" name="connected" value={ boolString(props.ws.Connection != nil) }/>
+				<input type="hidden" name="connected" value={ workspaceBoolString(props.ws.Connection != nil) }/>
 				<input name="operation" value="destroy-all" type="hidden"/>
 			</form>
 			if props.canDeleteWorkspace {
@@ -588,7 +589,7 @@ templ engineVersionSelector(props engineSelectorEngine) {
 	</fieldset>
 }
 
-templ editConnection(props editProps) {
+templ editConnection(props workspaceEditProps) {
 	<fieldset class="border border-base-content/60 px-3 py-3 flex flex-col gap-2">
 		<legend>VCS triggers</legend>
 		<div class="form-checkbox">
@@ -666,7 +667,7 @@ templ editConnection(props editProps) {
 	</div>
 }
 
-templ editPermissions(props editProps) {
+templ editPermissions(props workspaceEditProps) {
 	<div>
 		<table class="table">
 			<thead class="">
@@ -683,25 +684,25 @@ templ editPermissions(props editProps) {
 					<td class="">admin</td>
 				</tr>
 				<!-- iterate through existing role assignments -->
-				for _, perm := range props.assigned {
-					if perm.team.Name == "owners" {
+				for _, workspacePerm := range props.assigned {
+					if workspacePerm.team.Name == "owners" {
 						continue
 					}
-					<tr id={ "permissions-" + perm.team.Name }>
+					<tr id={ "permissions-" + workspacePerm.team.Name }>
 						<form class="" id="update-permissions" action={ paths.SetPermissionWorkspace(props.ws.ID) } method="POST"></form>
-						<td class=""><a href={ paths.Team(perm.team.ID) }>{ perm.team.Name }</a></td>
+						<td class=""><a href={ paths.Team(workspacePerm.team.ID) }>{ workspacePerm.team.Name }</a></td>
 						<td class="">
-							<input name="team_id" value={ perm.team.ID.String() } type="hidden" form="update-permissions"/>
+							<input name="team_id" value={ workspacePerm.team.ID.String() } type="hidden" form="update-permissions"/>
 							<select class="select" name="role" id="role-select" form="update-permissions">
 								for _, role := range props.roles {
-									<option value={ role.String() } selected?={ perm.role.String() == role.String() }>{ role.String() }</option>
+									<option value={ role.String() } selected?={ workspacePerm.role.String() == role.String() }>{ role.String() }</option>
 								}
 							</select>
 						</td>
 						<td class="flex items-center gap-2">
 							<button class="btn" form="update-permissions">Update</button>
 							<form class="" action={ paths.UnsetPermissionWorkspace(props.ws.ID) } method="POST">
-								<input name="team_id" value={ perm.team.ID.String() } type="hidden"/>
+								<input name="team_id" value={ workspacePerm.team.ID.String() } type="hidden"/>
 								@components.DeleteButton()
 							</form>
 						</td>
@@ -712,8 +713,8 @@ templ editPermissions(props editProps) {
 					<td>
 						<select class="select" form="permissions-add-form" name="team_id" id="permissions-add-select-team">
 							<option disabled selected>--team--</option>
-							for _, perm := range props.unassigned {
-								<option value={ perm.ID.String() }>{ perm.Name }</option>
+							for _, workspacePerm := range props.unassigned {
+								<option value={ workspacePerm.ID.String() }>{ workspacePerm.Name }</option>
 							}
 						</select>
 					</td>
@@ -736,7 +737,7 @@ templ editPermissions(props editProps) {
 	</div>
 }
 
-templ listVCSProviders(ws *Workspace, providers []*vcs.Provider) {
+templ listVCSProviders(ws *workspace.Workspace, providers []*vcs.Provider) {
 	{{
 	layoutProps := components.LayoutProps{
 		Title:        "list vcs providers | " + ws.ID.String(),
@@ -777,7 +778,7 @@ templ (s vcsProviderSelector) action(vcsProviderID resource.TfeID) {
 	</form>
 }
 
-templ listVCSRepos(ws *Workspace, vcsProviderID resource.TfeID, repos []vcs.Repo) {
+templ listVCSRepos(ws *workspace.Workspace, vcsProviderID resource.TfeID, repos []vcs.Repo) {
 	{{
 	layoutProps := components.LayoutProps{
 		Title:        "list vcs repos | " + ws.ID.String(),
@@ -801,7 +802,7 @@ templ listVCSRepos(ws *Workspace, vcsProviderID resource.TfeID, repos []vcs.Repo
 		</form>
 		@components.UnpaginatedTable(
 			&connections.ReposTable{
-				Actions: repoSelector{
+				Actions: workspaceRepoSelector{
 					workspaceID:   ws.ID,
 					vcsProviderID: vcsProviderID,
 				}.action,
@@ -812,12 +813,12 @@ templ listVCSRepos(ws *Workspace, vcsProviderID resource.TfeID, repos []vcs.Repo
 	}
 }
 
-type repoSelector struct {
+type workspaceRepoSelector struct {
 	workspaceID   resource.TfeID
 	vcsProviderID resource.TfeID
 }
 
-templ (s repoSelector) action(repo vcs.Repo) {
+templ (s workspaceRepoSelector) action(repo vcs.Repo) {
 	<form action={ paths.ConnectWorkspace(s.workspaceID) } method="POST">
 		<input type="hidden" name="vcs_provider_id" value={ s.vcsProviderID.String() }/>
 		<input type="hidden" name="identifier" id="identifier" value={ repo.String() }/>
@@ -836,7 +837,7 @@ templ WorkspaceHeaderLinks(workspaceID resource.TfeID, canUpdate bool) {
 	</ul>
 }
 
-templ workspaceHeaderLinksAndStartRunSelector(props getProps) {
+templ workspaceHeaderLinksAndStartRunSelector(props workspaceGetProps) {
 	if props.canCreateRun {
 		<div>
 			<form id="workspace-start-run-form" action={ paths.StartRunWorkspace(props.ws.ID) } method="POST">
@@ -861,7 +862,7 @@ func magnifyingGlassStyle(ctx context.Context) (string, error) {
 	return fmt.Sprintf("background-image: url(%s)", path), nil
 }
 
-func boolString(b bool) string {
+func workspaceBoolString(b bool) string {
 	if b {
 		return "true"
 	}

@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-templ new() {
+templ organizationNew() {
 	@components.Layout(components.LayoutProps{
 		Title: "new organization",
 		Breadcrumbs: []components.Breadcrumb{
@@ -34,14 +34,14 @@ type organizationListProps struct {
 	CanCreate bool
 }
 
-templ list(props organizationListProps) {
+templ organizationList(props organizationListProps) {
 	{{
 	layoutProps := components.LayoutProps{
 		Title: "organizations",
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "organizations"},
 		},
-		ContentActions: listActions(props.CanCreate),
+		ContentActions: organizationListActions(props.CanCreate),
 	}
 	}}
 	@components.Layout(layoutProps) {
@@ -69,7 +69,7 @@ templ (t organizationTable) Row(org *organization.Organization) {
 	</tr>
 }
 
-templ listActions(canCreate bool) {
+templ organizationListActions(canCreate bool) {
 	<form action={ paths.NewOrganization() } method="GET">
 		<button
 			class="btn"
@@ -86,7 +86,7 @@ templ listActions(canCreate bool) {
 	</form>
 }
 
-templ edit(org *organization.Organization) {
+templ organizationEdit(org *organization.Organization) {
 	@components.Layout(components.LayoutProps{
 		Title:        org.Name.String(),
 		Organization: org.Name,

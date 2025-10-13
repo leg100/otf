@@ -26,7 +26,6 @@ type (
 		*factory
 
 		db          *pgdb
-		web         *webHandlers
 		tfeapi      *tfe
 		api         *api
 		broker      *pubsub.Broker[*Event]
@@ -67,7 +66,6 @@ func NewService(opts Options) *Service {
 			engines:       opts.EngineService,
 		},
 	}
-	svc.web = newWebHandlers(&svc, opts)
 	svc.tfeapi = &tfe{
 		Service:    &svc,
 		Responder:  opts.Responder,
@@ -109,9 +107,7 @@ func NewService(opts Options) *Service {
 }
 
 func (s *Service) AddHandlers(r *mux.Router) {
-	s.web.addHandlers(r)
 	s.tfeapi.addHandlers(r)
-	s.web.addTagHandlers(r)
 	s.tfeapi.addTagHandlers(r)
 	s.api.addHandlers(r)
 }

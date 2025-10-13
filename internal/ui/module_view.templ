@@ -73,7 +73,7 @@ templ connect(props connectProps) {
 		</form>
 		@components.UnpaginatedTable(
 			&connections.ReposTable{
-				Actions: repoSelector{
+				Actions: moduleRepoSelector{
 					provider: props.provider,
 				}.action,
 			},
@@ -83,11 +83,11 @@ templ connect(props connectProps) {
 	}
 }
 
-type repoSelector struct {
+type moduleRepoSelector struct {
 	provider *vcs.Provider
 }
 
-templ (s repoSelector) action(repo vcs.Repo) {
+templ (s moduleRepoSelector) action(repo vcs.Repo) {
 	<form action={ paths.CreateModule(s.provider.Organization) } method="POST">
 		<input type="hidden" name="vcs_provider_id" value={ s.provider.ID.String() }/>
 		<input type="hidden" name="identifier" id="identifier" value={ repo.String() }/>
@@ -95,7 +95,7 @@ templ (s repoSelector) action(repo vcs.Repo) {
 	</form>
 }
 
-type listProps struct {
+type moduleListProps struct {
 	organization          organization.Name
 	page                  *resource.Page[*module.Module]
 	canPublishModule      bool
@@ -104,11 +104,11 @@ type listProps struct {
 	selectedProviders     []string
 }
 
-templ list(props listProps) {
+templ moduleList(props moduleListProps) {
 	@components.Layout(components.LayoutProps{
 		Title:          "Modules",
 		Organization:   props.organization,
-		ContentActions: listActions(props),
+		ContentActions: moduleListActions(props),
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "Modules"},
 		},
@@ -127,7 +127,7 @@ templ list(props listProps) {
 				},
 			})
 		</form>
-		@components.Table(&table{}, props.page, "page-results")
+		@components.Table(&moduleTable{}, props.page, "page-results")
 	}
 }
 
@@ -137,7 +137,7 @@ templ providerFilterLabel(provider string) {
 	</span>
 }
 
-templ listActions(props listProps) {
+templ moduleListActions(props moduleListProps) {
 	if props.canPublishModule {
 		<form action={ paths.NewModule(props.organization) } method="GET">
 			<button class="btn" id="list-module-vcs-providers-button">Publish</button>
@@ -145,15 +145,15 @@ templ listActions(props listProps) {
 	}
 }
 
-type table struct{}
+type moduleTable struct{}
 
-templ (t table) Header() {
+templ (t moduleTable) Header() {
 	<th>Name</th>
 	<th>Provider</th>
 	<th>Created</th>
 }
 
-templ (t table) Row(mod *module.Module) {
+templ (t moduleTable) Row(mod *module.Module) {
 	<tr id={ "mod-item-" + mod.Name }>
 		<td>
 			<a class="link" href={ paths.Module(mod.ID) }>
@@ -169,7 +169,7 @@ templ (t table) Row(mod *module.Module) {
 	</tr>
 }
 
-type getProps struct {
+type moduleGetProps struct {
 	module           *module.Module
 	terraformModule  *module.TerraformModule
 	readme           template.HTML
@@ -178,7 +178,7 @@ type getProps struct {
 	hostname         string
 }
 
-templ get(props getProps) {
+templ moduleGet(props moduleGetProps) {
 	@components.Layout(components.LayoutProps{
 		Title:        "modules",
 		Organization: props.module.Organization,

@@ -127,7 +127,7 @@ func (h *runHandlers) listByOrganization(w http.ResponseWriter, r *http.Request)
 		h := &components.WebsocketListHandler[*run.Run, *run.Event, run.ListOptions]{
 			Logger: h.logger,
 			Client: h.runs,
-			Populator: table{
+			Populator: runTable{
 				workspaceGetClient: newWorkspaceCache(h.workspaces),
 				users:           newUserCache(h.users),
 			},
@@ -144,7 +144,7 @@ func (h *runHandlers) listByWorkspace(w http.ResponseWriter, r *http.Request) {
 		h := &components.WebsocketListHandler[*run.Run, *run.Event, run.ListOptions]{
 			Logger: h.logger,
 			Client: h.runs,
-			Populator: table{
+			Populator: runTable{
 				users: newUserCache(h.users),
 			},
 			ID: "page-results",
@@ -165,7 +165,7 @@ func (h *runHandlers) list(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	props := listProps{
+	props := runListProps{
 		status:              opts.Statuses,
 		statusFilterVisible: opts.StatusFilterVisible,
 		pageOptions:         opts.PageOptions,
@@ -187,7 +187,7 @@ func (h *runHandlers) list(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	html.Render(list(props), w, r)
+	html.Render(runList(props), w, r)
 }
 
 func (h *runHandlers) get(w http.ResponseWriter, r *http.Request) {
@@ -227,13 +227,13 @@ func (h *runHandlers) get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	props := getProps{
+	props := runGetProps{
 		run:       runResult,
 		ws:        ws,
 		planLogs:  run.Chunk{Data: planLogs.Data},
 		applyLogs: run.Chunk{Data: applyLogs.Data},
 	}
-	html.Render(get(props), w, r)
+	html.Render(runGet(props), w, r)
 }
 
 // getWidget renders a run "widget", i.e. the container that
@@ -252,7 +252,7 @@ func (h *runHandlers) getWidget(w http.ResponseWriter, r *http.Request) {
 	}
 
 	table := components.UnpaginatedTable(
-		&table{users: h.users},
+		runTable{users: h.users},
 		[]*run.Run{runItem},
 		"run-item-"+runItem.ID.String(),
 	)
@@ -443,7 +443,7 @@ func (h *runHandlers) watchLatest(w http.ResponseWriter, r *http.Request) {
 		h.runs,
 		func(runItem *run.Run) templ.Component {
 			return components.UnpaginatedTable(
-				&table{users: h.users},
+				runTable{users: h.users},
 				[]*run.Run{runItem},
 				"latest-run",
 			)

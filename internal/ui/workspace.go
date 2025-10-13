@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/gorilla/websocket"
 
@@ -18,6 +19,7 @@ import (
 	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/organization"
+	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/user"
@@ -49,7 +51,6 @@ const (
 type (
 	workspaceHandlers struct {
 		*workspaceUIHelpers
-
 		logger               logr.Logger
 		teams                workspaceTeamClient
 		vcsproviders         workspaceVCSProvidersClient
@@ -73,14 +74,14 @@ type (
 	}
 
 	workspaceEngineClient interface {
-		GetLatest(ctx context.Context, engine engine.Engine) (string, []byte, error)
+		GetLatest(context.Context, *engine.Engine) (string, time.Time, error)
 	}
 
 	// workspaceClient provides web handlers with access to the workspace service
 	workspaceClient interface {
 		Create(ctx context.Context, opts workspace.CreateOptions) (*workspace.Workspace, error)
 		Get(ctx context.Context, workspaceID resource.TfeID) (*workspace.Workspace, error)
-		GetByName(ctx context.Context, organization organization.Name, ws string) (*workspace.Workspace, error)
+		GetByName(ctx context.Context, organization organization.Name, workspace string) (*workspace.Workspace, error)
 		List(ctx context.Context, opts workspace.ListOptions) (*resource.Page[*workspace.Workspace], error)
 		Update(ctx context.Context, workspaceID resource.TfeID, opts workspace.UpdateOptions) (*workspace.Workspace, error)
 		Delete(ctx context.Context, workspaceID resource.TfeID) (*workspace.Workspace, error)
@@ -94,20 +95,29 @@ type (
 		GetWorkspacePolicy(ctx context.Context, workspaceID resource.TfeID) (workspace.Policy, error)
 		SetPermission(ctx context.Context, workspaceID, teamID resource.TfeID, role authz.Role) error
 		UnsetPermission(ctx context.Context, workspaceID, teamID resource.TfeID) error
+		Watch(context.Context) (<-chan pubsub.Event[*workspace.Event], func())
 	}
 )
 
 // AddWorkspaceHandlers registers workspace UI handlers with the router
-func AddWorkspaceHandlers(r *mux.Router, logger logr.Logger, workspaces workspaceClient, teams workspaceTeamClient, vcsproviders workspaceVCSProvidersClient, authorizer workspaceAuthorizer, releases workspaceEngineClient) {
+func AddWorkspaceHandlers(
+	r *mux.Router,
+	logger logr.Logger,
+	workspaces workspaceClient,
+	teams workspaceTeamClient,
+	vcsproviders workspaceVCSProvidersClient,
+	authorizer workspaceAuthorizer,
+	releases workspaceEngineClient,
+) {
 	h := &workspaceHandlers{
+		workspaceUIHelpers: &workspaceUIHelpers{
+			authorizer: authorizer,
+		},
 		logger:       logger,
 		authorizer:   authorizer,
 		teams:        teams,
 		vcsproviders: vcsproviders,
 		client:       workspaces,
-		workspaceUIHelpers: &workspaceUIHelpers{
-			authorizer: authorizer,
-		},
 		websocketListHandler: &components.WebsocketListHandler[*workspace.Workspace, *workspace.Event, workspace.ListOptions]{
 			Logger:    logger,
 			Client:    workspaces,
@@ -117,7 +127,6 @@ func AddWorkspaceHandlers(r *mux.Router, logger logr.Logger, workspaces workspac
 		releases: releases,
 	}
 	h.addHandlers(r)
-	h.addTagHandlers(r)
 }
 
 func (h *workspaceHandlers) addHandlers(r *mux.Router) {
@@ -141,13 +150,6 @@ func (h *workspaceHandlers) addHandlers(r *mux.Router) {
 
 	r.HandleFunc("/workspaces/{workspace_id}/set-permission", h.setWorkspacePermission).Methods("POST")
 	r.HandleFunc("/workspaces/{workspace_id}/unset-permission", h.unsetWorkspacePermission).Methods("POST")
-}
-
-func (h *workspaceHandlers) addTagHandlers(r *mux.Router) {
-	r = html.UIRouter(r)
-
-	r.HandleFunc("/workspaces/{workspace_id}/create-tag", h.createTag).Methods("POST")
-	r.HandleFunc("/workspaces/{workspace_id}/delete-tag", h.deleteTag).Methods("POST")
 }
 
 func (h *workspaceHandlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
@@ -227,6 +229,7 @@ func (h *workspaceHandlers) createWorkspace(w http.ResponseWriter, r *http.Reque
 	})
 	if err != nil {
 		html.Error(r, w, err.Error())
+		html.Error(r, w, err.Error())
 		return
 	}
 	html.FlashSuccess(w, "created workspace: "+ws.Name)
@@ -245,7 +248,7 @@ func (h *workspaceHandlers) getWorkspace(w http.ResponseWriter, r *http.Request)
 		html.Error(r, w, err.Error())
 		return
 	}
-	currentUser, err := user.UserFromContext(r.Context())
+	user, err := user.UserFromContext(r.Context())
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -279,7 +282,7 @@ func (h *workspaceHandlers) getWorkspace(w http.ResponseWriter, r *http.Request)
 		availableTags = internal.Diff(names, ws.Tags)
 	}
 
-	lockInfo, err := h.lockButtonHelper(r.Context(), ws, currentUser)
+	lockInfo, err := h.lockButtonHelper(r.Context(), ws, user)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -287,7 +290,7 @@ func (h *workspaceHandlers) getWorkspace(w http.ResponseWriter, r *http.Request)
 
 	props := workspaceGetProps{
 		ws:                 ws,
-		lockInfo:           lockInfo,
+		workspaceLockInfo:  lockInfo,
 		vcsProvider:        provider,
 		canApply:           h.authorizer.CanAccess(r.Context(), authz.ApplyRunAction, ws.ID),
 		canAddTags:         h.authorizer.CanAccess(r.Context(), authz.AddTagsAction, ws.ID),
@@ -398,20 +401,20 @@ func (h *workspaceHandlers) editWorkspace(w http.ResponseWriter, r *http.Request
 	}
 
 	// Construct list of engines for template
-	engineSelectorProps := workspaceEngineSelectorProps{
-		engines: make([]workspaceEngineSelectorEngine, 2),
+	engineSelectorProps := engineSelectorProps{
+		engines: make([]engineSelectorEngine, 2),
 	}
-	for i, eng := range engine.Engines() {
-		engineSelectorProps.engines[i].name = eng.String()
-		if eng.String() == ws.Engine.String() {
-			engineSelectorProps.current = eng.String()
+	for i, engine := range engine.Engines() {
+		engineSelectorProps.engines[i].name = engine.String()
+		if engine.String() == ws.Engine.String() {
+			engineSelectorProps.current = engine.String()
 			engineSelectorProps.engines[i].latest = ws.EngineVersion.Latest
 		}
 		// Offer the user the latest available version for an engine if:
 		// (a): it's not the current engine
 		// (b): it's currently set to track the latest version.
-		if engineSelectorProps.current != eng.String() || engineSelectorProps.engines[i].latest {
-			latest, _, err := h.releases.GetLatest(r.Context(), eng)
+		if engineSelectorProps.current != engine.String() || engineSelectorProps.engines[i].latest {
+			latest, _, err := h.releases.GetLatest(r.Context(), engine)
 			if err != nil {
 				html.Error(r, w, err.Error())
 				return
@@ -425,7 +428,7 @@ func (h *workspaceHandlers) editWorkspace(w http.ResponseWriter, r *http.Request
 	props := workspaceEditProps{
 		ws:         ws,
 		assigned:   perms,
-		unassigned: workspaceFilterUnassigned(policy, teams),
+		unassigned: filterUnassigned(policy, teams),
 		engines:    engineSelectorProps,
 		roles: []authz.Role{
 			authz.WorkspaceReadRole,
@@ -451,17 +454,17 @@ func (h *workspaceHandlers) editWorkspace(w http.ResponseWriter, r *http.Request
 
 func (h *workspaceHandlers) updateWorkspace(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		AgentPoolID           *resource.TfeID `schema:"agent_pool_id"`
-		AutoApply             bool            `schema:"auto_apply"`
+		AgentPoolID           *resource.TfeID          `schema:"agent_pool_id"`
+		AutoApply             bool                     `schema:"auto_apply"`
 		Name                  string
 		Description           string
-		ExecutionMode         workspace.ExecutionMode `schema:"execution_mode"`
-		Engine                *engine.Engine          `schema:"engine"`
-		LatestEngineVersion   bool                    `schema:"latest_engine_version"`
-		SpecificEngineVersion *workspace.Version      `schema:"specific_engine_version"`
-		WorkingDirectory      string                  `schema:"working_directory"`
-		WorkspaceID           resource.TfeID          `schema:"workspace_id,required"`
-		GlobalRemoteState     bool                    `schema:"global_remote_state"`
+		ExecutionMode         workspace.ExecutionMode  `schema:"execution_mode"`
+		Engine                *engine.Engine           `schema:"engine"`
+		LatestEngineVersion   bool                     `schema:"latest_engine_version"`
+		SpecificEngineVersion *workspace.Version       `schema:"specific_engine_version"`
+		WorkingDirectory      string                   `schema:"working_directory"`
+		WorkspaceID           resource.TfeID           `schema:"workspace_id,required"`
+		GlobalRemoteState     bool                     `schema:"global_remote_state"`
 
 		// VCS connection
 		VCSTriggerStrategy  string `schema:"vcs_trigger"`
@@ -619,7 +622,7 @@ func (h *workspaceHandlers) listWorkspaceVCSProviders(w http.ResponseWriter, r *
 		return
 	}
 
-	html.Render(workspaceListVCSProviders(ws, providers), w, r)
+	html.Render(listVCSProviders(ws, providers), w, r)
 }
 
 func (h *workspaceHandlers) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Request) {
@@ -652,7 +655,7 @@ func (h *workspaceHandlers) listWorkspaceVCSRepos(w http.ResponseWriter, r *http
 		return
 	}
 
-	html.Render(workspaceListVCSRepos(ws, params.VCSProviderID, repos), w, r)
+	html.Render(listVCSRepos(ws, params.VCSProviderID, repos), w, r)
 }
 
 func (h *workspaceHandlers) connect(w http.ResponseWriter, r *http.Request) {
@@ -744,52 +747,12 @@ func (h *workspaceHandlers) unsetWorkspacePermission(w http.ResponseWriter, r *h
 	http.Redirect(w, r, paths.EditWorkspace(params.WorkspaceID), http.StatusFound)
 }
 
-func (h *workspaceHandlers) createTag(w http.ResponseWriter, r *http.Request) {
-	var params struct {
-		WorkspaceID *resource.TfeID `schema:"workspace_id,required"`
-		TagName     *string         `schema:"tag_name,required"`
-	}
-	if err := decode.All(&params, r); err != nil {
-		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
-		return
-	}
-
-	err := h.client.AddTags(r.Context(), *params.WorkspaceID, []workspace.TagSpec{{Name: *params.TagName}})
-	if err != nil {
-		html.Error(r, w, err.Error())
-		return
-	}
-
-	html.FlashSuccess(w, "created tag: "+*params.TagName)
-	http.Redirect(w, r, paths.Workspace(params.WorkspaceID), http.StatusFound)
-}
-
-func (h *workspaceHandlers) deleteTag(w http.ResponseWriter, r *http.Request) {
-	var params struct {
-		WorkspaceID *resource.TfeID `schema:"workspace_id,required"`
-		TagName     *string         `schema:"tag_name,required"`
-	}
-	if err := decode.All(&params, r); err != nil {
-		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
-		return
-	}
-
-	err := h.client.RemoveTags(r.Context(), *params.WorkspaceID, []workspace.TagSpec{{Name: *params.TagName}})
-	if err != nil {
-		html.Error(r, w, err.Error())
-		return
-	}
-
-	html.FlashSuccess(w, "removed tag: "+*params.TagName)
-	http.Redirect(w, r, paths.Workspace(params.WorkspaceID), http.StatusFound)
-}
-
-// workspaceFilterUnassigned removes from the list of teams those that are part of the
+// filterUnassigned removes from the list of teams those that are part of the
 // policy, i.e. those that have been assigned a permission.
 //
 // NOTE: the owners team is always removed because by default it is assigned the
 // admin role.
-func workspaceFilterUnassigned(policy workspace.Policy, teams []*team.Team) (unassigned []*team.Team) {
+func filterUnassigned(policy workspace.Policy, teams []*team.Team) (unassigned []*team.Team) {
 	assigned := make(map[resource.TfeID]struct{}, len(teams))
 	for _, p := range policy.Permissions {
 		assigned[p.TeamID] = struct{}{}

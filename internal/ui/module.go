@@ -37,7 +37,7 @@ type (
 		ListModules(context.Context, module.ListOptions) ([]*module.Module, error)
 		PublishModule(context.Context, module.PublishOptions) (*module.Module, error)
 		DeleteModule(ctx context.Context, id resource.TfeID) (*module.Module, error)
-		listProviders(context.Context, organization.Name) ([]string, error)
+		ListProviders(context.Context, organization.Name) ([]string, error)
 	}
 
 	moduleAuthorizer interface {
@@ -88,13 +88,13 @@ func (h *moduleHandlers) list(w http.ResponseWriter, r *http.Request) {
 		html.Error(r, w, err.Error())
 		return
 	}
-	providers, err := h.client.listProviders(r.Context(), params.Organization)
+	providers, err := h.client.ListProviders(r.Context(), params.Organization)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
 	}
 
-	props := listProps{
+	props := moduleListProps{
 		organization:          params.Organization,
 		page:                  resource.NewPage(modules, params.PageOptions, nil),
 		canPublishModule:      h.authorizer.CanAccess(r.Context(), authz.CreateModuleAction, params.Organization),
@@ -102,7 +102,7 @@ func (h *moduleHandlers) list(w http.ResponseWriter, r *http.Request) {
 		allProviders:          providers,
 		selectedProviders:     params.Providers,
 	}
-	html.Render(list(props), w, r)
+	html.Render(moduleList(props), w, r)
 }
 
 func (h *moduleHandlers) get(w http.ResponseWriter, r *http.Request) {
@@ -146,14 +146,14 @@ func (h *moduleHandlers) get(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	props := getProps{
+	props := moduleGetProps{
 		module:          mod,
 		terraformModule: tfmod,
 		readme:          readme,
 		currentVersion:  modver,
 		hostname:        h.system.Hostname(),
 	}
-	html.Render(get(props), w, r)
+	html.Render(moduleGet(props), w, r)
 }
 
 func (h *moduleHandlers) new(w http.ResponseWriter, r *http.Request) {
