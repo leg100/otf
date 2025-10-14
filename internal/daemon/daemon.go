@@ -384,7 +384,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		}),
 		configService,
 		notificationService,
-		githubAppService,
 		runnerService,
 		disco.Service{},
 		&api.Handlers{},

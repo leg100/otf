@@ -21,7 +21,6 @@ type (
 		*authz.Authorizer
 
 		db     *pgdb
-		web    *web
 		tfeapi *tfe
 		api    *api
 		runs   runClient
@@ -50,11 +49,6 @@ func NewService(opts Options) *Service {
 		runs:       opts.RunClient,
 	}
 
-	svc.web = &web{
-		authorizer: opts.Authorizer,
-		workspaces: opts.WorkspaceService,
-		variables:  &svc,
-	}
 	svc.tfeapi = &tfe{
 		Service:   &svc,
 		Responder: opts.Responder,
@@ -68,7 +62,6 @@ func NewService(opts Options) *Service {
 }
 
 func (s *Service) AddHandlers(r *mux.Router) {
-	s.web.addHandlers(r)
 	s.tfeapi.addHandlers(r)
 	s.api.addHandlers(r)
 }
@@ -86,7 +79,7 @@ func (s *Service) ListEffectiveVariables(ctx context.Context, runID resource.Tfe
 	if err != nil {
 		return nil, err
 	}
-	return mergeVariables(sets, vars, run), nil
+	return Merge(sets, vars, run), nil
 }
 
 func (s *Service) CreateWorkspaceVariable(ctx context.Context, workspaceID resource.TfeID, opts CreateVariableOptions) (*Variable, error) {
@@ -446,7 +439,7 @@ func (s *Service) updateVariableSetVariable(ctx context.Context, variableID reso
 		}
 
 		// make copy of variable before updating
-		before = *set.getVariable(variableID)
+		before = *set.GetVariableByID(variableID)
 		after, err = set.updateVariable(organizationSets, variableID, opts)
 		if err != nil {
 			return err
@@ -477,7 +470,7 @@ func (s *Service) deleteVariableSetVariable(ctx context.Context, variableID reso
 		return nil, err
 	}
 
-	v := set.getVariable(variableID)
+	v := set.GetVariableByID(variableID)
 
 	if err := s.db.deleteVariable(ctx, variableID); err != nil {
 		s.Error(err, "deleting variable from set", "subject", subject, "variable", v, "set", set)

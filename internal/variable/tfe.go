@@ -345,7 +345,7 @@ func (a *tfe) updateVariableSetVariable(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	v := set.getVariable(variableID)
+	v := set.GetVariableByID(variableID)
 	a.Respond(w, r, a.convertVariableSetVariable(v, set.ID), http.StatusOK)
 }
 
@@ -362,7 +362,7 @@ func (a *tfe) getVariableSetVariable(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	v := set.getVariable(variableID)
+	v := set.GetVariableByID(variableID)
 	a.Respond(w, r, a.convertVariableSetVariable(v, set.ID), http.StatusOK)
 }
 

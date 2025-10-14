@@ -14,7 +14,7 @@ import (
 const runnerIDHeaderKey = "otf-agent-id"
 
 type client interface {
-	register(ctx context.Context, opts registerOptions) (*RunnerMeta, error)
+	Register(ctx context.Context, opts RegisterRunnerOptions) (*RunnerMeta, error)
 	updateStatus(ctx context.Context, agentID resource.TfeID, status RunnerStatus) error
 
 	awaitAllocatedJobs(ctx context.Context, agentID resource.TfeID) ([]*Job, error)
@@ -42,7 +42,7 @@ func (c *remoteClient) newRequest(method, path string, v interface{}) (*retryabl
 	return req, err
 }
 
-func (c *remoteClient) register(ctx context.Context, opts registerOptions) (*RunnerMeta, error) {
+func (c *remoteClient) Register(ctx context.Context, opts RegisterRunnerOptions) (*RunnerMeta, error) {
 	req, err := c.newRequest("POST", "agents/register", &opts)
 	if err != nil {
 		return nil, err
@@ -118,7 +118,7 @@ func (c *remoteClient) updateStatus(ctx context.Context, agentID resource.TfeID,
 
 // agent tokens
 
-func (c *remoteClient) CreateAgentToken(ctx context.Context, poolID resource.TfeID, opts CreateAgentTokenOptions) (*agentToken, []byte, error) {
+func (c *remoteClient) CreateAgentToken(ctx context.Context, poolID resource.TfeID, opts CreateAgentTokenOptions) (*AgentToken, []byte, error) {
 	u := fmt.Sprintf("agent-tokens/%s/create", poolID)
 	req, err := c.newRequest("POST", u, &opts)
 	if err != nil {

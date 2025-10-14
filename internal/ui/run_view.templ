@@ -35,7 +35,7 @@ templ runList(props runListProps) {
 			{Name: "Workspaces", Link: paths.Workspaces(props.organization)},
 			{Name: props.ws.Name, Link: paths.Workspace(props.ws.ID)},
 		}
-		layoutProps.ContentLinks = workspace.WorkspaceHeaderLinks(props.ws.ID, props.canUpdateWorkspace)
+		layoutProps.ContentLinks = WorkspaceHeaderLinks(props.ws.ID, props.canUpdateWorkspace)
 	}
 	layoutProps.Breadcrumbs = append(layoutProps.Breadcrumbs, components.Breadcrumb{Name: "Runs"})
 	}}
@@ -55,7 +55,7 @@ templ runList(props runListProps) {
 
 type runTable struct {
 	workspaceGetClient runWorkspaceGetClient
-	users           runUsersClient
+	users              runUsersClient
 }
 
 templ (t runTable) Header() {

@@ -63,7 +63,7 @@ func runList(props runListProps) templ.Component {
 				{Name: "Workspaces", Link: paths.Workspaces(props.organization)},
 				{Name: props.ws.Name, Link: paths.Workspace(props.ws.ID)},
 			}
-			layoutProps.ContentLinks = workspace.WorkspaceHeaderLinks(props.ws.ID, props.canUpdateWorkspace)
+			layoutProps.ContentLinks = WorkspaceHeaderLinks(props.ws.ID, props.canUpdateWorkspace)
 		}
 		layoutProps.Breadcrumbs = append(layoutProps.Breadcrumbs, components.Breadcrumb{Name: "Runs"})
 		templ_7745c5c3_Var2 := templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {

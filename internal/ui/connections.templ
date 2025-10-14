@@ -1,0 +1,38 @@
+package ui
+
+import "github.com/leg100/otf/internal/vcs"
+
+type ConnectionStep int
+
+// steps for connecting a workspace/module to repo
+const (
+	ConnectStep ConnectionStep = iota
+	SelectRepoStep
+)
+
+templ ConnectionSteps(current ConnectionStep) {
+	<ul class="steps">
+		<li class={ "step", templ.KV("step-primary", current == ConnectStep) }>Connect VCS</li>
+		<li class={ "step", templ.KV("step-primary", current == SelectRepoStep) }>Select repo</li>
+	</ul>
+}
+
+type ReposTable struct {
+	Actions func(repo vcs.Repo) templ.Component
+}
+
+templ (t ReposTable) Header() {
+	<th>Name</th>
+	<th>Action</th>
+}
+
+templ (t ReposTable) Row(repo vcs.Repo) {
+	<tr id={ "item-repo-" + repo.String() }>
+		<td>
+			{ repo.String() }
+		</td>
+		<td>
+			@t.Actions(repo)
+		</td>
+	</tr>
+}

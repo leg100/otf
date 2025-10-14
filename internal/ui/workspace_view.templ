@@ -1,13 +1,10 @@
 package ui
 
 import (
-    "github.com/leg100/otf/internal/workspace"
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
-	"github.com/leg100/otf/internal/connections"
 	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/components/paths"
 	"github.com/leg100/otf/internal/organization"
@@ -15,6 +12,7 @@ import (
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/vcs"
+	"github.com/leg100/otf/internal/workspace"
 )
 
 templ workspaceNew(organization organization.Name) {
@@ -156,7 +154,7 @@ templ workspaceListActions(organization organization.Name, canCreate bool) {
 
 type workspaceGetProps struct {
 	ws                 *workspace.Workspace
-	workspaceLockInfo           workspaceLockInfo
+	workspaceLockInfo  workspaceLockInfo
 	vcsProvider        *vcs.Provider
 	canApply           bool
 	canAddTags         bool
@@ -246,7 +244,7 @@ templ workspaceGet(props workspaceGetProps) {
 							@props.vcsProvider.Kind.Icon
 							<a
 								class="text-sm"
-								href={ vcs.RepoURL(props.vcsProvider, props.ws.Connection.Repo) }
+								href={ RepoURL(props.vcsProvider, props.ws.Connection.Repo) }
 								title="Go to repo homepage"
 							>
 								{ props.ws.Connection.Repo.String() }
@@ -750,10 +748,10 @@ templ listVCSProviders(ws *workspace.Workspace, providers []*vcs.Provider) {
 	}
 	}}
 	@components.Layout(layoutProps) {
-		@connections.Steps(connections.ConnectStep)
+		@ConnectionSteps(ConnectStep)
 		<div>Select a <a class="underline" href={ paths.VCSProviders(ws.Organization) }>VCS provider</a> to connect this workspace to a repository.</div>
 		@components.UnpaginatedTable(
-			&vcs.Table{
+			&vcsTable{
 				Actions: vcsProviderSelector{workspaceID: ws.ID}.action,
 			},
 			providers,
@@ -791,7 +789,7 @@ templ listVCSRepos(ws *workspace.Workspace, vcsProviderID resource.TfeID, repos 
 	}
 	}}
 	@components.Layout(layoutProps) {
-		@connections.Steps(connections.SelectRepoStep)
+		@ConnectionSteps(SelectRepoStep)
 		<div>
 			Select a VCS repository to connect this workspace to. Either select a repository from the list or enter the name of a repository below.
 		</div>
@@ -801,7 +799,7 @@ templ listVCSRepos(ws *workspace.Workspace, vcsProviderID resource.TfeID, repos 
 			<button class="btn">Connect</button>
 		</form>
 		@components.UnpaginatedTable(
-			&connections.ReposTable{
+			&ReposTable{
 				Actions: workspaceRepoSelector{
 					workspaceID:   ws.ID,
 					vcsProviderID: vcsProviderID,
@@ -867,9 +865,4 @@ func workspaceBoolString(b bool) string {
 		return "true"
 	}
 	return "false"
-}
-
-func toJSON(v any) string {
-	b, _ := json.Marshal(v)
-	return string(b)
 }

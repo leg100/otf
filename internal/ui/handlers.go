@@ -1,9 +1,12 @@
 package ui
 
 import (
+	"encoding/json"
+
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authenticator"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/engine"
 	"github.com/leg100/otf/internal/module"
@@ -16,7 +19,7 @@ import (
 	"github.com/leg100/otf/internal/workspace"
 )
 
-// Handlers implements internal.Handlers and registers all UI handlers
+// Handlers registers all UI handlers
 type Handlers struct {
 	Logger                       logr.Logger
 	Runs                         *run.Service
@@ -30,6 +33,7 @@ type Handlers struct {
 	HostnameService              *internal.HostnameService
 	Tokens                       *tokens.Service
 	Authorizer                   *authz.Authorizer
+	AuthenticatorService         *authenticator.Service
 	SiteToken                    string
 	RestrictOrganizationCreation bool
 }
@@ -42,4 +46,11 @@ func (h *Handlers) AddHandlers(r *mux.Router) {
 	AddWorkspaceHandlers(r, h.Logger, h.Workspaces, h.Teams, h.VCSProviders, h.Authorizer, h.EngineService)
 	AddOrganizationHandlers(r, h.Organizations, h.RestrictOrganizationCreation)
 	AddModuleHandlers(r, h.Modules, h.VCSProviders, h.HostnameService, h.Authorizer)
+	AddModuleHandlers(r, h.Modules, h.VCSProviders, h.HostnameService, h.Authorizer)
+	addLoginHandlers(r, h.AuthenticatorService)
+}
+
+func toJSON(v any) string {
+	b, _ := json.Marshal(v)
+	return string(b)
 }
