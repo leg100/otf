@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"context"
 	"fmt"
 	"net/http/httptest"
 	"testing"
@@ -13,10 +14,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestWebHandlers_createAgentPool(t *testing.T) {
+func TestRunnerHandlers_createAgentPool(t *testing.T) {
 	organization := organization.NewTestName(t)
 	id := testutils.ParseID(t, "pool-123")
-	svc := &fakeGithubService{
+	svc := &fakeRunnerService{
 		pool: &runner.Pool{ID: id},
 	}
 	h := &runnerHandlers{svc: svc}
@@ -34,9 +35,9 @@ func TestWebHandlers_createAgentPool(t *testing.T) {
 	testutils.AssertRedirect(t, w, paths.AgentPool(id))
 }
 
-func TestWebHandlers_listAgentPools(t *testing.T) {
+func TestRunnerHandlers_listAgentPools(t *testing.T) {
 	h := &runnerHandlers{
-		svc: &fakeGithubService{
+		svc: &fakeRunnerService{
 			pool: &runner.Pool{ID: testutils.ParseID(t, "pool-123")},
 		},
 	}
@@ -49,10 +50,10 @@ func TestWebHandlers_listAgentPools(t *testing.T) {
 	assert.Equal(t, 200, w.Code, w.Body.String())
 }
 
-func TestWebHandlers_createAgentToken(t *testing.T) {
+func TestRunnerHandlers_createAgentToken(t *testing.T) {
 	id := testutils.ParseID(t, "pool-123")
 	h := &runnerHandlers{
-		svc: &fakeGithubService{},
+		svc: &fakeRunnerService{},
 	}
 	q := "/?pool_id=pool-123&description=lorem-ipsum-etc"
 	r := httptest.NewRequest("GET", q, nil)
@@ -63,12 +64,12 @@ func TestWebHandlers_createAgentToken(t *testing.T) {
 	testutils.AssertRedirect(t, w, paths.AgentPool(id))
 }
 
-func TestAgentToken_DeleteHandler(t *testing.T) {
+func TestRunnerHandlers_deleteAgentToken(t *testing.T) {
 	agentPoolID := resource.NewTfeID(resource.AgentPoolKind)
 
 	h := &runnerHandlers{
-		svc: &fakeGithubService{
-			at: &agentToken{
+		svc: &fakeRunnerService{
+			at: &runner.AgentToken{
 				AgentPoolID: agentPoolID,
 			},
 		},
@@ -80,4 +81,66 @@ func TestAgentToken_DeleteHandler(t *testing.T) {
 	h.deleteAgentToken(w, r)
 
 	testutils.AssertRedirect(t, w, paths.AgentPool(agentPoolID))
+}
+
+type fakeRunnerService struct {
+	pool                   *runner.Pool
+	createAgentPoolOptions runner.CreateAgentPoolOptions
+	at                     *runner.AgentToken
+	token                  []byte
+	status                 runner.RunnerStatus
+	job                    *runner.Job
+}
+
+func (f *fakeRunnerService) CreateAgentPool(ctx context.Context, opts runner.CreateAgentPoolOptions) (*runner.Pool, error) {
+	f.createAgentPoolOptions = opts
+	return f.pool, nil
+}
+
+func (f *fakeRunnerService) UpdateAgentPool(ctx context.Context, poolID resource.TfeID, opts runner.UpdatePoolOptions) (*runner.Pool, error) {
+	return nil, nil
+}
+
+func (f *fakeRunnerService) ListAgentPoolsByOrganization(context.Context, organization.Name, runner.ListPoolOptions) ([]*runner.Pool, error) {
+	return []*runner.Pool{f.pool}, nil
+}
+
+func (f *fakeRunnerService) GetAgentPool(context.Context, resource.TfeID) (*runner.Pool, error) {
+	return f.pool, nil
+}
+
+func (f *fakeRunnerService) DeleteAgentPool(ctx context.Context, poolID resource.TfeID) (*runner.Pool, error) {
+	return nil, nil
+}
+
+func (f *fakeRunnerService) CreateAgentToken(context.Context, resource.TfeID, runner.CreateAgentTokenOptions) (*runner.AgentToken, []byte, error) {
+	return f.at, f.token, nil
+}
+
+func (f *fakeRunnerService) ListAgentTokens(context.Context, resource.TfeID) ([]*runner.AgentToken, error) {
+	return []*runner.AgentToken{f.at}, nil
+}
+
+func (f *fakeRunnerService) GetAgentToken(context.Context, resource.TfeID) (*runner.AgentToken, error) {
+	return f.at, nil
+}
+
+func (f *fakeRunnerService) DeleteAgentToken(context.Context, resource.TfeID) (*runner.AgentToken, error) {
+	return f.at, nil
+}
+
+func (f *fakeRunnerService) listJobs(ctx context.Context) ([]*runner.Job, error) {
+	return nil, nil
+}
+
+func (f *fakeRunnerService) ListRunners(ctx context.Context, opts runner.ListOptions) ([]*runner.RunnerMeta, error) {
+	return nil, nil
+}
+
+func (f *fakeRunnerService) DeleteRunner(ctx context.Context, runnerID resource.TfeID) error {
+	return nil
+}
+
+func (f *fakeRunnerService) Register(ctx context.Context, opts runner.RegisterRunnerOptions) (*runner.RunnerMeta, error) {
+	return nil, nil
 }

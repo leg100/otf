@@ -3,7 +3,6 @@ package ui
 import (
 	"context"
 	"net/http/httptest"
-	"os"
 	"testing"
 
 	"github.com/leg100/otf/internal/authz"
@@ -12,11 +11,12 @@ import (
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/user"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestListModules(t *testing.T) {
-	h := newTestWebHandlers(t, withMod(&module.Module{}))
+	h := &moduleHandlers{
+		client: &fakeModuleService{mod: &module.Module{}},
+	}
 	user := &user.User{ID: resource.NewTfeID(resource.UserKind)}
 
 	q := "/?organization_name=acme-corp"
@@ -28,8 +28,8 @@ func TestListModules(t *testing.T) {
 }
 
 func TestGetModule(t *testing.T) {
-	tarball, err := os.ReadFile("./testdata/module.tar.gz")
-	require.NoError(t, err)
+	//tarball, err := os.ReadFile("./testdata/module.tar.gz")
+	//require.NoError(t, err)
 
 	tests := []struct {
 		name string

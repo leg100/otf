@@ -37,9 +37,9 @@ type runnerHandlers struct {
 // runnerClient gives web handlers access to the agents service endpoints
 type runnerClient interface {
 	CreateAgentPool(ctx context.Context, opts runner.CreateAgentPoolOptions) (*runner.Pool, error)
-	GetAgentPool(ctx context.Context, poolID resource.TfeID) (*runner.Pool, error)
 	UpdateAgentPool(ctx context.Context, poolID resource.TfeID, opts runner.UpdatePoolOptions) (*runner.Pool, error)
 	ListAgentPoolsByOrganization(ctx context.Context, organization organization.Name, opts runner.ListPoolOptions) ([]*runner.Pool, error)
+	GetAgentPool(ctx context.Context, poolID resource.TfeID) (*runner.Pool, error)
 	DeleteAgentPool(ctx context.Context, poolID resource.TfeID) (*runner.Pool, error)
 
 	Register(ctx context.Context, opts runner.RegisterRunnerOptions) (*runner.RunnerMeta, error)

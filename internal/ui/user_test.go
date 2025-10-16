@@ -14,31 +14,26 @@ import (
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/team"
+	"github.com/leg100/otf/internal/user"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestWeb_UserTokens(t *testing.T) {
-	user := &User{Username: Username{name: uuid.NewString()}}
-
-	t.Run("new", func(t *testing.T) {
-		h := &runnerHandlers{}
-		q := "/?"
-		r := httptest.NewRequest("GET", q, nil)
+func TestUserHandlers(t *testing.T) {
+	t.Run("new token", func(t *testing.T) {
+		h := &userHandlers{}
+		r := httptest.NewRequest("GET", "/?", nil)
 		w := httptest.NewRecorder()
 
 		h.newUserToken(w, r)
 
-		if !assert.Equal(t, 200, w.Code) {
-			t.Log(t, w.Body.String())
-		}
+		assert.Equal(t, 200, w.Code, w.Body.String())
 	})
 
-	t.Run("create", func(t *testing.T) {
-		h := &runnerHandlers{users: &fakeGithubService{}}
-		q := "/?"
-		r := httptest.NewRequest("GET", q, nil)
-		r = r.WithContext(authz.AddSubjectToContext(context.Background(), user))
+	t.Run("create token", func(t *testing.T) {
+		h := userHandlers{users: &fakeUserService{}}
+		r := httptest.NewRequest("GET", "/?", nil)
+		r = r.WithContext(authz.AddSubjectToContext(context.Background(), user.NewTestUser(t)))
 		w := httptest.NewRecorder()
 
 		h.createUserToken(w, r)
@@ -49,15 +44,14 @@ func TestWeb_UserTokens(t *testing.T) {
 		}
 	})
 
-	t.Run("list", func(t *testing.T) {
-		h := &runnerHandlers{
-			users: &fakeGithubService{
-				ut: &UserToken{},
+	t.Run("list tokens", func(t *testing.T) {
+		h := userHandlers{
+			users: &fakeUserService{
+				ut: &user.UserToken{},
 			},
 		}
-		q := "/?"
-		r := httptest.NewRequest("GET", q, nil)
-		r = r.WithContext(authz.AddSubjectToContext(context.Background(), user))
+		r := httptest.NewRequest("GET", "/?", nil)
+		r = r.WithContext(authz.AddSubjectToContext(context.Background(), user.NewTestUser(t)))
 		w := httptest.NewRecorder()
 
 		h.userTokens(w, r)
@@ -65,13 +59,12 @@ func TestWeb_UserTokens(t *testing.T) {
 		assert.Equal(t, 200, w.Code, w.Body.String())
 	})
 
-	t.Run("delete", func(t *testing.T) {
-		h := &runnerHandlers{
-			users: &fakeGithubService{},
+	t.Run("delete token", func(t *testing.T) {
+		h := userHandlers{
+			users: &fakeUserService{},
 		}
-		q := "/?id=token-123"
-		r := httptest.NewRequest("POST", q, nil)
-		r = r.WithContext(authz.AddSubjectToContext(context.Background(), user))
+		r := httptest.NewRequest("POST", "/?id=token-123", nil)
+		r = r.WithContext(authz.AddSubjectToContext(context.Background(), user.NewTestUser(t)))
 		w := httptest.NewRecorder()
 
 		h.deleteUserToken(w, r)
@@ -89,7 +82,7 @@ func TestWeb_UserTokens(t *testing.T) {
 func TestWeb_TeamGetHandler(t *testing.T) {
 	org1 := organization.NewTestName(t)
 	owners := &team.Team{Name: "owners", Organization: org1}
-	owner, err := NewUser(uuid.NewString(), WithTeams(owners))
+	owner, err := user.NewUser(uuid.NewString(), user.WithTeams(owners))
 	require.NoError(t, err)
 	h := &runnerHandlers{
 		authorizer: authz.NewAllowAllAuthorizer(),
@@ -149,15 +142,61 @@ func TestAdminLoginHandler(t *testing.T) {
 	}
 }
 
-func TestUserDiff(t *testing.T) {
-	a := []*User{{Username: Username{name: "bob"}}}
-	b := []*User{{Username: Username{name: "bob"}}, {Username: Username{name: "alice"}}}
-	assert.Equal(t, []*User{{Username: Username{name: "alice"}}}, diffUsers(a, b))
+func TestUser_diffUsers(t *testing.T) {
+	alice := user.NewTestUser(t)
+	bob := user.NewTestUser(t)
+	a := []*user.User{bob}
+	b := []*user.User{alice, bob}
+	assert.Equal(t, []*user.User{alice}, diffUsers(a, b))
 }
 
 type fakeTokensService struct{}
 
 func (f *fakeTokensService) StartSession(w http.ResponseWriter, r *http.Request, userID resource.TfeID) error {
 	http.Redirect(w, r, paths.Profile(), http.StatusFound)
+	return nil
+}
+
+type fakeUserService struct {
+	user  *user.User
+	token []byte
+	ut    *user.UserToken
+
+	*user.Service
+}
+
+func (f *fakeUserService) Create(context.Context, string, ...user.NewUserOption) (*user.User, error) {
+	return f.user, nil
+}
+
+func (f *fakeUserService) List(ctx context.Context) ([]*user.User, error) {
+	return []*user.User{f.user}, nil
+}
+
+func (f *fakeUserService) ListTeamUsers(ctx context.Context, teamID resource.TfeID) ([]*user.User, error) {
+	return []*user.User{f.user}, nil
+}
+
+func (f *fakeUserService) Delete(context.Context, user.Username) error {
+	return nil
+}
+
+func (f *fakeUserService) AddTeamMembership(context.Context, resource.TfeID, []user.Username) error {
+	return nil
+}
+
+func (f *fakeUserService) RemoveTeamMembership(context.Context, resource.TfeID, []user.Username) error {
+	return nil
+}
+
+func (f *fakeUserService) CreateToken(context.Context, user.CreateUserTokenOptions) (*user.UserToken, []byte, error) {
+	return nil, f.token, nil
+}
+
+func (f *fakeUserService) ListTokens(context.Context) ([]*user.UserToken, error) {
+	return []*user.UserToken{f.ut}, nil
+}
+
+func (f *fakeUserService) DeleteToken(context.Context, resource.TfeID) error {
 	return nil
 }
