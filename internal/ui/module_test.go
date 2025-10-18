@@ -3,19 +3,23 @@ package ui
 import (
 	"context"
 	"net/http/httptest"
+	"os"
 	"testing"
 
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/connections"
 	"github.com/leg100/otf/internal/module"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/user"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestListModules(t *testing.T) {
 	h := &moduleHandlers{
-		client: &fakeModuleService{mod: &module.Module{}},
+		client:     &fakeModuleService{mod: &module.Module{}},
+		authorizer: authz.NewAllowAllAuthorizer(),
 	}
 	user := &user.User{ID: resource.NewTfeID(resource.UserKind)}
 
@@ -28,8 +32,8 @@ func TestListModules(t *testing.T) {
 }
 
 func TestGetModule(t *testing.T) {
-	//tarball, err := os.ReadFile("./testdata/module.tar.gz")
-	//require.NoError(t, err)
+	tarball, err := os.ReadFile("./testdata/module.tar.gz")
+	require.NoError(t, err)
 
 	tests := []struct {
 		name string
@@ -65,7 +69,11 @@ func TestGetModule(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			h := &moduleHandlers{
-				client: &fakeModuleService{mod: &tt.mod},
+				client: &fakeModuleService{
+					mod:     &tt.mod,
+					tarball: tarball,
+				},
+				system: &fakeHostnameService{},
 			}
 
 			q := "/?module_id=mod-123&version=1.0.0"
@@ -85,4 +93,24 @@ type fakeModuleService struct {
 
 func (f *fakeModuleService) GetModuleByID(context.Context, resource.TfeID) (*module.Module, error) {
 	return f.mod, nil
+}
+
+func (f *fakeModuleService) ListModules(context.Context, module.ListOptions) ([]*module.Module, error) {
+	return []*module.Module{f.mod}, nil
+}
+
+func (f *fakeModuleService) ListProviders(context.Context, organization.Name) ([]string, error) {
+	return nil, nil
+}
+
+func (f *fakeModuleService) GetModuleInfo(context.Context, resource.TfeID) (*module.TerraformModule, error) {
+	return module.UnmarshalTerraformModule(f.tarball)
+}
+
+type fakeHostnameService struct {
+	hostname string
+}
+
+func (f *fakeHostnameService) Hostname() string {
+	return f.hostname
 }

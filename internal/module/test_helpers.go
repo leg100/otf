@@ -38,10 +38,6 @@ func (f *fakeService) ListModules(context.Context, ListOptions) ([]*Module, erro
 	return []*Module{f.mod}, nil
 }
 
-func (f *fakeService) listProviders(context.Context, organization.Name) ([]string, error) {
-	return f.providers, nil
-}
-
 func (f *fakeService) Get(context.Context, resource.TfeID) (*vcs.Provider, error) {
 	return f.vcsprov, nil
 }
@@ -51,7 +47,7 @@ func (f *fakeService) List(context.Context, organization.Name) ([]*vcs.Provider,
 }
 
 func (f *fakeService) GetModuleInfo(context.Context, resource.TfeID) (*TerraformModule, error) {
-	return unmarshalTerraformModule(f.tarball)
+	return UnmarshalTerraformModule(f.tarball)
 }
 
 func (f *fakeService) Hostname() string {

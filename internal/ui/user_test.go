@@ -76,18 +76,18 @@ func TestUserHandlers(t *testing.T) {
 	})
 }
 
-// TestWeb_TeamGetHandler tests the getTeam handler. The getTeam page renders
+// TestUser_TeamGetHandler tests the getTeam handler. The getTeam page renders
 // permissions only if the authenticated user is an owner, so the test sets that
 // up first.
-func TestWeb_TeamGetHandler(t *testing.T) {
+func TestUser_TeamGetHandler(t *testing.T) {
 	org1 := organization.NewTestName(t)
 	owners := &team.Team{Name: "owners", Organization: org1}
 	owner, err := user.NewUser(uuid.NewString(), user.WithTeams(owners))
 	require.NoError(t, err)
-	h := &runnerHandlers{
+	h := &userHandlers{
 		authorizer: authz.NewAllowAllAuthorizer(),
 		teams:      &fakeTeamService{team: owners},
-		users:      &fakeGithubService{user: owner},
+		users:      &fakeUserService{user: owner},
 	}
 
 	q := "/?team_id=team-123"
@@ -100,7 +100,7 @@ func TestWeb_TeamGetHandler(t *testing.T) {
 }
 
 func TestAdminLoginHandler(t *testing.T) {
-	h := &runnerHandlers{
+	h := &userHandlers{
 		siteToken: "secrettoken",
 		tokens:    &fakeTokensService{},
 	}

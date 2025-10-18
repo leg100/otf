@@ -331,7 +331,7 @@ func (s *Service) GetModuleInfo(ctx context.Context, versionID resource.TfeID) (
 	if err != nil {
 		return nil, err
 	}
-	return unmarshalTerraformModule(tarball)
+	return UnmarshalTerraformModule(tarball)
 }
 
 func (s *Service) updateModuleStatus(ctx context.Context, mod *Module, status ModuleStatus) (*Module, error) {
@@ -352,7 +352,7 @@ func (s *Service) uploadVersion(ctx context.Context, versionID resource.TfeID, t
 	}
 
 	// validate tarball
-	if _, err := unmarshalTerraformModule(tarball); err != nil {
+	if _, err := UnmarshalTerraformModule(tarball); err != nil {
 		s.Error(err, "uploading module version", "module_version", versionID)
 		return s.db.updateModuleVersionStatus(ctx, UpdateModuleVersionStatusOptions{
 			ID:     versionID,
