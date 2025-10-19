@@ -15,6 +15,7 @@ import (
 	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/tokens"
 	"github.com/leg100/otf/internal/user"
+	"github.com/leg100/otf/internal/variable"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/workspace"
 )
@@ -34,6 +35,7 @@ type Handlers struct {
 	Tokens                       *tokens.Service
 	Authorizer                   *authz.Authorizer
 	AuthenticatorService         *authenticator.Service
+	VariablesService             *variable.Service
 	SiteToken                    string
 	RestrictOrganizationCreation bool
 }
@@ -48,6 +50,7 @@ func (h *Handlers) AddHandlers(r *mux.Router) {
 	AddModuleHandlers(r, h.Modules, h.VCSProviders, h.HostnameService, h.Authorizer)
 	AddModuleHandlers(r, h.Modules, h.VCSProviders, h.HostnameService, h.Authorizer)
 	addLoginHandlers(r, h.AuthenticatorService)
+	addVariableHandlers(r, h.VariablesService, h.Authorizer)
 }
 
 func toJSON(v any) string {

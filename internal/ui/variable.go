@@ -39,7 +39,7 @@ type (
 		getVariableSet(ctx context.Context, setID resource.TfeID) (*variable.VariableSet, error)
 		getVariableSetByVariableID(ctx context.Context, variableID resource.TfeID) (*variable.VariableSet, error)
 		listVariableSets(ctx context.Context, organization organization.Name) ([]*variable.VariableSet, error)
-		deleteVariableSet(ctx context.Context, setID resource.TfeID) (*variable.VariableSet, error)
+		DeleteVariableSet(ctx context.Context, setID resource.TfeID) (*variable.VariableSet, error)
 		CreateVariableSetVariable(ctx context.Context, setID resource.TfeID, opts variable.CreateVariableOptions) (*variable.Variable, error)
 		updateVariableSetVariable(ctx context.Context, variableID resource.TfeID, opts variable.UpdateVariableOptions) (*variable.VariableSet, error)
 		deleteVariableSetVariable(ctx context.Context, variableID resource.TfeID) (*variable.VariableSet, error)
@@ -79,6 +79,15 @@ type (
 		VariableID  resource.TfeID `schema:"variable_id,required"`
 	}
 )
+
+// AddTeamHandlers registers team UI handlers with the router
+func addVariableHandlers(r *mux.Router, variables variablesClient, authorizer teamAuthorizer) {
+	h := &variableHandlers{
+		authorizer: authorizer,
+		variables:  variables,
+	}
+	h.addHandlers(r)
+}
 
 func (h *variableHandlers) addHandlers(r *mux.Router) {
 	r = html.UIRouter(r)
