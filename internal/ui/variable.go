@@ -21,28 +21,8 @@ type (
 	variableHandlers struct {
 		workspaces webWorkspaceClient
 
-		variables  variablesClient
+		variables  *variable.Service
 		authorizer webAuthorizer
-	}
-
-	// variablesClient provides web handlers with access to variables
-	variablesClient interface {
-		CreateWorkspaceVariable(ctx context.Context, workspaceID resource.TfeID, opts variable.CreateVariableOptions) (*variable.Variable, error)
-		GetWorkspaceVariable(ctx context.Context, variableID resource.TfeID) (*variable.WorkspaceVariable, error)
-		ListWorkspaceVariables(ctx context.Context, workspaceID resource.TfeID) ([]*variable.Variable, error)
-		listWorkspaceVariableSets(ctx context.Context, workspaceID resource.TfeID) ([]*variable.VariableSet, error)
-		UpdateWorkspaceVariable(ctx context.Context, variableID resource.TfeID, opts variable.UpdateVariableOptions) (*variable.WorkspaceVariable, error)
-		DeleteWorkspaceVariable(ctx context.Context, variableID resource.TfeID) (*variable.WorkspaceVariable, error)
-
-		CreateVariableSet(ctx context.Context, organization organization.Name, opts variable.CreateVariableSetOptions) (*variable.VariableSet, error)
-		updateVariableSet(ctx context.Context, setID resource.TfeID, opts variable.UpdateVariableSetOptions) (*variable.VariableSet, error)
-		getVariableSet(ctx context.Context, setID resource.TfeID) (*variable.VariableSet, error)
-		getVariableSetByVariableID(ctx context.Context, variableID resource.TfeID) (*variable.VariableSet, error)
-		listVariableSets(ctx context.Context, organization organization.Name) ([]*variable.VariableSet, error)
-		DeleteVariableSet(ctx context.Context, setID resource.TfeID) (*variable.VariableSet, error)
-		CreateVariableSetVariable(ctx context.Context, setID resource.TfeID, opts variable.CreateVariableOptions) (*variable.Variable, error)
-		updateVariableSetVariable(ctx context.Context, variableID resource.TfeID, opts variable.UpdateVariableOptions) (*variable.VariableSet, error)
-		deleteVariableSetVariable(ctx context.Context, variableID resource.TfeID) (*variable.VariableSet, error)
 	}
 
 	// webWorkspaceClient provides web handlers with access to workspaces
@@ -80,11 +60,12 @@ type (
 	}
 )
 
-// AddTeamHandlers registers team UI handlers with the router
-func addVariableHandlers(r *mux.Router, variables variablesClient, authorizer teamAuthorizer) {
+// addVariableHandlers registers variable UI handlers with the router
+func addVariableHandlers(r *mux.Router, variables *variable.Service, workspaces *workspace.Service, authorizer teamAuthorizer) {
 	h := &variableHandlers{
 		authorizer: authorizer,
 		variables:  variables,
+		workspaces: workspaces,
 	}
 	h.addHandlers(r)
 }
@@ -173,7 +154,7 @@ func (h *variableHandlers) listWorkspaceVariables(w http.ResponseWriter, r *http
 		html.Error(r, w, err.Error())
 		return
 	}
-	sets, err := h.variables.listWorkspaceVariableSets(r.Context(), workspaceID)
+	sets, err := h.variables.ListWorkspaceVariableSets(r.Context(), workspaceID)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -304,7 +285,7 @@ func (h *variableHandlers) listVariableSets(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	sets, err := h.variables.listVariableSets(r.Context(), params.Organization)
+	sets, err := h.variables.ListVariableSets(r.Context(), params.Organization)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -386,7 +367,7 @@ func (h *variableHandlers) editVariableSet(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	set, err := h.variables.getVariableSet(r.Context(), setID)
+	set, err := h.variables.GetVariableSet(r.Context(), setID)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -453,7 +434,7 @@ func (h *variableHandlers) updateVariableSet(w http.ResponseWriter, r *http.Requ
 		workspaceIDs[i] = ws.ID
 	}
 
-	set, err := h.variables.updateVariableSet(r.Context(), params.SetID, variable.UpdateVariableSetOptions{
+	set, err := h.variables.UpdateVariableSet(r.Context(), params.SetID, variable.UpdateVariableSetOptions{
 		Name:        params.Name,
 		Description: params.Description,
 		Global:      params.Global,
@@ -475,7 +456,7 @@ func (h *variableHandlers) deleteVariableSet(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	set, err := h.variables.deleteVariableSet(r.Context(), setID)
+	set, err := h.variables.DeleteVariableSet(r.Context(), setID)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -492,7 +473,7 @@ func (h *variableHandlers) newVariableSetVariable(w http.ResponseWriter, r *http
 		return
 	}
 
-	set, err := h.variables.getVariableSet(r.Context(), setID)
+	set, err := h.variables.GetVariableSet(r.Context(), setID)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -535,7 +516,7 @@ func (h *variableHandlers) editVariableSetVariable(w http.ResponseWriter, r *htt
 		return
 	}
 
-	set, err := h.variables.getVariableSetByVariableID(r.Context(), variableID)
+	set, err := h.variables.GetVariableSetByVariableID(r.Context(), variableID)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -552,7 +533,7 @@ func (h *variableHandlers) updateVariableSetVariable(w http.ResponseWriter, r *h
 		return
 	}
 
-	set, err := h.variables.updateVariableSetVariable(r.Context(), params.VariableID, variable.UpdateVariableOptions{
+	set, err := h.variables.UpdateVariableSetVariable(r.Context(), params.VariableID, variable.UpdateVariableOptions{
 		Key:         params.Key,
 		Value:       params.Value,
 		Description: params.Description,
@@ -577,7 +558,7 @@ func (h *variableHandlers) deleteVariableSetVariable(w http.ResponseWriter, r *h
 		return
 	}
 
-	set, err := h.variables.deleteVariableSetVariable(r.Context(), variableID)
+	set, err := h.variables.DeleteVariableSetVariable(r.Context(), variableID)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return

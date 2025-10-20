@@ -127,6 +127,7 @@ func AddWorkspaceHandlers(
 		releases: releases,
 	}
 	h.addHandlers(r)
+	h.addTagHandlers(r)
 }
 
 func (h *workspaceHandlers) addHandlers(r *mux.Router) {
@@ -454,17 +455,17 @@ func (h *workspaceHandlers) editWorkspace(w http.ResponseWriter, r *http.Request
 
 func (h *workspaceHandlers) updateWorkspace(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		AgentPoolID           *resource.TfeID          `schema:"agent_pool_id"`
-		AutoApply             bool                     `schema:"auto_apply"`
+		AgentPoolID           *resource.TfeID `schema:"agent_pool_id"`
+		AutoApply             bool            `schema:"auto_apply"`
 		Name                  string
 		Description           string
-		ExecutionMode         workspace.ExecutionMode  `schema:"execution_mode"`
-		Engine                *engine.Engine           `schema:"engine"`
-		LatestEngineVersion   bool                     `schema:"latest_engine_version"`
-		SpecificEngineVersion *workspace.Version       `schema:"specific_engine_version"`
-		WorkingDirectory      string                   `schema:"working_directory"`
-		WorkspaceID           resource.TfeID           `schema:"workspace_id,required"`
-		GlobalRemoteState     bool                     `schema:"global_remote_state"`
+		ExecutionMode         workspace.ExecutionMode `schema:"execution_mode"`
+		Engine                *engine.Engine          `schema:"engine"`
+		LatestEngineVersion   bool                    `schema:"latest_engine_version"`
+		SpecificEngineVersion *workspace.Version      `schema:"specific_engine_version"`
+		WorkingDirectory      string                  `schema:"working_directory"`
+		WorkspaceID           resource.TfeID          `schema:"workspace_id,required"`
+		GlobalRemoteState     bool                    `schema:"global_remote_state"`
 
 		// VCS connection
 		VCSTriggerStrategy  string `schema:"vcs_trigger"`

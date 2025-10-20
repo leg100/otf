@@ -9,9 +9,12 @@ import (
 	"github.com/leg100/otf/internal/authenticator"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/engine"
+	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/module"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/run"
+	"github.com/leg100/otf/internal/runner"
+	"github.com/leg100/otf/internal/state"
 	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/tokens"
 	"github.com/leg100/otf/internal/user"
@@ -30,12 +33,18 @@ type Handlers struct {
 	Organizations                *organization.Service
 	Modules                      *module.Service
 	VCSProviders                 *vcs.Service
+	State                        *state.Service
+	Runners                      *runner.Service
+	GithubApp                    *github.Service
 	EngineService                *engine.Service
 	HostnameService              *internal.HostnameService
 	Tokens                       *tokens.Service
 	Authorizer                   *authz.Authorizer
 	AuthenticatorService         *authenticator.Service
 	VariablesService             *variable.Service
+	RunnerServiceOptions         runner.ServiceOptions
+	GithubHostname               *internal.WebURL
+	SkipTLSVerification          bool
 	SiteToken                    string
 	RestrictOrganizationCreation bool
 }
@@ -48,9 +57,33 @@ func (h *Handlers) AddHandlers(r *mux.Router) {
 	AddWorkspaceHandlers(r, h.Logger, h.Workspaces, h.Teams, h.VCSProviders, h.Authorizer, h.EngineService)
 	AddOrganizationHandlers(r, h.Organizations, h.RestrictOrganizationCreation)
 	AddModuleHandlers(r, h.Modules, h.VCSProviders, h.HostnameService, h.Authorizer)
-	AddModuleHandlers(r, h.Modules, h.VCSProviders, h.HostnameService, h.Authorizer)
 	addLoginHandlers(r, h.AuthenticatorService)
-	addVariableHandlers(r, h.VariablesService, h.Authorizer)
+	addVariableHandlers(r, h.VariablesService, h.Workspaces, h.Authorizer)
+
+	// State handlers
+	stateHandlers := &webHandlers{Service: h.State}
+	stateHandlers.addHandlers(r)
+
+	// Runner handlers
+	runnerHandlers := newRunnerHandlers(h.Runners, h.RunnerServiceOptions)
+	runnerHandlers.addHandlers(r)
+
+	// VCS handlers
+	vcsHandlers := &vcsHandlers{
+		HostnameService: h.HostnameService,
+		client:          h.VCSProviders,
+	}
+	vcsHandlers.addHandlers(r)
+
+	// GitHub handlers
+	githubHandlers := &githubHandlers{
+		HostnameService:     h.HostnameService,
+		svc:                 h.GithubApp,
+		authorizer:          h.Authorizer,
+		githubAPIURL:        h.GithubHostname,
+		skipTLSVerification: h.SkipTLSVerification,
+	}
+	githubHandlers.addHandlers(r)
 }
 
 func toJSON(v any) string {

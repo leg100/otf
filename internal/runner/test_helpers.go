@@ -88,10 +88,6 @@ func (f *fakeService) getRunner(ctx context.Context, runnerID resource.TfeID) (*
 	return nil, nil
 }
 
-func (f *fakeService) register(ctx context.Context, opts RegisterRunnerOptions) (*RunnerMeta, error) {
-	return nil, nil
-}
-
 func (f *fakeService) updateStatus(ctx context.Context, runnerID resource.TfeID, status RunnerStatus) error {
 	f.status = status
 	return nil

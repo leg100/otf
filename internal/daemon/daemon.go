@@ -342,7 +342,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		return nil, fmt.Errorf("registering github oauth client: %w", err)
 	}
 
-	runner, err := runner.NewServerRunner(runner.ServerRunnerOptions{
+	serverRunner, err := runner.NewServerRunner(runner.ServerRunnerOptions{
 		Logger:     logger,
 		Config:     cfg.RunnerConfig,
 		Runners:    runnerService,
@@ -397,10 +397,29 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 			Organizations:                orgService,
 			Modules:                      moduleService,
 			VCSProviders:                 vcsService,
+			State:                        stateService,
+			Runners:                      runnerService,
+			GithubApp:                    githubAppService,
 			EngineService:                engineService,
 			HostnameService:              hostnameService,
 			Tokens:                       tokensService,
 			Authorizer:                   authorizer,
+			AuthenticatorService:         authenticatorService,
+			VariablesService:             variableService,
+			RunnerServiceOptions: runner.ServiceOptions{
+				Logger:                    logger,
+				DB:                        db,
+				Listener:                  listener,
+				Responder:                 responder,
+				RunService:                runService,
+				WorkspaceService:          workspaceService,
+				TokensService:             tokensService,
+				Authorizer:                authorizer,
+				DynamicCredentialsService: dynamiccredsService,
+				HostnameService:           hostnameService,
+			},
+			GithubHostname:               cfg.GithubHostname,
+			SkipTLSVerification:          cfg.SkipTLSVerification,
 			SiteToken:                    cfg.SiteToken,
 			RestrictOrganizationCreation: cfg.RestrictOrganizationCreation,
 		},
@@ -435,7 +454,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Connections:   connectionService,
 		Runners:       runnerService,
 		DB:            db,
-		runner:        runner,
+		runner:        serverRunner,
 		listener:      listener,
 	}, nil
 }

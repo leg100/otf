@@ -88,8 +88,6 @@ type fakeRunnerService struct {
 	createAgentPoolOptions runner.CreateAgentPoolOptions
 	at                     *runner.AgentToken
 	token                  []byte
-	status                 runner.RunnerStatus
-	job                    *runner.Job
 }
 
 func (f *fakeRunnerService) CreateAgentPool(ctx context.Context, opts runner.CreateAgentPoolOptions) (*runner.Pool, error) {
@@ -127,10 +125,6 @@ func (f *fakeRunnerService) GetAgentToken(context.Context, resource.TfeID) (*run
 
 func (f *fakeRunnerService) DeleteAgentToken(context.Context, resource.TfeID) (*runner.AgentToken, error) {
 	return f.at, nil
-}
-
-func (f *fakeRunnerService) listJobs(ctx context.Context) ([]*runner.Job, error) {
-	return nil, nil
 }
 
 func (f *fakeRunnerService) ListRunners(ctx context.Context, opts runner.ListOptions) ([]*runner.RunnerMeta, error) {
