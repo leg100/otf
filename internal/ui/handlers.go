@@ -61,8 +61,8 @@ func (h *Handlers) AddHandlers(r *mux.Router) {
 	r = r.PathPrefix(paths.UIPrefix).Subrouter()
 
 	addRunHandlers(r, h.Logger, h.Runs, h.Workspaces, h.Users, h.Runs)
-	addTeamHandlers(r, h.Teams, h.Tokens, h.Teams)
-	addUserHandlers(r, h.Users, h.Teams, h.Tokens, h.Authorizer)
+	addTeamHandlers(r, h.Teams, h.Users, h.Tokens, h.Authorizer)
+	addUserHandlers(r, h.Users, h.Authorizer)
 	addWorkspaceHandlers(r, h.Logger, h.Workspaces, h.Teams, h.VCSProviders, h.Authorizer, h.EngineService)
 	addOrganizationHandlers(r, h.Organizations, h.RestrictOrganizationCreation)
 	addModuleHandlers(r, h.Modules, h.VCSProviders, h.HostnameService, h.Authorizer)

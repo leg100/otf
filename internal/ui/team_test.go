@@ -5,13 +5,16 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/testutils"
+	"github.com/leg100/otf/internal/user"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestTeam_WebHandlers(t *testing.T) {
@@ -42,6 +45,27 @@ func TestTeam_WebHandlers(t *testing.T) {
 		w := httptest.NewRecorder()
 		h.updateTeam(w, r)
 		testutils.AssertRedirect(t, w, paths.Team(team.ID))
+	})
+
+	t.Run("get", func(t *testing.T) {
+		org1 := organization.NewTestName(t)
+		// page only renders successfully if authenticated user is an owner.
+		owners := &team.Team{Name: "owners", Organization: org1}
+		owner, err := user.NewUser(uuid.NewString(), user.WithTeams(owners))
+		require.NoError(t, err)
+		h := &teamHandlers{
+			authorizer: authz.NewAllowAllAuthorizer(),
+			teams:      &fakeTeamService{team: owners},
+			users:      &fakeUserService{user: owner},
+		}
+
+		q := "/?team_id=team-123"
+		r := httptest.NewRequest("GET", q, nil)
+		w := httptest.NewRecorder()
+		h.getTeam(w, r)
+		if !assert.Equal(t, 200, w.Code) {
+			t.Log(t, w.Body.String())
+		}
 	})
 
 	t.Run("list", func(t *testing.T) {

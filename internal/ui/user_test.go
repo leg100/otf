@@ -6,15 +6,11 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/google/uuid"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/html/paths"
-	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
-	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/user"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestUserHandlers(t *testing.T) {
@@ -72,29 +68,6 @@ func TestUserHandlers(t *testing.T) {
 			assert.Equal(t, paths.Tokens(), redirect.Path)
 		}
 	})
-}
-
-// TestUser_TeamGetHandler tests the getTeam handler. The getTeam page renders
-// permissions only if the authenticated user is an owner, so the test sets that
-// up first.
-func TestUser_TeamGetHandler(t *testing.T) {
-	org1 := organization.NewTestName(t)
-	owners := &team.Team{Name: "owners", Organization: org1}
-	owner, err := user.NewUser(uuid.NewString(), user.WithTeams(owners))
-	require.NoError(t, err)
-	h := &userHandlers{
-		authorizer: authz.NewAllowAllAuthorizer(),
-		teams:      &fakeTeamService{team: owners},
-		users:      &fakeUserService{user: owner},
-	}
-
-	q := "/?team_id=team-123"
-	r := httptest.NewRequest("GET", q, nil)
-	w := httptest.NewRecorder()
-	h.getTeam(w, r)
-	if !assert.Equal(t, 200, w.Code) {
-		t.Log(t, w.Body.String())
-	}
 }
 
 func TestUser_diffUsers(t *testing.T) {
