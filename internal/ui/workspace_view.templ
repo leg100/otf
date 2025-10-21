@@ -9,6 +9,7 @@ import (
 	"github.com/leg100/otf/internal/http/html/components/paths"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/vcs"
@@ -61,7 +62,7 @@ templ workspaceList(props workspaceListProps) {
 		}
 	}}
 	@components.Layout(layoutProps) {
-		<form action={ paths.Workspaces(props.organization) } hx-include="this">
+		<form action={ paths.Workspaces(props.organization) } hx-include="this" class="flex flex-col gap-2">
 			<div class="flex flex-col gap-2">
 				<input
 					class="input w-60 bg-[size:14px] bg-[10px] bg-no-repeat pl-10"
@@ -161,6 +162,8 @@ type workspaceGetProps struct {
 	canUpdateWorkspace bool
 	unassignedTags     []string
 	tagsDropdown       components.SearchDropdownProps
+	latestRun          *run.Run
+	users              workspaceUserClient
 }
 
 templ workspaceGet(props workspaceGetProps) {
@@ -193,12 +196,9 @@ templ workspaceGet(props workspaceGetProps) {
 					<h3 class="text-md font-bold">
 						Latest Run
 					</h3>
-					<div
-						hx-ext="ws"
-						ws-connect={ string(paths.WatchLatestRun(props.ws.ID)) }
-					>
-						if props.ws.LatestRun != nil {
-							<div id="latest-run"></div>
+					<div id="latest-run">
+						if props.latestRun != nil {
+							@components.UnpaginatedTable(&runsTable{users: props.users}, []*run.Run{props.latestRun})
 						} else {
 							There are no runs for this workspace.
 						}

@@ -19,6 +19,7 @@ import (
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/vcs"
@@ -55,6 +56,8 @@ type (
 		client       workspaceClient
 		authorizer   workspaceAuthorizer
 		releases     workspaceEngineClient
+		runs         workspaceRunClient
+		users        workspaceUserClient
 	}
 
 	workspaceTeamClient interface {
@@ -94,6 +97,14 @@ type (
 		UnsetPermission(ctx context.Context, workspaceID, teamID resource.TfeID) error
 		Watch(context.Context) (<-chan pubsub.Event[*workspace.Event], func())
 	}
+
+	workspaceRunClient interface {
+		Get(ctx context.Context, id resource.TfeID) (*run.Run, error)
+	}
+
+	workspaceUserClient interface {
+		GetUser(ctx context.Context, spec user.UserSpec) (*user.User, error)
+	}
 )
 
 // addWorkspaceHandlers registers workspace UI handlers with the router
@@ -105,6 +116,8 @@ func addWorkspaceHandlers(
 	vcsproviders workspaceVCSProvidersClient,
 	authorizer workspaceAuthorizer,
 	releases workspaceEngineClient,
+	runs workspaceRunClient,
+	users workspaceUserClient,
 ) {
 	h := &workspaceHandlers{
 		workspaceUIHelpers: &workspaceUIHelpers{
@@ -116,6 +129,8 @@ func addWorkspaceHandlers(
 		vcsproviders: vcsproviders,
 		client:       workspaces,
 		releases:     releases,
+		runs:         runs,
+		users:        users,
 	}
 
 	r.HandleFunc("/organizations/{organization_name}/workspaces", h.listWorkspaces).Methods("GET")
@@ -280,6 +295,17 @@ func (h *workspaceHandlers) getWorkspace(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	// get latest run if there is one.
+	var latestRun *run.Run
+	if ws.LatestRun != nil {
+		run, err := h.runs.Get(r.Context(), ws.LatestRun.ID)
+		if err != nil {
+			html.Error(r, w, err.Error())
+			return
+		}
+		latestRun = run
+	}
+
 	props := workspaceGetProps{
 		ws:                 ws,
 		workspaceLockInfo:  lockInfo,
@@ -299,6 +325,8 @@ func (h *workspaceHandlers) getWorkspace(w http.ResponseWriter, r *http.Request)
 			Placeholder: "Add tags",
 			Width:       components.NarrowDropDown,
 		},
+		latestRun: latestRun,
+		users:     h.users,
 	}
 	html.Render(workspaceGet(props), w, r)
 }
