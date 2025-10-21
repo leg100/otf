@@ -112,7 +112,7 @@ func (a *tfe) updateAgentPool(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// convert tfe params to otf opts
-	opts := updatePoolOptions{
+	opts := UpdatePoolOptions{
 		Name:               params.Name,
 		OrganizationScoped: params.OrganizationScoped,
 	}
@@ -123,7 +123,7 @@ func (a *tfe) updateAgentPool(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	pool, err := a.Service.updateAgentPool(r.Context(), poolID, opts)
+	pool, err := a.Service.UpdateAgentPool(r.Context(), poolID, opts)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -161,7 +161,7 @@ func (a *tfe) listAgentPools(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pools, err := a.Service.listAgentPoolsByOrganization(r.Context(), pathParams.Organization, listPoolOptions{
+	pools, err := a.Service.ListAgentPoolsByOrganization(r.Context(), pathParams.Organization, ListPoolOptions{
 		NameSubstring:        params.Query,
 		AllowedWorkspaceName: params.AllowedWorkspacesName,
 	})
@@ -193,7 +193,7 @@ func (a *tfe) deleteAgentPool(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = a.Service.deleteAgentPool(r.Context(), poolID)
+	_, err = a.Service.DeleteAgentPool(r.Context(), poolID)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -311,7 +311,7 @@ func (a *tfe) deleteAgentToken(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (a *tfe) toAgentToken(from *agentToken, token []byte) *TFEAgentToken {
+func (a *tfe) toAgentToken(from *AgentToken, token []byte) *TFEAgentToken {
 	to := &TFEAgentToken{
 		ID:          from.ID,
 		CreatedAt:   from.CreatedAt,

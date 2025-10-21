@@ -15,9 +15,9 @@ const (
 )
 
 type (
-	// agentToken represents the authentication token for an agent.
+	// AgentToken represents the authentication token for an agent.
 	// NOTE: the cryptographic token itself is not retained.
-	agentToken struct {
+	AgentToken struct {
 		ID          resource.TfeID `jsonapi:"primary,agent_tokens" db:"agent_token_id"`
 		CreatedAt   time.Time
 		AgentPoolID resource.TfeID `jsonapi:"attribute" json:"agent_pool_id" db:"agent_pool_id"`
@@ -29,7 +29,7 @@ type (
 	}
 )
 
-func (a *agentToken) LogValue() slog.Value {
+func (a *AgentToken) LogValue() slog.Value {
 	attrs := []slog.Attr{
 		slog.String("id", a.ID.String()),
 		slog.String("agent_pool_id", string(a.AgentPoolID.String())),
@@ -50,11 +50,11 @@ func (f *tokenFactory) createJobToken(jobID resource.TfeID) ([]byte, error) {
 
 // NewAgentToken constructs a token for an agent, returning both the
 // representation of the token, and the cryptographic token itself.
-func (f *tokenFactory) NewAgentToken(poolID resource.TfeID, opts CreateAgentTokenOptions) (*agentToken, []byte, error) {
+func (f *tokenFactory) NewAgentToken(poolID resource.TfeID, opts CreateAgentTokenOptions) (*AgentToken, []byte, error) {
 	if opts.Description == "" {
 		return nil, nil, fmt.Errorf("description cannot be an empty string")
 	}
-	at := agentToken{
+	at := AgentToken{
 		ID:          resource.NewTfeID(resource.AgentTokenKind),
 		CreatedAt:   internal.CurrentTimestamp(nil),
 		Description: opts.Description,

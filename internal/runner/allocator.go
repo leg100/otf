@@ -28,9 +28,9 @@ type allocator struct {
 type allocatorClient interface {
 	WatchRunners(context.Context) (<-chan pubsub.Event[*RunnerEvent], func())
 	WatchJobs(context.Context) (<-chan pubsub.Event[*JobEvent], func())
+	ListRunners(ctx context.Context, opts ListOptions) ([]*RunnerMeta, error)
 
 	getRunner(ctx context.Context, runnerID resource.TfeID) (*RunnerMeta, error)
-	listRunners(ctx context.Context, opts ListOptions) ([]*RunnerMeta, error)
 	listJobs(ctx context.Context) ([]*Job, error)
 	getJob(ctx context.Context, jobID resource.TfeID) (*Job, error)
 
@@ -46,7 +46,7 @@ func (a *allocator) Start(ctx context.Context) error {
 	jobsSub, jobsUnsub := a.client.WatchJobs(ctx)
 	defer jobsUnsub()
 
-	runners, err := a.client.listRunners(ctx, ListOptions{})
+	runners, err := a.client.ListRunners(ctx, ListOptions{})
 	if err != nil {
 		return fmt.Errorf("seeding allocator with runners: %w", err)
 	}

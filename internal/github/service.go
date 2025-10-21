@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
-	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/resource"
@@ -19,8 +18,7 @@ type (
 		logr.Logger
 		*authz.Authorizer
 
-		db  *appDB
-		web *webHandlers
+		db *appDB
 	}
 
 	Options struct {
@@ -47,13 +45,6 @@ func NewService(opts Options) *Service {
 			skipTLSVerification: opts.SkipTLSVerification,
 		},
 	}
-	svc.web = &webHandlers{
-		authorizer:          opts.Authorizer,
-		HostnameService:     opts.HostnameService,
-		githubAPIURL:        opts.GithubAPIURL,
-		svc:                 &svc,
-		skipTLSVerification: opts.SkipTLSVerification,
-	}
 	registerVCSKinds(&svc, opts.VCSService, opts.GithubAPIURL, opts.SkipTLSVerification)
 
 	// delete github app vcs providers when the app is uninstalled
@@ -78,10 +69,6 @@ func NewService(opts Options) *Service {
 		}
 	})
 	return &svc
-}
-
-func (a *Service) AddHandlers(r *mux.Router) {
-	a.web.addHandlers(r)
 }
 
 func (a *Service) CreateApp(ctx context.Context, opts CreateAppOptions) (*App, error) {

@@ -55,7 +55,7 @@ func (a *api) addHandlers(r *mux.Router) {
 }
 
 func (a *api) registerAgent(w http.ResponseWriter, r *http.Request) {
-	var opts registerOptions
+	var opts RegisterRunnerOptions
 	if err := json.NewDecoder(r.Body).Decode(&opts); err != nil {
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -69,7 +69,7 @@ func (a *api) registerAgent(w http.ResponseWriter, r *http.Request) {
 	}
 	opts.IPAddress = &ip
 
-	agent, err := a.Service.register(r.Context(), opts)
+	agent, err := a.Service.Register(r.Context(), opts)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

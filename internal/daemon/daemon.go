@@ -36,6 +36,7 @@ import (
 	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/tokens"
+	"github.com/leg100/otf/internal/ui"
 	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/variable"
 	"github.com/leg100/otf/internal/vcs"
@@ -341,7 +342,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		return nil, fmt.Errorf("registering github oauth client: %w", err)
 	}
 
-	runner, err := runner.NewServerRunner(runner.ServerRunnerOptions{
+	serverRunner, err := runner.NewServerRunner(runner.ServerRunnerOptions{
 		Logger:     logger,
 		Config:     cfg.RunnerConfig,
 		Runners:    runnerService,
@@ -383,11 +384,33 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		}),
 		configService,
 		notificationService,
-		githubAppService,
 		runnerService,
 		disco.Service{},
 		&api.Handlers{},
 		&tfeapi.Handlers{},
+		&ui.Handlers{
+			Logger:                       logger,
+			Runs:                         runService,
+			Workspaces:                   workspaceService,
+			Users:                        userService,
+			Teams:                        teamService,
+			Organizations:                orgService,
+			Modules:                      moduleService,
+			VCSProviders:                 vcsService,
+			State:                        stateService,
+			Runners:                      runnerService,
+			GithubApp:                    githubAppService,
+			EngineService:                engineService,
+			HostnameService:              hostnameService,
+			Tokens:                       tokensService,
+			Authorizer:                   authorizer,
+			AuthenticatorService:         authenticatorService,
+			VariablesService:             variableService,
+			GithubHostname:               cfg.GithubHostname,
+			SkipTLSVerification:          cfg.SkipTLSVerification,
+			SiteToken:                    cfg.SiteToken,
+			RestrictOrganizationCreation: cfg.RestrictOrganizationCreation,
+		},
 		&github.AppEventHandler{
 			Logger:     logger,
 			Publisher:  vcsEventBroker,
@@ -419,7 +442,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Connections:   connectionService,
 		Runners:       runnerService,
 		DB:            db,
-		runner:        runner,
+		runner:        serverRunner,
 		listener:      listener,
 	}, nil
 }
