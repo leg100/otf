@@ -65,8 +65,8 @@ type (
 	}
 )
 
-// AddRunHandlers registers run UI handlers with the router
-func AddRunHandlers(r *mux.Router, logger logr.Logger, runs runClient, workspaces runWorkspaceClient, users runUsersClient, authorizer runAuthorizer) {
+// addRunHandlers registers run UI handlers with the router
+func addRunHandlers(r *mux.Router, logger logr.Logger, runs runClient, workspaces runWorkspaceClient, users runUsersClient, authorizer runAuthorizer) {
 	h := &runHandlers{
 		authorizer: authorizer,
 		logger:     logger,
@@ -74,11 +74,6 @@ func AddRunHandlers(r *mux.Router, logger logr.Logger, runs runClient, workspace
 		workspaces: workspaces,
 		users:      users,
 	}
-	h.addHandlers(r)
-}
-
-func (h *runHandlers) addHandlers(r *mux.Router) {
-	r = html.UIRouter(r)
 
 	r.HandleFunc("/organizations/{organization_name}/runs", h.listByOrganization).Methods("GET")
 	r.HandleFunc("/workspaces/{workspace_id}/runs", h.listByWorkspace).Methods("GET")
@@ -101,8 +96,8 @@ func (h *runHandlers) addHandlers(r *mux.Router) {
 
 func (h *runHandlers) createRun(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		WorkspaceID resource.TfeID   `schema:"workspace_id,required"`
-		Operation   run.Operation    `schema:"operation,required"`
+		WorkspaceID resource.TfeID `schema:"workspace_id,required"`
+		Operation   run.Operation  `schema:"operation,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
@@ -129,7 +124,7 @@ func (h *runHandlers) listByOrganization(w http.ResponseWriter, r *http.Request)
 			Client: h.runs,
 			Populator: runTable{
 				workspaceGetClient: newWorkspaceCache(h.workspaces),
-				users:           newUserCache(h.users),
+				users:              newUserCache(h.users),
 			},
 			ID: "page-results",
 		}

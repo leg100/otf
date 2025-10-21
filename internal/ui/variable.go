@@ -67,11 +67,6 @@ func addVariableHandlers(r *mux.Router, variables *variable.Service, workspaces 
 		variables:  variables,
 		workspaces: workspaces,
 	}
-	h.addHandlers(r)
-}
-
-func (h *variableHandlers) addHandlers(r *mux.Router) {
-	r = html.UIRouter(r)
 
 	r.HandleFunc("/workspaces/{workspace_id}/variables", h.listWorkspaceVariables).Methods("GET")
 	r.HandleFunc("/workspaces/{workspace_id}/variables/new", h.newWorkspaceVariable).Methods("GET")

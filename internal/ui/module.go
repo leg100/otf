@@ -51,19 +51,14 @@ type (
 	}
 )
 
-// AddModuleHandlers registers module UI handlers with the router
-func AddModuleHandlers(r *mux.Router, client moduleClient, vcsproviders moduleVCSProvidersClient, system moduleHostnameClient, authorizer moduleAuthorizer) {
+// addModuleHandlers registers module UI handlers with the router
+func addModuleHandlers(r *mux.Router, client moduleClient, vcsproviders moduleVCSProvidersClient, system moduleHostnameClient, authorizer moduleAuthorizer) {
 	h := &moduleHandlers{
 		client:       client,
 		vcsproviders: vcsproviders,
 		system:       system,
 		authorizer:   authorizer,
 	}
-	h.addHandlers(r)
-}
-
-func (h *moduleHandlers) addHandlers(r *mux.Router) {
-	r = html.UIRouter(r)
 
 	r.HandleFunc("/organizations/{organization_name}/modules", h.list).Methods("GET")
 	r.HandleFunc("/organizations/{organization_name}/modules/new", h.new).Methods("GET")

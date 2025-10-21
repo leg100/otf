@@ -10,6 +10,7 @@ import (
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/engine"
 	"github.com/leg100/otf/internal/github"
+	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/module"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/run"
@@ -51,31 +52,34 @@ type Handlers struct {
 
 // AddHandlers registers all UI handlers with the router
 func (h *Handlers) AddHandlers(r *mux.Router) {
-	AddRunHandlers(r, h.Logger, h.Runs, h.Workspaces, h.Users, h.Runs)
-	AddTeamHandlers(r, h.Teams, h.Tokens, h.Teams)
-	AddUserHandlers(r, h.Users, h.Teams, h.Tokens, h.Authorizer, h.SiteToken)
-	AddWorkspaceHandlers(r, h.Logger, h.Workspaces, h.Teams, h.VCSProviders, h.Authorizer, h.EngineService)
-	AddOrganizationHandlers(r, h.Organizations, h.RestrictOrganizationCreation)
-	AddModuleHandlers(r, h.Modules, h.VCSProviders, h.HostnameService, h.Authorizer)
-	addLoginHandlers(r, h.AuthenticatorService)
+	// Unauthenticated, unprefixed routes
+	addLoginHandlers(r, h.AuthenticatorService, h.Tokens, h.SiteToken)
+
+	// Add UI prefix to paths handled by handlers below.
+	// NOTE: all UI prefixed paths are intercepted by middleware that mandates
+	// the request is authenticated.
+	r = r.PathPrefix(paths.UIPrefix).Subrouter()
+
+	addRunHandlers(r, h.Logger, h.Runs, h.Workspaces, h.Users, h.Runs)
+	addTeamHandlers(r, h.Teams, h.Tokens, h.Teams)
+	addUserHandlers(r, h.Users, h.Teams, h.Tokens, h.Authorizer)
+	addWorkspaceHandlers(r, h.Logger, h.Workspaces, h.Teams, h.VCSProviders, h.Authorizer, h.EngineService)
+	addOrganizationHandlers(r, h.Organizations, h.RestrictOrganizationCreation)
+	addModuleHandlers(r, h.Modules, h.VCSProviders, h.HostnameService, h.Authorizer)
 	addVariableHandlers(r, h.VariablesService, h.Workspaces, h.Authorizer)
 
-	// State handlers
-	stateHandlers := &webHandlers{Service: h.State}
+	stateHandlers := &stateHandlers{Service: h.State}
 	stateHandlers.addHandlers(r)
 
-	// Runner handlers
 	runnerHandlers := newRunnerHandlers(h.Runners, h.RunnerServiceOptions)
 	runnerHandlers.addHandlers(r)
 
-	// VCS handlers
 	vcsHandlers := &vcsHandlers{
 		HostnameService: h.HostnameService,
 		client:          h.VCSProviders,
 	}
 	vcsHandlers.addHandlers(r)
 
-	// GitHub handlers
 	githubHandlers := &githubHandlers{
 		HostnameService:     h.HostnameService,
 		svc:                 h.GithubApp,

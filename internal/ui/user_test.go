@@ -4,8 +4,6 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
-	"strings"
 	"testing"
 
 	"github.com/google/uuid"
@@ -96,49 +94,6 @@ func TestUser_TeamGetHandler(t *testing.T) {
 	h.getTeam(w, r)
 	if !assert.Equal(t, 200, w.Code) {
 		t.Log(t, w.Body.String())
-	}
-}
-
-func TestAdminLoginHandler(t *testing.T) {
-	h := &userHandlers{
-		siteToken: "secrettoken",
-		tokens:    &fakeTokensService{},
-	}
-
-	tests := []struct {
-		name         string
-		token        string
-		wantRedirect string
-	}{
-		{
-			name:         "valid token",
-			token:        "secrettoken",
-			wantRedirect: "/app/profile",
-		},
-		{
-			name:         "invalid token",
-			token:        "badtoken",
-			wantRedirect: "/admin/login",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			form := strings.NewReader(url.Values{
-				"token": {tt.token},
-			}.Encode())
-
-			r := httptest.NewRequest("POST", "/admin/login", form)
-			r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-			r.Header.Add("Referer", "http://otf.server/admin/login")
-			w := httptest.NewRecorder()
-			h.adminLogin(w, r)
-
-			if assert.Equal(t, 302, w.Code) {
-				redirect, err := w.Result().Location()
-				require.NoError(t, err)
-				assert.Equal(t, tt.wantRedirect, redirect.Path)
-			}
-		})
 	}
 }
 

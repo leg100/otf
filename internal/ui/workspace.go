@@ -99,8 +99,8 @@ type (
 	}
 )
 
-// AddWorkspaceHandlers registers workspace UI handlers with the router
-func AddWorkspaceHandlers(
+// addWorkspaceHandlers registers workspace UI handlers with the router
+func addWorkspaceHandlers(
 	r *mux.Router,
 	logger logr.Logger,
 	workspaces workspaceClient,
@@ -126,12 +126,6 @@ func AddWorkspaceHandlers(
 		},
 		releases: releases,
 	}
-	h.addHandlers(r)
-	h.addTagHandlers(r)
-}
-
-func (h *workspaceHandlers) addHandlers(r *mux.Router) {
-	r = html.UIRouter(r)
 
 	r.HandleFunc("/organizations/{organization_name}/workspaces", h.listWorkspaces).Methods("GET")
 	r.HandleFunc("/organizations/{organization_name}/workspaces/new", h.newWorkspace).Methods("GET")
@@ -151,6 +145,10 @@ func (h *workspaceHandlers) addHandlers(r *mux.Router) {
 
 	r.HandleFunc("/workspaces/{workspace_id}/set-permission", h.setWorkspacePermission).Methods("POST")
 	r.HandleFunc("/workspaces/{workspace_id}/unset-permission", h.unsetWorkspacePermission).Methods("POST")
+
+	r.HandleFunc("/workspaces/{workspace_id}/create-tag", h.createTag).Methods("POST")
+	r.HandleFunc("/workspaces/{workspace_id}/delete-tag", h.deleteTag).Methods("POST")
+
 }
 
 func (h *workspaceHandlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
@@ -746,6 +744,46 @@ func (h *workspaceHandlers) unsetWorkspacePermission(w http.ResponseWriter, r *h
 	}
 	html.FlashSuccess(w, "deleted workspace permission")
 	http.Redirect(w, r, paths.EditWorkspace(params.WorkspaceID), http.StatusFound)
+}
+
+func (h *workspaceHandlers) createTag(w http.ResponseWriter, r *http.Request) {
+	var params struct {
+		WorkspaceID *resource.TfeID `schema:"workspace_id,required"`
+		TagName     *string         `schema:"tag_name,required"`
+	}
+	if err := decode.All(&params, r); err != nil {
+		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
+		return
+	}
+
+	err := h.client.AddTags(r.Context(), *params.WorkspaceID, []workspace.TagSpec{{Name: *params.TagName}})
+	if err != nil {
+		html.Error(r, w, err.Error())
+		return
+	}
+
+	html.FlashSuccess(w, "created tag: "+*params.TagName)
+	http.Redirect(w, r, paths.Workspace(params.WorkspaceID), http.StatusFound)
+}
+
+func (h *workspaceHandlers) deleteTag(w http.ResponseWriter, r *http.Request) {
+	var params struct {
+		WorkspaceID *resource.TfeID `schema:"workspace_id,required"`
+		TagName     *string         `schema:"tag_name,required"`
+	}
+	if err := decode.All(&params, r); err != nil {
+		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
+		return
+	}
+
+	err := h.client.RemoveTags(r.Context(), *params.WorkspaceID, []workspace.TagSpec{{Name: *params.TagName}})
+	if err != nil {
+		html.Error(r, w, err.Error())
+		return
+	}
+
+	html.FlashSuccess(w, "removed tag: "+*params.TagName)
+	http.Redirect(w, r, paths.Workspace(params.WorkspaceID), http.StatusFound)
 }
 
 // filterUnassigned removes from the list of teams those that are part of the

@@ -9,17 +9,15 @@ import (
 	"github.com/leg100/otf/internal/state"
 )
 
-type webHandlers struct {
+type stateHandlers struct {
 	*state.Service
 }
 
-func (h *webHandlers) addHandlers(r *mux.Router) {
-	r = html.UIRouter(r)
-
+func (h *stateHandlers) addHandlers(r *mux.Router) {
 	r.HandleFunc("/workspaces/{workspace_id}/state", h.getState).Methods("GET")
 }
 
-func (h *webHandlers) getState(w http.ResponseWriter, r *http.Request) {
+func (h *stateHandlers) getState(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.ID("workspace_id", r)
 	if err != nil {
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))

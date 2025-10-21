@@ -35,30 +35,25 @@ type (
 	}
 )
 
-// AddOrganizationHandlers registers organization UI handlers with the router
-func AddOrganizationHandlers(r *mux.Router, svc organizationClient, restrictCreation bool) {
+// addOrganizationHandlers registers organization UI handlers with the router
+func addOrganizationHandlers(r *mux.Router, svc organizationClient, restrictCreation bool) {
 	h := &organizationHandlers{
 		svc:              svc,
 		RestrictCreation: restrictCreation,
 	}
-	h.addHandlers(r)
-}
 
-func (a *organizationHandlers) addHandlers(r *mux.Router) {
-	r = html.UIRouter(r)
-
-	r.HandleFunc("/organizations", a.list).Methods("GET")
-	r.HandleFunc("/organizations/new", a.new).Methods("GET")
-	r.HandleFunc("/organizations/create", a.create).Methods("POST")
-	r.HandleFunc("/organizations/{name}", a.get).Methods("GET")
-	r.HandleFunc("/organizations/{name}/edit", a.edit).Methods("GET")
-	r.HandleFunc("/organizations/{name}/update", a.update).Methods("POST")
-	r.HandleFunc("/organizations/{name}/delete", a.delete).Methods("POST")
+	r.HandleFunc("/organizations", h.list).Methods("GET")
+	r.HandleFunc("/organizations/new", h.new).Methods("GET")
+	r.HandleFunc("/organizations/create", h.create).Methods("POST")
+	r.HandleFunc("/organizations/{name}", h.get).Methods("GET")
+	r.HandleFunc("/organizations/{name}/edit", h.edit).Methods("GET")
+	r.HandleFunc("/organizations/{name}/update", h.update).Methods("POST")
+	r.HandleFunc("/organizations/{name}/delete", h.delete).Methods("POST")
 
 	// organization tokens
-	r.HandleFunc("/organizations/{organization_name}/tokens/show", a.organizationToken).Methods("GET")
-	r.HandleFunc("/organizations/{organization_name}/tokens/delete", a.deleteOrganizationToken).Methods("POST")
-	r.HandleFunc("/organizations/{organization_name}/tokens/create", a.createOrganizationToken).Methods("POST")
+	r.HandleFunc("/organizations/{organization_name}/tokens/show", h.organizationToken).Methods("GET")
+	r.HandleFunc("/organizations/{organization_name}/tokens/delete", h.deleteOrganizationToken).Methods("POST")
+	r.HandleFunc("/organizations/{organization_name}/tokens/create", h.createOrganizationToken).Methods("POST")
 }
 
 func (a *organizationHandlers) new(w http.ResponseWriter, r *http.Request) {

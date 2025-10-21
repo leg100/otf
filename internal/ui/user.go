@@ -26,9 +26,7 @@ import (
 type userHandlers struct {
 	users      usersClient
 	teams      teamsClient
-	tokens     tokensClient
 	authorizer authz.Interface
-	siteToken  string
 }
 
 type usersClient interface {
@@ -45,36 +43,19 @@ type usersClient interface {
 	DeleteToken(ctx context.Context, tokenID resource.TfeID) error
 }
 
-type tokensClient interface {
-	StartSession(w http.ResponseWriter, r *http.Request, userID resource.TfeID) error
-}
-
 type teamsClient interface {
 	GetByID(ctx context.Context, teamID resource.TfeID) (*otfteam.Team, error)
 }
 
-// AddUserHandlers registers user UI handlers with the router
-func AddUserHandlers(r *mux.Router, users usersClient, teams teamsClient, tokens tokensClient, authorizer authz.Interface, siteToken string) {
+// addUserHandlers registers user UI handlers with the router
+func addUserHandlers(r *mux.Router, users usersClient, teams teamsClient, tokens tokensClient, authorizer authz.Interface) {
 	h := &userHandlers{
 		authorizer: authorizer,
 		teams:      teams,
-		tokens:     tokens,
-		siteToken:  siteToken,
 		users:      users,
 	}
-	h.addHandlers(r)
-}
-
-func (h *userHandlers) addHandlers(r *mux.Router) {
-	// Unauthenticated routes
-	r.HandleFunc("/admin/login", h.adminLoginPromptHandler).Methods("GET")
-	r.HandleFunc("/admin/login", h.adminLogin).Methods("POST")
-
-	// Authenticated routes
-	r = html.UIRouter(r)
 
 	r.HandleFunc("/logout", h.logout).Methods("POST")
-
 	r.HandleFunc("/organizations/{name}/users", h.listOrganizationUsers).Methods("GET")
 	r.HandleFunc("/profile", h.profileHandler).Methods("GET")
 	r.HandleFunc("/admin", h.site).Methods("GET")
@@ -124,31 +105,6 @@ func (h *userHandlers) profileHandler(w http.ResponseWriter, r *http.Request) {
 	html.Render(profile(), w, r)
 }
 
-// adminLoginPromptHandler presents a prompt for logging in as site admin
-func (h *userHandlers) adminLoginPromptHandler(w http.ResponseWriter, r *http.Request) {
-	html.Render(adminLogin(), w, r)
-}
-
-// adminLogin logs in a site admin
-func (h *userHandlers) adminLogin(w http.ResponseWriter, r *http.Request) {
-	token, err := decode.Param("token", r)
-	if err != nil {
-		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
-		return
-	}
-
-	if token != h.siteToken {
-		html.Error(r, w, "incorrect token")
-		return
-	}
-
-	err = h.tokens.StartSession(w, r, user.SiteAdminID)
-	if err != nil {
-		html.Error(r, w, err.Error())
-		return
-	}
-}
-
 func (h *userHandlers) site(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, paths.Organizations(), http.StatusFound)
 }
@@ -157,8 +113,8 @@ func (h *userHandlers) site(w http.ResponseWriter, r *http.Request) {
 
 func (h *userHandlers) addTeamMember(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		TeamID   resource.TfeID  `schema:"team_id,required"`
-		Username *user.Username  `schema:"username,required"`
+		TeamID   resource.TfeID `schema:"team_id,required"`
+		Username *user.Username `schema:"username,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))

@@ -88,8 +88,6 @@ func newRunnerHandlers(svc *runner.Service, opts runner.ServiceOptions) *runnerH
 }
 
 func (h *runnerHandlers) addHandlers(r *mux.Router) {
-	r = html.UIRouter(r)
-
 	// runners
 	r.HandleFunc("/organizations/{organization_name}/runners", h.listRunners).Methods("GET")
 

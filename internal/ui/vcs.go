@@ -34,8 +34,6 @@ type vcsClient interface {
 }
 
 func (h *vcsHandlers) addHandlers(r *mux.Router) {
-	r = html.UIRouter(r)
-
 	r.HandleFunc("/organizations/{organization_name}/vcs-providers", h.list).Methods("GET")
 	r.HandleFunc("/organizations/{organization_name}/vcs-providers/new", h.new).Methods("GET")
 	r.HandleFunc("/organizations/{organization_name}/vcs-providers/create", h.create).Methods("POST")

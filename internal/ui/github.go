@@ -22,15 +22,15 @@ import (
 type githubHandlers struct {
 	*internal.HostnameService
 
-	svc        webClient
+	svc        githubClient
 	authorizer *authz.Authorizer
 
 	githubAPIURL        *internal.WebURL
 	skipTLSVerification bool
 }
 
-// webClient provides web handlers with access to github app service endpoints
-type webClient interface {
+// githubClient provides web handlers with access to github app service endpoints
+type githubClient interface {
 	CreateApp(ctx context.Context, opts github.CreateAppOptions) (*github.App, error)
 	GetApp(ctx context.Context) (*github.App, error)
 	DeleteApp(ctx context.Context) error
@@ -40,8 +40,6 @@ type webClient interface {
 }
 
 func (h *githubHandlers) addHandlers(r *mux.Router) {
-	r = html.UIRouter(r)
-
 	r.HandleFunc("/github-apps", h.get).Methods("GET")
 	r.HandleFunc("/github-apps/new", h.new).Methods("GET")
 	r.HandleFunc("/github-apps/exchange-code", h.exchangeCode).Methods("GET")

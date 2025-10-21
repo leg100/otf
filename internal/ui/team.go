@@ -36,18 +36,13 @@ type (
 	}
 )
 
-// AddTeamHandlers registers team UI handlers with the router
-func AddTeamHandlers(r *mux.Router, teams teamClient, tokens *tokens.Service, authorizer teamAuthorizer) {
+// addTeamHandlers registers team UI handlers with the router
+func addTeamHandlers(r *mux.Router, teams teamClient, tokens *tokens.Service, authorizer teamAuthorizer) {
 	h := &teamHandlers{
 		authorizer: authorizer,
 		teams:      teams,
 		tokens:     tokens,
 	}
-	h.addHandlers(r)
-}
-
-func (h *teamHandlers) addHandlers(r *mux.Router) {
-	r = html.UIRouter(r)
 
 	r.HandleFunc("/organizations/{organization_name}/teams", h.listTeams).Methods("GET")
 	r.HandleFunc("/organizations/{organization_name}/teams/new", h.newTeam).Methods("GET")
