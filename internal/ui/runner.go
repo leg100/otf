@@ -18,6 +18,7 @@ import (
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runner"
+	"github.com/leg100/otf/internal/workspace"
 	workspacepkg "github.com/leg100/otf/internal/workspace"
 )
 
@@ -72,22 +73,26 @@ func (l *poolWorkspaceList) UnmarshalText(v []byte) error {
 	return nil
 }
 
-func newRunnerHandlers(svc *runner.Service, opts runner.ServiceOptions) *runnerHandlers {
-	return &runnerHandlers{
-		authorizer: opts.Authorizer,
-		logger:     opts.Logger,
+func addRunnerHandlers(
+	r *mux.Router,
+	svc *runner.Service,
+	workspaces *workspace.Service,
+	authorizer *authz.Authorizer,
+	logger logr.Logger,
+) {
+	h := &runnerHandlers{
+		authorizer: authorizer,
+		logger:     logger,
 		svc:        svc,
-		workspaces: opts.WorkspaceService,
+		workspaces: workspaces,
 		websocketListHandler: &components.WebsocketListHandler[*runner.RunnerMeta, *runner.RunnerEvent, runner.ListOptions]{
-			Logger:    opts.Logger,
+			Logger:    logger,
 			Client:    svc,
 			Populator: runnersTable{},
 			ID:        runnersTableID,
 		},
 	}
-}
 
-func (h *runnerHandlers) addHandlers(r *mux.Router) {
 	// runners
 	r.HandleFunc("/organizations/{organization_name}/runners", h.listRunners).Methods("GET")
 

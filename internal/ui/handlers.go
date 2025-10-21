@@ -43,7 +43,6 @@ type Handlers struct {
 	Authorizer                   *authz.Authorizer
 	AuthenticatorService         *authenticator.Service
 	VariablesService             *variable.Service
-	RunnerServiceOptions         runner.ServiceOptions
 	GithubHostname               *internal.WebURL
 	SkipTLSVerification          bool
 	SiteToken                    string
@@ -67,18 +66,9 @@ func (h *Handlers) AddHandlers(r *mux.Router) {
 	addOrganizationHandlers(r, h.Organizations, h.RestrictOrganizationCreation)
 	addModuleHandlers(r, h.Modules, h.VCSProviders, h.HostnameService, h.Authorizer)
 	addVariableHandlers(r, h.VariablesService, h.Workspaces, h.Authorizer)
-
-	stateHandlers := &stateHandlers{Service: h.State}
-	stateHandlers.addHandlers(r)
-
-	runnerHandlers := newRunnerHandlers(h.Runners, h.RunnerServiceOptions)
-	runnerHandlers.addHandlers(r)
-
-	vcsHandlers := &vcsHandlers{
-		HostnameService: h.HostnameService,
-		client:          h.VCSProviders,
-	}
-	vcsHandlers.addHandlers(r)
+	addRunnerHandlers(r, h.Runners, h.Workspaces, h.Authorizer, h.Logger)
+	addStateHandlers(r, h.State)
+	addVCSHandlers(r, h.VCSProviders, h.HostnameService)
 
 	githubHandlers := &githubHandlers{
 		HostnameService:     h.HostnameService,

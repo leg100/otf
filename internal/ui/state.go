@@ -13,7 +13,9 @@ type stateHandlers struct {
 	*state.Service
 }
 
-func (h *stateHandlers) addHandlers(r *mux.Router) {
+func addStateHandlers(r *mux.Router, state *state.Service) {
+	h := stateHandlers{Service: state}
+
 	r.HandleFunc("/workspaces/{workspace_id}/state", h.getState).Methods("GET")
 }
 

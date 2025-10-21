@@ -33,7 +33,11 @@ type vcsClient interface {
 	GetKinds() []vcs.Kind
 }
 
-func (h *vcsHandlers) addHandlers(r *mux.Router) {
+func addVCSHandlers(r *mux.Router, service *vcs.Service, hostnameService *internal.HostnameService) {
+	h := &vcsHandlers{
+		HostnameService: hostnameService,
+		client:          service,
+	}
 	r.HandleFunc("/organizations/{organization_name}/vcs-providers", h.list).Methods("GET")
 	r.HandleFunc("/organizations/{organization_name}/vcs-providers/new", h.new).Methods("GET")
 	r.HandleFunc("/organizations/{organization_name}/vcs-providers/create", h.create).Methods("POST")
