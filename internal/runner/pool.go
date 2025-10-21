@@ -47,7 +47,7 @@ type (
 		AllowedWorkspaces []resource.TfeID
 	}
 
-	updatePoolOptions struct {
+	UpdatePoolOptions struct {
 		Name               *string
 		OrganizationScoped *bool `schema:"organization_scoped"`
 		// IDs of workspaces allowed to access the pool.
@@ -57,7 +57,7 @@ type (
 		AssignedWorkspaces []resource.TfeID `schema:"assigned_workspaces"`
 	}
 
-	listPoolOptions struct {
+	ListPoolOptions struct {
 		// Filter pools by those with this substring in their name. Optional.
 		NameSubstring *string
 		// Filter pools to those accessible to the named workspace. Optional.
@@ -87,7 +87,7 @@ func newPool(opts CreateAgentPoolOptions) (*Pool, error) {
 	return pool, nil
 }
 
-func (p *Pool) update(opts updatePoolOptions) error {
+func (p *Pool) update(opts UpdatePoolOptions) error {
 	if opts.Name != nil {
 		if err := resource.ValidateName(opts.Name); err != nil {
 			return err

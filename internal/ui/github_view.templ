@@ -1,0 +1,174 @@
+package ui
+
+import (
+	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/github"
+	"github.com/leg100/otf/internal/http/html/components"
+	"github.com/leg100/otf/internal/http/html/components/paths"
+	"github.com/leg100/otf/internal/vcs"
+	"strconv"
+)
+
+type newAppViewProps struct {
+	manifest       string
+	githubHostname string
+}
+
+templ newAppView(props newAppViewProps) {
+	@components.Layout(components.LayoutProps{
+		Title: "select app owner",
+		Breadcrumbs: []components.Breadcrumb{
+			{Name: "Create GitHub app"},
+		},
+	}) {
+		<script src={ components.AssetPath(ctx, "/static/js/github_apps_new.js") }></script>
+		<div x-data={ "action('" + props.githubHostname + "', '" + props.manifest + "')" }>
+			<form class="flex flex-col gap-4" :action="action" method="post">
+				<div class="field">
+					<label for="organization">Organization</label>
+					<span class="description">
+						If assigning ownership to a GitHub organization, enter its name here. Otherwise ownership is assigned to your personal GitHub account.
+					</span>
+					<input class="input w-48" id="organization" x-model="organization"/>
+				</div>
+				<div class="form-checkbox">
+					<input type="checkbox" id="public" x-model="public" x-init="$watch('public', value => manifest.public = public)"/>
+					<label for="public">Public</label>
+					<span class="description">By default an app is private and can only be installed on the owner's account. If you intend to install the app in more than one organization or user account then it is necessary to make the app public.</span>
+				</div>
+				<input type="hidden" name="manifest" :value="JSON.stringify(manifest)"/>
+				<button class="btn w-40">Create</button>
+			</form>
+		</div>
+	}
+}
+
+type getAppsProps struct {
+	app            *github.App
+	installations  []vcs.Installation
+	githubHostname string
+	canCreateApp   bool
+	canDeleteApp   bool
+}
+
+templ getApps(props getAppsProps) {
+	@components.Layout(components.LayoutProps{
+		Title: "github app",
+		Breadcrumbs: []components.Breadcrumb{
+			{Name: "GitHub app"},
+		},
+	}) {
+		if props.app != nil {
+			@components.UnpaginatedTable(
+				&appTable{githubHostname: props.githubHostname, canDeleteApp: props.canDeleteApp},
+				[]*github.App{props.app},
+			)
+			<div class="divider"></div>
+			<h3 class="font-semibold text-lg">Installations</h3>
+			<form action={ templ.SafeURL(props.app.NewInstallURL(props.githubHostname)) } method="GET" target="GithubTab">
+				<button class="btn w-32 flex gap-1 items-center justify-center">
+					<span>
+						Install
+					</span>
+					@components.ExternalIcon()
+				</button>
+			</form>
+			<div id="installations">
+				@components.UnpaginatedTable(
+					&installsTable{},
+					props.installations,
+				)
+			</div>
+		} else {
+			<span>
+				No GitHub app found.
+				if props.canCreateApp {
+					Create an app <a id="new-github-app-link" class="underline" href={ paths.NewGithubApp() }>here</a>.
+				} else {
+					To create an app you need to possess the <a class="underline" href="https://docs.otf.ninja/auth/site_admins/">site admin</a> role.
+				}
+			</span>
+		}
+	}
+}
+
+type appTable struct {
+	githubHostname string
+	canDeleteApp   bool
+}
+
+templ (t appTable) Header() {
+	<th>Name</th>
+	<th>ID</th>
+	<th>Actions</th>
+}
+
+templ (t appTable) Row(app *github.App) {
+	<tr id="item-github-app">
+		<td>
+			<a class="flex underline gap-1 items-center" href={ templ.SafeURL(app.URL(t.githubHostname)) } target="GithubTab">
+				<span>{ app.String() }</span>
+				@components.ExternalIcon()
+			</a>
+		</td>
+		<td>
+			<span class="identifier">
+				@components.CopyableContent() {
+					{ int(app.ID) }
+				}
+			</span>
+		</td>
+		<td>
+			if t.canDeleteApp {
+				<form action={ paths.DeleteGithubApp(app.ID) } method="POST">
+					@components.DeleteButton()
+					<input type="hidden" name="id" value={ int(app.ID) }/>
+				</form>
+			}
+		</td>
+	</tr>
+}
+
+type installsTable struct{}
+
+templ (t installsTable) Header() {
+	<th>Name</th>
+	<th>ID</th>
+	<th>Actions</th>
+}
+
+templ (t installsTable) Row(install vcs.Installation) {
+	<tr>
+		<td>
+			<span>
+				<a
+					class="flex underline gap-1 items-center"
+					href={ templ.SafeURL(install.HTMLURL) }
+					target="GithubTab"
+				>
+					<span>
+						{ install.String() }
+					</span>
+					@components.ExternalIcon()
+				</a>
+			</span>
+		</td>
+		<td>
+			<span class="identifier">
+				@components.CopyableContent() {
+					{ install.ID }
+				}
+			</span>
+		</td>
+		<td>
+			<form action={ paths.DeleteInstallGithubApp(internal.ToStringer(strconv.Itoa(int(install.ID)))) } method="POST">
+				@components.DeleteButton()
+				<input type="hidden" name="install_id" value={ install.ID }/>
+			</form>
+		</td>
+	</tr>
+}
+
+templ deleteMessage(app *github.App) {
+	Deleted GitHub app <span class="font-bold">{ app.Slug }</span> from OTF. You still need to delete the app in <a class="link" href={ app.AdvancedURL() }>GitHub</a>.
+}

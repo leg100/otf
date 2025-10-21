@@ -39,7 +39,6 @@ type (
 		db                     *pgdb
 		tfeapi                 *tfe
 		api                    *api
-		web                    *webHandlers
 		afterCancelHooks       []func(context.Context, *Run) error
 		afterForceCancelHooks  []func(context.Context, *Run) error
 		afterEnqueuePlanHooks  []func(context.Context, *Run) error
@@ -90,7 +89,6 @@ func NewService(opts Options) *Service {
 		vcs:           opts.VCSProviderService,
 		releases:      opts.EngineService,
 	}
-	svc.web = newWebHandlers(&svc, opts)
 	svc.tfeapi = &tfe{
 		Service:    &svc,
 		workspaces: opts.WorkspaceService,
@@ -154,7 +152,6 @@ func NewService(opts Options) *Service {
 }
 
 func (s *Service) AddHandlers(r *mux.Router) {
-	s.web.addHandlers(r)
 	s.tfeapi.addHandlers(r)
 	s.api.addHandlers(r)
 }

@@ -35,7 +35,7 @@ type RunnerMeta struct {
 	AgentPool *Pool `jsonapi:"attribute" json:"agent-pool" db:"agent_pool"`
 }
 
-type registerOptions struct {
+type RegisterRunnerOptions struct {
 	// Descriptive name. Optional.
 	Name string `json:"name"`
 	// Version of agent.
@@ -55,7 +55,7 @@ type registerOptions struct {
 
 // register registers an unregistered runner, constructing a RunnerMeta which
 // provides info about the newly registered runner.
-func register(runner *unregistered, opts registerOptions) (*RunnerMeta, error) {
+func register(runner *unregistered, opts RegisterRunnerOptions) (*RunnerMeta, error) {
 	meta := &RunnerMeta{
 		ID:        resource.NewTfeID(resource.RunnerKind),
 		Name:      opts.Name,

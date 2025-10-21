@@ -329,7 +329,7 @@ func Test_mergeVariables(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := mergeVariables(tt.sets, tt.workspaceVariables, &tt.run)
+			got := Merge(tt.sets, tt.workspaceVariables, &tt.run)
 			assert.Equal(t, len(tt.want), len(got))
 			for _, w := range tt.want {
 				assert.Contains(t, got, w)

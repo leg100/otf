@@ -94,7 +94,7 @@ func (r *Runner) Start(ctx context.Context) error {
 
 	// register runner with server, which responds with an updated runner
 	// registrationMetadata, including a unique ID.
-	registrationMetadata, err := r.client.register(ctx, registerOptions{
+	registrationMetadata, err := r.client.Register(ctx, RegisterRunnerOptions{
 		Name:        r.Name,
 		Version:     internal.Version,
 		Concurrency: r.MaxJobs,

@@ -19,3 +19,12 @@ func ConvertSliceToString[S fmt.Stringer](src []S) []string {
 	}
 	return dst
 }
+
+// Map applies a function to each element in a slice and returns the result.
+func Map[T, V any](ts []T, fn func(T) V) []V {
+	result := make([]V, len(ts))
+	for i, t := range ts {
+		result[i] = fn(t)
+	}
+	return result
+}

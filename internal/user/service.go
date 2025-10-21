@@ -26,7 +26,6 @@ type (
 
 		teams  *team.Service
 		db     *pgdb
-		web    *webHandlers
 		tfeapi *tfe
 		api    *api
 
@@ -54,13 +53,6 @@ func NewService(opts Options) *Service {
 			tokens: opts.TokensService,
 		},
 		teams: opts.TeamService,
-	}
-	svc.web = &webHandlers{
-		authorizer: opts.Authorizer,
-		teams:      opts.TeamService,
-		tokens:     opts.TokensService,
-		siteToken:  opts.SiteToken,
-		users:      &svc,
 	}
 	svc.tfeapi = &tfe{
 		Service:   &svc,
@@ -122,7 +114,6 @@ func NewService(opts Options) *Service {
 }
 
 func (a *Service) AddHandlers(r *mux.Router) {
-	a.web.addHandlers(r)
 	a.tfeapi.addHandlers(r)
 	a.api.addHandlers(r)
 }
