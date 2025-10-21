@@ -46,19 +46,19 @@ type workspaceListProps struct {
 	statusFilterVisible bool
 	tagFilterVisible    bool
 	pageOptions         resource.PageOptions
-	page                *resource.Page[*Workspace]
+	page                *resource.Page[*workspace.Workspace]
 }
 
 templ workspaceList(props workspaceListProps) {
 	{{
-	layoutProps := components.LayoutProps{
-		Title:        "workspaces",
-		Organization: props.organization,
-		ContentLinks: workspaceListActions(props.organization, props.canCreate),
-		Breadcrumbs: []components.Breadcrumb{
-			{Name: "Workspaces"},
-		},
-	}
+		layoutProps := components.LayoutProps{
+			Title:        "workspaces",
+			Organization: props.organization,
+			ContentLinks: workspaceListActions(props.organization, props.canCreate),
+			Breadcrumbs: []components.Breadcrumb{
+				{Name: "Workspaces"},
+			},
+		}
 	}}
 	@components.Layout(layoutProps) {
 		<form action={ paths.Workspaces(props.organization) } hx-include="this">
@@ -90,20 +90,20 @@ templ workspaceList(props workspaceListProps) {
 					},
 				})
 			</div>
-			@components.PollingTable(table{}, props.page)
+			@components.PollingTable(workspacesTable{}, props.page)
 		</form>
 	}
 }
 
-type workspaceTable struct{}
+type workspacesTable struct{}
 
-templ (t workspaceTable) Header() {
+templ (t workspacesTable) Header() {
 	<th>Name</th>
 	<th>Status</th>
 	<th>Tags</th>
 }
 
-templ (t workspaceTable) Row(ws *workspace.Workspace) {
+templ (t workspacesTable) Row(ws *workspace.Workspace) {
 	<tr id={ "item-workspace-" + ws.Name }>
 		<td>
 			<a class="link" href={ paths.Workspace(ws.ID) }>{ ws.Name }</a>
@@ -165,15 +165,15 @@ type workspaceGetProps struct {
 
 templ workspaceGet(props workspaceGetProps) {
 	{{
-	layoutProps := components.LayoutProps{
-		Title:        "workspaces",
-		Organization: props.ws.Organization,
-		ContentLinks: workspaceHeaderLinksAndStartRunSelector(props),
-		Breadcrumbs: []components.Breadcrumb{
-			{Name: "Workspaces"},
-			{Name: props.ws.Name},
-		},
-	}
+		layoutProps := components.LayoutProps{
+			Title:        "workspaces",
+			Organization: props.ws.Organization,
+			ContentLinks: workspaceHeaderLinksAndStartRunSelector(props),
+			Breadcrumbs: []components.Breadcrumb{
+				{Name: "Workspaces"},
+				{Name: props.ws.Name},
+			},
+		}
 	}}
 	@components.Layout(layoutProps) {
 		<div
@@ -398,16 +398,16 @@ type workspacePerm struct {
 
 templ workspaceEdit(props workspaceEditProps) {
 	{{
-	layoutProps := components.LayoutProps{
-		Title:        "edit | " + props.ws.ID.String(),
-		Organization: props.ws.Organization,
-		ContentLinks: WorkspaceHeaderLinks(props.ws.ID, props.canUpdateWorkspace),
-		Breadcrumbs: []components.Breadcrumb{
-			{Name: "Workspaces", Link: paths.Workspaces(props.ws.Organization)},
-			{Name: props.ws.Name, Link: paths.Workspace(props.ws.ID)},
-			{Name: "settings"},
-		},
-	}
+		layoutProps := components.LayoutProps{
+			Title:        "edit | " + props.ws.ID.String(),
+			Organization: props.ws.Organization,
+			ContentLinks: WorkspaceHeaderLinks(props.ws.ID, props.canUpdateWorkspace),
+			Breadcrumbs: []components.Breadcrumb{
+				{Name: "Workspaces", Link: paths.Workspaces(props.ws.Organization)},
+				{Name: props.ws.Name, Link: paths.Workspace(props.ws.ID)},
+				{Name: "settings"},
+			},
+		}
 	}}
 	@components.Layout(layoutProps) {
 		<div class="mt-3">
@@ -738,15 +738,15 @@ templ editPermissions(props workspaceEditProps) {
 
 templ listVCSProviders(ws *workspace.Workspace, providers []*vcs.Provider) {
 	{{
-	layoutProps := components.LayoutProps{
-		Title:        "list vcs providers | " + ws.ID.String(),
-		Organization: ws.Organization,
-		Breadcrumbs: []components.Breadcrumb{
-			{Name: "workspaces", Link: paths.Workspaces(ws.Organization)},
-			{Name: ws.Name, Link: paths.Workspace(ws.ID)},
-			{Name: "vcs providers"},
-		},
-	}
+		layoutProps := components.LayoutProps{
+			Title:        "list vcs providers | " + ws.ID.String(),
+			Organization: ws.Organization,
+			Breadcrumbs: []components.Breadcrumb{
+				{Name: "workspaces", Link: paths.Workspaces(ws.Organization)},
+				{Name: ws.Name, Link: paths.Workspace(ws.ID)},
+				{Name: "vcs providers"},
+			},
+		}
 	}}
 	@components.Layout(layoutProps) {
 		@ConnectionSteps(ConnectStep)
@@ -778,15 +778,15 @@ templ (s vcsProviderSelector) action(vcsProviderID resource.TfeID) {
 
 templ listVCSRepos(ws *workspace.Workspace, vcsProviderID resource.TfeID, repos []vcs.Repo) {
 	{{
-	layoutProps := components.LayoutProps{
-		Title:        "list vcs repos | " + ws.ID.String(),
-		Organization: ws.Organization,
-		Breadcrumbs: []components.Breadcrumb{
-			{Name: "workspaces", Link: paths.Workspaces(ws.Organization)},
-			{Name: ws.Name, Link: paths.Workspace(ws.ID)},
-			{Name: "vcs repositories"},
-		},
-	}
+		layoutProps := components.LayoutProps{
+			Title:        "list vcs repos | " + ws.ID.String(),
+			Organization: ws.Organization,
+			Breadcrumbs: []components.Breadcrumb{
+				{Name: "workspaces", Link: paths.Workspaces(ws.Organization)},
+				{Name: ws.Name, Link: paths.Workspace(ws.ID)},
+				{Name: "vcs repositories"},
+			},
+		}
 	}}
 	@components.Layout(layoutProps) {
 		@ConnectionSteps(SelectRepoStep)

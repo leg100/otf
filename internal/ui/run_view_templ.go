@@ -29,9 +29,9 @@ type runListProps struct {
 	status              []runstatus.Status
 	statusFilterVisible bool
 	canUpdateWorkspace  bool
-	table               table
+	table               runsTable
 	pageOptions         resource.PageOptions
-	page                *resource.Page[*Run]
+	page                *resource.Page[*run.Run]
 }
 
 func runList(props runListProps) templ.Component {
@@ -87,34 +87,13 @@ func runList(props runListProps) templ.Component {
 			var templ_7745c5c3_Var3 templ.SafeURL
 			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(components.CurrentURL(ctx)))
 			if templ_7745c5c3_Err != nil {
-<<<<<<< HEAD:internal/run/view_templ.go
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/view.templ`, Line: 45, Col: 59}
-=======
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 46, Col: 43}
->>>>>>> master:internal/ui/run_view_templ.go
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 46, Col: 59}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-<<<<<<< HEAD:internal/run/view_templ.go
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\">")
-=======
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\" action=\"")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var4 templ.SafeURL
-			templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(components.CurrentURL(ctx)))
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 47, Col: 54}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "\">")
->>>>>>> master:internal/ui/run_view_templ.go
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -144,12 +123,12 @@ func runList(props runListProps) templ.Component {
 	})
 }
 
-type runTable struct {
+type runsTable struct {
 	workspaceGetClient runWorkspaceGetClient
 	users              runUsersClient
 }
 
-func (t runTable) Header() templ.Component {
+func (t runsTable) Header() templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -188,7 +167,7 @@ func (t runTable) Header() templ.Component {
 	})
 }
 
-func (t runTable) Row(run *run.Run) templ.Component {
+func (t runsTable) Row(run *run.Run) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -216,11 +195,7 @@ func (t runTable) Row(run *run.Run) templ.Component {
 		var templ_7745c5c3_Var6 string
 		templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs("run-item-" + run.ID.String())
 		if templ_7745c5c3_Err != nil {
-<<<<<<< HEAD:internal/run/view_templ.go
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/view.templ`, Line: 71, Col: 39}
-=======
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 74, Col: 39}
->>>>>>> master:internal/ui/run_view_templ.go
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 72, Col: 39}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 		if templ_7745c5c3_Err != nil {
@@ -233,11 +208,7 @@ func (t runTable) Row(run *run.Run) templ.Component {
 		var templ_7745c5c3_Var7 templ.SafeURL
 		templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinURLErrs(paths.Run(run.ID))
 		if templ_7745c5c3_Err != nil {
-<<<<<<< HEAD:internal/run/view_templ.go
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/view.templ`, Line: 73, Col: 43}
-=======
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 76, Col: 43}
->>>>>>> master:internal/ui/run_view_templ.go
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 74, Col: 43}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 		if templ_7745c5c3_Err != nil {
@@ -250,11 +221,7 @@ func (t runTable) Row(run *run.Run) templ.Component {
 		var templ_7745c5c3_Var8 string
 		templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(run.ID.String())
 		if templ_7745c5c3_Err != nil {
-<<<<<<< HEAD:internal/run/view_templ.go
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/view.templ`, Line: 74, Col: 21}
-=======
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 77, Col: 21}
->>>>>>> master:internal/ui/run_view_templ.go
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 75, Col: 21}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 		if templ_7745c5c3_Err != nil {
@@ -272,11 +239,7 @@ func (t runTable) Row(run *run.Run) templ.Component {
 			var templ_7745c5c3_Var9 templ.SafeURL
 			templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinURLErrs(paths.Workspace(run.WorkspaceID))
 			if templ_7745c5c3_Err != nil {
-<<<<<<< HEAD:internal/run/view_templ.go
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/view.templ`, Line: 80, Col: 59}
-=======
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 83, Col: 59}
->>>>>>> master:internal/ui/run_view_templ.go
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 81, Col: 59}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 			if templ_7745c5c3_Err != nil {
@@ -289,11 +252,7 @@ func (t runTable) Row(run *run.Run) templ.Component {
 			var templ_7745c5c3_Var10 string
 			templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(t.getWorkspaceName(ctx, run))
 			if templ_7745c5c3_Err != nil {
-<<<<<<< HEAD:internal/run/view_templ.go
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/view.templ`, Line: 81, Col: 35}
-=======
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 84, Col: 35}
->>>>>>> master:internal/ui/run_view_templ.go
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 82, Col: 35}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 			if templ_7745c5c3_Err != nil {
@@ -324,11 +283,7 @@ func (t runTable) Row(run *run.Run) templ.Component {
 			var templ_7745c5c3_Var11 string
 			templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(run.CreatedBy.String())
 			if templ_7745c5c3_Err != nil {
-<<<<<<< HEAD:internal/run/view_templ.go
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/view.templ`, Line: 91, Col: 31}
-=======
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 94, Col: 31}
->>>>>>> master:internal/ui/run_view_templ.go
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 92, Col: 31}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 			if templ_7745c5c3_Err != nil {
@@ -346,11 +301,7 @@ func (t runTable) Row(run *run.Run) templ.Component {
 			var templ_7745c5c3_Var12 templ.SafeURL
 			templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(run.IngressAttributes.SenderHTMLURL))
 			if templ_7745c5c3_Err != nil {
-<<<<<<< HEAD:internal/run/view_templ.go
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/view.templ`, Line: 95, Col: 85}
-=======
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 98, Col: 85}
->>>>>>> master:internal/ui/run_view_templ.go
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 96, Col: 85}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 			if templ_7745c5c3_Err != nil {
@@ -363,11 +314,7 @@ func (t runTable) Row(run *run.Run) templ.Component {
 			var templ_7745c5c3_Var13 string
 			templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(run.IngressAttributes.SenderUsername)
 			if templ_7745c5c3_Err != nil {
-<<<<<<< HEAD:internal/run/view_templ.go
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/view.templ`, Line: 95, Col: 126}
-=======
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 98, Col: 126}
->>>>>>> master:internal/ui/run_view_templ.go
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 96, Col: 126}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 			if templ_7745c5c3_Err != nil {
@@ -399,11 +346,7 @@ func (t runTable) Row(run *run.Run) templ.Component {
 				var templ_7745c5c3_Var14 templ.SafeURL
 				templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(run.IngressAttributes.PullRequestURL))
 				if templ_7745c5c3_Err != nil {
-<<<<<<< HEAD:internal/run/view_templ.go
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/view.templ`, Line: 111, Col: 93}
-=======
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 114, Col: 93}
->>>>>>> master:internal/ui/run_view_templ.go
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 112, Col: 93}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 				if templ_7745c5c3_Err != nil {
@@ -416,11 +359,7 @@ func (t runTable) Row(run *run.Run) templ.Component {
 				var templ_7745c5c3_Var15 string
 				templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(run.IngressAttributes.PullRequestTitle)
 				if templ_7745c5c3_Err != nil {
-<<<<<<< HEAD:internal/run/view_templ.go
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/view.templ`, Line: 111, Col: 142}
-=======
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 114, Col: 142}
->>>>>>> master:internal/ui/run_view_templ.go
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 112, Col: 142}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 				if templ_7745c5c3_Err != nil {
@@ -433,11 +372,7 @@ func (t runTable) Row(run *run.Run) templ.Component {
 				var templ_7745c5c3_Var16 string
 				templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(run.IngressAttributes.PullRequestNumber)
 				if templ_7745c5c3_Err != nil {
-<<<<<<< HEAD:internal/run/view_templ.go
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/view.templ`, Line: 111, Col: 187}
-=======
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 114, Col: 187}
->>>>>>> master:internal/ui/run_view_templ.go
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 112, Col: 187}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 				if templ_7745c5c3_Err != nil {
@@ -455,11 +390,7 @@ func (t runTable) Row(run *run.Run) templ.Component {
 				var templ_7745c5c3_Var17 templ.SafeURL
 				templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(run.IngressAttributes.CommitURL))
 				if templ_7745c5c3_Err != nil {
-<<<<<<< HEAD:internal/run/view_templ.go
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/view.templ`, Line: 113, Col: 65}
-=======
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 116, Col: 65}
->>>>>>> master:internal/ui/run_view_templ.go
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 114, Col: 65}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 				if templ_7745c5c3_Err != nil {
@@ -472,11 +403,7 @@ func (t runTable) Row(run *run.Run) templ.Component {
 				var templ_7745c5c3_Var18 string
 				templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(run.IngressAttributes.Branch)
 				if templ_7745c5c3_Err != nil {
-<<<<<<< HEAD:internal/run/view_templ.go
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/view.templ`, Line: 114, Col: 93}
-=======
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 117, Col: 93}
->>>>>>> master:internal/ui/run_view_templ.go
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 115, Col: 93}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
 				if templ_7745c5c3_Err != nil {
@@ -494,11 +421,7 @@ func (t runTable) Row(run *run.Run) templ.Component {
 				var templ_7745c5c3_Var19 templ.SafeURL
 				templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(run.IngressAttributes.CommitURL))
 				if templ_7745c5c3_Err != nil {
-<<<<<<< HEAD:internal/run/view_templ.go
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/view.templ`, Line: 117, Col: 65}
-=======
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 120, Col: 65}
->>>>>>> master:internal/ui/run_view_templ.go
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 118, Col: 65}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 				if templ_7745c5c3_Err != nil {
@@ -511,11 +434,7 @@ func (t runTable) Row(run *run.Run) templ.Component {
 				var templ_7745c5c3_Var20 string
 				templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinStringErrs(run.IngressAttributes.Tag)
 				if templ_7745c5c3_Err != nil {
-<<<<<<< HEAD:internal/run/view_templ.go
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/view.templ`, Line: 118, Col: 87}
-=======
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 121, Col: 87}
->>>>>>> master:internal/ui/run_view_templ.go
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 119, Col: 87}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var20))
 				if templ_7745c5c3_Err != nil {
@@ -533,11 +452,7 @@ func (t runTable) Row(run *run.Run) templ.Component {
 			var templ_7745c5c3_Var21 templ.SafeURL
 			templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(run.IngressAttributes.CommitURL))
 			if templ_7745c5c3_Err != nil {
-<<<<<<< HEAD:internal/run/view_templ.go
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/view.templ`, Line: 121, Col: 87}
-=======
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 124, Col: 87}
->>>>>>> master:internal/ui/run_view_templ.go
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 122, Col: 87}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
 			if templ_7745c5c3_Err != nil {
@@ -550,11 +465,7 @@ func (t runTable) Row(run *run.Run) templ.Component {
 			var templ_7745c5c3_Var22 string
 			templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.JoinStringErrs(run.IngressAttributes.CommitSHA[:7])
 			if templ_7745c5c3_Err != nil {
-<<<<<<< HEAD:internal/run/view_templ.go
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/view.templ`, Line: 121, Col: 128}
-=======
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 124, Col: 128}
->>>>>>> master:internal/ui/run_view_templ.go
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 122, Col: 128}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var22))
 			if templ_7745c5c3_Err != nil {
@@ -630,11 +541,7 @@ func (t runTable) Row(run *run.Run) templ.Component {
 			var templ_7745c5c3_Var23 templ.SafeURL
 			templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinURLErrs(paths.ApplyRun(run.ID))
 			if templ_7745c5c3_Err != nil {
-<<<<<<< HEAD:internal/run/view_templ.go
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/view.templ`, Line: 155, Col: 42}
-=======
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 158, Col: 42}
->>>>>>> master:internal/ui/run_view_templ.go
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 156, Col: 42}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var23))
 			if templ_7745c5c3_Err != nil {
@@ -653,11 +560,7 @@ func (t runTable) Row(run *run.Run) templ.Component {
 			var templ_7745c5c3_Var24 templ.SafeURL
 			templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinURLErrs(paths.CancelRun(run.ID))
 			if templ_7745c5c3_Err != nil {
-<<<<<<< HEAD:internal/run/view_templ.go
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/view.templ`, Line: 160, Col: 43}
-=======
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 163, Col: 43}
->>>>>>> master:internal/ui/run_view_templ.go
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 161, Col: 43}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var24))
 			if templ_7745c5c3_Err != nil {
@@ -675,11 +578,7 @@ func (t runTable) Row(run *run.Run) templ.Component {
 			var templ_7745c5c3_Var25 templ.SafeURL
 			templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinURLErrs(paths.ForceCancelRun(run.ID))
 			if templ_7745c5c3_Err != nil {
-<<<<<<< HEAD:internal/run/view_templ.go
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/view.templ`, Line: 164, Col: 48}
-=======
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 167, Col: 48}
->>>>>>> master:internal/ui/run_view_templ.go
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 165, Col: 48}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var25))
 			if templ_7745c5c3_Err != nil {
@@ -697,11 +596,7 @@ func (t runTable) Row(run *run.Run) templ.Component {
 			var templ_7745c5c3_Var26 templ.SafeURL
 			templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.JoinURLErrs(paths.DiscardRun(run.ID))
 			if templ_7745c5c3_Err != nil {
-<<<<<<< HEAD:internal/run/view_templ.go
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/view.templ`, Line: 168, Col: 44}
-=======
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 171, Col: 44}
->>>>>>> master:internal/ui/run_view_templ.go
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 169, Col: 44}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var26))
 			if templ_7745c5c3_Err != nil {
@@ -719,11 +614,7 @@ func (t runTable) Row(run *run.Run) templ.Component {
 			var templ_7745c5c3_Var27 templ.SafeURL
 			templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinURLErrs(paths.RetryRun(run.ID))
 			if templ_7745c5c3_Err != nil {
-<<<<<<< HEAD:internal/run/view_templ.go
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/view.templ`, Line: 172, Col: 42}
-=======
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 175, Col: 42}
->>>>>>> master:internal/ui/run_view_templ.go
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 173, Col: 42}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var27))
 			if templ_7745c5c3_Err != nil {
@@ -747,7 +638,7 @@ func (t runTable) Row(run *run.Run) templ.Component {
 	})
 }
 
-func (t runTable) getWorkspaceName(ctx context.Context, run *run.Run) (string, error) {
+func (t runsTable) getWorkspaceName(ctx context.Context, run *run.Run) (string, error) {
 	ws, err := t.workspaceGetClient.Get(ctx, run.WorkspaceID)
 	if err != nil {
 		return "", err
@@ -755,7 +646,7 @@ func (t runTable) getWorkspaceName(ctx context.Context, run *run.Run) (string, e
 	return ws.Name, nil
 }
 
-func (t runTable) avatar(run *run.Run) templ.Component {
+func (t runsTable) avatar(run *run.Run) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -798,11 +689,7 @@ func (t runTable) avatar(run *run.Run) templ.Component {
 			var templ_7745c5c3_Var29 string
 			templ_7745c5c3_Var29, templ_7745c5c3_Err = templ.JoinStringErrs(templ.SafeURL(run.IngressAttributes.SenderAvatarURL))
 			if templ_7745c5c3_Err != nil {
-<<<<<<< HEAD:internal/run/view_templ.go
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/view.templ`, Line: 203, Col: 67}
-=======
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 206, Col: 67}
->>>>>>> master:internal/ui/run_view_templ.go
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 204, Col: 67}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var29))
 			if templ_7745c5c3_Err != nil {
@@ -881,11 +768,7 @@ func runGet(props runGetProps) templ.Component {
 			var templ_7745c5c3_Var32 string
 			templ_7745c5c3_Var32, templ_7745c5c3_Err = templ.JoinStringErrs(string(paths.WatchRun(props.run.ID)))
 			if templ_7745c5c3_Err != nil {
-<<<<<<< HEAD:internal/run/view_templ.go
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/view.templ`, Line: 232, Col: 68}
-=======
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 235, Col: 68}
->>>>>>> master:internal/ui/run_view_templ.go
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 233, Col: 68}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var32))
 			if templ_7745c5c3_Err != nil {
@@ -898,11 +781,7 @@ func runGet(props runGetProps) templ.Component {
 			var templ_7745c5c3_Var33 string
 			templ_7745c5c3_Var33, templ_7745c5c3_Err = templ.JoinStringErrs(props.run.Engine.String())
 			if templ_7745c5c3_Err != nil {
-<<<<<<< HEAD:internal/run/view_templ.go
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/view.templ`, Line: 237, Col: 32}
-=======
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 240, Col: 32}
->>>>>>> master:internal/ui/run_view_templ.go
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 238, Col: 32}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var33))
 			if templ_7745c5c3_Err != nil {
@@ -915,11 +794,7 @@ func runGet(props runGetProps) templ.Component {
 			var templ_7745c5c3_Var34 string
 			templ_7745c5c3_Var34, templ_7745c5c3_Err = templ.JoinStringErrs(props.run.EngineVersion)
 			if templ_7745c5c3_Err != nil {
-<<<<<<< HEAD:internal/run/view_templ.go
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/view.templ`, Line: 243, Col: 30}
-=======
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 246, Col: 30}
->>>>>>> master:internal/ui/run_view_templ.go
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 244, Col: 30}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var34))
 			if templ_7745c5c3_Err != nil {
@@ -932,11 +807,7 @@ func runGet(props runGetProps) templ.Component {
 			var templ_7745c5c3_Var35 string
 			templ_7745c5c3_Var35, templ_7745c5c3_Err = templ.JoinStringErrs("running-time-" + props.run.ID.String())
 			if templ_7745c5c3_Err != nil {
-<<<<<<< HEAD:internal/run/view_templ.go
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/view.templ`, Line: 248, Col: 79}
-=======
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 251, Col: 79}
->>>>>>> master:internal/ui/run_view_templ.go
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 249, Col: 79}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var35))
 			if templ_7745c5c3_Err != nil {
@@ -957,11 +828,7 @@ func runGet(props runGetProps) templ.Component {
 			var templ_7745c5c3_Var36 string
 			templ_7745c5c3_Var36, templ_7745c5c3_Err = templ.JoinStringErrs("run-item-" + props.run.ID.String())
 			if templ_7745c5c3_Err != nil {
-<<<<<<< HEAD:internal/run/view_templ.go
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/view.templ`, Line: 256, Col: 48}
-=======
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 259, Col: 48}
->>>>>>> master:internal/ui/run_view_templ.go
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 257, Col: 48}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var36))
 			if templ_7745c5c3_Err != nil {
@@ -1053,11 +920,7 @@ func getPreContent() templ.Component {
 		var templ_7745c5c3_Var38 templ.SafeURL
 		templ_7745c5c3_Var38, templ_7745c5c3_Err = templ.JoinURLErrs(components.AssetPath(ctx, "/static/css/terminal.css"))
 		if templ_7745c5c3_Err != nil {
-<<<<<<< HEAD:internal/run/view_templ.go
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/view.templ`, Line: 290, Col: 84}
-=======
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 293, Col: 84}
->>>>>>> master:internal/ui/run_view_templ.go
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 291, Col: 84}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var38))
 		if templ_7745c5c3_Err != nil {
@@ -1070,11 +933,7 @@ func getPreContent() templ.Component {
 		var templ_7745c5c3_Var39 string
 		templ_7745c5c3_Var39, templ_7745c5c3_Err = templ.JoinStringErrs(components.AssetPath(ctx, "/static/js/tail.js"))
 		if templ_7745c5c3_Err != nil {
-<<<<<<< HEAD:internal/run/view_templ.go
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/view.templ`, Line: 291, Col: 62}
-=======
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 294, Col: 62}
->>>>>>> master:internal/ui/run_view_templ.go
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 292, Col: 62}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var39))
 		if templ_7745c5c3_Err != nil {
@@ -1087,11 +946,7 @@ func getPreContent() templ.Component {
 		var templ_7745c5c3_Var40 string
 		templ_7745c5c3_Var40, templ_7745c5c3_Err = templ.JoinStringErrs(components.AssetPath(ctx, "/static/js/running_time.js"))
 		if templ_7745c5c3_Err != nil {
-<<<<<<< HEAD:internal/run/view_templ.go
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/view.templ`, Line: 292, Col: 70}
-=======
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 295, Col: 70}
->>>>>>> master:internal/ui/run_view_templ.go
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 293, Col: 70}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var40))
 		if templ_7745c5c3_Err != nil {
@@ -1167,11 +1022,7 @@ func (e *event) view(runItem *run.Run) templ.Component {
 			templ_7745c5c3_Var42 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-<<<<<<< HEAD:internal/run/view_templ.go
-		templ_7745c5c3_Err = components.UnpaginatedTable(&table{users: e.users}, []*Run{run}).Render(ctx, templ_7745c5c3_Buffer)
-=======
-		templ_7745c5c3_Err = components.UnpaginatedTable(&runTable{users: e.users}, []*run.Run{runItem}, "run-item-"+runItem.ID.String()).Render(ctx, templ_7745c5c3_Buffer)
->>>>>>> master:internal/ui/run_view_templ.go
+		templ_7745c5c3_Err = components.UnpaginatedTable(&runsTable{users: e.users}, []*run.Run{runItem}).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1241,11 +1092,7 @@ func runningTime(tsk task) templ.Component {
 			var templ_7745c5c3_Var44 string
 			templ_7745c5c3_Var44, templ_7745c5c3_Err = templ.JoinStringErrs("running-time-" + tsk.String())
 			if templ_7745c5c3_Err != nil {
-<<<<<<< HEAD:internal/run/view_templ.go
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/view.templ`, Line: 331, Col: 38}
-=======
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 334, Col: 38}
->>>>>>> master:internal/ui/run_view_templ.go
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 332, Col: 38}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var44))
 			if templ_7745c5c3_Err != nil {
@@ -1255,17 +1102,10 @@ func runningTime(tsk task) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-<<<<<<< HEAD:internal/run/view_templ.go
 			var templ_7745c5c3_Var45 string
-			templ_7745c5c3_Var45, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("running_time(Date.parse('%s'), %d, %s)", tsk.StartedAt(), elapsed.Milliseconds(), boolString(tsk.Done())))
+			templ_7745c5c3_Var45, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("running_time(Date.parse('%s'), %d, %s)", tsk.StartedAt(), elapsed.Milliseconds(), runBoolString(tsk.Done())))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/view.templ`, Line: 333, Col: 130}
-=======
-			var templ_7745c5c3_Var46 string
-			templ_7745c5c3_Var46, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("running_time(Date.parse('%s'), %d, %s)", tsk.StartedAt(), elapsed.Milliseconds(), runBoolString(tsk.Done())))
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 336, Col: 133}
->>>>>>> master:internal/ui/run_view_templ.go
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 334, Col: 133}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var45))
 			if templ_7745c5c3_Err != nil {
@@ -1278,11 +1118,7 @@ func runningTime(tsk task) templ.Component {
 			var templ_7745c5c3_Var46 string
 			templ_7745c5c3_Var46, templ_7745c5c3_Err = templ.JoinStringErrs(int(elapsed))
 			if templ_7745c5c3_Err != nil {
-<<<<<<< HEAD:internal/run/view_templ.go
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/view.templ`, Line: 336, Col: 17}
-=======
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 339, Col: 17}
->>>>>>> master:internal/ui/run_view_templ.go
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 337, Col: 17}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var46))
 			if templ_7745c5c3_Err != nil {
@@ -1300,11 +1136,7 @@ func runningTime(tsk task) templ.Component {
 			var templ_7745c5c3_Var47 string
 			templ_7745c5c3_Var47, templ_7745c5c3_Err = templ.JoinStringErrs("running-time-" + tsk.String())
 			if templ_7745c5c3_Err != nil {
-<<<<<<< HEAD:internal/run/view_templ.go
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/view.templ`, Line: 339, Col: 43}
-=======
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 342, Col: 43}
->>>>>>> master:internal/ui/run_view_templ.go
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 340, Col: 43}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var47))
 			if templ_7745c5c3_Err != nil {
@@ -1358,11 +1190,7 @@ func periodReport(run *run.Run) templ.Component {
 			var templ_7745c5c3_Var50 string
 			templ_7745c5c3_Var50, templ_7745c5c3_Err = templruntime.SanitizeStyleAttributeValues(fmt.Sprintf("width: %f%%", report.Percentage(i)))
 			if templ_7745c5c3_Err != nil {
-<<<<<<< HEAD:internal/run/view_templ.go
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/view.templ`, Line: 348, Col: 60}
-=======
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 351, Col: 60}
->>>>>>> master:internal/ui/run_view_templ.go
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 349, Col: 60}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var50))
 			if templ_7745c5c3_Err != nil {
@@ -1420,11 +1248,7 @@ func periodReport(run *run.Run) templ.Component {
 			var templ_7745c5c3_Var54 string
 			templ_7745c5c3_Var54, templ_7745c5c3_Err = templ.JoinStringErrs(period.Status.String())
 			if templ_7745c5c3_Err != nil {
-<<<<<<< HEAD:internal/run/view_templ.go
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/view.templ`, Line: 357, Col: 36}
-=======
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 360, Col: 36}
->>>>>>> master:internal/ui/run_view_templ.go
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 358, Col: 36}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var54))
 			if templ_7745c5c3_Err != nil {
@@ -1437,11 +1261,7 @@ func periodReport(run *run.Run) templ.Component {
 			var templ_7745c5c3_Var55 string
 			templ_7745c5c3_Var55, templ_7745c5c3_Err = templ.JoinStringErrs(period.Period.String())
 			if templ_7745c5c3_Err != nil {
-<<<<<<< HEAD:internal/run/view_templ.go
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/view.templ`, Line: 358, Col: 37}
-=======
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 361, Col: 37}
->>>>>>> master:internal/ui/run_view_templ.go
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 359, Col: 37}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var55))
 			if templ_7745c5c3_Err != nil {
@@ -1488,11 +1308,7 @@ func resourceReport(report *run.Report) templ.Component {
 		var templ_7745c5c3_Var57 string
 		templ_7745c5c3_Var57, templ_7745c5c3_Err = templ.JoinStringErrs(report.Additions)
 		if templ_7745c5c3_Err != nil {
-<<<<<<< HEAD:internal/run/view_templ.go
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/view.templ`, Line: 368, Col: 50}
-=======
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 371, Col: 50}
->>>>>>> master:internal/ui/run_view_templ.go
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 369, Col: 50}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var57))
 		if templ_7745c5c3_Err != nil {
@@ -1505,11 +1321,7 @@ func resourceReport(report *run.Report) templ.Component {
 		var templ_7745c5c3_Var58 string
 		templ_7745c5c3_Var58, templ_7745c5c3_Err = templ.JoinStringErrs(report.Changes)
 		if templ_7745c5c3_Err != nil {
-<<<<<<< HEAD:internal/run/view_templ.go
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/view.templ`, Line: 368, Col: 104}
-=======
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 371, Col: 104}
->>>>>>> master:internal/ui/run_view_templ.go
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 369, Col: 104}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var58))
 		if templ_7745c5c3_Err != nil {
@@ -1522,11 +1334,7 @@ func resourceReport(report *run.Report) templ.Component {
 		var templ_7745c5c3_Var59 string
 		templ_7745c5c3_Var59, templ_7745c5c3_Err = templ.JoinStringErrs(report.Destructions)
 		if templ_7745c5c3_Err != nil {
-<<<<<<< HEAD:internal/run/view_templ.go
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/view.templ`, Line: 368, Col: 162}
-=======
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 371, Col: 162}
->>>>>>> master:internal/ui/run_view_templ.go
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 369, Col: 162}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var59))
 		if templ_7745c5c3_Err != nil {
@@ -1583,11 +1391,7 @@ func phaseStatus(phase run.Phase) templ.Component {
 		var templ_7745c5c3_Var62 string
 		templ_7745c5c3_Var62, templ_7745c5c3_Err = templ.JoinStringErrs(string(phase.PhaseType) + "-status")
 		if templ_7745c5c3_Err != nil {
-<<<<<<< HEAD:internal/run/view_templ.go
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/view.templ`, Line: 383, Col: 47}
-=======
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 386, Col: 47}
->>>>>>> master:internal/ui/run_view_templ.go
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 384, Col: 47}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var62))
 		if templ_7745c5c3_Err != nil {
@@ -1613,11 +1417,7 @@ func phaseStatus(phase run.Phase) templ.Component {
 		var templ_7745c5c3_Var64 string
 		templ_7745c5c3_Var64, templ_7745c5c3_Err = templ.JoinStringErrs(phase.Status.String())
 		if templ_7745c5c3_Err != nil {
-<<<<<<< HEAD:internal/run/view_templ.go
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/view.templ`, Line: 384, Col: 25}
-=======
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 387, Col: 25}
->>>>>>> master:internal/ui/run_view_templ.go
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/run_view.templ`, Line: 385, Col: 25}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var64))
 		if templ_7745c5c3_Err != nil {

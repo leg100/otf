@@ -20,7 +20,7 @@ import (
 type listRunnersProps struct {
 	organization      organization.Name
 	hideServerRunners bool
-	page              *resource.Page[*RunnerMeta]
+	page              *resource.Page[*runner.RunnerMeta]
 }
 
 func listRunners(props listRunnersProps) templ.Component {
@@ -83,7 +83,7 @@ func listRunners(props listRunnersProps) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = components.PollingTable(table{}, props.page).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = components.PollingTable(runnersTable{}, props.page).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -828,7 +828,7 @@ func getAgentPool(props getAgentPoolProps) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = components.PollingTable(table{}, props.agents).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = components.PollingTable(runnersTable{}, props.agents).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

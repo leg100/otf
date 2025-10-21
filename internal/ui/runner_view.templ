@@ -12,7 +12,7 @@ import (
 type listRunnersProps struct {
 	organization      organization.Name
 	hideServerRunners bool
-	page              *resource.Page[*RunnerMeta]
+	page              *resource.Page[*runner.RunnerMeta]
 }
 
 templ listRunners(props listRunnersProps) {
@@ -36,7 +36,7 @@ templ listRunners(props listRunnersProps) {
 			</fieldset>
 		</form>
 		<div>
-			@components.PollingTable(table{}, props.page)
+			@components.PollingTable(runnersTable{}, props.page)
 		</div>
 	}
 }
@@ -300,7 +300,7 @@ templ getAgentPool(props getAgentPoolProps) {
 		@components.UnpaginatedTable(agentTokensTable{}, props.tokens)
 		<hr class="my-4"/>
 		<h3 class="font-semibold text-lg mb-2">Agents</h3>
-		@components.PollingTable(table{}, props.agents)
+		@components.PollingTable(runnersTable{}, props.agents)
 		if props.canDeleteAgentPool {
 			<hr class="my-4"/>
 			<h3 class="font-semibold text-lg mb-2">Advanced</h3>

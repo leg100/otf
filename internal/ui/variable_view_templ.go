@@ -258,7 +258,7 @@ func listWorkspaceVariables(props listWorkspaceVariablesProps) templ.Component {
 			}
 			ctx = templ.InitializeContext(ctx)
 			templ_7745c5c3_Err = components.UnpaginatedTable(
-				&table{
+				&variablesTable{
 					canDeleteVariable:       props.canCreateVariable,
 					workspaceVariablesTable: true,
 				},
@@ -681,7 +681,7 @@ func editVariableSet(props editVariableSetProps) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			templ_7745c5c3_Err = components.UnpaginatedTable(
-				&table{
+				&variablesTable{
 					canDeleteVariable: props.canDeleteVariable,
 				},
 				props.rows,
@@ -1100,15 +1100,14 @@ func variableSetForm(props variableSetFormProps) templ.Component {
 	})
 }
 
-// table of variables
-type table struct {
+type variablesTable struct {
 	canDeleteVariable bool
 	// workspaceVariablesTable is true if this is a table of variables for a
 	// workspace, or false if this is a table of variables for a variable set.
 	workspaceVariablesTable bool
 }
 
-func (t table) Header() templ.Component {
+func (t variablesTable) Header() templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -1143,13 +1142,13 @@ func (t table) Header() templ.Component {
 	})
 }
 
-func (t table) showVariableSetColumn() bool {
+func (t variablesTable) showVariableSetColumn() bool {
 	// Only show a column containing the name of the variable set on the
 	// workspace variables table.
 	return t.workspaceVariablesTable
 }
 
-func (t table) Row(v variableRow) templ.Component {
+func (t variablesTable) Row(v variableRow) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -1177,7 +1176,7 @@ func (t table) Row(v variableRow) templ.Component {
 		var templ_7745c5c3_Var40 string
 		templ_7745c5c3_Var40, templ_7745c5c3_Err = templ.JoinStringErrs("item-variable-" + v.Key)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/variable_view.templ`, Line: 440, Col: 34}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/variable_view.templ`, Line: 439, Col: 34}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var40))
 		if templ_7745c5c3_Err != nil {
@@ -1200,7 +1199,7 @@ func (t table) Row(v variableRow) templ.Component {
 				var templ_7745c5c3_Var41 templ.SafeURL
 				templ_7745c5c3_Var41, templ_7745c5c3_Err = templ.JoinURLErrs(paths.EditVariableSet(v.set.ID))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/variable_view.templ`, Line: 444, Col: 59}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/variable_view.templ`, Line: 443, Col: 59}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var41))
 				if templ_7745c5c3_Err != nil {
@@ -1213,7 +1212,7 @@ func (t table) Row(v variableRow) templ.Component {
 				var templ_7745c5c3_Var42 string
 				templ_7745c5c3_Var42, templ_7745c5c3_Err = templ.JoinStringErrs(v.set.Name)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/variable_view.templ`, Line: 445, Col: 18}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/variable_view.templ`, Line: 444, Col: 18}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var42))
 				if templ_7745c5c3_Err != nil {
@@ -1259,7 +1258,7 @@ func (t table) Row(v variableRow) templ.Component {
 			var templ_7745c5c3_Var44 string
 			templ_7745c5c3_Var44, templ_7745c5c3_Err = templ.JoinStringErrs(v.Key)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/variable_view.templ`, Line: 457, Col: 11}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/variable_view.templ`, Line: 456, Col: 11}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var44))
 			if templ_7745c5c3_Err != nil {
@@ -1284,7 +1283,7 @@ func (t table) Row(v variableRow) templ.Component {
 			var templ_7745c5c3_Var45 string
 			templ_7745c5c3_Var45, templ_7745c5c3_Err = templ.JoinStringErrs(v.Value)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/variable_view.templ`, Line: 464, Col: 13}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/variable_view.templ`, Line: 463, Col: 13}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var45))
 			if templ_7745c5c3_Err != nil {
@@ -1298,7 +1297,7 @@ func (t table) Row(v variableRow) templ.Component {
 		var templ_7745c5c3_Var46 string
 		templ_7745c5c3_Var46, templ_7745c5c3_Err = templ.JoinStringErrs(string(v.Category))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/variable_view.templ`, Line: 467, Col: 26}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/variable_view.templ`, Line: 466, Col: 26}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var46))
 		if templ_7745c5c3_Err != nil {
@@ -1311,7 +1310,7 @@ func (t table) Row(v variableRow) templ.Component {
 		var templ_7745c5c3_Var47 templ.SafeURL
 		templ_7745c5c3_Var47, templ_7745c5c3_Err = templ.JoinURLErrs(t.editPath(v))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/variable_view.templ`, Line: 469, Col: 53}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/variable_view.templ`, Line: 468, Col: 53}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var47))
 		if templ_7745c5c3_Err != nil {
@@ -1337,7 +1336,7 @@ func (t table) Row(v variableRow) templ.Component {
 			var templ_7745c5c3_Var48 templ.SafeURL
 			templ_7745c5c3_Var48, templ_7745c5c3_Err = templ.JoinURLErrs(t.deletePath(v))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/variable_view.templ`, Line: 476, Col: 58}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/variable_view.templ`, Line: 475, Col: 58}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var48))
 			if templ_7745c5c3_Err != nil {
@@ -1364,14 +1363,14 @@ func (t table) Row(v variableRow) templ.Component {
 	})
 }
 
-func (t table) editPath(row variableRow) templ.SafeURL {
+func (t variablesTable) editPath(row variableRow) templ.SafeURL {
 	if row.set != nil {
 		return paths.EditVariableSetVariable(row.ID)
 	}
 	return paths.EditVariable(row.ID)
 }
 
-func (t table) deletePath(row variableRow) templ.SafeURL {
+func (t variablesTable) deletePath(row variableRow) templ.SafeURL {
 	if row.set != nil {
 		return paths.DeleteVariableSetVariable(row.ID)
 	}

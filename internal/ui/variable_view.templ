@@ -96,7 +96,7 @@ templ listWorkspaceVariables(props listWorkspaceVariablesProps) {
 		},
 	}) {
 		@components.UnpaginatedTable(
-			&table{
+			&variablesTable{
 				canDeleteVariable:       props.canCreateVariable,
 				workspaceVariablesTable: true,
 			},
@@ -223,7 +223,7 @@ templ editVariableSet(props editVariableSetProps) {
 		<hr class="my-4"/>
 		<h3 class="text-xl">Variables</h3>
 		@components.UnpaginatedTable(
-			&table{
+			&variablesTable{
 				canDeleteVariable: props.canDeleteVariable,
 			},
 			props.rows,
@@ -412,15 +412,14 @@ templ variableSetForm(props variableSetFormProps) {
 	</form>
 }
 
-// table of variables
-type table struct {
+type variablesTable struct {
 	canDeleteVariable bool
 	// workspaceVariablesTable is true if this is a table of variables for a
 	// workspace, or false if this is a table of variables for a variable set.
 	workspaceVariablesTable bool
 }
 
-templ (t table) Header() {
+templ (t variablesTable) Header() {
 	if t.showVariableSetColumn() {
 		<th>Set</th>
 	}
@@ -430,13 +429,13 @@ templ (t table) Header() {
 	<th>Actions</th>
 }
 
-func (t table) showVariableSetColumn() bool {
+func (t variablesTable) showVariableSetColumn() bool {
 	// Only show a column containing the name of the variable set on the
 	// workspace variables table.
 	return t.workspaceVariablesTable
 }
 
-templ (t table) Row(v variableRow) {
+templ (t variablesTable) Row(v variableRow) {
 	<tr id={ "item-variable-" + v.Key }>
 		if t.showVariableSetColumn() {
 			<td class="">
@@ -481,14 +480,14 @@ templ (t table) Row(v variableRow) {
 	</tr>
 }
 
-func (t table) editPath(row variableRow) templ.SafeURL {
+func (t variablesTable) editPath(row variableRow) templ.SafeURL {
 	if row.set != nil {
 		return paths.EditVariableSetVariable(row.ID)
 	}
 	return paths.EditVariable(row.ID)
 }
 
-func (t table) deletePath(row variableRow) templ.SafeURL {
+func (t variablesTable) deletePath(row variableRow) templ.SafeURL {
 	if row.set != nil {
 		return paths.DeleteVariableSetVariable(row.ID)
 	}

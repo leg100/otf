@@ -144,12 +144,7 @@ func getApps(props getAppsProps) templ.Component {
 			if props.app != nil {
 				templ_7745c5c3_Err = components.UnpaginatedTable(
 					&appTable{githubHostname: props.githubHostname, canDeleteApp: props.canDeleteApp},
-<<<<<<< HEAD:internal/github/view_templ.go
-					[]*App{props.app},
-=======
 					[]*github.App{props.app},
-					"app-table",
->>>>>>> master:internal/ui/github_view_templ.go
 				).Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -161,11 +156,7 @@ func getApps(props getAppsProps) templ.Component {
 				var templ_7745c5c3_Var7 templ.SafeURL
 				templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(props.app.NewInstallURL(props.githubHostname)))
 				if templ_7745c5c3_Err != nil {
-<<<<<<< HEAD:internal/github/view_templ.go
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/github/view.templ`, Line: 68, Col: 78}
-=======
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/github_view.templ`, Line: 69, Col: 78}
->>>>>>> master:internal/ui/github_view_templ.go
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/github_view.templ`, Line: 68, Col: 78}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 				if templ_7745c5c3_Err != nil {
@@ -207,11 +198,7 @@ func getApps(props getAppsProps) templ.Component {
 					var templ_7745c5c3_Var8 templ.SafeURL
 					templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinURLErrs(paths.NewGithubApp())
 					if templ_7745c5c3_Err != nil {
-<<<<<<< HEAD:internal/github/view_templ.go
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/github/view.templ`, Line: 86, Col: 92}
-=======
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/github_view.templ`, Line: 88, Col: 92}
->>>>>>> master:internal/ui/github_view_templ.go
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/github_view.templ`, Line: 86, Col: 92}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 					if templ_7745c5c3_Err != nil {
@@ -309,11 +296,7 @@ func (t appTable) Row(app *github.App) templ.Component {
 		var templ_7745c5c3_Var11 templ.SafeURL
 		templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(app.URL(t.githubHostname)))
 		if templ_7745c5c3_Err != nil {
-<<<<<<< HEAD:internal/github/view_templ.go
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/github/view.templ`, Line: 109, Col: 95}
-=======
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/github_view.templ`, Line: 111, Col: 95}
->>>>>>> master:internal/ui/github_view_templ.go
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/github_view.templ`, Line: 109, Col: 95}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 		if templ_7745c5c3_Err != nil {
@@ -326,11 +309,7 @@ func (t appTable) Row(app *github.App) templ.Component {
 		var templ_7745c5c3_Var12 string
 		templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(app.String())
 		if templ_7745c5c3_Err != nil {
-<<<<<<< HEAD:internal/github/view_templ.go
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/github/view.templ`, Line: 110, Col: 24}
-=======
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/github_view.templ`, Line: 112, Col: 24}
->>>>>>> master:internal/ui/github_view_templ.go
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/github_view.templ`, Line: 110, Col: 24}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 		if templ_7745c5c3_Err != nil {
@@ -363,11 +342,7 @@ func (t appTable) Row(app *github.App) templ.Component {
 			var templ_7745c5c3_Var14 string
 			templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(int(app.ID))
 			if templ_7745c5c3_Err != nil {
-<<<<<<< HEAD:internal/github/view_templ.go
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/github/view.templ`, Line: 117, Col: 18}
-=======
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/github_view.templ`, Line: 119, Col: 18}
->>>>>>> master:internal/ui/github_view_templ.go
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/github_view.templ`, Line: 117, Col: 18}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 			if templ_7745c5c3_Err != nil {
@@ -391,11 +366,7 @@ func (t appTable) Row(app *github.App) templ.Component {
 			var templ_7745c5c3_Var15 templ.SafeURL
 			templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinURLErrs(paths.DeleteGithubApp(app.ID))
 			if templ_7745c5c3_Err != nil {
-<<<<<<< HEAD:internal/github/view_templ.go
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/github/view.templ`, Line: 123, Col: 48}
-=======
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/github_view.templ`, Line: 125, Col: 48}
->>>>>>> master:internal/ui/github_view_templ.go
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/github_view.templ`, Line: 123, Col: 48}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 			if templ_7745c5c3_Err != nil {
@@ -416,11 +387,7 @@ func (t appTable) Row(app *github.App) templ.Component {
 			var templ_7745c5c3_Var16 string
 			templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(int(app.ID))
 			if templ_7745c5c3_Err != nil {
-<<<<<<< HEAD:internal/github/view_templ.go
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/github/view.templ`, Line: 125, Col: 55}
-=======
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/github_view.templ`, Line: 127, Col: 55}
->>>>>>> master:internal/ui/github_view_templ.go
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/github_view.templ`, Line: 125, Col: 55}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 			if templ_7745c5c3_Err != nil {
@@ -498,11 +465,7 @@ func (t installsTable) Row(install vcs.Installation) templ.Component {
 		var templ_7745c5c3_Var19 templ.SafeURL
 		templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(install.HTMLURL))
 		if templ_7745c5c3_Err != nil {
-<<<<<<< HEAD:internal/github/view_templ.go
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/github/view.templ`, Line: 146, Col: 42}
-=======
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/github_view.templ`, Line: 148, Col: 42}
->>>>>>> master:internal/ui/github_view_templ.go
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/github_view.templ`, Line: 146, Col: 42}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 		if templ_7745c5c3_Err != nil {
@@ -515,11 +478,7 @@ func (t installsTable) Row(install vcs.Installation) templ.Component {
 		var templ_7745c5c3_Var20 string
 		templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinStringErrs(install.String())
 		if templ_7745c5c3_Err != nil {
-<<<<<<< HEAD:internal/github/view_templ.go
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/github/view.templ`, Line: 150, Col: 24}
-=======
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/github_view.templ`, Line: 152, Col: 24}
->>>>>>> master:internal/ui/github_view_templ.go
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/github_view.templ`, Line: 150, Col: 24}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var20))
 		if templ_7745c5c3_Err != nil {
@@ -552,11 +511,7 @@ func (t installsTable) Row(install vcs.Installation) templ.Component {
 			var templ_7745c5c3_Var22 string
 			templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.JoinStringErrs(install.ID)
 			if templ_7745c5c3_Err != nil {
-<<<<<<< HEAD:internal/github/view_templ.go
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/github/view.templ`, Line: 159, Col: 17}
-=======
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/github_view.templ`, Line: 161, Col: 17}
->>>>>>> master:internal/ui/github_view_templ.go
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/github_view.templ`, Line: 159, Col: 17}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var22))
 			if templ_7745c5c3_Err != nil {
@@ -575,11 +530,7 @@ func (t installsTable) Row(install vcs.Installation) templ.Component {
 		var templ_7745c5c3_Var23 templ.SafeURL
 		templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinURLErrs(paths.DeleteInstallGithubApp(internal.ToStringer(strconv.Itoa(int(install.ID)))))
 		if templ_7745c5c3_Err != nil {
-<<<<<<< HEAD:internal/github/view_templ.go
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/github/view.templ`, Line: 164, Col: 98}
-=======
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/github_view.templ`, Line: 166, Col: 98}
->>>>>>> master:internal/ui/github_view_templ.go
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/github_view.templ`, Line: 164, Col: 98}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var23))
 		if templ_7745c5c3_Err != nil {
@@ -600,11 +551,7 @@ func (t installsTable) Row(install vcs.Installation) templ.Component {
 		var templ_7745c5c3_Var24 string
 		templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinStringErrs(install.ID)
 		if templ_7745c5c3_Err != nil {
-<<<<<<< HEAD:internal/github/view_templ.go
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/github/view.templ`, Line: 166, Col: 61}
-=======
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/github_view.templ`, Line: 168, Col: 61}
->>>>>>> master:internal/ui/github_view_templ.go
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/github_view.templ`, Line: 166, Col: 61}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var24))
 		if templ_7745c5c3_Err != nil {
@@ -646,11 +593,7 @@ func deleteMessage(app *github.App) templ.Component {
 		var templ_7745c5c3_Var26 string
 		templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.JoinStringErrs(app.Slug)
 		if templ_7745c5c3_Err != nil {
-<<<<<<< HEAD:internal/github/view_templ.go
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/github/view.templ`, Line: 173, Col: 54}
-=======
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/github_view.templ`, Line: 175, Col: 54}
->>>>>>> master:internal/ui/github_view_templ.go
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/github_view.templ`, Line: 173, Col: 54}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var26))
 		if templ_7745c5c3_Err != nil {
@@ -663,11 +606,7 @@ func deleteMessage(app *github.App) templ.Component {
 		var templ_7745c5c3_Var27 templ.SafeURL
 		templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinURLErrs(app.AdvancedURL())
 		if templ_7745c5c3_Err != nil {
-<<<<<<< HEAD:internal/github/view_templ.go
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/github/view.templ`, Line: 173, Col: 150}
-=======
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/github_view.templ`, Line: 175, Col: 150}
->>>>>>> master:internal/ui/github_view_templ.go
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/github_view.templ`, Line: 173, Col: 150}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var27))
 		if templ_7745c5c3_Err != nil {
@@ -681,84 +620,4 @@ func deleteMessage(app *github.App) templ.Component {
 	})
 }
 
-<<<<<<< HEAD:internal/github/view_templ.go
-func tokenDescription(hostname string) templ.Component {
-	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
-		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
-		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
-			return templ_7745c5c3_CtxErr
-		}
-		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
-		if !templ_7745c5c3_IsBuffer {
-			defer func() {
-				templ_7745c5c3_BufErr := templruntime.ReleaseBuffer(templ_7745c5c3_Buffer)
-				if templ_7745c5c3_Err == nil {
-					templ_7745c5c3_Err = templ_7745c5c3_BufErr
-				}
-			}()
-		}
-		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var28 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var28 == nil {
-			templ_7745c5c3_Var28 = templ.NopComponent
-		}
-		ctx = templ.ClearChildren(ctx)
-
-		u := &url.URL{
-			Scheme: "https",
-			Host:   hostname,
-			Path:   "/settings/tokens",
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 36, "Create a <a class=\"link\" href=\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var29 templ.SafeURL
-		templ_7745c5c3_Var29, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(u.String()))
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/github/view.templ`, Line: 184, Col: 58}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var29))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 37, "\" target=\"GithubTab\">personal access token</a> with the <span class=\"font-bold\">repo</span> scope.")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		return nil
-	})
-}
-
-func Icon() templ.Component {
-	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
-		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
-		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
-			return templ_7745c5c3_CtxErr
-		}
-		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
-		if !templ_7745c5c3_IsBuffer {
-			defer func() {
-				templ_7745c5c3_BufErr := templruntime.ReleaseBuffer(templ_7745c5c3_Buffer)
-				if templ_7745c5c3_Err == nil {
-					templ_7745c5c3_Err = templ_7745c5c3_BufErr
-				}
-			}()
-		}
-		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var30 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var30 == nil {
-			templ_7745c5c3_Var30 = templ.NopComponent
-		}
-		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 38, "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" class=\"size-6\" id=\"github-icon\"><path d=\"M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z\"></path></svg>")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		return nil
-	})
-}
-
-=======
->>>>>>> master:internal/ui/github_view_templ.go
 var _ = templruntime.GeneratedTemplate

@@ -21,7 +21,7 @@ type runListProps struct {
 	status              []runstatus.Status
 	statusFilterVisible bool
 	canUpdateWorkspace  bool
-	table               table
+	table               runsTable
 	pageOptions         resource.PageOptions
 	page                *resource.Page[*run.Run]
 }
@@ -51,12 +51,12 @@ templ runList(props runListProps) {
 	}
 }
 
-type runTable struct {
+type runsTable struct {
 	workspaceGetClient runWorkspaceGetClient
 	users              runUsersClient
 }
 
-templ (t runTable) Header() {
+templ (t runsTable) Header() {
 	<th>Run</th>
 	<!-- add workspace column if not filtered by workspace ID -->
 	if t.workspaceGetClient != nil {
@@ -68,7 +68,7 @@ templ (t runTable) Header() {
 	<th>Actions</th>
 }
 
-templ (t runTable) Row(run *run.Run) {
+templ (t runsTable) Row(run *run.Run) {
 	<tr id={ "run-item-" + run.ID.String() }>
 		<td>
 			<a class="link" href={ paths.Run(run.ID) }>
@@ -181,7 +181,7 @@ templ (t runTable) Row(run *run.Run) {
 	</tr>
 }
 
-func (t runTable) getWorkspaceName(ctx context.Context, run *run.Run) (string, error) {
+func (t runsTable) getWorkspaceName(ctx context.Context, run *run.Run) (string, error) {
 	ws, err := t.workspaceGetClient.Get(ctx, run.WorkspaceID)
 	if err != nil {
 		return "", err
@@ -189,7 +189,7 @@ func (t runTable) getWorkspaceName(ctx context.Context, run *run.Run) (string, e
 	return ws.Name, nil
 }
 
-templ (t runTable) avatar(run *run.Run) {
+templ (t runsTable) avatar(run *run.Run) {
 	<div class="avatar">
 		<div class="size-14 rounded">
 			if run.CreatedBy != nil {
@@ -308,7 +308,7 @@ type event struct {
 
 templ (e *event) view(runItem *run.Run) {
 	// render single-row table
-	@components.UnpaginatedTable(&runTable{users: e.users}, []*run.Run{runItem})
+	@components.UnpaginatedTable(&runsTable{users: e.users}, []*run.Run{runItem})
 	@phaseStatus(runItem.Plan)
 	@phaseStatus(runItem.Apply)
 	@periodReport(runItem)

@@ -131,7 +131,7 @@ func (h *runHandlers) list(w http.ResponseWriter, r *http.Request) {
 		status:              opts.Statuses,
 		statusFilterVisible: opts.StatusFilterVisible,
 		pageOptions:         opts.PageOptions,
-		table: runTable{
+		table: runsTable{
 			workspaceGetClient: newWorkspaceCache(h.workspaces),
 			users:              newUserCache(h.users),
 		},
@@ -225,7 +225,7 @@ func (h *runHandlers) getWidget(w http.ResponseWriter, r *http.Request) {
 	}
 
 	table := components.UnpaginatedTable(
-		runTable{users: h.users},
+		runsTable{users: h.users},
 		[]*run.Run{runItem},
 	)
 
@@ -415,7 +415,7 @@ func (h *runHandlers) watchLatest(w http.ResponseWriter, r *http.Request) {
 		h.runs,
 		func(runItem *run.Run) templ.Component {
 			return components.UnpaginatedTable(
-				runTable{users: h.users},
+				runsTable{users: h.users},
 				[]*run.Run{runItem},
 			)
 		},

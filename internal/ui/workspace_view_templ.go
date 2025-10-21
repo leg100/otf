@@ -100,7 +100,7 @@ type workspaceListProps struct {
 	statusFilterVisible bool
 	tagFilterVisible    bool
 	pageOptions         resource.PageOptions
-	page                *resource.Page[*Workspace]
+	page                *resource.Page[*workspace.Workspace]
 }
 
 func workspaceList(props workspaceListProps) templ.Component {
@@ -224,7 +224,7 @@ func workspaceList(props workspaceListProps) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = components.PollingTable(table{}, props.page).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = components.PollingTable(workspacesTable{}, props.page).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -242,9 +242,9 @@ func workspaceList(props workspaceListProps) templ.Component {
 	})
 }
 
-type workspaceTable struct{}
+type workspacesTable struct{}
 
-func (t workspaceTable) Header() templ.Component {
+func (t workspacesTable) Header() templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -273,7 +273,7 @@ func (t workspaceTable) Header() templ.Component {
 	})
 }
 
-func (t workspaceTable) Row(ws *workspace.Workspace) templ.Component {
+func (t workspacesTable) Row(ws *workspace.Workspace) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
