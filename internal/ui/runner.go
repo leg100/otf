@@ -19,7 +19,6 @@ import (
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runner"
 	"github.com/leg100/otf/internal/workspace"
-	workspacepkg "github.com/leg100/otf/internal/workspace"
 )
 
 // runnersTableID is the CSS ID of the DOM element containing the table of
@@ -29,7 +28,7 @@ const runnersTableID = "runners-table"
 // runnerHandlers provides handlers for the web UI for runners
 type runnerHandlers struct {
 	svc                  runnerClient
-	workspaces           *workspacepkg.Service
+	workspaces           *workspace.Service
 	logger               logr.Logger
 	authorizer           authz.Interface
 	websocketListHandler *components.WebsocketListHandler[*runner.RunnerMeta, *runner.RunnerEvent, runner.ListOptions]
@@ -237,8 +236,8 @@ func (h *runnerHandlers) getAgentPool(w http.ResponseWriter, r *http.Request) {
 
 	// fetch all workspaces in organization then distribute them among the three
 	// sets documented above.
-	allWorkspaces, err := resource.ListAll(func(opts resource.PageOptions) (*resource.Page[*workspacepkg.Workspace], error) {
-		return h.workspaces.List(r.Context(), workspacepkg.ListOptions{
+	allWorkspaces, err := resource.ListAll(func(opts resource.PageOptions) (*resource.Page[*workspace.Workspace], error) {
+		return h.workspaces.List(r.Context(), workspace.ListOptions{
 			PageOptions:  opts,
 			Organization: &pool.Organization,
 		})
