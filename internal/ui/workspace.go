@@ -236,7 +236,6 @@ func (h *workspaceHandlers) createWorkspace(w http.ResponseWriter, r *http.Reque
 	})
 	if err != nil {
 		html.Error(r, w, err.Error())
-		html.Error(r, w, err.Error())
 		return
 	}
 	html.FlashSuccess(w, "created workspace: "+ws.Name)
