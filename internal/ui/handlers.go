@@ -62,7 +62,7 @@ func (h *Handlers) AddHandlers(r *mux.Router) {
 	addRunHandlers(r, h.Logger, h.Runs, h.Workspaces, h.Users, h.Runs)
 	addTeamHandlers(r, h.Teams, h.Users, h.Tokens, h.Authorizer)
 	addUserHandlers(r, h.Users, h.Authorizer)
-	addWorkspaceHandlers(r, h.Logger, h.Workspaces, h.Teams, h.VCSProviders, h.Authorizer, h.EngineService)
+	addWorkspaceHandlers(r, h.Logger, h.Workspaces, h.Teams, h.VCSProviders, h.Authorizer, h.EngineService, h.Runs, h.Users)
 	addOrganizationHandlers(r, h.Organizations, h.RestrictOrganizationCreation)
 	addModuleHandlers(r, h.Modules, h.VCSProviders, h.HostnameService, h.Authorizer)
 	addVariableHandlers(r, h.VariablesService, h.Workspaces, h.Authorizer)

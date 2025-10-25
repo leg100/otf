@@ -42,7 +42,7 @@ func TestIntegration_OrganizationUI(t *testing.T) {
 		require.NoError(t, err)
 
 		// there should be one organization listed
-		err = expect.Locator(page.Locator(`//*[@id='organization-table']//tbody/tr`)).ToHaveCount(1)
+		err = expect.Locator(page.Locator(`//table/tbody/tr`)).ToHaveCount(1)
 		require.NoError(t, err)
 
 		// go to organization

@@ -6,8 +6,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/gorilla/websocket"
-
 	"github.com/a-h/templ"
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
@@ -21,6 +19,7 @@ import (
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/vcs"
@@ -51,13 +50,14 @@ const (
 type (
 	workspaceHandlers struct {
 		*workspaceUIHelpers
-		logger               logr.Logger
-		teams                workspaceTeamClient
-		vcsproviders         workspaceVCSProvidersClient
-		client               workspaceClient
-		authorizer           workspaceAuthorizer
-		releases             workspaceEngineClient
-		websocketListHandler *components.WebsocketListHandler[*workspace.Workspace, *workspace.Event, workspace.ListOptions]
+		logger       logr.Logger
+		teams        workspaceTeamClient
+		vcsproviders workspaceVCSProvidersClient
+		client       workspaceClient
+		authorizer   workspaceAuthorizer
+		releases     workspaceEngineClient
+		runs         workspaceRunClient
+		users        workspaceUserClient
 	}
 
 	workspaceTeamClient interface {
@@ -97,6 +97,14 @@ type (
 		UnsetPermission(ctx context.Context, workspaceID, teamID resource.TfeID) error
 		Watch(context.Context) (<-chan pubsub.Event[*workspace.Event], func())
 	}
+
+	workspaceRunClient interface {
+		Get(ctx context.Context, id resource.TfeID) (*run.Run, error)
+	}
+
+	workspaceUserClient interface {
+		GetUser(ctx context.Context, spec user.UserSpec) (*user.User, error)
+	}
 )
 
 // addWorkspaceHandlers registers workspace UI handlers with the router
@@ -108,6 +116,8 @@ func addWorkspaceHandlers(
 	vcsproviders workspaceVCSProvidersClient,
 	authorizer workspaceAuthorizer,
 	releases workspaceEngineClient,
+	runs workspaceRunClient,
+	users workspaceUserClient,
 ) {
 	h := &workspaceHandlers{
 		workspaceUIHelpers: &workspaceUIHelpers{
@@ -118,13 +128,9 @@ func addWorkspaceHandlers(
 		teams:        teams,
 		vcsproviders: vcsproviders,
 		client:       workspaces,
-		websocketListHandler: &components.WebsocketListHandler[*workspace.Workspace, *workspace.Event, workspace.ListOptions]{
-			Logger:    logger,
-			Client:    workspaces,
-			Populator: &workspaceTable{},
-			ID:        "page-results",
-		},
-		releases: releases,
+		releases:     releases,
+		runs:         runs,
+		users:        users,
 	}
 
 	r.HandleFunc("/organizations/{organization_name}/workspaces", h.listWorkspaces).Methods("GET")
@@ -152,11 +158,6 @@ func addWorkspaceHandlers(
 }
 
 func (h *workspaceHandlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
-	if websocket.IsWebSocketUpgrade(r) {
-		h.websocketListHandler.Handler(w, r)
-		return
-	}
-
 	var params struct {
 		workspace.ListOptions
 		StatusFilterVisible bool `schema:"status_filter_visible"`
@@ -182,6 +183,12 @@ func (h *workspaceHandlers) listWorkspaces(w http.ResponseWriter, r *http.Reques
 		tagStrings[i] = tag.Name
 	}
 
+	page, err := h.client.List(r.Context(), params.ListOptions)
+	if err != nil {
+		html.Error(r, w, err.Error())
+		return
+	}
+
 	props := workspaceListProps{
 		organization:        *params.Organization,
 		allTags:             tagStrings,
@@ -196,6 +203,7 @@ func (h *workspaceHandlers) listWorkspaces(w http.ResponseWriter, r *http.Reques
 			params.Organization,
 		),
 		pageOptions: params.PageOptions,
+		page:        page,
 	}
 
 	html.Render(workspaceList(props), w, r)
@@ -287,6 +295,17 @@ func (h *workspaceHandlers) getWorkspace(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	// get latest run if there is one.
+	var latestRun *run.Run
+	if ws.LatestRun != nil {
+		run, err := h.runs.Get(r.Context(), ws.LatestRun.ID)
+		if err != nil {
+			html.Error(r, w, err.Error())
+			return
+		}
+		latestRun = run
+	}
+
 	props := workspaceGetProps{
 		ws:                 ws,
 		workspaceLockInfo:  lockInfo,
@@ -306,6 +325,8 @@ func (h *workspaceHandlers) getWorkspace(w http.ResponseWriter, r *http.Request)
 			Placeholder: "Add tags",
 			Width:       components.NarrowDropDown,
 		},
+		latestRun: latestRun,
+		users:     h.users,
 	}
 	html.Render(workspaceGet(props), w, r)
 }

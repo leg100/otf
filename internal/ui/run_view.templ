@@ -21,44 +21,42 @@ type runListProps struct {
 	status              []runstatus.Status
 	statusFilterVisible bool
 	canUpdateWorkspace  bool
+	table               runsTable
 	pageOptions         resource.PageOptions
+	page                *resource.Page[*run.Run]
 }
 
 templ runList(props runListProps) {
 	{{
-	layoutProps := components.LayoutProps{
-		Title:        "runs",
-		Organization: props.organization,
-	}
-	if props.ws != nil {
-		layoutProps.Breadcrumbs = []components.Breadcrumb{
-			{Name: "Workspaces", Link: paths.Workspaces(props.organization)},
-			{Name: props.ws.Name, Link: paths.Workspace(props.ws.ID)},
+		layoutProps := components.LayoutProps{
+			Title:        "runs",
+			Organization: props.organization,
 		}
-		layoutProps.ContentLinks = WorkspaceHeaderLinks(props.ws.ID, props.canUpdateWorkspace)
-	}
-	layoutProps.Breadcrumbs = append(layoutProps.Breadcrumbs, components.Breadcrumb{Name: "Runs"})
+		if props.ws != nil {
+			layoutProps.Breadcrumbs = []components.Breadcrumb{
+				{Name: "Workspaces", Link: paths.Workspaces(props.organization)},
+				{Name: props.ws.Name, Link: paths.Workspace(props.ws.ID)},
+			}
+			layoutProps.ContentLinks = WorkspaceHeaderLinks(props.ws.ID, props.canUpdateWorkspace)
+		}
+		layoutProps.Breadcrumbs = append(layoutProps.Breadcrumbs, components.Breadcrumb{Name: "Runs"})
 	}}
 	@components.Layout(layoutProps) {
 		<div class="flex flex-col gap-2">
-			<form
-				hx-ext="ws"
-				ws-connect={ components.CurrentURL(ctx) }
-				action={ templ.SafeURL(components.CurrentURL(ctx)) }
-			>
+			<form action={ templ.SafeURL(components.CurrentURL(ctx)) }>
 				@runstatus.Filter(props.status, props.statusFilterVisible)
 			</form>
-			<div id="page-results"></div>
+			@components.PollingTable(props.table, props.page)
 		</div>
 	}
 }
 
-type runTable struct {
+type runsTable struct {
 	workspaceGetClient runWorkspaceGetClient
 	users              runUsersClient
 }
 
-templ (t runTable) Header() {
+templ (t runsTable) Header() {
 	<th>Run</th>
 	<!-- add workspace column if not filtered by workspace ID -->
 	if t.workspaceGetClient != nil {
@@ -70,7 +68,7 @@ templ (t runTable) Header() {
 	<th>Actions</th>
 }
 
-templ (t runTable) Row(run *run.Run) {
+templ (t runsTable) Row(run *run.Run) {
 	<tr id={ "run-item-" + run.ID.String() }>
 		<td>
 			<a class="link" href={ paths.Run(run.ID) }>
@@ -183,7 +181,7 @@ templ (t runTable) Row(run *run.Run) {
 	</tr>
 }
 
-func (t runTable) getWorkspaceName(ctx context.Context, run *run.Run) (string, error) {
+func (t runsTable) getWorkspaceName(ctx context.Context, run *run.Run) (string, error) {
 	ws, err := t.workspaceGetClient.Get(ctx, run.WorkspaceID)
 	if err != nil {
 		return "", err
@@ -191,7 +189,7 @@ func (t runTable) getWorkspaceName(ctx context.Context, run *run.Run) (string, e
 	return ws.Name, nil
 }
 
-templ (t runTable) avatar(run *run.Run) {
+templ (t runsTable) avatar(run *run.Run) {
 	<div class="avatar">
 		<div class="size-14 rounded">
 			if run.CreatedBy != nil {
@@ -209,27 +207,27 @@ templ (t runTable) avatar(run *run.Run) {
 	</div>
 }
 
-type runGetProps struct {
+type getRunProps struct {
 	run       *run.Run
 	ws        *workspace.Workspace
 	planLogs  run.Chunk
 	applyLogs run.Chunk
 }
 
-templ runGet(props runGetProps) {
+templ getRun(props getRunProps) {
 	{{
-	layoutProps := components.LayoutProps{
-		Title:        props.run.ID.String(),
-		Organization: props.ws.Organization,
-		PreContent:   getPreContent(),
-		PostContent:  getPostContent(props),
-		Breadcrumbs: []components.Breadcrumb{
-			{Name: "Workspaces", Link: paths.Workspaces(props.ws.Organization)},
-			{Name: props.ws.Name, Link: paths.Workspace(props.ws.ID)},
-			{Name: "Runs", Link: paths.Runs(props.ws.ID)},
-			{Name: props.run.ID.String()},
-		},
-	}
+		layoutProps := components.LayoutProps{
+			Title:        props.run.ID.String(),
+			Organization: props.ws.Organization,
+			PreContent:   getPreContent(),
+			PostContent:  getPostContent(props),
+			Breadcrumbs: []components.Breadcrumb{
+				{Name: "Workspaces", Link: paths.Workspaces(props.ws.Organization)},
+				{Name: props.ws.Name, Link: paths.Workspace(props.ws.ID)},
+				{Name: "Runs", Link: paths.Runs(props.ws.ID)},
+				{Name: props.run.ID.String()},
+			},
+		}
 	}}
 	@components.Layout(layoutProps) {
 		<div hx-ext="ws" ws-connect={ string(paths.WatchRun(props.run.ID)) }></div>
@@ -295,7 +293,7 @@ templ getPreContent() {
 	<script src={ components.AssetPath(ctx, "/static/js/running_time.js") }></script>
 }
 
-templ getPostContent(props runGetProps) {
+templ getPostContent(props getRunProps) {
 	if !props.planLogs.IsEnd() {
 		@templ.JSFuncCall("setupTail", paths.TailRun(props.run.ID), "plan", props.planLogs.NextOffset())
 	}
@@ -310,7 +308,7 @@ type event struct {
 
 templ (e *event) view(runItem *run.Run) {
 	// render single-row table
-	@components.UnpaginatedTable(&runTable{users: e.users}, []*run.Run{runItem}, "run-item-"+runItem.ID.String())
+	@components.UnpaginatedTable(&runsTable{users: e.users}, []*run.Run{runItem})
 	@phaseStatus(runItem.Plan)
 	@phaseStatus(runItem.Apply)
 	@periodReport(runItem)
