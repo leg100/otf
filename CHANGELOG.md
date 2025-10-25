@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.8](https://github.com/leg100/otf/compare/v0.4.7...v0.4.8) (2025-10-25)
+
+
+### Miscellaneous
+
+* document dynamic credentials test setup ([efecef2](https://github.com/leg100/otf/commit/efecef20d7b5a8539ce5b77c83751a9cc9ae1cef))
+* remove unnecessary double html error ([53cb12d](https://github.com/leg100/otf/commit/53cb12d25d00c664daf7ebe7eb7fcd38e609fad5))
+
 ## [0.4.7](https://github.com/leg100/otf/compare/v0.4.6...v0.4.7) (2025-10-10)
 
 
