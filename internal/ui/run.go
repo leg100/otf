@@ -19,7 +19,7 @@ import (
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
-	"github.com/leg100/otf/internal/run"
+	runpkg "github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/workspace"
 )
@@ -34,17 +34,17 @@ type (
 	}
 
 	runClient interface {
-		Create(ctx context.Context, workspaceID resource.TfeID, opts run.CreateOptions) (*run.Run, error)
-		List(ctx context.Context, opts run.ListOptions) (*resource.Page[*run.Run], error)
-		Get(ctx context.Context, id resource.TfeID) (*run.Run, error)
+		Create(ctx context.Context, workspaceID resource.TfeID, opts runpkg.CreateOptions) (*runpkg.Run, error)
+		List(ctx context.Context, opts runpkg.ListOptions) (*resource.Page[*runpkg.Run], error)
+		Get(ctx context.Context, id resource.TfeID) (*runpkg.Run, error)
 		Delete(ctx context.Context, runID resource.TfeID) error
 		Cancel(ctx context.Context, runID resource.TfeID) error
 		ForceCancel(ctx context.Context, runID resource.TfeID) error
 		Apply(ctx context.Context, runID resource.TfeID) error
 		Discard(ctx context.Context, runID resource.TfeID) error
-		Watch(ctx context.Context) (<-chan pubsub.Event[*run.Event], func())
-		Tail(ctx context.Context, opts run.TailOptions) (<-chan run.Chunk, error)
-		GetChunk(ctx context.Context, opts run.GetChunkOptions) (run.Chunk, error)
+		Watch(ctx context.Context) (<-chan pubsub.Event[*runpkg.Event], func())
+		Tail(ctx context.Context, opts runpkg.TailOptions) (<-chan runpkg.Chunk, error)
+		GetChunk(ctx context.Context, opts runpkg.GetChunkOptions) (runpkg.Chunk, error)
 	}
 
 	runWorkspaceClient interface {
@@ -96,17 +96,17 @@ func addRunHandlers(r *mux.Router, logger logr.Logger, runs runClient, workspace
 
 func (h *runHandlers) createRun(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		WorkspaceID resource.TfeID `schema:"workspace_id,required"`
-		Operation   run.Operation  `schema:"operation,required"`
+		WorkspaceID resource.TfeID   `schema:"workspace_id,required"`
+		Operation   runpkg.Operation `schema:"operation,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
-	createdRun, err := h.runs.Create(r.Context(), params.WorkspaceID, run.CreateOptions{
-		IsDestroy: internal.Ptr(params.Operation == run.DestroyAllOperation),
-		PlanOnly:  internal.Ptr(params.Operation == run.PlanOnlyOperation),
+	createdRun, err := h.runs.Create(r.Context(), params.WorkspaceID, runpkg.CreateOptions{
+		IsDestroy: internal.Ptr(params.Operation == runpkg.DestroyAllOperation),
+		PlanOnly:  internal.Ptr(params.Operation == runpkg.PlanOnlyOperation),
 		Source:    source.UI,
 	})
 	if err != nil {
@@ -119,7 +119,7 @@ func (h *runHandlers) createRun(w http.ResponseWriter, r *http.Request) {
 
 func (h *runHandlers) list(w http.ResponseWriter, r *http.Request) {
 	var opts struct {
-		run.ListOptions
+		runpkg.ListOptions
 		StatusFilterVisible bool `schema:"status_filter_visible"`
 	}
 	if err := decode.All(&opts, r); err != nil {
@@ -170,43 +170,43 @@ func (h *runHandlers) get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	runResult, err := h.runs.Get(r.Context(), runID)
+	run, err := h.runs.Get(r.Context(), runID)
 	if err != nil {
 		html.Error(r, w, "retrieving run: "+err.Error())
 		return
 	}
 
-	ws, err := h.workspaces.Get(r.Context(), runResult.WorkspaceID)
+	ws, err := h.workspaces.Get(r.Context(), run.WorkspaceID)
 	if err != nil {
 		html.Error(r, w, "retrieving workspace: "+err.Error())
 		return
 	}
 
 	// Get existing logs thus far received for each phase.
-	planLogs, err := h.runs.GetChunk(r.Context(), run.GetChunkOptions{
-		RunID: runResult.ID,
-		Phase: run.PlanPhase,
+	planLogs, err := h.runs.GetChunk(r.Context(), runpkg.GetChunkOptions{
+		RunID: run.ID,
+		Phase: runpkg.PlanPhase,
 	})
 	if err != nil {
 		html.Error(r, w, "retrieving plan logs: "+err.Error())
 		return
 	}
-	applyLogs, err := h.runs.GetChunk(r.Context(), run.GetChunkOptions{
-		RunID: runResult.ID,
-		Phase: run.ApplyPhase,
+	applyLogs, err := h.runs.GetChunk(r.Context(), runpkg.GetChunkOptions{
+		RunID: run.ID,
+		Phase: runpkg.ApplyPhase,
 	})
 	if err != nil {
 		html.Error(r, w, "retrieving apply logs: "+err.Error())
 		return
 	}
 
-	props := runGetProps{
-		run:       runResult,
+	props := getRunProps{
+		run:       run,
 		ws:        ws,
-		planLogs:  run.Chunk{Data: planLogs.Data},
-		applyLogs: run.Chunk{Data: applyLogs.Data},
+		planLogs:  runpkg.Chunk{Data: planLogs.Data},
+		applyLogs: runpkg.Chunk{Data: applyLogs.Data},
 	}
-	html.Render(runGet(props), w, r)
+	html.Render(getRun(props), w, r)
 }
 
 // getWidget renders a run "widget", i.e. the container that
@@ -226,7 +226,7 @@ func (h *runHandlers) getWidget(w http.ResponseWriter, r *http.Request) {
 
 	table := components.UnpaginatedTable(
 		runsTable{users: h.users},
-		[]*run.Run{runItem},
+		[]*runpkg.Run{runItem},
 	)
 
 	html.Render(table, w, r)
@@ -325,7 +325,7 @@ func (h *runHandlers) retry(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	newRun, err := h.runs.Create(r.Context(), existingRun.WorkspaceID, run.CreateOptions{
+	newRun, err := h.runs.Create(r.Context(), existingRun.WorkspaceID, runpkg.CreateOptions{
 		ConfigurationVersionID: &existingRun.ConfigurationVersionID,
 		IsDestroy:              &existingRun.IsDestroy,
 		PlanOnly:               &existingRun.PlanOnly,
@@ -413,10 +413,10 @@ func (h *runHandlers) watchLatest(w http.ResponseWriter, r *http.Request) {
 	conn, err := components.NewWebsocket(
 		h.logger, w, r,
 		h.runs,
-		func(runItem *run.Run) templ.Component {
+		func(runItem *runpkg.Run) templ.Component {
 			return components.UnpaginatedTable(
 				runsTable{users: h.users},
-				[]*run.Run{runItem},
+				[]*runpkg.Run{runItem},
 			)
 		},
 	)
@@ -485,7 +485,7 @@ const (
 )
 
 func (h *runHandlers) tailRun(w http.ResponseWriter, r *http.Request) {
-	var params run.TailOptions
+	var params runpkg.TailOptions
 	if err := decode.All(&params, r); err != nil {
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
 		return

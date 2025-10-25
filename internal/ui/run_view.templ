@@ -207,14 +207,14 @@ templ (t runsTable) avatar(run *run.Run) {
 	</div>
 }
 
-type runGetProps struct {
+type getRunProps struct {
 	run       *run.Run
 	ws        *workspace.Workspace
 	planLogs  run.Chunk
 	applyLogs run.Chunk
 }
 
-templ runGet(props runGetProps) {
+templ getRun(props getRunProps) {
 	{{
 		layoutProps := components.LayoutProps{
 			Title:        props.run.ID.String(),
@@ -293,7 +293,7 @@ templ getPreContent() {
 	<script src={ components.AssetPath(ctx, "/static/js/running_time.js") }></script>
 }
 
-templ getPostContent(props runGetProps) {
+templ getPostContent(props getRunProps) {
 	if !props.planLogs.IsEnd() {
 		@templ.JSFuncCall("setupTail", paths.TailRun(props.run.ID), "plan", props.planLogs.NextOffset())
 	}
