@@ -9,12 +9,14 @@ import (
 	"strings"
 
 	"github.com/a-h/templ"
+	"github.com/go-logr/logr"
 )
 
 type sseConnection struct {
 	http.ResponseWriter
 	*http.ResponseController
 	base64 bool
+	logger logr.Logger
 }
 
 type sseEvent string
@@ -50,6 +52,7 @@ func (conn *sseConnection) Send(data []byte, event sseEvent) {
 func (conn *sseConnection) Render(ctx context.Context, comp templ.Component, event sseEvent) error {
 	var buf bytes.Buffer
 	if err := comp.Render(ctx, &buf); err != nil {
+		conn.logger.Error(err, "rendering html fragment on sse connection")
 		return err
 	}
 	conn.Send(buf.Bytes(), event)

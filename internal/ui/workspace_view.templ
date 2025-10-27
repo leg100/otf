@@ -191,7 +191,10 @@ templ workspaceGet(props workspaceGetProps) {
 					<h3 class="text-md font-bold">
 						Latest Run
 					</h3>
-					<div id="latest-run">
+					<div
+						id="latest-run"
+						sse-swap={ latestRunUpdate }
+					>
 						if props.latestRun != nil {
 							@components.UnpaginatedTable(&runsTable{users: props.users}, []*run.Run{props.latestRun})
 						} else {

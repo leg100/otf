@@ -360,25 +360,34 @@ func (h *runHandlers) watchRun(w http.ResponseWriter, r *http.Request) {
 	send := func() {
 		run, err := h.runs.Get(r.Context(), runID)
 		if err != nil {
-			// TODO: how to send on sse conn? Maybe send special event that
-			// sets a flash message. At the very least log something to browser
-			// console (if possible with htmx).
-			html.Error(r, w, "retrieving run: "+err.Error())
+			// terminate conn on error
 			return
 		}
 		// Render multiple html fragments each time a run event occurs. Each
 		// fragment is sent down the SSE conn as separate SSE events.
-		conn.Render(r.Context(), runningTime(run), runTimeUpdate)
-		conn.Render(r.Context(), runningTime(&run.Plan), planTimeUpdate)
-		conn.Render(r.Context(), runningTime(&run.Apply), applyTimeUpdate)
-
-		conn.Render(r.Context(), phaseStatus(run.Plan), planStatusUpdate)
-		conn.Render(r.Context(), phaseStatus(run.Apply), applyStatusUpdate)
-
-		conn.Render(r.Context(), periodReport(run), periodReportUpdate)
+		if err := conn.Render(r.Context(), runningTime(run), runTimeUpdate); err != nil {
+			return
+		}
+		if err := conn.Render(r.Context(), runningTime(&run.Plan), planTimeUpdate); err != nil {
+			return
+		}
+		if err := conn.Render(r.Context(), runningTime(&run.Apply), applyTimeUpdate); err != nil {
+			return
+		}
+		if err := conn.Render(r.Context(), phaseStatus(run.Plan), planStatusUpdate); err != nil {
+			return
+		}
+		if err := conn.Render(r.Context(), phaseStatus(run.Apply), applyStatusUpdate); err != nil {
+			return
+		}
+		if err := conn.Render(r.Context(), periodReport(run), periodReportUpdate); err != nil {
+			return
+		}
 
 		widget := components.UnpaginatedTable(&runsTable{users: h.users}, []*runpkg.Run{run})
-		conn.Render(r.Context(), widget, runWidgetUpdate)
+		if err := conn.Render(r.Context(), widget, runWidgetUpdate); err != nil {
+			return
+		}
 	}
 	// Immediately send fragments in case they've changed since the page was
 	// first rendered.
@@ -406,6 +415,8 @@ func (h *runHandlers) watchRun(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+const latestRunUpdate sseEvent = "LatestRunUpdate"
+
 func (h *runHandlers) watchLatest(w http.ResponseWriter, r *http.Request) {
 	workspaceID, err := decode.ID("workspace_id", r)
 	if err != nil {
@@ -429,17 +440,17 @@ func (h *runHandlers) watchLatest(w http.ResponseWriter, r *http.Request) {
 	send := func(runID resource.TfeID) {
 		run, err := h.runs.Get(r.Context(), runID)
 		if err != nil {
-			// TODO: how to send on sse conn? Maybe send special event that
-			// sets a flash message. At the very least log something to browser
-			// console (if possible with htmx).
-			html.Error(r, w, "retrieving run: "+err.Error())
+			// terminate conn on error
 			return
 		}
 		comp := components.UnpaginatedTable(
 			runsTable{users: h.users},
 			[]*runpkg.Run{run},
 		)
-		conn.Render(r.Context(), comp, "LatestRun")
+		if err := conn.Render(r.Context(), comp, latestRunUpdate); err != nil {
+			// terminate conn on error
+			return
+		}
 	}
 
 	// maintain reference to ID of latest run for workspace.
