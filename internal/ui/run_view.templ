@@ -54,6 +54,7 @@ templ runList(props runListProps) {
 type runsTable struct {
 	workspaceGetClient runWorkspaceGetClient
 	users              runUsersClient
+	configs            runConfigsClient
 }
 
 templ (t runsTable) Header() {
@@ -97,7 +98,7 @@ templ (t runsTable) Row(run *run.Run) {
 						</span>
 					}
 					<div class="flex gap-2 items-center">
-						@run.SourceIcon
+						@t.configs.GetSourceIcon(run.Source)
 						if run.IngressAttributes != nil {
 							<div class="badge badge-secondary badge-soft badge-sm font-mono">
 								<svg
@@ -208,11 +209,12 @@ templ (t runsTable) avatar(run *run.Run) {
 }
 
 type getRunProps struct {
-	run       *run.Run
-	ws        *workspace.Workspace
-	planLogs  run.Chunk
-	applyLogs run.Chunk
-	users     runUsersClient
+	run            *run.Run
+	ws             *workspace.Workspace
+	planLogs       run.Chunk
+	applyLogs      run.Chunk
+	users          runUsersClient
+	singleRowTable templ.Component
 }
 
 templ getRun(props getRunProps) {
@@ -270,8 +272,7 @@ templ getRun(props getRunProps) {
 				id={ "run-item-" + props.run.ID.String() }
 				sse-swap={ runWidgetUpdate }
 			>
-				// render single-row table
-				@components.UnpaginatedTable(&runsTable{users: props.users}, []*run.Run{props.run})
+				@props.singleRowTable
 			</div>
 			<details class="collapse collapse-arrow border-base-content/20 border" id="plan" open>
 				<summary class="collapse-title">

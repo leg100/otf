@@ -82,7 +82,6 @@ func init() {
 	funcmap["forceCancelRunPath"] = ForceCancelRun
 	funcmap["retryRunPath"] = RetryRun
 	funcmap["tailRunPath"] = TailRun
-	funcmap["widgetRunPath"] = WidgetRun
 	funcmap["watchRunPath"] = WatchRun
 	funcmap["watchLatestRunPath"] = WatchLatestRun
 

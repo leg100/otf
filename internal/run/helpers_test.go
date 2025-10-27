@@ -11,13 +11,17 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func newTestRun(t *testing.T, ctx context.Context, opts CreateOptions) *Run {
+func NewTestRun(t *testing.T, ctx context.Context, opts CreateOptions) *Run {
 	org, err := organization.NewOrganization(organization.CreateOptions{Name: internal.Ptr("acme-corp")})
 	require.NoError(t, err)
+
 	ws := workspace.NewTestWorkspace(t, nil)
 	cv := configversion.NewConfigurationVersion(ws.ID, configversion.CreateOptions{})
+
 	factory := newTestFactory(org, ws, cv)
+
 	run, err := factory.NewRun(ctx, ws.ID, opts)
 	require.NoError(t, err)
+
 	return run
 }

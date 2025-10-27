@@ -23,8 +23,7 @@ import (
 
 // pgdb is a database of runs on postgres
 type pgdb struct {
-	*sql.DB       // provides access to generated SQL queries
-	configService *configversion.Service
+	*sql.DB // provides access to generated SQL queries
 }
 
 // CreateRun persists a Run to the DB.
@@ -842,7 +841,6 @@ func (db *pgdb) scan(row pgx.CollectableRow) (*Run, error) {
 		AutoApply:              m.AutoApply,
 		PlanOnly:               m.PlanOnly,
 		Source:                 m.Source,
-		SourceIcon:             db.configService.GetSourceIcon(m.Source),
 		Status:                 m.Status,
 		WorkspaceID:            m.WorkspaceID,
 		ConfigurationVersionID: m.ConfigurationVersionID,

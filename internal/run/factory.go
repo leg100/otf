@@ -115,7 +115,6 @@ func (f *factory) NewRun(ctx context.Context, workspaceID resource.TfeID, opts C
 	if run.Source == "" {
 		run.Source = source.API
 	}
-	run.SourceIcon = f.configs.GetSourceIcon(run.Source)
 
 	if opts.TerraformVersion != nil {
 		run.EngineVersion = *opts.TerraformVersion

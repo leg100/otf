@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/a-h/templ"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/configversion/source"
@@ -60,7 +59,6 @@ type (
 		AutoApply              bool                    `jsonapi:"attribute" json:"auto_apply"`
 		PlanOnly               bool                    `jsonapi:"attribute" json:"plan_only"`
 		Source                 source.Source           `jsonapi:"attribute" json:"source"`
-		SourceIcon             templ.Component         `json:"-"`
 		Status                 runstatus.Status        `jsonapi:"attribute" json:"status"`
 		WorkspaceID            resource.TfeID          `jsonapi:"attribute" json:"workspace_id"`
 		ConfigurationVersionID resource.TfeID          `jsonapi:"attribute" json:"configuration_version_id"`

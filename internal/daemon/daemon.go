@@ -401,6 +401,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 			Runners:                      runnerService,
 			GithubApp:                    githubAppService,
 			EngineService:                engineService,
+			Configs:                      configService,
 			HostnameService:              hostnameService,
 			Tokens:                       tokensService,
 			Authorizer:                   authorizer,

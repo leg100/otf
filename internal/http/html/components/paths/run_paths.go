@@ -60,10 +60,6 @@ func TailRun(run fmt.Stringer) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/runs/%s/tail", run))
 }
 
-func WidgetRun(run fmt.Stringer) templ.SafeURL {
-	return templ.URL(fmt.Sprintf("/app/runs/%s/widget", run))
-}
-
 func WatchRun(run fmt.Stringer) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/runs/%s/watch", run))
 }

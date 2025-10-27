@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/a-h/templ"
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
@@ -27,6 +28,7 @@ type (
 		runs       runClient
 		workspaces runWorkspaceClient
 		users      runUsersClient
+		configs    runConfigsClient
 		authorizer runAuthorizer
 	}
 
@@ -60,16 +62,21 @@ type (
 	runAuthorizer interface {
 		CanAccess(context.Context, authz.Action, resource.ID) bool
 	}
+
+	runConfigsClient interface {
+		GetSourceIcon(source source.Source) templ.Component
+	}
 )
 
 // addRunHandlers registers run UI handlers with the router
-func addRunHandlers(r *mux.Router, logger logr.Logger, runs runClient, workspaces runWorkspaceClient, users runUsersClient, authorizer runAuthorizer) {
+func addRunHandlers(r *mux.Router, logger logr.Logger, runs runClient, workspaces runWorkspaceClient, users runUsersClient, configs runConfigsClient, authorizer runAuthorizer) {
 	h := &runHandlers{
 		authorizer: authorizer,
 		logger:     logger,
 		runs:       runs,
 		workspaces: workspaces,
 		users:      users,
+		configs:    configs,
 	}
 
 	r.HandleFunc("/organizations/{organization_name}/runs", h.list).Methods("GET")
@@ -77,7 +84,6 @@ func addRunHandlers(r *mux.Router, logger logr.Logger, runs runClient, workspace
 	r.HandleFunc("/workspaces/{workspace_id}/start-run", h.createRun).Methods("POST")
 	r.HandleFunc("/workspaces/{workspace_id}/runs/watch-latest", h.watchLatest).Methods("GET")
 	r.HandleFunc("/runs/{run_id}", h.get).Methods("GET")
-	r.HandleFunc("/runs/{run_id}/widget", h.getWidget).Methods("GET")
 	r.HandleFunc("/runs/{run_id}/delete", h.delete).Methods("POST")
 	r.HandleFunc("/runs/{run_id}/cancel", h.cancel).Methods("POST")
 	r.HandleFunc("/runs/{run_id}/force-cancel", h.forceCancel).Methods("POST")
@@ -131,6 +137,7 @@ func (h *runHandlers) list(w http.ResponseWriter, r *http.Request) {
 		table: runsTable{
 			workspaceGetClient: newWorkspaceCache(h.workspaces),
 			users:              newUserCache(h.users),
+			configs:            h.configs,
 		},
 	}
 
@@ -205,29 +212,6 @@ func (h *runHandlers) get(w http.ResponseWriter, r *http.Request) {
 		users:     h.users,
 	}
 	html.Render(getRun(props), w, r)
-}
-
-// getWidget renders a run "widget", i.e. the container that
-// contains info about a run. Intended for use with an ajax request.
-func (h *runHandlers) getWidget(w http.ResponseWriter, r *http.Request) {
-	runID, err := decode.ID("run_id", r)
-	if err != nil {
-		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
-		return
-	}
-
-	runItem, err := h.runs.Get(r.Context(), runID)
-	if err != nil {
-		html.Error(r, w, err.Error())
-		return
-	}
-
-	table := components.UnpaginatedTable(
-		runsTable{users: h.users},
-		[]*runpkg.Run{runItem},
-	)
-
-	html.Render(table, w, r)
 }
 
 func (h *runHandlers) delete(w http.ResponseWriter, r *http.Request) {
@@ -384,8 +368,7 @@ func (h *runHandlers) watchRun(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		widget := components.UnpaginatedTable(&runsTable{users: h.users}, []*runpkg.Run{run})
-		if err := conn.Render(r.Context(), widget, runWidgetUpdate); err != nil {
+		if err := conn.Render(r.Context(), h.singleRowTable(run), runWidgetUpdate); err != nil {
 			return
 		}
 	}
@@ -443,11 +426,7 @@ func (h *runHandlers) watchLatest(w http.ResponseWriter, r *http.Request) {
 			// terminate conn on error
 			return
 		}
-		comp := components.UnpaginatedTable(
-			runsTable{users: h.users},
-			[]*runpkg.Run{run},
-		)
-		if err := conn.Render(r.Context(), comp, latestRunUpdate); err != nil {
+		if err := conn.Render(r.Context(), h.singleRowTable(run), latestRunUpdate); err != nil {
 			// terminate conn on error
 			return
 		}
@@ -552,4 +531,14 @@ func (h *runHandlers) tailRun(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+}
+
+func (h *runHandlers) singleRowTable(run *runpkg.Run) templ.Component {
+	return components.UnpaginatedTable(
+		&runsTable{
+			users:   h.users,
+			configs: h.configs,
+		},
+		[]*runpkg.Run{run},
+	)
 }

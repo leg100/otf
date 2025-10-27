@@ -42,7 +42,6 @@
       - name: force-cancel
       - name: retry
       - name: tail
-      - name: widget
       - name: watch
       - name: watch-latest
         collection: true
