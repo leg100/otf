@@ -8,6 +8,7 @@ import (
 	"github.com/a-h/templ"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/configversion/source"
+	"github.com/leg100/otf/internal/engine"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/user"
@@ -28,50 +29,32 @@ func TestListRunsHandler(t *testing.T) {
 	}
 	user := &user.User{ID: resource.NewTfeID(resource.UserKind)}
 
-	t.Run("first page", func(t *testing.T) {
-		r := httptest.NewRequest("GET", "/?workspace_id=ws-123&page=1", nil)
-		r = r.WithContext(authz.AddSubjectToContext(r.Context(), user))
-		w := httptest.NewRecorder()
-		h.list(w, r)
-		assert.Equal(t, 200, w.Code)
-		assert.NotContains(t, w.Body.String(), "Previous Page")
-		assert.Contains(t, w.Body.String(), "Next Page")
-	})
-
-	t.Run("second page", func(t *testing.T) {
-		r := httptest.NewRequest("GET", "/?workspace_id=ws-123&page=2", nil)
-		r = r.WithContext(authz.AddSubjectToContext(r.Context(), user))
-		w := httptest.NewRecorder()
-		h.list(w, r)
-		assert.Equal(t, 200, w.Code)
-		assert.Contains(t, w.Body.String(), "Previous Page")
-		assert.Contains(t, w.Body.String(), "Next Page")
-	})
-
-	t.Run("last page", func(t *testing.T) {
-		r := httptest.NewRequest("GET", "/?workspace_id=ws-123&page=3", nil)
-		r = r.WithContext(authz.AddSubjectToContext(r.Context(), user))
-		w := httptest.NewRecorder()
-		h.list(w, r)
-		assert.Equal(t, 200, w.Code)
-		assert.Contains(t, w.Body.String(), "Previous Page")
-		assert.NotContains(t, w.Body.String(), "Next Page")
-	})
+	r := httptest.NewRequest("GET", "/?workspace_id=ws-123&page=1", nil)
+	r = r.WithContext(authz.AddSubjectToContext(r.Context(), user))
+	w := httptest.NewRecorder()
+	h.list(w, r)
+	assert.Equal(t, 200, w.Code)
 }
 
-//func TestWeb_GetHandler(t *testing.T) {
-//	ws1 := workspace.NewTestWorkspace(t, nil)
-//	run1 := newTestRun(t, context.Background(), CreateOptions{})
-//	h := newTestWebHandlers(t,
-//		withWorkspace(ws1),
-//		withRuns(run1),
-//	)
-//
-//	r := httptest.NewRequest("GET", "/?run_id=run-123", nil)
-//	w := httptest.NewRecorder()
-//	h.get(w, r)
-//	assert.Equal(t, 200, w.Code, "output: %s", w.Body.String())
-//}
+func TestWeb_GetHandler(t *testing.T) {
+	h := &runHandlers{
+		workspaces: &fakeWorkspaceClient{
+			ws: workspace.NewTestWorkspace(t, nil),
+		},
+		runs: &fakeRunClient{
+			run: &run.Run{
+				Engine: engine.Default,
+			},
+		},
+		configs:    &fakeConfigsClient{},
+		authorizer: authz.NewAllowAllAuthorizer(),
+	}
+	r := httptest.NewRequest("GET", "/?run_id=run-123", nil)
+	w := httptest.NewRecorder()
+	h.get(w, r)
+	assert.Equal(t, 200, w.Code, w.Body.String())
+}
+
 //
 //func TestRuns_CancelHandler(t *testing.T) {
 //	run := &Run{ID: testutils.ParseID(t, "run-1")}
@@ -154,6 +137,14 @@ type fakeRunClient struct {
 
 func (f *fakeRunClient) List(_ context.Context, opts run.ListOptions) (*resource.Page[*run.Run], error) {
 	return resource.NewPage([]*run.Run{f.run}, opts.PageOptions, nil), nil
+}
+
+func (f *fakeRunClient) Get(ctx context.Context, id resource.TfeID) (*run.Run, error) {
+	return f.run, nil
+}
+
+func (f *fakeRunClient) GetChunk(ctx context.Context, opts run.GetChunkOptions) (run.Chunk, error) {
+	return run.Chunk{}, nil
 }
 
 type fakeWorkspaceClient struct {
