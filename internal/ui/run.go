@@ -4,12 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"time"
 
-	"github.com/a-h/templ"
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
-	"github.com/gorilla/websocket"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/configversion/source"
@@ -205,6 +202,7 @@ func (h *runHandlers) get(w http.ResponseWriter, r *http.Request) {
 		ws:        ws,
 		planLogs:  runpkg.Chunk{Data: planLogs.Data},
 		applyLogs: runpkg.Chunk{Data: applyLogs.Data},
+		users:     h.users,
 	}
 	html.Render(getRun(props), w, r)
 }
@@ -339,62 +337,69 @@ func (h *runHandlers) retry(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, paths.Run(newRun.ID), http.StatusFound)
 }
 
+const (
+	periodReportUpdate sseEvent = "PeriodReportUpdate"
+	runWidgetUpdate    sseEvent = "RunWidgetUpdate"
+	runTimeUpdate      sseEvent = "RunTimeUpdate"
+	planTimeUpdate     sseEvent = "PlanTimeUpdate"
+	applyTimeUpdate    sseEvent = "ApplyTimeUpdate"
+	planStatusUpdate   sseEvent = "PlanStatusUpdate"
+	applyStatusUpdate  sseEvent = "ApplyStatusUpdate"
+)
+
 func (h *runHandlers) watchRun(w http.ResponseWriter, r *http.Request) {
 	runID, err := decode.ID("run_id", r)
 	if err != nil {
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
-	if !websocket.IsWebSocketUpgrade(r) {
-		return
-	}
-	// Render a one-row table containing run each time a run event arrives.
-	conn, err := components.NewWebsocket(h.logger, w, r, h.runs, (&event{users: h.users}).view)
-	if err != nil {
-		h.logger.Error(err, "upgrading websocket connection")
-		return
-	}
-	defer conn.Close()
+	conn := newSSEConnection(w, false)
 
 	sub, _ := h.runs.Watch(r.Context())
 
-	if !conn.Send(runID) {
-		return
-	}
+	send := func() {
+		run, err := h.runs.Get(r.Context(), runID)
+		if err != nil {
+			// TODO: how to send on sse conn? Maybe send special event that
+			// sets a flash message. At the very least log something to browser
+			// console (if possible with htmx).
+			html.Error(r, w, "retrieving run: "+err.Error())
+			return
+		}
+		// Render multiple html fragments each time a run event occurs. Each
+		// fragment is sent down the SSE conn as separate SSE events.
+		conn.Render(r.Context(), runningTime(run), runTimeUpdate)
+		conn.Render(r.Context(), runningTime(&run.Plan), planTimeUpdate)
+		conn.Render(r.Context(), runningTime(&run.Apply), applyTimeUpdate)
 
-	ticker := time.NewTicker(time.Second)
+		conn.Render(r.Context(), phaseStatus(run.Plan), planStatusUpdate)
+		conn.Render(r.Context(), phaseStatus(run.Apply), applyStatusUpdate)
+
+		conn.Render(r.Context(), periodReport(run), periodReportUpdate)
+
+		widget := components.UnpaginatedTable(&runsTable{users: h.users}, []*runpkg.Run{run})
+		conn.Render(r.Context(), widget, runWidgetUpdate)
+	}
+	// Immediately send fragments in case they've changed since the page was
+	// first rendered.
+	//
+	// TODO: add versions to run resources and send rendered run version in
+	// query param so that versions can be compared and this step can be
+	// skipped.
+	send()
+
 	for {
 		select {
-		case event := <-sub:
-			if event.Type == pubsub.DeletedEvent {
+		case ev := <-sub:
+			if ev.Type == pubsub.DeletedEvent {
 				// TODO: run has been deleted: user should be alerted and
 				// client should not reconnect.
 				return
 			}
-			if event.Payload.ID != runID {
+			if ev.Payload.ID != runID {
 				continue
 			}
-		case <-r.Context().Done():
-			return
-		}
-		// all further run events currently waiting on the subscription
-		// channel are rendered redundant because the websocket client
-		// retrieves the latest version of the run before sending it.
-		for {
-			select {
-			case <-sub:
-			default:
-				goto done
-			}
-		}
-	done:
-		if !conn.Send(runID) {
-			return
-		}
-		// Wait before sending anything more to client to avoid sending too many
-		// messages.
-		select {
-		case <-ticker.C:
+			send()
 		case <-r.Context().Done():
 			return
 		}
@@ -407,24 +412,7 @@ func (h *runHandlers) watchLatest(w http.ResponseWriter, r *http.Request) {
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
-	if !websocket.IsWebSocketUpgrade(r) {
-		return
-	}
-	conn, err := components.NewWebsocket(
-		h.logger, w, r,
-		h.runs,
-		func(runItem *runpkg.Run) templ.Component {
-			return components.UnpaginatedTable(
-				runsTable{users: h.users},
-				[]*runpkg.Run{runItem},
-			)
-		},
-	)
-	if err != nil {
-		h.logger.Error(err, "upgrading websocket connection")
-		return
-	}
-	defer conn.Close()
+
 	// Setup event subscriptions first then retrieve workspace to ensure we
 	// don't miss anything.
 	workspacesSub, _ := h.workspaces.Watch(r.Context())
@@ -434,13 +422,40 @@ func (h *runHandlers) watchLatest(w http.ResponseWriter, r *http.Request) {
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
-	var latestRunID *resource.TfeID
-	if ws.LatestRun != nil {
-		latestRunID = &ws.LatestRun.ID
-		if !conn.Send(*latestRunID) {
+
+	conn := newSSEConnection(w, false)
+
+	// function for retrieving run, rendering fragment and sending to client.
+	send := func(runID resource.TfeID) {
+		run, err := h.runs.Get(r.Context(), runID)
+		if err != nil {
+			// TODO: how to send on sse conn? Maybe send special event that
+			// sets a flash message. At the very least log something to browser
+			// console (if possible with htmx).
+			html.Error(r, w, "retrieving run: "+err.Error())
 			return
 		}
+		comp := components.UnpaginatedTable(
+			runsTable{users: h.users},
+			[]*runpkg.Run{run},
+		)
+		conn.Render(r.Context(), comp, "LatestRun")
 	}
+
+	// maintain reference to ID of latest run for workspace.
+	var latestRunID *resource.TfeID
+
+	if ws.LatestRun != nil {
+		latestRunID = &ws.LatestRun.ID
+		// Immediately send fragment in case it's changed since the page was
+		// first rendered.
+		//
+		// TODO: add versions to run resources and send rendered run version in
+		// query param so that versions can be compared and this step can be
+		// skipped.
+		send(*latestRunID)
+	}
+
 	for {
 		select {
 		case event := <-workspacesSub:
@@ -473,15 +488,13 @@ func (h *runHandlers) watchLatest(w http.ResponseWriter, r *http.Request) {
 		case <-r.Context().Done():
 			return
 		}
-		if !conn.Send(*latestRunID) {
-			return
-		}
+		send(*latestRunID)
 	}
 }
 
 const (
-	EventLogChunk    string = "log_update"
-	EventLogFinished string = "log_finished"
+	EventLogChunk    sseEvent = "log_update"
+	EventLogFinished sseEvent = "log_finished"
 )
 
 func (h *runHandlers) tailRun(w http.ResponseWriter, r *http.Request) {
@@ -497,19 +510,14 @@ func (h *runHandlers) tailRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "text/event-stream")
-	w.Header().Set("Cache-Control", "no-cache")
-	w.Header().Set("Connection", "keep-alive")
-	w.WriteHeader(http.StatusOK)
-	rc := http.NewResponseController(w)
-	rc.Flush()
+	conn := newSSEConnection(w, false)
 
 	for {
 		select {
 		case chunk, ok := <-ch:
 			if !ok {
 				// no more logs
-				pubsub.WriteSSEEvent(w, []byte("no more logs"), EventLogFinished, false)
+				conn.Send([]byte("no more logs"), EventLogFinished)
 				return
 			}
 			html := chunk.ToHTML()
@@ -528,8 +536,7 @@ func (h *runHandlers) tailRun(w http.ResponseWriter, r *http.Request) {
 				h.logger.Error(err, "marshalling data")
 				continue
 			}
-			pubsub.WriteSSEEvent(w, js, EventLogChunk, false)
-			rc.Flush()
+			conn.Send(js, EventLogChunk)
 		case <-r.Context().Done():
 			return
 		}

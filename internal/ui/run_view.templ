@@ -212,6 +212,7 @@ type getRunProps struct {
 	ws        *workspace.Workspace
 	planLogs  run.Chunk
 	applyLogs run.Chunk
+	users     runUsersClient
 }
 
 templ getRun(props getRunProps) {
@@ -246,21 +247,42 @@ templ getRun(props getRunProps) {
 			</div>
 			<div class="flex gap-1 items-center" id="elapsed-time">
 				Elapsed time
-				<span class="badge badge-soft" id={ "running-time-" + props.run.ID.String() }></span>
+				<span
+					class="badge badge-soft"
+					id={ "running-time-" + props.run.ID.String() }
+					sse-swap={ runTimeUpdate }
+				>
+					@runningTime(props.run)
+				</span>
 			</div>
 			<div class="flex gap-1 items-center z-20" id="run-identifier">
 				@components.Identifier(props.run.ID)
 			</div>
 		</div>
-		<div id="period-report"></div>
+		<div
+			id="period-report"
+			sse-swap={ periodReportUpdate }
+		>
+			@periodReport(props.run)
+		</div>
 		<div class="flex flex-col gap-4">
-			<div id={ "run-item-" + props.run.ID.String() }></div>
+			<div
+				id={ "run-item-" + props.run.ID.String() }
+				sse-swap={ runWidgetUpdate }
+			>
+				// render single-row table
+				@components.UnpaginatedTable(&runsTable{users: props.users}, []*run.Run{props.run})
+			</div>
 			<details class="collapse collapse-arrow border-base-content/20 border" id="plan" open>
 				<summary class="collapse-title">
 					<div class="flex gap-2 items-center">
 						<span class="font-semibold">Plan</span>
-						@phaseStatus(props.run.Plan)
-						@runningTime(&props.run.Plan)
+						<div sse-swap={ planStatusUpdate }>
+							@phaseStatus(props.run.Plan)
+						</div>
+						<div sse-swap={ planTimeUpdate }>
+							@runningTime(&props.run.Plan)
+						</div>
 					</div>
 				</summary>
 				<div class="collapse-content bg-black text-white whitespace-pre-wrap break-words p-4 text-sm leading-snug font-mono">
@@ -272,10 +294,12 @@ templ getRun(props getRunProps) {
 				<summary class="collapse-title">
 					<div class="flex gap-2 items-center">
 						<span class="font-semibold">Apply</span>
-						@phaseStatus(props.run.Apply)
-						<span>
+						<div sse-swap={ applyStatusUpdate }>
+							@phaseStatus(props.run.Apply)
+						</div>
+						<div sse-swap={ applyTimeUpdate }>
 							@runningTime(&props.run.Apply)
-						</span>
+						</div>
 					</div>
 				</summary>
 				<div class="collapse-content collapse-arrow bg-black text-white whitespace-pre-wrap break-words p-4 text-sm leading-snug font-mono">
@@ -300,21 +324,6 @@ templ getPostContent(props getRunProps) {
 	if !props.applyLogs.IsEnd() {
 		@templ.JSFuncCall("setupTail", paths.TailRun(props.run.ID), "apply", props.applyLogs.NextOffset())
 	}
-}
-
-type event struct {
-	users runUsersClient
-}
-
-templ (e *event) view(runItem *run.Run) {
-	// render single-row table
-	@components.UnpaginatedTable(&runsTable{users: e.users}, []*run.Run{runItem})
-	@phaseStatus(runItem.Plan)
-	@phaseStatus(runItem.Apply)
-	@periodReport(runItem)
-	@runningTime(runItem)
-	@runningTime(&runItem.Plan)
-	@runningTime(&runItem.Apply)
 }
 
 type task interface {
@@ -343,7 +352,10 @@ templ runningTime(tsk task) {
 
 templ periodReport(run *run.Run) {
 	{{ report := run.PeriodReport(time.Now()) }}
-	<div id="period-report" class="relative h-3 w-full group">
+	<div
+		id="period-report"
+		class="relative h-3 w-full group"
+	>
 		for i, period := range report.Periods {
 			<div
 				style={ fmt.Sprintf("width: %f%%", report.Percentage(i)) }
@@ -381,7 +393,10 @@ var phaseBadges = map[run.PhaseStatus]string{
 }
 
 templ phaseStatus(phase run.Phase) {
-	<span id={ string(phase.PhaseType) + "-status" } class={ "badge", phaseBadges[phase.Status] }>
+	<span
+		id={ string(phase.PhaseType) + "-status" }
+		class={ "badge", phaseBadges[phase.Status] }
+	>
 		{ phase.Status.String() }
 	</span>
 }
