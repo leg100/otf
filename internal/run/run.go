@@ -158,7 +158,6 @@ type (
 func NewRun(
 	ws *workspace.Workspace,
 	cv *configversion.ConfigurationVersion,
-	engineVersion string,
 	opts CreateOptions,
 ) (*Run, error) {
 	run := Run{
@@ -176,7 +175,7 @@ func NewRun(
 		IngressAttributes:      cv.IngressAttributes,
 		Source:                 opts.Source,
 		Engine:                 ws.Engine,
-		EngineVersion:          engineVersion,
+		EngineVersion:          opts.EngineVersion,
 		Variables:              opts.Variables,
 		CreatedBy:              opts.CreatedBy,
 		CostEstimationEnabled:  opts.costEstimationEnabled,

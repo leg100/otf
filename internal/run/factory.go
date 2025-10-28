@@ -80,21 +80,20 @@ func (f *factory) NewRun(ctx context.Context, workspaceID resource.TfeID, opts C
 	}
 
 	// If workspace tracks the latest version then fetch it from db.
-	var engineVersion string
 	if ws.EngineVersion.Latest {
-		engineVersion, _, err = f.releases.GetLatest(ctx, ws.Engine)
+		opts.EngineVersion, _, err = f.releases.GetLatest(ctx, ws.Engine)
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		engineVersion = ws.EngineVersion.String()
+		opts.EngineVersion = ws.EngineVersion.String()
 	}
 
 	if creator, _ := user.UserFromContext(ctx); creator != nil {
 		opts.CreatedBy = &creator.Username
 	}
 
-	return NewRun(ws, cv, engineVersion, opts)
+	return NewRun(ws, cv, opts)
 }
 
 // createConfigVersionFromVCS creates a config version from the vcs repo

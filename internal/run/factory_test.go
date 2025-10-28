@@ -130,7 +130,7 @@ func TestFactory(t *testing.T) {
 		assert.Equal(t, ws.ID, got.ConfigurationVersionID)
 	})
 
-	t.Run("get latest version", func(t *testing.T) {
+	t.Run("get latest engine version", func(t *testing.T) {
 		f := newTestFactory(
 			&organization.Organization{},
 			workspace.NewTestWorkspace(t, &workspace.CreateOptions{

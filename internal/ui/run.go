@@ -205,11 +205,12 @@ func (h *runHandlers) get(w http.ResponseWriter, r *http.Request) {
 	}
 
 	props := getRunProps{
-		run:       run,
-		ws:        ws,
-		planLogs:  runpkg.Chunk{Data: planLogs.Data},
-		applyLogs: runpkg.Chunk{Data: applyLogs.Data},
-		users:     h.users,
+		run:            run,
+		ws:             ws,
+		planLogs:       runpkg.Chunk{Data: planLogs.Data},
+		applyLogs:      runpkg.Chunk{Data: applyLogs.Data},
+		users:          h.users,
+		singleRowTable: h.singleRowTable(run),
 	}
 	html.Render(getRun(props), w, r)
 }
