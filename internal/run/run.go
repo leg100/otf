@@ -116,9 +116,10 @@ type (
 		// PlanOnly specifies if this is a speculative, plan-only run that
 		// Terraform cannot apply. Takes precedence over whether the
 		// configuration version is marked as speculative or not.
-		PlanOnly  *bool
-		Variables []Variable
-		CreatedBy *user.Username
+		PlanOnly      *bool
+		Variables     []Variable
+		CreatedBy     *user.Username
+		EngineVersion string
 
 		costEstimationEnabled bool
 
@@ -158,7 +159,6 @@ func NewRun(
 	ws *workspace.Workspace,
 	cv *configversion.ConfigurationVersion,
 	engineVersion string,
-	sourceIcon templ.Component,
 	opts CreateOptions,
 ) (*Run, error) {
 	run := Run{
@@ -178,7 +178,6 @@ func NewRun(
 		Engine:                 ws.Engine,
 		EngineVersion:          engineVersion,
 		Variables:              opts.Variables,
-		SourceIcon:             sourceIcon,
 		CreatedBy:              opts.CreatedBy,
 		CostEstimationEnabled:  opts.costEstimationEnabled,
 	}
