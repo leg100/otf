@@ -120,6 +120,9 @@ type (
 		// configuration version is marked as speculative or not.
 		PlanOnly  *bool
 		Variables []Variable
+		CreatedBy *user.Username
+
+		costEstimationEnabled bool
 
 		// testing purposes
 		now *time.Time
@@ -152,6 +155,67 @@ type (
 		WorkspaceID  *resource.TfeID    `schema:"workspace_id,omitempty"`      // filter by workspace ID; mutually exclusive with organization filter
 	}
 )
+
+func NewRun(
+	ws *workspace.Workspace,
+	cv *configversion.ConfigurationVersion,
+	engineVersion string,
+	sourceIcon templ.Component,
+	opts CreateOptions,
+) (*Run, error) {
+	run := Run{
+		ID:                     resource.NewTfeID(resource.RunKind),
+		CreatedAt:              internal.CurrentTimestamp(opts.now),
+		Refresh:                defaultRefresh,
+		Organization:           ws.Organization,
+		ConfigurationVersionID: cv.ID,
+		WorkspaceID:            ws.ID,
+		PlanOnly:               cv.Speculative,
+		ReplaceAddrs:           opts.ReplaceAddrs,
+		TargetAddrs:            opts.TargetAddrs,
+		ExecutionMode:          ws.ExecutionMode,
+		AutoApply:              ws.AutoApply,
+		IngressAttributes:      cv.IngressAttributes,
+		Source:                 opts.Source,
+		Engine:                 ws.Engine,
+		EngineVersion:          engineVersion,
+		Variables:              opts.Variables,
+		SourceIcon:             sourceIcon,
+		CreatedBy:              opts.CreatedBy,
+		CostEstimationEnabled:  opts.costEstimationEnabled,
+	}
+
+	run.Plan = newPhase(run.ID, PlanPhase)
+	run.Apply = newPhase(run.ID, ApplyPhase)
+	run.updateStatus(runstatus.Pending, opts.now)
+
+	if run.Source == "" {
+		run.Source = source.API
+	}
+
+	if opts.TerraformVersion != nil {
+		run.EngineVersion = *opts.TerraformVersion
+	}
+	if opts.AllowEmptyApply != nil {
+		run.AllowEmptyApply = *opts.AllowEmptyApply
+	}
+	if opts.IsDestroy != nil {
+		run.IsDestroy = *opts.IsDestroy
+	}
+	if opts.Message != nil {
+		run.Message = *opts.Message
+	}
+	if opts.Refresh != nil {
+		run.Refresh = *opts.Refresh
+	}
+	if opts.AutoApply != nil {
+		run.AutoApply = *opts.AutoApply
+	}
+	if opts.PlanOnly != nil {
+		run.PlanOnly = *opts.PlanOnly
+	}
+	return &run, nil
+}
 
 func (r *Run) Queued() bool {
 	return runstatus.Queued(r.Status)
