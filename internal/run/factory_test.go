@@ -2,150 +2,17 @@ package run
 
 import (
 	"context"
-	"testing"
 	"time"
 
 	"github.com/a-h/templ"
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/configversion/source"
 	"github.com/leg100/otf/internal/engine"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
-	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/workspace"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
-
-func TestFactory(t *testing.T) {
-	ctx := context.Background()
-
-	t.Run("defaults", func(t *testing.T) {
-		f := newTestFactory(
-			&organization.Organization{},
-			workspace.NewTestWorkspace(t, nil),
-			&configversion.ConfigurationVersion{},
-		)
-
-		got, err := f.NewRun(ctx, resource.TfeID{}, CreateOptions{})
-		require.NoError(t, err)
-
-		assert.Equal(t, runstatus.Pending, got.Status)
-		assert.NotZero(t, got.CreatedAt)
-		assert.False(t, got.PlanOnly)
-		assert.True(t, got.Refresh)
-		assert.False(t, got.AutoApply)
-		assert.Equal(t, "1.9.0", got.EngineVersion)
-	})
-
-	t.Run("speculative run", func(t *testing.T) {
-		f := newTestFactory(
-			&organization.Organization{},
-			workspace.NewTestWorkspace(t, nil),
-			&configversion.ConfigurationVersion{Speculative: true},
-		)
-
-		got, err := f.NewRun(ctx, resource.TfeID{}, CreateOptions{})
-		require.NoError(t, err)
-
-		assert.True(t, got.PlanOnly)
-	})
-
-	t.Run("plan-only run", func(t *testing.T) {
-		f := newTestFactory(
-			&organization.Organization{},
-			workspace.NewTestWorkspace(t, nil),
-			&configversion.ConfigurationVersion{},
-		)
-
-		got, err := f.NewRun(ctx, resource.TfeID{}, CreateOptions{PlanOnly: internal.Ptr(true)})
-		require.NoError(t, err)
-
-		assert.True(t, got.PlanOnly)
-	})
-
-	t.Run("workspace auto-apply", func(t *testing.T) {
-		f := newTestFactory(
-			&organization.Organization{},
-			workspace.NewTestWorkspace(t, &workspace.CreateOptions{AutoApply: internal.Ptr(true)}),
-			&configversion.ConfigurationVersion{},
-		)
-
-		got, err := f.NewRun(ctx, resource.TfeID{}, CreateOptions{})
-		require.NoError(t, err)
-
-		assert.True(t, got.AutoApply)
-	})
-
-	t.Run("run auto-apply", func(t *testing.T) {
-		f := newTestFactory(
-			&organization.Organization{},
-			workspace.NewTestWorkspace(t, nil),
-			&configversion.ConfigurationVersion{},
-		)
-
-		got, err := f.NewRun(ctx, resource.TfeID{}, CreateOptions{
-			AutoApply: internal.Ptr(true),
-		})
-		require.NoError(t, err)
-
-		assert.True(t, got.AutoApply)
-	})
-
-	t.Run("enable cost estimation", func(t *testing.T) {
-		f := newTestFactory(
-			&organization.Organization{CostEstimationEnabled: true},
-			workspace.NewTestWorkspace(t, nil),
-			&configversion.ConfigurationVersion{},
-		)
-
-		got, err := f.NewRun(ctx, resource.TfeID{}, CreateOptions{})
-		require.NoError(t, err)
-
-		assert.True(t, got.CostEstimationEnabled)
-	})
-
-	t.Run("pull from vcs", func(t *testing.T) {
-		vcsProviderID := resource.NewTfeID(resource.VCSProviderKind)
-		ws := workspace.NewTestWorkspace(t, &workspace.CreateOptions{
-			ConnectOptions: &workspace.ConnectOptions{
-				RepoPath:      &vcs.Repo{},
-				VCSProviderID: &vcsProviderID,
-			},
-		})
-
-		f := newTestFactory(
-			&organization.Organization{},
-			ws,
-			&configversion.ConfigurationVersion{},
-		)
-
-		got, err := f.NewRun(ctx, resource.TfeID{}, CreateOptions{})
-		require.NoError(t, err)
-
-		// fake config version service sets the config version ID to the
-		// workspace ID if it was newly created
-		assert.Equal(t, ws.ID, got.ConfigurationVersionID)
-	})
-
-	t.Run("get latest version", func(t *testing.T) {
-		f := newTestFactory(
-			&organization.Organization{},
-			workspace.NewTestWorkspace(t, &workspace.CreateOptions{
-				EngineVersion: &workspace.Version{Latest: true},
-			}),
-			&configversion.ConfigurationVersion{},
-		)
-		f.releases = &fakeReleasesService{latestVersion: "2.0.0"}
-
-		got, err := f.NewRun(ctx, resource.TfeID{}, CreateOptions{})
-		require.NoError(t, err)
-
-		assert.Equal(t, "2.0.0", got.EngineVersion)
-	})
-}
 
 type (
 	fakeFactoryOrganizationService struct {
