@@ -52,8 +52,6 @@
     - name: force-unlock
     - name: set-permission
     - name: unset-permission
-    - name: watch
-      collection: true
     - name: connect
     - name: disconnect
     - name: start-run

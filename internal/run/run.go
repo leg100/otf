@@ -155,6 +155,8 @@ type (
 	}
 )
 
+// NewRun constructs a new run. NOTE: you probably want to use factory.NewRun
+// instead.
 func NewRun(
 	ws *workspace.Workspace,
 	cv *configversion.ConfigurationVersion,

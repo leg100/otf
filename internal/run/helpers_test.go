@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func NewTestRun(t *testing.T, ctx context.Context, opts CreateOptions) *Run {
+func newTestRun(t *testing.T, ctx context.Context, opts CreateOptions) *Run {
 	org, err := organization.NewOrganization(organization.CreateOptions{Name: internal.Ptr("acme-corp")})
 	require.NoError(t, err)
 

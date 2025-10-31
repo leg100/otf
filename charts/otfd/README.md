@@ -39,7 +39,6 @@ Note: you should only use this for testing purposes.
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | affinity | object | `{}` |  |
-| allowedOrigins | list | `[]` | Allowed origins for websocket connections. See [docs](https://docs.otf.ninja/config/flags/#-allowed-origins) |
 | caCerts.enabled | bool | `false` | Mount a secret containing CA certificates and make them available to both terraform and otfd, allowing them to communicate with API endpoints that use custom CA certificates. |
 | caCerts.secretItems | list | `[]` | Specify individual items in secret containing CA certificates. Use the [KeyToPath](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.28/#keytopath-v1-core) schema for each item. If unspecified, all items are mounted from the secret. |
 | caCerts.secretName | string | `"certs"` | Name of secret containing the CA certificates to mount. |

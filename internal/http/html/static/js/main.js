@@ -14,20 +14,3 @@ window.addEventListener("load", (e) => {
 		});
 	});
 });
-
-window.addEventListener("htmx:wsConfigSend", function (evt) {
-	const msg = evt.detail.parameters;
-
-	// remove headers from message before sending because we have no use for them.
-	delete msg.HEADERS;
-
-	// don't send JSON, but send url-encoded query instead
-	let query = new URLSearchParams();
-	Object.entries(msg).forEach(([k, v]) => {
-		if (Array.isArray(v)) {
-			v.forEach((vv) => query.append(k, vv));
-		} else query.append(k, v);
-	});
-	const params = query.toString();
-	evt.detail.messageBody = params;
-});
