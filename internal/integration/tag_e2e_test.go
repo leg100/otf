@@ -105,7 +105,7 @@ resource "null_resource" "tags_e2e" {}
 		err = page.Locator(`//input[@id='filter-item-baz']`).Click()
 		require.NoError(t, err)
 		// confirm workspace listing contains tagged workspace
-		err = expect.Locator(page.Locator(`//div[@id='page-results']//tr[@id='item-workspace-tagged']`)).ToBeVisible()
+		err = expect.Locator(page.Locator(`//table//tr[@id='item-workspace-tagged']`)).ToBeVisible()
 		require.NoError(t, err)
 	})
 

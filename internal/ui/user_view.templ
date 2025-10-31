@@ -65,7 +65,7 @@ templ userList(props userListProps) {
 			{Name: "Users"},
 		},
 	}) {
-		@components.Table(&userTable{}, props.users, "page-results")
+		@components.Table(&userTable{}, props.users)
 	}
 }
 
@@ -193,7 +193,6 @@ templ getTeam(props getTeamProps) {
 			@components.UnpaginatedTable(
 				&userTable{teamID: &props.team.ID, canRemoveMember: props.canRemoveMember},
 				props.members,
-				"team-members",
 			)
 		</div>
 		if props.canAddMember {
@@ -245,7 +244,6 @@ templ tokenList(tokens []*user.UserToken) {
 		@components.UnpaginatedTable(
 			&tokensTable{},
 			tokens,
-			"tokens-table",
 		)
 	}
 }

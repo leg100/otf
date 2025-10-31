@@ -8,7 +8,6 @@ import (
 	"slices"
 
 	"github.com/gorilla/mux"
-	"github.com/gorilla/websocket"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
@@ -21,17 +20,12 @@ import (
 	"github.com/leg100/otf/internal/workspace"
 )
 
-// runnersTableID is the CSS ID of the DOM element containing the table of
-// runners.
-const runnersTableID = "runners-table"
-
 // runnerHandlers provides handlers for the web UI for runners
 type runnerHandlers struct {
-	svc                  runnerClient
-	workspaces           *workspace.Service
-	logger               logr.Logger
-	authorizer           authz.Interface
-	websocketListHandler *components.WebsocketListHandler[*runner.RunnerMeta, *runner.RunnerEvent, runner.ListOptions]
+	svc        runnerClient
+	workspaces *workspace.Service
+	logger     logr.Logger
+	authorizer authz.Interface
 }
 
 // runnerClient gives web handlers access to the agents service endpoints
@@ -84,12 +78,6 @@ func addRunnerHandlers(
 		logger:     logger,
 		svc:        svc,
 		workspaces: workspaces,
-		websocketListHandler: &components.WebsocketListHandler[*runner.RunnerMeta, *runner.RunnerEvent, runner.ListOptions]{
-			Logger:    logger,
-			Client:    svc,
-			Populator: runnersTable{},
-			ID:        runnersTableID,
-		},
 	}
 
 	// runners
@@ -111,19 +99,21 @@ func addRunnerHandlers(
 // runner handlers
 
 func (h *runnerHandlers) listRunners(w http.ResponseWriter, r *http.Request) {
-	if websocket.IsWebSocketUpgrade(r) {
-		h.websocketListHandler.Handler(w, r)
-		return
-	}
-
 	var params runner.ListOptions
 	if err := decode.All(&params, r); err != nil {
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
+	runners, err := h.svc.ListRunners(r.Context(), params)
+	if err != nil {
+		html.Error(r, w, err.Error())
+		return
+	}
+
 	props := listRunnersProps{
 		organization:      *params.Organization,
 		hideServerRunners: params.HideServerRunners,
+		page:              resource.NewPage(runners, resource.PageOptions{}, nil),
 	}
 	html.Render(listRunners(props), w, r)
 }
@@ -211,11 +201,6 @@ func (h *runnerHandlers) listAgentPools(w http.ResponseWriter, r *http.Request) 
 }
 
 func (h *runnerHandlers) getAgentPool(w http.ResponseWriter, r *http.Request) {
-	if websocket.IsWebSocketUpgrade(r) {
-		h.websocketListHandler.Handler(w, r)
-		return
-	}
-
 	poolID, err := decode.ID("pool_id", r)
 	if err != nil {
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))

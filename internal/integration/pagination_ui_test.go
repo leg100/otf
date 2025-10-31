@@ -24,7 +24,7 @@ func TestIntegration_PaginationUI(t *testing.T) {
 		require.NoError(t, err)
 
 		// should be 20 orgs listed on page one
-		err = expect.Locator(page.Locator(`//*[@id='organization-table']//tbody/tr`)).ToHaveCount(20)
+		err = expect.Locator(page.Locator(`//table/tbody/tr`)).ToHaveCount(20)
 		require.NoError(t, err)
 
 		// expect accurate page info
@@ -39,7 +39,7 @@ func TestIntegration_PaginationUI(t *testing.T) {
 		require.NoError(t, err)
 
 		// should now be 100 orgs listed on page one
-		err = expect.Locator(page.Locator(`//*[@id='organization-table']//tbody/tr`)).ToHaveCount(100)
+		err = expect.Locator(page.Locator(`//table//tbody/tr`)).ToHaveCount(100)
 		require.NoError(t, err)
 
 		// expect accurate page info
@@ -51,7 +51,7 @@ func TestIntegration_PaginationUI(t *testing.T) {
 		require.NoError(t, err)
 
 		// should now be 1 org listed on page one
-		err = expect.Locator(page.Locator(`//*[@id='organization-table']//tbody/tr`)).ToHaveCount(1)
+		err = expect.Locator(page.Locator(`//table//tbody/tr`)).ToHaveCount(1)
 		require.NoError(t, err)
 
 		// expect accurate page info

@@ -36,16 +36,16 @@ type organizationListProps struct {
 
 templ organizationList(props organizationListProps) {
 	{{
-	layoutProps := components.LayoutProps{
-		Title: "organizations",
-		Breadcrumbs: []components.Breadcrumb{
-			{Name: "organizations"},
-		},
-		ContentActions: organizationListActions(props.CanCreate),
-	}
+		layoutProps := components.LayoutProps{
+			Title: "organizations",
+			Breadcrumbs: []components.Breadcrumb{
+				{Name: "organizations"},
+			},
+			ContentActions: organizationListActions(props.CanCreate),
+		}
 	}}
 	@components.Layout(layoutProps) {
-		@components.Table(&organizationTable{}, props.Page, "organization-table")
+		@components.Table(&organizationTable{}, props.Page)
 	}
 }
 
@@ -129,7 +129,6 @@ templ getToken(org organization.Name, token *organization.OrganizationToken) {
 			@components.UnpaginatedTable(
 				&organizationTokenTable{},
 				[]*organization.OrganizationToken{token},
-				"org-token-table",
 			)
 		} else {
 			<form class="mt-2" action={ paths.CreateOrganizationToken(org) } method="POST">

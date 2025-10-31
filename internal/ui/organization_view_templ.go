@@ -129,7 +129,7 @@ func organizationList(props organizationListProps) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = components.Table(&organizationTable{}, props.Page, "organization-table").Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = components.Table(&organizationTable{}, props.Page).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -459,7 +459,6 @@ func getToken(org organization.Name, token *organization.OrganizationToken) temp
 				templ_7745c5c3_Err = components.UnpaginatedTable(
 					&organizationTokenTable{},
 					[]*organization.OrganizationToken{token},
-					"org-token-table",
 				).Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -472,7 +471,7 @@ func getToken(org organization.Name, token *organization.OrganizationToken) temp
 				var templ_7745c5c3_Var21 templ.SafeURL
 				templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinURLErrs(paths.CreateOrganizationToken(org))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/organization_view.templ`, Line: 135, Col: 65}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/organization_view.templ`, Line: 134, Col: 65}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
 				if templ_7745c5c3_Err != nil {
@@ -566,7 +565,7 @@ func (t organizationTokenTable) Row(token *organization.OrganizationToken) templ
 		var templ_7745c5c3_Var24 string
 		templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinStringErrs(internal.Ago(time.Now(), token.CreatedAt))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/organization_view.templ`, Line: 156, Col: 52}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/organization_view.templ`, Line: 155, Col: 52}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var24))
 		if templ_7745c5c3_Err != nil {
@@ -579,7 +578,7 @@ func (t organizationTokenTable) Row(token *organization.OrganizationToken) templ
 		var templ_7745c5c3_Var25 templ.SafeURL
 		templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinURLErrs(paths.CreateOrganizationToken(token.Organization))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/organization_view.templ`, Line: 160, Col: 68}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/organization_view.templ`, Line: 159, Col: 68}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var25))
 		if templ_7745c5c3_Err != nil {
@@ -592,7 +591,7 @@ func (t organizationTokenTable) Row(token *organization.OrganizationToken) templ
 		var templ_7745c5c3_Var26 templ.SafeURL
 		templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.JoinURLErrs(paths.DeleteOrganizationToken(token.Organization))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/organization_view.templ`, Line: 163, Col: 68}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/organization_view.templ`, Line: 162, Col: 68}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var26))
 		if templ_7745c5c3_Err != nil {

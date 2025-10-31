@@ -222,7 +222,7 @@ func userList(props userListProps) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = components.Table(&userTable{}, props.users, "page-results").Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = components.Table(&userTable{}, props.users).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -528,7 +528,6 @@ func getTeam(props getTeamProps) templ.Component {
 			templ_7745c5c3_Err = components.UnpaginatedTable(
 				&userTable{teamID: &props.team.ID, canRemoveMember: props.canRemoveMember},
 				props.members,
-				"team-members",
 			).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -563,7 +562,7 @@ func getTeam(props getTeamProps) templ.Component {
 				var templ_7745c5c3_Var19 templ.SafeURL
 				templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinURLErrs(paths.DeleteTeam(props.team.ID))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/user_view.templ`, Line: 207, Col: 49}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/user_view.templ`, Line: 206, Col: 49}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 				if templ_7745c5c3_Err != nil {
@@ -576,7 +575,7 @@ func getTeam(props getTeamProps) templ.Component {
 				var templ_7745c5c3_Var20 string
 				templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinStringErrs(props.team.ID.String())
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/user_view.templ`, Line: 211, Col: 65}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/user_view.templ`, Line: 210, Col: 65}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var20))
 				if templ_7745c5c3_Err != nil {
@@ -644,7 +643,7 @@ func newToken() templ.Component {
 			var templ_7745c5c3_Var23 templ.SafeURL
 			templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinURLErrs(paths.CreateToken())
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/user_view.templ`, Line: 225, Col: 64}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/user_view.templ`, Line: 224, Col: 64}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var23))
 			if templ_7745c5c3_Err != nil {
@@ -706,7 +705,6 @@ func tokenList(tokens []*user.UserToken) templ.Component {
 			templ_7745c5c3_Err = components.UnpaginatedTable(
 				&tokensTable{},
 				tokens,
-				"tokens-table",
 			).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -755,7 +753,7 @@ func tokenListActions() templ.Component {
 		var templ_7745c5c3_Var27 templ.SafeURL
 		templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinURLErrs(paths.NewToken())
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/user_view.templ`, Line: 254, Col: 32}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/user_view.templ`, Line: 252, Col: 32}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var27))
 		if templ_7745c5c3_Err != nil {
@@ -828,7 +826,7 @@ func (t tokensTable) Row(token *user.UserToken) templ.Component {
 		var templ_7745c5c3_Var30 string
 		templ_7745c5c3_Var30, templ_7745c5c3_Err = templ.JoinStringErrs(token.Description)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/user_view.templ`, Line: 271, Col: 28}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/user_view.templ`, Line: 269, Col: 28}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var30))
 		if templ_7745c5c3_Err != nil {
@@ -849,7 +847,7 @@ func (t tokensTable) Row(token *user.UserToken) templ.Component {
 		var templ_7745c5c3_Var31 string
 		templ_7745c5c3_Var31, templ_7745c5c3_Err = templ.JoinStringErrs(internal.Ago(time.Now(), token.CreatedAt))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/user_view.templ`, Line: 277, Col: 52}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/user_view.templ`, Line: 275, Col: 52}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var31))
 		if templ_7745c5c3_Err != nil {
@@ -862,7 +860,7 @@ func (t tokensTable) Row(token *user.UserToken) templ.Component {
 		var templ_7745c5c3_Var32 templ.SafeURL
 		templ_7745c5c3_Var32, templ_7745c5c3_Err = templ.JoinURLErrs(paths.DeleteToken())
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/user_view.templ`, Line: 280, Col: 60}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/user_view.templ`, Line: 278, Col: 60}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var32))
 		if templ_7745c5c3_Err != nil {
@@ -883,7 +881,7 @@ func (t tokensTable) Row(token *user.UserToken) templ.Component {
 		var templ_7745c5c3_Var33 string
 		templ_7745c5c3_Var33, templ_7745c5c3_Err = templ.JoinStringErrs(token.ID.String())
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/user_view.templ`, Line: 282, Col: 60}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/user_view.templ`, Line: 280, Col: 60}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var33))
 		if templ_7745c5c3_Err != nil {

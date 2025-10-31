@@ -62,7 +62,6 @@ templ getApps(props getAppsProps) {
 			@components.UnpaginatedTable(
 				&appTable{githubHostname: props.githubHostname, canDeleteApp: props.canDeleteApp},
 				[]*github.App{props.app},
-				"app-table",
 			)
 			<div class="divider"></div>
 			<h3 class="font-semibold text-lg">Installations</h3>
@@ -78,7 +77,6 @@ templ getApps(props getAppsProps) {
 				@components.UnpaginatedTable(
 					&installsTable{},
 					props.installations,
-					"installs-table",
 				)
 			</div>
 		} else {

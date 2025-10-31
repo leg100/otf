@@ -8,6 +8,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authenticator"
 	"github.com/leg100/otf/internal/authz"
+	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/engine"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/http/html/paths"
@@ -38,6 +39,7 @@ type Handlers struct {
 	Runners                      *runner.Service
 	GithubApp                    *github.Service
 	EngineService                *engine.Service
+	Configs                      *configversion.Service
 	HostnameService              *internal.HostnameService
 	Tokens                       *tokens.Service
 	Authorizer                   *authz.Authorizer
@@ -59,10 +61,10 @@ func (h *Handlers) AddHandlers(r *mux.Router) {
 	// the request is authenticated.
 	r = r.PathPrefix(paths.UIPrefix).Subrouter()
 
-	addRunHandlers(r, h.Logger, h.Runs, h.Workspaces, h.Users, h.Runs)
+	addRunHandlers(r, h.Logger, h.Runs, h.Workspaces, h.Users, h.Configs, h.Authorizer)
 	addTeamHandlers(r, h.Teams, h.Users, h.Tokens, h.Authorizer)
 	addUserHandlers(r, h.Users, h.Authorizer)
-	addWorkspaceHandlers(r, h.Logger, h.Workspaces, h.Teams, h.VCSProviders, h.Authorizer, h.EngineService)
+	addWorkspaceHandlers(r, h.Logger, h.Workspaces, h.Teams, h.VCSProviders, h.Authorizer, h.EngineService, h.Runs, h.Users, h.Configs)
 	addOrganizationHandlers(r, h.Organizations, h.RestrictOrganizationCreation)
 	addModuleHandlers(r, h.Modules, h.VCSProviders, h.HostnameService, h.Authorizer)
 	addVariableHandlers(r, h.VariablesService, h.Workspaces, h.Authorizer)

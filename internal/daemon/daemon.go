@@ -401,6 +401,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 			Runners:                      runnerService,
 			GithubApp:                    githubAppService,
 			EngineService:                engineService,
+			Configs:                      configService,
 			HostnameService:              hostnameService,
 			Tokens:                       tokensService,
 			Authorizer:                   authorizer,
@@ -464,7 +465,6 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 		EnableRequestLogging: d.EnableRequestLogging,
 		Middleware:           []mux.MiddlewareFunc{d.Tokens.Middleware()},
 		Handlers:             d.handlers,
-		AllowedOrigins:       d.AllowedOrigins,
 	})
 	if err != nil {
 		return fmt.Errorf("setting up http server: %w", err)

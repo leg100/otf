@@ -4,12 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"time"
 
 	"github.com/a-h/templ"
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
-	"github.com/gorilla/websocket"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/configversion/source"
@@ -19,7 +17,7 @@ import (
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
-	"github.com/leg100/otf/internal/run"
+	runpkg "github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/workspace"
 )
@@ -30,21 +28,22 @@ type (
 		runs       runClient
 		workspaces runWorkspaceClient
 		users      runUsersClient
+		configs    runConfigsClient
 		authorizer runAuthorizer
 	}
 
 	runClient interface {
-		Create(ctx context.Context, workspaceID resource.TfeID, opts run.CreateOptions) (*run.Run, error)
-		List(ctx context.Context, opts run.ListOptions) (*resource.Page[*run.Run], error)
-		Get(ctx context.Context, id resource.TfeID) (*run.Run, error)
+		Create(ctx context.Context, workspaceID resource.TfeID, opts runpkg.CreateOptions) (*runpkg.Run, error)
+		List(ctx context.Context, opts runpkg.ListOptions) (*resource.Page[*runpkg.Run], error)
+		Get(ctx context.Context, id resource.TfeID) (*runpkg.Run, error)
 		Delete(ctx context.Context, runID resource.TfeID) error
 		Cancel(ctx context.Context, runID resource.TfeID) error
 		ForceCancel(ctx context.Context, runID resource.TfeID) error
 		Apply(ctx context.Context, runID resource.TfeID) error
 		Discard(ctx context.Context, runID resource.TfeID) error
-		Watch(ctx context.Context) (<-chan pubsub.Event[*run.Event], func())
-		Tail(ctx context.Context, opts run.TailOptions) (<-chan run.Chunk, error)
-		GetChunk(ctx context.Context, opts run.GetChunkOptions) (run.Chunk, error)
+		Watch(ctx context.Context) (<-chan pubsub.Event[*runpkg.Event], func())
+		Tail(ctx context.Context, opts runpkg.TailOptions) (<-chan runpkg.Chunk, error)
+		GetChunk(ctx context.Context, opts runpkg.GetChunkOptions) (runpkg.Chunk, error)
 	}
 
 	runWorkspaceClient interface {
@@ -63,31 +62,35 @@ type (
 	runAuthorizer interface {
 		CanAccess(context.Context, authz.Action, resource.ID) bool
 	}
+
+	runConfigsClient interface {
+		GetSourceIcon(source source.Source) templ.Component
+	}
 )
 
 // addRunHandlers registers run UI handlers with the router
-func addRunHandlers(r *mux.Router, logger logr.Logger, runs runClient, workspaces runWorkspaceClient, users runUsersClient, authorizer runAuthorizer) {
+func addRunHandlers(r *mux.Router, logger logr.Logger, runs runClient, workspaces runWorkspaceClient, users runUsersClient, configs runConfigsClient, authorizer runAuthorizer) {
 	h := &runHandlers{
 		authorizer: authorizer,
 		logger:     logger,
 		runs:       runs,
 		workspaces: workspaces,
 		users:      users,
+		configs:    configs,
 	}
 
-	r.HandleFunc("/organizations/{organization_name}/runs", h.listByOrganization).Methods("GET")
-	r.HandleFunc("/workspaces/{workspace_id}/runs", h.listByWorkspace).Methods("GET")
+	r.HandleFunc("/organizations/{organization_name}/runs", h.list).Methods("GET")
+	r.HandleFunc("/workspaces/{workspace_id}/runs", h.list).Methods("GET")
 	r.HandleFunc("/workspaces/{workspace_id}/start-run", h.createRun).Methods("POST")
 	r.HandleFunc("/workspaces/{workspace_id}/runs/watch-latest", h.watchLatest).Methods("GET")
 	r.HandleFunc("/runs/{run_id}", h.get).Methods("GET")
-	r.HandleFunc("/runs/{run_id}/widget", h.getWidget).Methods("GET")
 	r.HandleFunc("/runs/{run_id}/delete", h.delete).Methods("POST")
 	r.HandleFunc("/runs/{run_id}/cancel", h.cancel).Methods("POST")
 	r.HandleFunc("/runs/{run_id}/force-cancel", h.forceCancel).Methods("POST")
 	r.HandleFunc("/runs/{run_id}/apply", h.apply).Methods("POST")
 	r.HandleFunc("/runs/{run_id}/discard", h.discard).Methods("POST")
 	r.HandleFunc("/runs/{run_id}/retry", h.retry).Methods("POST")
-	r.HandleFunc("/runs/{run_id}/watch", h.watchRun).Methods("GET")
+	r.HandleFunc("/runs/{run_id}/watch", h.watch).Methods("GET")
 	r.HandleFunc("/runs/{run_id}/tail", h.tailRun)
 
 	// this handles the link the terraform CLI shows during a plan/apply.
@@ -96,17 +99,17 @@ func addRunHandlers(r *mux.Router, logger logr.Logger, runs runClient, workspace
 
 func (h *runHandlers) createRun(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		WorkspaceID resource.TfeID `schema:"workspace_id,required"`
-		Operation   run.Operation  `schema:"operation,required"`
+		WorkspaceID resource.TfeID   `schema:"workspace_id,required"`
+		Operation   runpkg.Operation `schema:"operation,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
-	createdRun, err := h.runs.Create(r.Context(), params.WorkspaceID, run.CreateOptions{
-		IsDestroy: internal.Ptr(params.Operation == run.DestroyAllOperation),
-		PlanOnly:  internal.Ptr(params.Operation == run.PlanOnlyOperation),
+	createdRun, err := h.runs.Create(r.Context(), params.WorkspaceID, runpkg.CreateOptions{
+		IsDestroy: internal.Ptr(params.Operation == runpkg.DestroyAllOperation),
+		PlanOnly:  internal.Ptr(params.Operation == runpkg.PlanOnlyOperation),
 		Source:    source.UI,
 	})
 	if err != nil {
@@ -117,42 +120,9 @@ func (h *runHandlers) createRun(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, paths.Run(createdRun.ID), http.StatusFound)
 }
 
-func (h *runHandlers) listByOrganization(w http.ResponseWriter, r *http.Request) {
-	if websocket.IsWebSocketUpgrade(r) {
-		h := &components.WebsocketListHandler[*run.Run, *run.Event, run.ListOptions]{
-			Logger: h.logger,
-			Client: h.runs,
-			Populator: runTable{
-				workspaceGetClient: newWorkspaceCache(h.workspaces),
-				users:              newUserCache(h.users),
-			},
-			ID: "page-results",
-		}
-		h.Handler(w, r)
-		return
-	}
-	h.list(w, r)
-}
-
-func (h *runHandlers) listByWorkspace(w http.ResponseWriter, r *http.Request) {
-	if websocket.IsWebSocketUpgrade(r) {
-		h := &components.WebsocketListHandler[*run.Run, *run.Event, run.ListOptions]{
-			Logger: h.logger,
-			Client: h.runs,
-			Populator: runTable{
-				users: newUserCache(h.users),
-			},
-			ID: "page-results",
-		}
-		h.Handler(w, r)
-		return
-	}
-	h.list(w, r)
-}
-
 func (h *runHandlers) list(w http.ResponseWriter, r *http.Request) {
 	var opts struct {
-		run.ListOptions
+		runpkg.ListOptions
 		StatusFilterVisible bool `schema:"status_filter_visible"`
 	}
 	if err := decode.All(&opts, r); err != nil {
@@ -164,6 +134,11 @@ func (h *runHandlers) list(w http.ResponseWriter, r *http.Request) {
 		status:              opts.Statuses,
 		statusFilterVisible: opts.StatusFilterVisible,
 		pageOptions:         opts.PageOptions,
+		table: runsTable{
+			workspaceGetClient: newWorkspaceCache(h.workspaces),
+			users:              newUserCache(h.users),
+			configs:            h.configs,
+		},
 	}
 
 	if opts.ListOptions.WorkspaceID != nil {
@@ -182,6 +157,13 @@ func (h *runHandlers) list(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	page, err := h.runs.List(r.Context(), opts.ListOptions)
+	if err != nil {
+		html.Error(r, w, err.Error())
+		return
+	}
+	props.page = page
+
 	html.Render(runList(props), w, r)
 }
 
@@ -192,67 +174,45 @@ func (h *runHandlers) get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	runResult, err := h.runs.Get(r.Context(), runID)
+	run, err := h.runs.Get(r.Context(), runID)
 	if err != nil {
 		html.Error(r, w, "retrieving run: "+err.Error())
 		return
 	}
 
-	ws, err := h.workspaces.Get(r.Context(), runResult.WorkspaceID)
+	ws, err := h.workspaces.Get(r.Context(), run.WorkspaceID)
 	if err != nil {
 		html.Error(r, w, "retrieving workspace: "+err.Error())
 		return
 	}
 
 	// Get existing logs thus far received for each phase.
-	planLogs, err := h.runs.GetChunk(r.Context(), run.GetChunkOptions{
-		RunID: runResult.ID,
-		Phase: run.PlanPhase,
+	planLogs, err := h.runs.GetChunk(r.Context(), runpkg.GetChunkOptions{
+		RunID: run.ID,
+		Phase: runpkg.PlanPhase,
 	})
 	if err != nil {
 		html.Error(r, w, "retrieving plan logs: "+err.Error())
 		return
 	}
-	applyLogs, err := h.runs.GetChunk(r.Context(), run.GetChunkOptions{
-		RunID: runResult.ID,
-		Phase: run.ApplyPhase,
+	applyLogs, err := h.runs.GetChunk(r.Context(), runpkg.GetChunkOptions{
+		RunID: run.ID,
+		Phase: runpkg.ApplyPhase,
 	})
 	if err != nil {
 		html.Error(r, w, "retrieving apply logs: "+err.Error())
 		return
 	}
 
-	props := runGetProps{
-		run:       runResult,
-		ws:        ws,
-		planLogs:  run.Chunk{Data: planLogs.Data},
-		applyLogs: run.Chunk{Data: applyLogs.Data},
+	props := getRunProps{
+		run:            run,
+		ws:             ws,
+		planLogs:       runpkg.Chunk{Data: planLogs.Data},
+		applyLogs:      runpkg.Chunk{Data: applyLogs.Data},
+		users:          h.users,
+		singleRowTable: h.singleRowTable(run),
 	}
-	html.Render(runGet(props), w, r)
-}
-
-// getWidget renders a run "widget", i.e. the container that
-// contains info about a run. Intended for use with an ajax request.
-func (h *runHandlers) getWidget(w http.ResponseWriter, r *http.Request) {
-	runID, err := decode.ID("run_id", r)
-	if err != nil {
-		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
-		return
-	}
-
-	runItem, err := h.runs.Get(r.Context(), runID)
-	if err != nil {
-		html.Error(r, w, err.Error())
-		return
-	}
-
-	table := components.UnpaginatedTable(
-		runTable{users: h.users},
-		[]*run.Run{runItem},
-		"run-item-"+runItem.ID.String(),
-	)
-
-	html.Render(table, w, r)
+	html.Render(getRun(props), w, r)
 }
 
 func (h *runHandlers) delete(w http.ResponseWriter, r *http.Request) {
@@ -348,7 +308,7 @@ func (h *runHandlers) retry(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	newRun, err := h.runs.Create(r.Context(), existingRun.WorkspaceID, run.CreateOptions{
+	newRun, err := h.runs.Create(r.Context(), existingRun.WorkspaceID, runpkg.CreateOptions{
 		ConfigurationVersionID: &existingRun.ConfigurationVersionID,
 		IsDestroy:              &existingRun.IsDestroy,
 		PlanOnly:               &existingRun.PlanOnly,
@@ -362,67 +322,87 @@ func (h *runHandlers) retry(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, paths.Run(newRun.ID), http.StatusFound)
 }
 
-func (h *runHandlers) watchRun(w http.ResponseWriter, r *http.Request) {
+const (
+	periodReportUpdate sseEvent = "PeriodReportUpdate"
+	runWidgetUpdate    sseEvent = "RunWidgetUpdate"
+	runTimeUpdate      sseEvent = "RunTimeUpdate"
+	planTimeUpdate     sseEvent = "PlanTimeUpdate"
+	applyTimeUpdate    sseEvent = "ApplyTimeUpdate"
+	planStatusUpdate   sseEvent = "PlanStatusUpdate"
+	applyStatusUpdate  sseEvent = "ApplyStatusUpdate"
+)
+
+func (h *runHandlers) watch(w http.ResponseWriter, r *http.Request) {
 	runID, err := decode.ID("run_id", r)
 	if err != nil {
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
-	if !websocket.IsWebSocketUpgrade(r) {
-		return
-	}
-	// Render a one-row table containing run each time a run event arrives.
-	conn, err := components.NewWebsocket(h.logger, w, r, h.runs, (&event{users: h.users}).view)
-	if err != nil {
-		h.logger.Error(err, "upgrading websocket connection")
-		return
-	}
-	defer conn.Close()
+	conn := newSSEConnection(w, false)
 
 	sub, _ := h.runs.Watch(r.Context())
 
-	if !conn.Send(runID) {
-		return
-	}
+	send := func() {
+		run, err := h.runs.Get(r.Context(), runID)
+		if err != nil {
+			// terminate conn on error
+			return
+		}
+		// Render multiple html fragments each time a run event occurs. Each
+		// fragment is sent down the SSE conn as separate SSE events.
+		if err := conn.Render(r.Context(), runningTime(run), runTimeUpdate); err != nil {
+			return
+		}
+		if err := conn.Render(r.Context(), runningTime(&run.Plan), planTimeUpdate); err != nil {
+			return
+		}
+		if err := conn.Render(r.Context(), runningTime(&run.Apply), applyTimeUpdate); err != nil {
+			return
+		}
+		if err := conn.Render(r.Context(), phaseStatus(run.Plan), planStatusUpdate); err != nil {
+			return
+		}
+		if err := conn.Render(r.Context(), phaseStatus(run.Apply), applyStatusUpdate); err != nil {
+			return
+		}
+		if err := conn.Render(r.Context(), periodReport(run), periodReportUpdate); err != nil {
+			return
+		}
 
-	ticker := time.NewTicker(time.Second)
+		if err := conn.Render(r.Context(), h.singleRowTable(run), runWidgetUpdate); err != nil {
+			return
+		}
+	}
+	// Immediately send fragments in case they've changed since the page was
+	// first rendered.
+	//
+	// TODO: add versions to run resources and send rendered run version in
+	// query param so that versions can be compared and this step can be
+	// skipped.
+	send()
+
 	for {
 		select {
-		case event := <-sub:
-			if event.Type == pubsub.DeletedEvent {
+		case ev, ok := <-sub:
+			if !ok {
+				return
+			}
+			if ev.Type == pubsub.DeletedEvent {
 				// TODO: run has been deleted: user should be alerted and
 				// client should not reconnect.
 				return
 			}
-			if event.Payload.ID != runID {
+			if ev.Payload.ID != runID {
 				continue
 			}
-		case <-r.Context().Done():
-			return
-		}
-		// all further run events currently waiting on the subscription
-		// channel are rendered redundant because the websocket client
-		// retrieves the latest version of the run before sending it.
-		for {
-			select {
-			case <-sub:
-			default:
-				goto done
-			}
-		}
-	done:
-		if !conn.Send(runID) {
-			return
-		}
-		// Wait before sending anything more to client to avoid sending too many
-		// messages.
-		select {
-		case <-ticker.C:
+			send()
 		case <-r.Context().Done():
 			return
 		}
 	}
 }
+
+const latestRunUpdate sseEvent = "LatestRunUpdate"
 
 func (h *runHandlers) watchLatest(w http.ResponseWriter, r *http.Request) {
 	workspaceID, err := decode.ID("workspace_id", r)
@@ -430,25 +410,7 @@ func (h *runHandlers) watchLatest(w http.ResponseWriter, r *http.Request) {
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
-	if !websocket.IsWebSocketUpgrade(r) {
-		return
-	}
-	conn, err := components.NewWebsocket(
-		h.logger, w, r,
-		h.runs,
-		func(runItem *run.Run) templ.Component {
-			return components.UnpaginatedTable(
-				runTable{users: h.users},
-				[]*run.Run{runItem},
-				"latest-run",
-			)
-		},
-	)
-	if err != nil {
-		h.logger.Error(err, "upgrading websocket connection")
-		return
-	}
-	defer conn.Close()
+
 	// Setup event subscriptions first then retrieve workspace to ensure we
 	// don't miss anything.
 	workspacesSub, _ := h.workspaces.Watch(r.Context())
@@ -458,13 +420,36 @@ func (h *runHandlers) watchLatest(w http.ResponseWriter, r *http.Request) {
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
-	var latestRunID *resource.TfeID
-	if ws.LatestRun != nil {
-		latestRunID = &ws.LatestRun.ID
-		if !conn.Send(*latestRunID) {
+
+	conn := newSSEConnection(w, false)
+
+	// function for retrieving run, rendering fragment and sending to client.
+	send := func(runID resource.TfeID) {
+		run, err := h.runs.Get(r.Context(), runID)
+		if err != nil {
+			// terminate conn on error
+			return
+		}
+		if err := conn.Render(r.Context(), h.singleRowTable(run), latestRunUpdate); err != nil {
+			// terminate conn on error
 			return
 		}
 	}
+
+	// maintain reference to ID of latest run for workspace.
+	var latestRunID *resource.TfeID
+
+	if ws.LatestRun != nil {
+		latestRunID = &ws.LatestRun.ID
+		// Immediately send fragment in case it's changed since the page was
+		// first rendered.
+		//
+		// TODO: add versions to run resources and send rendered run version in
+		// query param so that versions can be compared and this step can be
+		// skipped.
+		send(*latestRunID)
+	}
+
 	for {
 		select {
 		case event := <-workspacesSub:
@@ -497,19 +482,17 @@ func (h *runHandlers) watchLatest(w http.ResponseWriter, r *http.Request) {
 		case <-r.Context().Done():
 			return
 		}
-		if !conn.Send(*latestRunID) {
-			return
-		}
+		send(*latestRunID)
 	}
 }
 
 const (
-	EventLogChunk    string = "log_update"
-	EventLogFinished string = "log_finished"
+	EventLogChunk    sseEvent = "log_update"
+	EventLogFinished sseEvent = "log_finished"
 )
 
 func (h *runHandlers) tailRun(w http.ResponseWriter, r *http.Request) {
-	var params run.TailOptions
+	var params runpkg.TailOptions
 	if err := decode.All(&params, r); err != nil {
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
 		return
@@ -521,19 +504,14 @@ func (h *runHandlers) tailRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "text/event-stream")
-	w.Header().Set("Cache-Control", "no-cache")
-	w.Header().Set("Connection", "keep-alive")
-	w.WriteHeader(http.StatusOK)
-	rc := http.NewResponseController(w)
-	rc.Flush()
+	conn := newSSEConnection(w, false)
 
 	for {
 		select {
 		case chunk, ok := <-ch:
 			if !ok {
 				// no more logs
-				pubsub.WriteSSEEvent(w, []byte("no more logs"), EventLogFinished, false)
+				conn.Send([]byte("no more logs"), EventLogFinished)
 				return
 			}
 			html := chunk.ToHTML()
@@ -552,10 +530,23 @@ func (h *runHandlers) tailRun(w http.ResponseWriter, r *http.Request) {
 				h.logger.Error(err, "marshalling data")
 				continue
 			}
-			pubsub.WriteSSEEvent(w, js, EventLogChunk, false)
-			rc.Flush()
+			conn.Send(js, EventLogChunk)
 		case <-r.Context().Done():
 			return
 		}
 	}
+}
+
+func (h *runHandlers) singleRowTable(run *runpkg.Run) templ.Component {
+	return singleRunTable(h.users, h.configs, run)
+}
+
+func singleRunTable(users runUsersClient, configs runConfigsClient, run *runpkg.Run) templ.Component {
+	return components.UnpaginatedTable(
+		&runsTable{
+			users:   users,
+			configs: configs,
+		},
+		[]*runpkg.Run{run},
+	)
 }

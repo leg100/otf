@@ -21,44 +21,43 @@ type runListProps struct {
 	status              []runstatus.Status
 	statusFilterVisible bool
 	canUpdateWorkspace  bool
+	table               runsTable
 	pageOptions         resource.PageOptions
+	page                *resource.Page[*run.Run]
 }
 
 templ runList(props runListProps) {
 	{{
-	layoutProps := components.LayoutProps{
-		Title:        "runs",
-		Organization: props.organization,
-	}
-	if props.ws != nil {
-		layoutProps.Breadcrumbs = []components.Breadcrumb{
-			{Name: "Workspaces", Link: paths.Workspaces(props.organization)},
-			{Name: props.ws.Name, Link: paths.Workspace(props.ws.ID)},
+		layoutProps := components.LayoutProps{
+			Title:        "runs",
+			Organization: props.organization,
 		}
-		layoutProps.ContentLinks = WorkspaceHeaderLinks(props.ws.ID, props.canUpdateWorkspace)
-	}
-	layoutProps.Breadcrumbs = append(layoutProps.Breadcrumbs, components.Breadcrumb{Name: "Runs"})
+		if props.ws != nil {
+			layoutProps.Breadcrumbs = []components.Breadcrumb{
+				{Name: "Workspaces", Link: paths.Workspaces(props.organization)},
+				{Name: props.ws.Name, Link: paths.Workspace(props.ws.ID)},
+			}
+			layoutProps.ContentLinks = WorkspaceHeaderLinks(props.ws.ID, props.canUpdateWorkspace)
+		}
+		layoutProps.Breadcrumbs = append(layoutProps.Breadcrumbs, components.Breadcrumb{Name: "Runs"})
 	}}
 	@components.Layout(layoutProps) {
 		<div class="flex flex-col gap-2">
-			<form
-				hx-ext="ws"
-				ws-connect={ components.CurrentURL(ctx) }
-				action={ templ.SafeURL(components.CurrentURL(ctx)) }
-			>
+			<form action="" hx-include="this">
 				@runstatus.Filter(props.status, props.statusFilterVisible)
+				@components.PollingTable(props.table, props.page)
 			</form>
-			<div id="page-results"></div>
 		</div>
 	}
 }
 
-type runTable struct {
+type runsTable struct {
 	workspaceGetClient runWorkspaceGetClient
 	users              runUsersClient
+	configs            runConfigsClient
 }
 
-templ (t runTable) Header() {
+templ (t runsTable) Header() {
 	<th>Run</th>
 	<!-- add workspace column if not filtered by workspace ID -->
 	if t.workspaceGetClient != nil {
@@ -70,7 +69,7 @@ templ (t runTable) Header() {
 	<th>Actions</th>
 }
 
-templ (t runTable) Row(run *run.Run) {
+templ (t runsTable) Row(run *run.Run) {
 	<tr id={ "run-item-" + run.ID.String() }>
 		<td>
 			<a class="link" href={ paths.Run(run.ID) }>
@@ -99,7 +98,7 @@ templ (t runTable) Row(run *run.Run) {
 						</span>
 					}
 					<div class="flex gap-2 items-center">
-						@run.SourceIcon
+						@t.configs.GetSourceIcon(run.Source)
 						if run.IngressAttributes != nil {
 							<div class="badge badge-secondary badge-soft badge-sm font-mono">
 								<svg
@@ -183,7 +182,7 @@ templ (t runTable) Row(run *run.Run) {
 	</tr>
 }
 
-func (t runTable) getWorkspaceName(ctx context.Context, run *run.Run) (string, error) {
+func (t runsTable) getWorkspaceName(ctx context.Context, run *run.Run) (string, error) {
 	ws, err := t.workspaceGetClient.Get(ctx, run.WorkspaceID)
 	if err != nil {
 		return "", err
@@ -191,7 +190,7 @@ func (t runTable) getWorkspaceName(ctx context.Context, run *run.Run) (string, e
 	return ws.Name, nil
 }
 
-templ (t runTable) avatar(run *run.Run) {
+templ (t runsTable) avatar(run *run.Run) {
 	<div class="avatar">
 		<div class="size-14 rounded">
 			if run.CreatedBy != nil {
@@ -209,82 +208,110 @@ templ (t runTable) avatar(run *run.Run) {
 	</div>
 }
 
-type runGetProps struct {
-	run       *run.Run
-	ws        *workspace.Workspace
-	planLogs  run.Chunk
-	applyLogs run.Chunk
+type getRunProps struct {
+	run            *run.Run
+	ws             *workspace.Workspace
+	planLogs       run.Chunk
+	applyLogs      run.Chunk
+	users          runUsersClient
+	singleRowTable templ.Component
 }
 
-templ runGet(props runGetProps) {
+templ getRun(props getRunProps) {
 	{{
-	layoutProps := components.LayoutProps{
-		Title:        props.run.ID.String(),
-		Organization: props.ws.Organization,
-		PreContent:   getPreContent(),
-		PostContent:  getPostContent(props),
-		Breadcrumbs: []components.Breadcrumb{
-			{Name: "Workspaces", Link: paths.Workspaces(props.ws.Organization)},
-			{Name: props.ws.Name, Link: paths.Workspace(props.ws.ID)},
-			{Name: "Runs", Link: paths.Runs(props.ws.ID)},
-			{Name: props.run.ID.String()},
-		},
-	}
+		layoutProps := components.LayoutProps{
+			Title:        props.run.ID.String(),
+			Organization: props.ws.Organization,
+			PreContent:   getPreContent(),
+			PostContent:  getPostContent(props),
+			Breadcrumbs: []components.Breadcrumb{
+				{Name: "Workspaces", Link: paths.Workspaces(props.ws.Organization)},
+				{Name: props.ws.Name, Link: paths.Workspace(props.ws.ID)},
+				{Name: "Runs", Link: paths.Runs(props.ws.ID)},
+				{Name: props.run.ID.String()},
+			},
+		}
 	}}
 	@components.Layout(layoutProps) {
-		<div hx-ext="ws" ws-connect={ string(paths.WatchRun(props.run.ID)) }></div>
-		<div class="flex gap-4 text-sm">
-			<div class="flex gap-1 items-center">
-				<span>Engine</span>
-				<span class="badge badge-soft">
-					{ props.run.Engine.String() }
-				</span>
-			</div>
-			<div class="flex gap-1 items-center">
-				<span>Engine version</span>
-				<span class="badge badge-soft">
-					{ props.run.EngineVersion }
-				</span>
-			</div>
-			<div class="flex gap-1 items-center" id="elapsed-time">
-				Elapsed time
-				<span class="badge badge-soft" id={ "running-time-" + props.run.ID.String() }></span>
-			</div>
-			<div class="flex gap-1 items-center z-20" id="run-identifier">
-				@components.Identifier(props.run.ID)
-			</div>
-		</div>
-		<div id="period-report"></div>
-		<div class="flex flex-col gap-4">
-			<div id={ "run-item-" + props.run.ID.String() }></div>
-			<details class="collapse collapse-arrow border-base-content/20 border" id="plan" open>
-				<summary class="collapse-title">
-					<div class="flex gap-2 items-center">
-						<span class="font-semibold">Plan</span>
-						@phaseStatus(props.run.Plan)
-						@runningTime(&props.run.Plan)
-					</div>
-				</summary>
-				<div class="collapse-content bg-black text-white whitespace-pre-wrap break-words p-4 text-sm leading-snug font-mono">
-					@templ.Raw(strings.TrimSpace(props.planLogs.ToHTML()))
-					<div id="tailed-plan-logs"></div>
+		<div
+			hx-ext="sse"
+			sse-connect={ string(paths.WatchRun(props.run.ID)) }
+		>
+			<div class="flex gap-4 text-sm">
+				<div class="flex gap-1 items-center">
+					<span>Engine</span>
+					<span class="badge badge-soft">
+						{ props.run.Engine.String() }
+					</span>
 				</div>
-			</details>
-			<details class="collapse collapse-arrow border-base-content/20 border" id="apply" open>
-				<summary class="collapse-title">
-					<div class="flex gap-2 items-center">
-						<span class="font-semibold">Apply</span>
-						@phaseStatus(props.run.Apply)
-						<span>
-							@runningTime(&props.run.Apply)
-						</span>
-					</div>
-				</summary>
-				<div class="collapse-content collapse-arrow bg-black text-white whitespace-pre-wrap break-words p-4 text-sm leading-snug font-mono">
-					@templ.Raw(strings.TrimSpace(props.applyLogs.ToHTML()))
-					<div id="tailed-apply-logs"></div>
+				<div class="flex gap-1 items-center">
+					<span>Engine version</span>
+					<span class="badge badge-soft">
+						{ props.run.EngineVersion }
+					</span>
 				</div>
-			</details>
+				<div class="flex gap-1 items-center" id="elapsed-time">
+					Elapsed time
+					<span
+						class="badge badge-soft"
+						id={ "running-time-" + props.run.ID.String() }
+						sse-swap={ runTimeUpdate }
+					>
+						@runningTime(props.run)
+					</span>
+				</div>
+				<div class="flex gap-1 items-center z-20" id="run-identifier">
+					@components.Identifier(props.run.ID)
+				</div>
+			</div>
+			<div
+				id="period-report"
+				sse-swap={ periodReportUpdate }
+			>
+				@periodReport(props.run)
+			</div>
+			<div class="flex flex-col gap-4">
+				<div
+					id={ "run-item-" + props.run.ID.String() }
+					sse-swap={ runWidgetUpdate }
+				>
+					@props.singleRowTable
+				</div>
+				<details class="collapse collapse-arrow border-base-content/20 border" id="plan" open>
+					<summary class="collapse-title">
+						<div class="flex gap-2 items-center">
+							<span class="font-semibold">Plan</span>
+							<div sse-swap={ planStatusUpdate }>
+								@phaseStatus(props.run.Plan)
+							</div>
+							<div sse-swap={ planTimeUpdate }>
+								@runningTime(&props.run.Plan)
+							</div>
+						</div>
+					</summary>
+					<div class="collapse-content bg-black text-white whitespace-pre-wrap break-words p-4 text-sm leading-snug font-mono">
+						@templ.Raw(strings.TrimSpace(props.planLogs.ToHTML()))
+						<div id="tailed-plan-logs"></div>
+					</div>
+				</details>
+				<details class="collapse collapse-arrow border-base-content/20 border" id="apply" open>
+					<summary class="collapse-title">
+						<div class="flex gap-2 items-center">
+							<span class="font-semibold">Apply</span>
+							<div sse-swap={ applyStatusUpdate }>
+								@phaseStatus(props.run.Apply)
+							</div>
+							<div sse-swap={ applyTimeUpdate }>
+								@runningTime(&props.run.Apply)
+							</div>
+						</div>
+					</summary>
+					<div class="collapse-content collapse-arrow bg-black text-white whitespace-pre-wrap break-words p-4 text-sm leading-snug font-mono">
+						@templ.Raw(strings.TrimSpace(props.applyLogs.ToHTML()))
+						<div id="tailed-apply-logs"></div>
+					</div>
+				</details>
+			</div>
 		</div>
 	}
 }
@@ -295,28 +322,13 @@ templ getPreContent() {
 	<script src={ components.AssetPath(ctx, "/static/js/running_time.js") }></script>
 }
 
-templ getPostContent(props runGetProps) {
+templ getPostContent(props getRunProps) {
 	if !props.planLogs.IsEnd() {
 		@templ.JSFuncCall("setupTail", paths.TailRun(props.run.ID), "plan", props.planLogs.NextOffset())
 	}
 	if !props.applyLogs.IsEnd() {
 		@templ.JSFuncCall("setupTail", paths.TailRun(props.run.ID), "apply", props.applyLogs.NextOffset())
 	}
-}
-
-type event struct {
-	users runUsersClient
-}
-
-templ (e *event) view(runItem *run.Run) {
-	// render single-row table
-	@components.UnpaginatedTable(&runTable{users: e.users}, []*run.Run{runItem}, "run-item-"+runItem.ID.String())
-	@phaseStatus(runItem.Plan)
-	@phaseStatus(runItem.Apply)
-	@periodReport(runItem)
-	@runningTime(runItem)
-	@runningTime(&runItem.Plan)
-	@runningTime(&runItem.Apply)
 }
 
 type task interface {
@@ -345,7 +357,10 @@ templ runningTime(tsk task) {
 
 templ periodReport(run *run.Run) {
 	{{ report := run.PeriodReport(time.Now()) }}
-	<div id="period-report" class="relative h-3 w-full group">
+	<div
+		id="period-report"
+		class="relative h-3 w-full group"
+	>
 		for i, period := range report.Periods {
 			<div
 				style={ fmt.Sprintf("width: %f%%", report.Percentage(i)) }
@@ -383,7 +398,10 @@ var phaseBadges = map[run.PhaseStatus]string{
 }
 
 templ phaseStatus(phase run.Phase) {
-	<span id={ string(phase.PhaseType) + "-status" } class={ "badge", phaseBadges[phase.Status] }>
+	<span
+		id={ string(phase.PhaseType) + "-status" }
+		class={ "badge", phaseBadges[phase.Status] }
+	>
 		{ phase.Status.String() }
 	</span>
 }
