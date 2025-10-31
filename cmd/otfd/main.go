@@ -81,7 +81,7 @@ func parseFlags(ctx context.Context, args []string, out io.Writer) error {
 	cmd.Flags().StringVar(&cfg.WebhookHost, "webhook-hostname", "", "External hostname for otf webhooks")
 
 	// TODO: remove after given amount of time
-	cmd.Flags().StringVar(&cfg.AllowedOrigins, "allowed-origins", "", "Allowed origins for websocket upgrades")
+	_ = cmd.Flags().String("allowed-origins", "", "Allowed origins for websocket upgrades")
 	cmd.Flags().MarkDeprecated("allowed-origins", "websockets no longer implemented so this flag has no effect")
 
 	cmd.Flags().StringVar(&cfg.PublicKeyPath, "public-key-path", "", "Path to public key for dynamic credentials.")

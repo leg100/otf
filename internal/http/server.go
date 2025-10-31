@@ -43,7 +43,6 @@ type (
 		SSL                  bool
 		CertFile, KeyFile    string
 		EnableRequestLogging bool
-		AllowedOrigins       string
 
 		Handlers []internal.Handlers
 		// middleware to intercept requests, executed in the order given.

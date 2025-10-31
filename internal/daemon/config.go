@@ -39,7 +39,6 @@ type Config struct {
 	WebhookHost                  string
 	Address                      string
 	Database                     string
-	AllowedOrigins               string
 	MaxConfigSize                int64
 	SSL                          bool
 	CertFile, KeyFile            string
