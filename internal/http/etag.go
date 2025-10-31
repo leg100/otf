@@ -20,14 +20,14 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-type etagResponseWriter struct {
+type EtagResponseWriter struct {
 	http.ResponseWriter
 	buf  bytes.Buffer
 	hash hash.Hash
 	w    io.Writer
 }
 
-func (e *etagResponseWriter) Write(p []byte) (int, error) {
+func (e *EtagResponseWriter) Write(p []byte) (int, error) {
 	return e.w.Write(p)
 }
 
@@ -47,7 +47,11 @@ func (e *etagMiddleware) middleware(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 			return
 		}
-		ew := &etagResponseWriter{
+		if r.Header.Get("Accept") == "text/event-stream" {
+			next.ServeHTTP(w, r)
+			return
+		}
+		ew := &EtagResponseWriter{
 			ResponseWriter: w,
 			buf:            bytes.Buffer{},
 			hash:           sha1.New(),

@@ -22,12 +22,14 @@ type sseConnection struct {
 type sseEvent string
 
 func newSSEConnection(w http.ResponseWriter, base64 bool) *sseConnection {
-	rc := http.NewResponseController(w)
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
 	w.WriteHeader(http.StatusOK)
-	rc.Flush()
+	rc := http.NewResponseController(w)
+	if err := rc.Flush(); err != nil {
+		panic("flush not supported: " + err.Error())
+	}
 	return &sseConnection{
 		ResponseWriter:     w,
 		ResponseController: rc,

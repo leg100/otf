@@ -90,7 +90,7 @@ func addRunHandlers(r *mux.Router, logger logr.Logger, runs runClient, workspace
 	r.HandleFunc("/runs/{run_id}/apply", h.apply).Methods("POST")
 	r.HandleFunc("/runs/{run_id}/discard", h.discard).Methods("POST")
 	r.HandleFunc("/runs/{run_id}/retry", h.retry).Methods("POST")
-	r.HandleFunc("/runs/{run_id}/watch", h.watchRun).Methods("GET")
+	r.HandleFunc("/runs/{run_id}/watch", h.watch).Methods("GET")
 	r.HandleFunc("/runs/{run_id}/tail", h.tailRun)
 
 	// this handles the link the terraform CLI shows during a plan/apply.
@@ -332,7 +332,7 @@ const (
 	applyStatusUpdate  sseEvent = "ApplyStatusUpdate"
 )
 
-func (h *runHandlers) watchRun(w http.ResponseWriter, r *http.Request) {
+func (h *runHandlers) watch(w http.ResponseWriter, r *http.Request) {
 	runID, err := decode.ID("run_id", r)
 	if err != nil {
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
@@ -383,7 +383,10 @@ func (h *runHandlers) watchRun(w http.ResponseWriter, r *http.Request) {
 
 	for {
 		select {
-		case ev := <-sub:
+		case ev, ok := <-sub:
+			if !ok {
+				return
+			}
 			if ev.Type == pubsub.DeletedEvent {
 				// TODO: run has been deleted: user should be alerted and
 				// client should not reconnect.
@@ -535,10 +538,14 @@ func (h *runHandlers) tailRun(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *runHandlers) singleRowTable(run *runpkg.Run) templ.Component {
+	return singleRunTable(h.users, h.configs, run)
+}
+
+func singleRunTable(users runUsersClient, configs runConfigsClient, run *runpkg.Run) templ.Component {
 	return components.UnpaginatedTable(
 		&runsTable{
-			users:   h.users,
-			configs: h.configs,
+			users:   users,
+			configs: configs,
 		},
 		[]*runpkg.Run{run},
 	)

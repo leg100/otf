@@ -43,10 +43,10 @@ templ runList(props runListProps) {
 	}}
 	@components.Layout(layoutProps) {
 		<div class="flex flex-col gap-2">
-			<form action={ templ.SafeURL(components.CurrentURL(ctx)) }>
+			<form action="" hx-include="this">
 				@runstatus.Filter(props.status, props.statusFilterVisible)
+				@components.PollingTable(props.table, props.page)
 			</form>
-			@components.PollingTable(props.table, props.page)
 		</div>
 	}
 }
@@ -233,81 +233,85 @@ templ getRun(props getRunProps) {
 		}
 	}}
 	@components.Layout(layoutProps) {
-		<div hx-ext="ws" ws-connect={ string(paths.WatchRun(props.run.ID)) }></div>
-		<div class="flex gap-4 text-sm">
-			<div class="flex gap-1 items-center">
-				<span>Engine</span>
-				<span class="badge badge-soft">
-					{ props.run.Engine.String() }
-				</span>
-			</div>
-			<div class="flex gap-1 items-center">
-				<span>Engine version</span>
-				<span class="badge badge-soft">
-					{ props.run.EngineVersion }
-				</span>
-			</div>
-			<div class="flex gap-1 items-center" id="elapsed-time">
-				Elapsed time
-				<span
-					class="badge badge-soft"
-					id={ "running-time-" + props.run.ID.String() }
-					sse-swap={ runTimeUpdate }
-				>
-					@runningTime(props.run)
-				</span>
-			</div>
-			<div class="flex gap-1 items-center z-20" id="run-identifier">
-				@components.Identifier(props.run.ID)
-			</div>
-		</div>
 		<div
-			id="period-report"
-			sse-swap={ periodReportUpdate }
+			hx-ext="sse"
+			sse-connect={ string(paths.WatchRun(props.run.ID)) }
 		>
-			@periodReport(props.run)
-		</div>
-		<div class="flex flex-col gap-4">
-			<div
-				id={ "run-item-" + props.run.ID.String() }
-				sse-swap={ runWidgetUpdate }
-			>
-				@props.singleRowTable
+			<div class="flex gap-4 text-sm">
+				<div class="flex gap-1 items-center">
+					<span>Engine</span>
+					<span class="badge badge-soft">
+						{ props.run.Engine.String() }
+					</span>
+				</div>
+				<div class="flex gap-1 items-center">
+					<span>Engine version</span>
+					<span class="badge badge-soft">
+						{ props.run.EngineVersion }
+					</span>
+				</div>
+				<div class="flex gap-1 items-center" id="elapsed-time">
+					Elapsed time
+					<span
+						class="badge badge-soft"
+						id={ "running-time-" + props.run.ID.String() }
+						sse-swap={ runTimeUpdate }
+					>
+						@runningTime(props.run)
+					</span>
+				</div>
+				<div class="flex gap-1 items-center z-20" id="run-identifier">
+					@components.Identifier(props.run.ID)
+				</div>
 			</div>
-			<details class="collapse collapse-arrow border-base-content/20 border" id="plan" open>
-				<summary class="collapse-title">
-					<div class="flex gap-2 items-center">
-						<span class="font-semibold">Plan</span>
-						<div sse-swap={ planStatusUpdate }>
-							@phaseStatus(props.run.Plan)
-						</div>
-						<div sse-swap={ planTimeUpdate }>
-							@runningTime(&props.run.Plan)
-						</div>
-					</div>
-				</summary>
-				<div class="collapse-content bg-black text-white whitespace-pre-wrap break-words p-4 text-sm leading-snug font-mono">
-					@templ.Raw(strings.TrimSpace(props.planLogs.ToHTML()))
-					<div id="tailed-plan-logs"></div>
+			<div
+				id="period-report"
+				sse-swap={ periodReportUpdate }
+			>
+				@periodReport(props.run)
+			</div>
+			<div class="flex flex-col gap-4">
+				<div
+					id={ "run-item-" + props.run.ID.String() }
+					sse-swap={ runWidgetUpdate }
+				>
+					@props.singleRowTable
 				</div>
-			</details>
-			<details class="collapse collapse-arrow border-base-content/20 border" id="apply" open>
-				<summary class="collapse-title">
-					<div class="flex gap-2 items-center">
-						<span class="font-semibold">Apply</span>
-						<div sse-swap={ applyStatusUpdate }>
-							@phaseStatus(props.run.Apply)
+				<details class="collapse collapse-arrow border-base-content/20 border" id="plan" open>
+					<summary class="collapse-title">
+						<div class="flex gap-2 items-center">
+							<span class="font-semibold">Plan</span>
+							<div sse-swap={ planStatusUpdate }>
+								@phaseStatus(props.run.Plan)
+							</div>
+							<div sse-swap={ planTimeUpdate }>
+								@runningTime(&props.run.Plan)
+							</div>
 						</div>
-						<div sse-swap={ applyTimeUpdate }>
-							@runningTime(&props.run.Apply)
-						</div>
+					</summary>
+					<div class="collapse-content bg-black text-white whitespace-pre-wrap break-words p-4 text-sm leading-snug font-mono">
+						@templ.Raw(strings.TrimSpace(props.planLogs.ToHTML()))
+						<div id="tailed-plan-logs"></div>
 					</div>
-				</summary>
-				<div class="collapse-content collapse-arrow bg-black text-white whitespace-pre-wrap break-words p-4 text-sm leading-snug font-mono">
-					@templ.Raw(strings.TrimSpace(props.applyLogs.ToHTML()))
-					<div id="tailed-apply-logs"></div>
-				</div>
-			</details>
+				</details>
+				<details class="collapse collapse-arrow border-base-content/20 border" id="apply" open>
+					<summary class="collapse-title">
+						<div class="flex gap-2 items-center">
+							<span class="font-semibold">Apply</span>
+							<div sse-swap={ applyStatusUpdate }>
+								@phaseStatus(props.run.Apply)
+							</div>
+							<div sse-swap={ applyTimeUpdate }>
+								@runningTime(&props.run.Apply)
+							</div>
+						</div>
+					</summary>
+					<div class="collapse-content collapse-arrow bg-black text-white whitespace-pre-wrap break-words p-4 text-sm leading-snug font-mono">
+						@templ.Raw(strings.TrimSpace(props.applyLogs.ToHTML()))
+						<div id="tailed-apply-logs"></div>
+					</div>
+				</details>
+			</div>
 		</div>
 	}
 }

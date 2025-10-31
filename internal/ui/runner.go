@@ -20,10 +20,6 @@ import (
 	"github.com/leg100/otf/internal/workspace"
 )
 
-// runnersTableID is the CSS ID of the DOM element containing the table of
-// runners.
-const runnersTableID = "runners-table"
-
 // runnerHandlers provides handlers for the web UI for runners
 type runnerHandlers struct {
 	svc        runnerClient

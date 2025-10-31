@@ -95,18 +95,20 @@ templ listWorkspaceVariables(props listWorkspaceVariablesProps) {
 			{Name: "variables", Link: paths.Variables(props.ws.ID)},
 		},
 	}) {
-		@components.UnpaginatedTable(
-			&variablesTable{
-				canDeleteVariable:       props.canCreateVariable,
-				workspaceVariablesTable: true,
-			},
-			props.rows,
-		)
-		if props.canCreateVariable {
-			<form class="mt-2" action={ paths.NewVariable(props.ws.ID) } method="GET">
-				<button class="btn">Add variable</button>
-			</form>
-		}
+		<div id="variables-table">
+			@components.UnpaginatedTable(
+				&variablesTable{
+					canDeleteVariable:       props.canCreateVariable,
+					workspaceVariablesTable: true,
+				},
+				props.rows,
+			)
+			if props.canCreateVariable {
+				<form class="mt-2" action={ paths.NewVariable(props.ws.ID) } method="GET">
+					<button class="btn">Add variable</button>
+				</form>
+			}
+		</div>
 	}
 }
 

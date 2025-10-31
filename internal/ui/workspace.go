@@ -11,6 +11,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
+	"github.com/leg100/otf/internal/configversion/source"
 	"github.com/leg100/otf/internal/engine"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
@@ -58,6 +59,7 @@ type (
 		releases     workspaceEngineClient
 		runs         workspaceRunClient
 		users        workspaceUserClient
+		configs      workspaceConfigsClient
 	}
 
 	workspaceTeamClient interface {
@@ -105,6 +107,9 @@ type (
 	workspaceUserClient interface {
 		GetUser(ctx context.Context, spec user.UserSpec) (*user.User, error)
 	}
+	workspaceConfigsClient interface {
+		GetSourceIcon(source source.Source) templ.Component
+	}
 )
 
 // addWorkspaceHandlers registers workspace UI handlers with the router
@@ -118,6 +123,7 @@ func addWorkspaceHandlers(
 	releases workspaceEngineClient,
 	runs workspaceRunClient,
 	users workspaceUserClient,
+	configs workspaceConfigsClient,
 ) {
 	h := &workspaceHandlers{
 		workspaceUIHelpers: &workspaceUIHelpers{
@@ -131,6 +137,7 @@ func addWorkspaceHandlers(
 		releases:     releases,
 		runs:         runs,
 		users:        users,
+		configs:      configs,
 	}
 
 	r.HandleFunc("/organizations/{organization_name}/workspaces", h.listWorkspaces).Methods("GET")
@@ -294,15 +301,15 @@ func (h *workspaceHandlers) getWorkspace(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	// get latest run if there is one.
-	var latestRun *run.Run
+	// Generate component for latest run if workspace has one.
+	var latestRunTable templ.Component
 	if ws.LatestRun != nil {
 		run, err := h.runs.Get(r.Context(), ws.LatestRun.ID)
 		if err != nil {
 			html.Error(r, w, err.Error())
 			return
 		}
-		latestRun = run
+		latestRunTable = singleRunTable(h.users, h.configs, run)
 	}
 
 	props := workspaceGetProps{
@@ -324,8 +331,7 @@ func (h *workspaceHandlers) getWorkspace(w http.ResponseWriter, r *http.Request)
 			Placeholder: "Add tags",
 			Width:       components.NarrowDropDown,
 		},
-		latestRun: latestRun,
-		users:     h.users,
+		latestRunTable: latestRunTable,
 	}
 	html.Render(workspaceGet(props), w, r)
 }
