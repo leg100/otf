@@ -122,6 +122,10 @@ type (
 		CreatedBy     *user.Username
 		EngineVersion string
 
+		// CreatedAt overrides the time the run was created at - for testing
+		// purposes only.
+		CreatedAt *time.Time
+
 		costEstimationEnabled bool
 
 		// testing purposes
@@ -195,6 +199,9 @@ func NewRun(
 		run.Source = source.API
 	}
 
+	if opts.CreatedAt != nil {
+		run.CreatedAt = *opts.CreatedAt
+	}
 	if opts.TerraformVersion != nil {
 		run.EngineVersion = *opts.TerraformVersion
 	}

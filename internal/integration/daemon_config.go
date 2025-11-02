@@ -90,6 +90,13 @@ func withTimeouts(planning, applying, checkInterval time.Duration) configOption 
 	}
 }
 
+func withDeleteRunsAfter(deleteRunsAfter, checkInterval time.Duration) configOption {
+	return func(cfg *config) {
+		cfg.DeleteRunsAfter = deleteRunsAfter
+		cfg.OverrideDeleteRunsCheckInterval = checkInterval
+	}
+}
+
 func disableRunner() configOption {
 	return func(cfg *config) {
 		cfg.DisableRunner = true
