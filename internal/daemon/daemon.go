@@ -574,12 +574,6 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 			DB:     d.DB,
 			System: d.Runners.Signaler,
 		},
-		{
-			Name:   "job-signaler",
-			Logger: d.Logger,
-			DB:     d.DB,
-			System: d.Runners.Signaler,
-		},
 	}
 	if !d.DisableRunner {
 		subsystems = append(subsystems, &Subsystem{
