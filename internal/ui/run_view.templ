@@ -42,12 +42,12 @@ templ runList(props runListProps) {
 		layoutProps.Breadcrumbs = append(layoutProps.Breadcrumbs, components.Breadcrumb{Name: "Runs"})
 	}}
 	@components.Layout(layoutProps) {
-		<div class="flex flex-col gap-2">
-			<form action="" hx-include="this">
+		<form action="" hx-include="this">
+			<div class="flex flex-col gap-2">
 				@runstatus.Filter(props.status, props.statusFilterVisible)
 				@components.PollingTable(props.table, props.page)
-			</form>
-		</div>
+			</div>
+		</form>
 	}
 }
 
