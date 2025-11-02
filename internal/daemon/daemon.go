@@ -531,6 +531,16 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 			},
 		},
 		{
+			Name:   "run-deleter",
+			Logger: d.Logger,
+			System: &run.Deleter{
+				Logger:                d.Logger.WithValues("component", "run-deleter"),
+				OverrideCheckInterval: d.OverrideDeleteRunsCheckInterval,
+				Runs:                  d.Runs,
+				AgeThreshold:          d.DeleteRunsAfter,
+			},
+		},
+		{
 			Name:   "notifier",
 			Logger: d.Logger,
 			DB:     d.DB,
@@ -557,6 +567,12 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 			DB:     d.DB,
 			LockID: internal.Ptr(sql.RunnerManagerLockID),
 			System: d.Runners.NewManager(),
+		},
+		{
+			Name:   "job-signaler",
+			Logger: d.Logger,
+			DB:     d.DB,
+			System: d.Runners.Signaler,
 		},
 		{
 			Name:   "job-signaler",

@@ -420,7 +420,7 @@ AND runs.status                  LIKE ANY($5::text[])
 AND runs.plan_only::text         LIKE ANY($6::text[])
 AND (($7::text IS NULL) OR ia.commit_sha = $7)
 AND (($8::text IS NULL) OR ia.sender_username = $8)
-AND (($11::text IS NULL) OR runs.created_at < $11)
+AND (($11::timestamptz IS NULL) OR runs.created_at < $11::timestamptz)
 ORDER BY runs.created_at DESC
 LIMIT $9::int
 OFFSET $10::int
@@ -455,7 +455,7 @@ AND runs.status                  LIKE ANY($5::text[])
 AND runs.plan_only::text         LIKE ANY($6::text[])
 AND (($7::text IS NULL) OR ia.commit_sha = $7)
 AND (($8::text IS NULL) OR ia.sender_username = $8)
-AND (($11::text IS NULL) OR runs.created_at < $11)
+AND (($9::timestamptz IS NULL) OR runs.created_at < $9::timestamptz)
 `,
 
 		[]string{organization},

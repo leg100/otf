@@ -24,11 +24,15 @@ type (
 	}
 )
 
-// Start the timeout daemon.
+// Start the deleter daemon.
 func (e *Deleter) Start(ctx context.Context) error {
 	interval := defaultCheckInterval
 	if e.OverrideCheckInterval != 0 {
 		interval = e.OverrideCheckInterval
+	}
+
+	if err := e.deleteRuns(ctx); err != nil {
+		return err
 	}
 
 	ticker := time.NewTicker(interval)
@@ -37,14 +41,18 @@ func (e *Deleter) Start(ctx context.Context) error {
 		case <-ctx.Done():
 			return nil
 		case <-ticker.C:
-			if err := e.check(ctx); err != nil {
+			if err := e.deleteRuns(ctx); err != nil {
 				return err
 			}
 		}
 	}
 }
 
-func (e *Deleter) check(ctx context.Context) error {
+func (e *Deleter) deleteRuns(ctx context.Context) error {
+	// Refuse to delete runs if age threshold is set to 0.
+	if e.AgeThreshold == 0 {
+		return nil
+	}
 	// Retrieve all runs older than the given age.
 	cutoff := time.Now().Add(-e.AgeThreshold)
 	runs, err := resource.ListAll(func(opts resource.PageOptions) (*resource.Page[*Run], error) {
