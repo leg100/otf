@@ -70,7 +70,7 @@ func (e *Deleter) deleteRuns(ctx context.Context) error {
 			e.Error(err, "deleting old run")
 			return err
 		}
-		e.Info("deleted old run", "created", run.CreatedAt, "threshold", e.AgeThreshold)
+		e.Info("deleted old run", "run", run)
 	}
 	return nil
 }
