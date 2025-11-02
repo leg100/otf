@@ -53,7 +53,8 @@ func TestRunDeleter(t *testing.T) {
 		}
 	}
 
-	runs, err := daemon.Runs.List(ctx, run.ListOptions{})
+	// Listing runs site-wide requires site admin user
+	runs, err := daemon.Runs.List(adminCtx, run.ListOptions{})
 	require.NoError(t, err)
 	assert.Len(t, runs.Items, 2)
 }
