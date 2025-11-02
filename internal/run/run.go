@@ -219,26 +219,26 @@ func NewRun(
 	return &run, nil
 }
 
-func (run *Run) Queued() bool {
-	return runstatus.Queued(run.Status)
+func (r *Run) Queued() bool {
+	return runstatus.Queued(r.Status)
 }
 
-func (run *Run) HasChanges() bool {
-	return run.Plan.HasChanges()
+func (r *Run) HasChanges() bool {
+	return r.Plan.HasChanges()
 }
 
 // HasStarted is used by the running_time.tmpl partial template to determine
 // whether to show the "elapsed time" for a run.
-func (run *Run) HasStarted() bool { return true }
+func (r *Run) HasStarted() bool { return true }
 
 // ElapsedTime returns the total time the run has taken thus far. If the run has
 // completed, then it is the time taken from entering the pending state
 // (creation) through to completion. Otherwise it is the time since entering the
 // pending state.
-func (run *Run) ElapsedTime(now time.Time) time.Duration {
-	pending := run.StatusTimestamps[0]
-	if run.Done() {
-		completed := run.StatusTimestamps[len(run.StatusTimestamps)-1]
+func (r *Run) ElapsedTime(now time.Time) time.Duration {
+	pending := r.StatusTimestamps[0]
+	if r.Done() {
+		completed := r.StatusTimestamps[len(r.StatusTimestamps)-1]
 		return completed.Timestamp.Sub(pending.Timestamp)
 	}
 	return now.Sub(pending.Timestamp)
@@ -247,30 +247,30 @@ func (run *Run) ElapsedTime(now time.Time) time.Duration {
 // PeriodReport provides a report of the duration in which a run has been in
 // each status thus far. Completed statuses such as completed, errored, etc, are
 // ignored because they are an instant not a period of time.
-func (run *Run) PeriodReport(now time.Time) (report PeriodReport) {
+func (r *Run) PeriodReport(now time.Time) (report PeriodReport) {
 	// record total time run has taken thus far - it is important that the same
 	// 'now' is used both for total time and for the period calculations below
 	// so that they add up to the same amounts.
-	report.TotalTime = run.ElapsedTime(now)
-	if run.Done() {
+	report.TotalTime = r.ElapsedTime(now)
+	if r.Done() {
 		// skip last status, which is the completed status
-		report.Periods = make([]StatusPeriod, len(run.StatusTimestamps)-1)
+		report.Periods = make([]StatusPeriod, len(r.StatusTimestamps)-1)
 	} else {
-		report.Periods = make([]StatusPeriod, len(run.StatusTimestamps))
+		report.Periods = make([]StatusPeriod, len(r.StatusTimestamps))
 	}
-	for i := 0; i < len(run.StatusTimestamps); i++ {
+	for i := 0; i < len(r.StatusTimestamps); i++ {
 		var (
 			duration time.Duration
-			current  = run.StatusTimestamps[i]
-			isLatest = run.StatusTimestamps[i].Status == run.Status
+			current  = r.StatusTimestamps[i]
+			isLatest = r.StatusTimestamps[i].Status == r.Status
 		)
 		if isLatest {
-			if run.Done() {
+			if r.Done() {
 				return
 			}
 			duration = now.Sub(current.Timestamp)
 		} else {
-			next := run.StatusTimestamps[i+1]
+			next := r.StatusTimestamps[i+1]
 			duration = next.Timestamp.Sub(current.Timestamp)
 		}
 		report.Periods[i] = StatusPeriod{
@@ -282,8 +282,8 @@ func (run *Run) PeriodReport(now time.Time) (report PeriodReport) {
 }
 
 // Phase returns the current phase.
-func (run *Run) Phase() PhaseType {
-	switch run.Status {
+func (r *Run) Phase() PhaseType {
+	switch r.Status {
 	case runstatus.Pending:
 		return PendingPhase
 	case runstatus.PlanQueued, runstatus.Planning, runstatus.Planned:
@@ -296,22 +296,22 @@ func (run *Run) Phase() PhaseType {
 }
 
 // Discard updates the state of a run to reflect it having been discarded.
-func (run *Run) Discard() error {
-	if !run.Discardable() {
+func (r *Run) Discard() error {
+	if !r.Discardable() {
 		return ErrRunDiscardNotAllowed
 	}
-	run.updateStatus(runstatus.Discarded, nil)
+	r.updateStatus(runstatus.Discarded, nil)
 
-	if run.Status == runstatus.Pending {
-		run.Plan.UpdateStatus(PhaseUnreachable)
+	if r.Status == runstatus.Pending {
+		r.Plan.UpdateStatus(PhaseUnreachable)
 	}
-	run.Apply.UpdateStatus(PhaseUnreachable)
+	r.Apply.UpdateStatus(PhaseUnreachable)
 
 	return nil
 }
 
-func (run *Run) InProgress() bool {
-	switch run.Status {
+func (r *Run) InProgress() bool {
+	switch r.Status {
 	case runstatus.Planning, runstatus.Applying:
 		return true
 	default:
@@ -319,8 +319,8 @@ func (run *Run) InProgress() bool {
 	}
 }
 
-func (run *Run) String() string {
-	return run.ID.String()
+func (r *Run) String() string {
+	return r.ID.String()
 }
 
 // Cancel run. Depending upon whether the run is currently in-progress, the run
@@ -335,10 +335,10 @@ func (run *Run) String() string {
 // The force arg when set to true forceably cancels the run. This is only
 // allowed when an attempt has already been made to cancel the run
 // non-forceably. The force arg is only respected when isUser is true.
-func (run *Run) Cancel(isUser, force bool) error {
+func (r *Run) Cancel(isUser, force bool) error {
 	if force {
 		if isUser {
-			if !run.ForceCancelable() {
+			if !r.ForceCancelable() {
 				return ErrRunForceCancelNotAllowed
 			}
 		} else {
@@ -347,56 +347,56 @@ func (run *Run) Cancel(isUser, force bool) error {
 		}
 	}
 	var signal bool
-	switch run.Status {
+	switch r.Status {
 	case runstatus.Pending:
-		run.Plan.UpdateStatus(PhaseUnreachable)
-		run.Apply.UpdateStatus(PhaseUnreachable)
+		r.Plan.UpdateStatus(PhaseUnreachable)
+		r.Apply.UpdateStatus(PhaseUnreachable)
 	case runstatus.PlanQueued:
-		run.Plan.UpdateStatus(PhaseCanceled)
-		run.Apply.UpdateStatus(PhaseUnreachable)
+		r.Plan.UpdateStatus(PhaseCanceled)
+		r.Apply.UpdateStatus(PhaseUnreachable)
 	case runstatus.ApplyQueued:
-		run.Apply.UpdateStatus(PhaseCanceled)
+		r.Apply.UpdateStatus(PhaseCanceled)
 	case runstatus.Planning:
 		if isUser && !force {
 			signal = true
 		} else {
-			run.Plan.UpdateStatus(PhaseCanceled)
-			run.Apply.UpdateStatus(PhaseUnreachable)
+			r.Plan.UpdateStatus(PhaseCanceled)
+			r.Apply.UpdateStatus(PhaseUnreachable)
 		}
 	case runstatus.Planned:
-		run.Apply.UpdateStatus(PhaseUnreachable)
+		r.Apply.UpdateStatus(PhaseUnreachable)
 	case runstatus.Applying:
 		if isUser && !force {
 			signal = true
 		} else {
-			run.Apply.UpdateStatus(PhaseCanceled)
+			r.Apply.UpdateStatus(PhaseCanceled)
 		}
 	}
 	if signal {
-		if run.CancelSignaledAt != nil {
+		if r.CancelSignaledAt != nil {
 			// cannot send cancel signal more than once.
 			return ErrRunCancelNotAllowed
 		}
 		// set timestamp to indicate signal is to be sent, but do not set
 		// status to RunCanceled yet.
 		now := internal.CurrentTimestamp(nil)
-		run.CancelSignaledAt = &now
+		r.CancelSignaledAt = &now
 		return nil
 	}
 	if force {
-		run.updateStatus(runstatus.ForceCanceled, nil)
+		r.updateStatus(runstatus.ForceCanceled, nil)
 	} else {
-		run.updateStatus(runstatus.Canceled, nil)
+		r.updateStatus(runstatus.Canceled, nil)
 	}
 	return nil
 }
 
 // Cancelable determines whether run can be cancelled.
-func (run *Run) Cancelable() bool {
-	if run.CancelSignaledAt != nil {
+func (r *Run) Cancelable() bool {
+	if r.CancelSignaledAt != nil {
 		return false
 	}
-	switch run.Status {
+	switch r.Status {
 	case runstatus.Pending, runstatus.PlanQueued, runstatus.Planning, runstatus.ApplyQueued, runstatus.Applying:
 		return true
 	default:
@@ -405,8 +405,8 @@ func (run *Run) Cancelable() bool {
 }
 
 // ForceCancelable determines whether run can be forceably cancelled.
-func (run *Run) ForceCancelable() bool {
-	availableAt := run.ForceCancelAvailableAt()
+func (r *Run) ForceCancelable() bool {
+	availableAt := r.ForceCancelAvailableAt()
 	if availableAt == nil || time.Now().Before(*availableAt) {
 		return false
 	}
@@ -417,62 +417,62 @@ func (run *Run) ForceCancelable() bool {
 // forceably cancel the run. It only possible to do so when an attempt has
 // previously been made to cancel the run non-forceably and a cool-off period
 // has elapsed.
-func (run *Run) ForceCancelAvailableAt() *time.Time {
-	if run.Done() || run.CancelSignaledAt == nil {
+func (r *Run) ForceCancelAvailableAt() *time.Time {
+	if r.Done() || r.CancelSignaledAt == nil {
 		// cannot force cancel a run that is already complete or when no attempt
 		// has previously been made to cancel run.
 		return nil
 	}
-	return run.cancelCoolOff()
+	return r.cancelCoolOff()
 }
 
 const forceCancelCoolOff = time.Second * 10
 
-func (run *Run) cancelCoolOff() *time.Time {
-	if run.CancelSignaledAt == nil {
+func (r *Run) cancelCoolOff() *time.Time {
+	if r.CancelSignaledAt == nil {
 		return nil
 	}
-	cooledOff := run.CancelSignaledAt.Add(forceCancelCoolOff)
+	cooledOff := r.CancelSignaledAt.Add(forceCancelCoolOff)
 	return &cooledOff
 }
 
 // StartedAt returns the time the run was created.
-func (run *Run) StartedAt() time.Time {
-	return run.CreatedAt
+func (r *Run) StartedAt() time.Time {
+	return r.CreatedAt
 }
 
 // Done determines whether run has reached an end state, e.g. applied,
 // discarded, etc.
-func (run *Run) Done() bool {
-	return runstatus.Done(run.Status)
+func (r *Run) Done() bool {
+	return runstatus.Done(r.Status)
 }
 
 // EnqueuePlan enqueues a plan for the run. It also sets the run as the latest
 // run for its workspace (speculative runs are ignored).
-func (run *Run) EnqueuePlan() error {
-	if run.Status != runstatus.Pending {
-		return fmt.Errorf("cannot enqueue run with status %s", run.Status)
+func (r *Run) EnqueuePlan() error {
+	if r.Status != runstatus.Pending {
+		return fmt.Errorf("cannot enqueue run with status %s", r.Status)
 	}
-	run.updateStatus(runstatus.PlanQueued, nil)
-	run.Plan.UpdateStatus(PhaseQueued)
+	r.updateStatus(runstatus.PlanQueued, nil)
+	r.Plan.UpdateStatus(PhaseQueued)
 
 	return nil
 }
 
-func (run *Run) EnqueueApply() error {
-	switch run.Status {
+func (r *Run) EnqueueApply() error {
+	switch r.Status {
 	case runstatus.Planned, runstatus.CostEstimated:
 		// applyable statuses
 	default:
-		return fmt.Errorf("cannot apply run with status %s", run.Status)
+		return fmt.Errorf("cannot apply run with status %s", r.Status)
 	}
-	run.updateStatus(runstatus.ApplyQueued, nil)
-	run.Apply.UpdateStatus(PhaseQueued)
+	r.updateStatus(runstatus.ApplyQueued, nil)
+	r.Apply.UpdateStatus(PhaseQueued)
 	return nil
 }
 
-func (run *Run) StatusTimestamp(status runstatus.Status) (time.Time, error) {
-	for _, rst := range run.StatusTimestamps {
+func (r *Run) StatusTimestamp(status runstatus.Status) (time.Time, error) {
+	for _, rst := range r.StatusTimestamps {
 		if rst.Status == status {
 			return rst.Timestamp, nil
 		}
@@ -481,14 +481,14 @@ func (run *Run) StatusTimestamp(status runstatus.Status) (time.Time, error) {
 }
 
 // Start a run phase
-func (run *Run) Start() error {
-	switch run.Status {
+func (r *Run) Start() error {
+	switch r.Status {
 	case runstatus.PlanQueued:
-		run.updateStatus(runstatus.Planning, nil)
-		run.Plan.UpdateStatus(PhaseRunning)
+		r.updateStatus(runstatus.Planning, nil)
+		r.Plan.UpdateStatus(PhaseRunning)
 	case runstatus.ApplyQueued:
-		run.updateStatus(runstatus.Applying, nil)
-		run.Apply.UpdateStatus(PhaseRunning)
+		r.updateStatus(runstatus.Applying, nil)
+		r.Apply.UpdateStatus(PhaseRunning)
 	case runstatus.Planning, runstatus.Applying:
 		return ErrPhaseAlreadyStarted
 	default:
@@ -500,48 +500,48 @@ func (run *Run) Start() error {
 // Finish updates the run to reflect its plan or apply phase having finished. If
 // a plan phase has finished and an apply should be automatically enqueued then
 // autoapply will be set to true.
-func (run *Run) Finish(phase PhaseType, opts PhaseFinishOptions) (autoapply bool, err error) {
-	if run.Status == runstatus.Canceled {
+func (r *Run) Finish(phase PhaseType, opts PhaseFinishOptions) (autoapply bool, err error) {
+	if r.Status == runstatus.Canceled {
 		// run was canceled before the phase finished so nothing more to do.
 		return false, nil
 	}
 	switch phase {
 	case PlanPhase:
-		if run.Status != runstatus.Planning {
+		if r.Status != runstatus.Planning {
 			return false, ErrInvalidRunStateTransition
 		}
 		if opts.Errored {
-			run.updateStatus(runstatus.Errored, nil)
-			run.Plan.UpdateStatus(PhaseErrored)
-			run.Apply.UpdateStatus(PhaseUnreachable)
+			r.updateStatus(runstatus.Errored, nil)
+			r.Plan.UpdateStatus(PhaseErrored)
+			r.Apply.UpdateStatus(PhaseUnreachable)
 			return false, nil
 		}
 		// Enter RunCostEstimated state if cost estimation is enabled. OTF does
 		// not support cost estimation but enter this state only in order to
 		// satisfy the go-tfe tests.
-		if run.CostEstimationEnabled {
-			run.updateStatus(runstatus.CostEstimated, nil)
+		if r.CostEstimationEnabled {
+			r.updateStatus(runstatus.CostEstimated, nil)
 		} else {
-			run.updateStatus(runstatus.Planned, nil)
+			r.updateStatus(runstatus.Planned, nil)
 		}
-		run.Plan.UpdateStatus(PhaseFinished)
+		r.Plan.UpdateStatus(PhaseFinished)
 
-		if !run.HasChanges() || run.PlanOnly {
-			run.updateStatus(runstatus.PlannedAndFinished, nil)
-			run.Apply.UpdateStatus(PhaseUnreachable)
+		if !r.HasChanges() || r.PlanOnly {
+			r.updateStatus(runstatus.PlannedAndFinished, nil)
+			r.Apply.UpdateStatus(PhaseUnreachable)
 			return false, nil
 		}
-		return run.AutoApply, nil
+		return r.AutoApply, nil
 	case ApplyPhase:
-		if run.Status != runstatus.Applying {
+		if r.Status != runstatus.Applying {
 			return false, ErrInvalidRunStateTransition
 		}
 		if opts.Errored {
-			run.updateStatus(runstatus.Errored, nil)
-			run.Apply.UpdateStatus(PhaseErrored)
+			r.updateStatus(runstatus.Errored, nil)
+			r.Apply.UpdateStatus(PhaseErrored)
 		} else {
-			run.updateStatus(runstatus.Applied, nil)
-			run.Apply.UpdateStatus(PhaseFinished)
+			r.updateStatus(runstatus.Applied, nil)
+			r.Apply.UpdateStatus(PhaseFinished)
 		}
 		return false, nil
 	default:
@@ -549,18 +549,18 @@ func (run *Run) Finish(phase PhaseType, opts PhaseFinishOptions) (autoapply bool
 	}
 }
 
-func (run *Run) updateStatus(status runstatus.Status, now *time.Time) *Run {
-	run.Status = status
-	run.StatusTimestamps = append(run.StatusTimestamps, StatusTimestamp{
+func (r *Run) updateStatus(status runstatus.Status, now *time.Time) *Run {
+	r.Status = status
+	r.StatusTimestamps = append(r.StatusTimestamps, StatusTimestamp{
 		Status:    status,
 		Timestamp: internal.CurrentTimestamp(now),
 	})
-	return run
+	return r
 }
 
 // Discardable determines whether run can be discarded.
-func (run *Run) Discardable() bool {
-	switch run.Status {
+func (r *Run) Discardable() bool {
+	switch r.Status {
 	case runstatus.Pending, runstatus.Planned, runstatus.CostEstimated:
 		return true
 	default:
@@ -569,8 +569,8 @@ func (run *Run) Discardable() bool {
 }
 
 // Confirmable determines whether run can be confirmed.
-func (run *Run) Confirmable() bool {
-	switch run.Status {
+func (r *Run) Confirmable() bool {
+	switch r.Status {
 	case runstatus.Planned:
 		return true
 	default:
@@ -579,9 +579,9 @@ func (run *Run) Confirmable() bool {
 }
 
 // LogValue implements slog.LogValuer.
-func (run *Run) LogValue() slog.Value {
+func (r *Run) LogValue() slog.Value {
 	return slog.GroupValue(
-		slog.String("id", run.ID.String()),
-		slog.Time("created", run.CreatedAt),
+		slog.String("id", r.ID.String()),
+		slog.Time("created", r.CreatedAt),
 	)
 }
