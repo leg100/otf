@@ -40,9 +40,7 @@ templ UnpaginatedTable[T any](populator TablePopulator[T], resources []T) {
 }
 
 templ Table[T any](populator TablePopulator[T], page *resource.Page[T]) {
-	{{
-		info := pageInfo[T]{Page: page}
-	}}
+	{{ info := pageInfo[T]{Page: page} }}
 	@UnpaginatedTable(populator, page.Items) {
 		<div class="flex p-4 gap-2 justify-between items-center">
 			@info.pageSizeSelector()
@@ -54,7 +52,7 @@ templ Table[T any](populator TablePopulator[T], page *resource.Page[T]) {
 
 // PollingTable renders a table that polls for updates every X seconds.
 templ PollingTable[T any](populator TablePopulator[T], page *resource.Page[T]) {
-	<div id="polling-table" hx-get={ CurrentPath(ctx) } hx-trigger="every 10s" hx-swap="morph:innerHTML" hx-sync="this:abort">
+	<div id="polling-table" hx-get="" hx-trigger="every 10s" hx-swap="morph:innerHTML" hx-sync="this:abort">
 		@templ.Fragment("polling-table") {
 			@Table(populator, page)
 		}
@@ -67,18 +65,18 @@ type pageInfo[T any] struct {
 
 templ (p pageInfo[T]) summary() {
 	{{
-	size, err := p.pageSize(ctx)
-	if err != nil {
-		return err
-	}
-	var (
-		firstItemNumber int
-		lastItemNumber  int
-	)
-	if len(p.Items) > 0 {
-		firstItemNumber = ((p.CurrentPage - 1) * size) + 1
-		lastItemNumber = max(0, firstItemNumber+len(p.Items)-1)
-	}
+		size, err := p.pageSize(ctx)
+		if err != nil {
+			return err
+		}
+		var (
+			firstItemNumber int
+			lastItemNumber  int
+		)
+		if len(p.Items) > 0 {
+			firstItemNumber = ((p.CurrentPage - 1) * size) + 1
+			lastItemNumber = max(0, firstItemNumber+len(p.Items)-1)
+		}
 	}}
 	<div class="badge" id="page-info">
 		{ fmt.Sprintf("%d-%d of %d", firstItemNumber, lastItemNumber, p.TotalCount) }
