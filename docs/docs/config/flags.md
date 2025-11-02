@@ -54,6 +54,15 @@ Sets the number of workers that can process runs concurrently.
 
 Specifies the default engine for new workspaces. Specify either `terraform` or `tofu`.
 
+## `--delete-runs-after`
+
+* System: `otfd`
+* Default: `0`
+
+Deletes runs older than the specified age. Specifying `0` disables run deletion.
+
+Note that the only valid time units are `s`, `m`, and `h`. e.g. `30m` or `168h`.
+
 ## `--engine-bins-dir`
 
 * System: `otfd`, `otf-agent`

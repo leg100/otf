@@ -5,6 +5,7 @@ package run
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/leg100/otf/internal"
@@ -121,6 +122,10 @@ type (
 		CreatedBy     *user.Username
 		EngineVersion string
 
+		// CreatedAt overrides the time the run was created at - for testing
+		// purposes only.
+		CreatedAt *time.Time
+
 		costEstimationEnabled bool
 
 		// testing purposes
@@ -146,6 +151,9 @@ type (
 		CommitSHA *string
 		// Filter by VCS user's username that triggered a run
 		VCSUsername *string
+		// Filter by run's time of creation - list only runs that were created
+		// before this date.
+		BeforeCreatedAt *time.Time
 	}
 
 	// WatchOptions filters events returned by the Watch endpoint.
@@ -191,6 +199,9 @@ func NewRun(
 		run.Source = source.API
 	}
 
+	if opts.CreatedAt != nil {
+		run.CreatedAt = *opts.CreatedAt
+	}
 	if opts.TerraformVersion != nil {
 		run.EngineVersion = *opts.TerraformVersion
 	}
@@ -572,4 +583,12 @@ func (r *Run) Confirmable() bool {
 	default:
 		return false
 	}
+}
+
+// LogValue implements slog.LogValuer.
+func (r *Run) LogValue() slog.Value {
+	return slog.GroupValue(
+		slog.String("id", r.ID.String()),
+		slog.Time("created", r.CreatedAt),
+	)
 }
