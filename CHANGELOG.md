@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.4.8](https://github.com/leg100/otf/compare/v0.4.7...v0.4.8) (2025-11-02)
+
+
+### Features
+
+* delete runs after user-specified time period ([#844](https://github.com/leg100/otf/issues/844)) ([fb5547c](https://github.com/leg100/otf/commit/fb5547c75f4f6872c69e59a376b8cf0ddf25cb27)), closes [#834](https://github.com/leg100/otf/issues/834)
+
+
+### Bug Fixes
+
+* **ui:** polling table not sending page number param ([7591827](https://github.com/leg100/otf/commit/7591827fee43539c1d72eb373899607172abda83))
+* workspace sql cascade set null on user or run deletion ([687c35c](https://github.com/leg100/otf/commit/687c35c37cacc499f8b42234083ad1e6fe4b00ec))
+
+
+### Miscellaneous
+
+* document dynamic credentials test setup ([efecef2](https://github.com/leg100/otf/commit/efecef20d7b5a8539ce5b77c83751a9cc9ae1cef))
+* remove unnecessary double html error ([53cb12d](https://github.com/leg100/otf/commit/53cb12d25d00c664daf7ebe7eb7fcd38e609fad5))
+
 ## [0.4.7](https://github.com/leg100/otf/compare/v0.4.6...v0.4.7) (2025-10-10)
 
 
