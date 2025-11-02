@@ -90,6 +90,8 @@ func parseFlags(ctx context.Context, args []string, out io.Writer) error {
 	cmd.Flags().IntVar(&cfg.CacheConfig.Size, "cache-size", 0, "Maximum cache size in MB. 0 means unlimited size.")
 	cmd.Flags().DurationVar(&cfg.CacheConfig.TTL, "cache-expiry", internal.DefaultCacheTTL, "Cache entry TTL.")
 
+	cmd.Flags().DurationVar(&cfg.DeleteRunsAfter, "delete-runs-after", 0, "Delete runs older than the specified time duration. Set to 0 to disable.")
+
 	cmd.Flags().BoolVar(&cfg.SSL, "ssl", false, "Toggle SSL")
 	cmd.Flags().StringVar(&cfg.CertFile, "cert-file", "", "Path to SSL certificate (required if enabling SSL)")
 	cmd.Flags().StringVar(&cfg.KeyFile, "key-file", "", "Path to SSL key (required if enabling SSL)")

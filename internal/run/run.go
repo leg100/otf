@@ -146,6 +146,9 @@ type (
 		CommitSHA *string
 		// Filter by VCS user's username that triggered a run
 		VCSUsername *string
+		// Filter by run's time of creation - list only runs that were created
+		// before this date.
+		BeforeCreatedAt *time.Time
 	}
 
 	// WatchOptions filters events returned by the Watch endpoint.

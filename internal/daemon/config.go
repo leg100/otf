@@ -54,6 +54,7 @@ type Config struct {
 	ApplyingTimeout              time.Duration
 	OverrideTimeoutCheckInterval time.Duration
 	DefaultEngine                *engine.Engine
+	DeleteRunsAfter              time.Duration
 
 	tokens.GoogleIAPConfig
 }
