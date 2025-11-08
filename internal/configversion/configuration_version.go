@@ -45,7 +45,7 @@ type (
 		AutoQueueRuns *bool
 		Speculative   *bool
 		Source        source.Source
-		// CreatedAt overrides the time the run was created at - for testing
+		// CreatedAt overrides the time the config was created at - for testing
 		// purposes only.
 		CreatedAt *time.Time
 
