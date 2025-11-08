@@ -54,6 +54,19 @@ Sets the number of workers that can process runs concurrently.
 
 Specifies the default engine for new workspaces. Specify either `terraform` or `tofu`.
 
+## `--delete-configs-after`
+
+* System: `otfd`
+* Default: `0`
+
+Deletes configs older than the specified age. Specifying `0` disables config deletion.
+
+A config is the tarball of terraform configuration usually created for each run (retrying a run re-uses the existing run's config). Over a long period of time it can consume a lot of database disk space and the only other way to delete configs is to delete the parent workspace.
+
+Deleting a config also deletes any runs that use that config.
+
+Note that the only valid time units are `s`, `m`, and `h`. To specify longer periods of time you need to perform the necessary arithmetric, e.g. for 180 days, 180 x 24, which is `4320h`.
+
 ## `--delete-runs-after`
 
 * System: `otfd`
@@ -61,7 +74,10 @@ Specifies the default engine for new workspaces. Specify either `terraform` or `
 
 Deletes runs older than the specified age. Specifying `0` disables run deletion.
 
-Note that the only valid time units are `s`, `m`, and `h`. e.g. `30m` or `168h`.
+Deleting a run does not delete its associated config. To delete both the run and the config use `--delete-configs-after` instead.
+
+Note that the only valid time units are `s`, `m`, and `h`. To specify longer periods of time you need to perform the necessary arithmetric, e.g. for 180 days, 180 x 24, which is `4320h`.
+
 
 ## `--engine-bins-dir`
 

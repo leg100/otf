@@ -91,6 +91,7 @@ func parseFlags(ctx context.Context, args []string, out io.Writer) error {
 	cmd.Flags().DurationVar(&cfg.CacheConfig.TTL, "cache-expiry", internal.DefaultCacheTTL, "Cache entry TTL.")
 
 	cmd.Flags().DurationVar(&cfg.DeleteRunsAfter, "delete-runs-after", 0, "Delete runs older than the specified age. Specifying 0 disables run deletion.")
+	cmd.Flags().DurationVar(&cfg.DeleteConfigsAfter, "delete-configs-after", 0, "Delete configs older than the specified age. Specifying 0 disables config deletion.")
 
 	cmd.Flags().BoolVar(&cfg.SSL, "ssl", false, "Toggle SSL")
 	cmd.Flags().StringVar(&cfg.CertFile, "cert-file", "", "Path to SSL certificate (required if enabling SSL)")

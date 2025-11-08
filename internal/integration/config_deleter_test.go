@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/leg100/otf/internal/configversion"
+	"github.com/leg100/otf/internal/run"
 	"github.com/stretchr/testify/require"
 )
 
@@ -27,8 +28,8 @@ func TestConfigDeleter(t *testing.T) {
 	cv3 := daemon.createConfigurationVersion(t, ctx, ws, nil)
 	cv4 := daemon.createConfigurationVersion(t, ctx, ws, nil)
 
-	// Also attach such runs to each config to be deleted, to make it more realistic and check
-	// that cascades are working.
+	// Also attach such to each config to be deleted, to make it more realistic
+	// and check that cascades are working.
 	_ = daemon.createRun(t, ctx, ws, cv1, nil)
 	_ = daemon.createRun(t, ctx, ws, cv2, nil)
 
@@ -49,6 +50,15 @@ func TestConfigDeleter(t *testing.T) {
 				require.NoError(t, err)
 				_, err = daemon.Configs.Get(ctx, cv4.ID)
 				require.NoError(t, err)
+
+				// Check that both runs belonging to the deleted configs have
+				// been deleted as well.
+				// Listing runs site-wide requires site admin user
+				runs, err := daemon.Runs.List(adminCtx, run.ListOptions{})
+				require.NoError(t, err)
+				require.Equal(t, 0, len(runs.Items))
+
+				// Tests pass.
 				return
 			}
 		}
