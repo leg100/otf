@@ -15,7 +15,7 @@ type (
 		GetID() TfeID
 	}
 
-	// Deleter deletes old runs that are older than a user-specified age.
+	// Deleter deletes resources that are older than a user-specified age.
 	Deleter[R deleteableResource] struct {
 		logr.Logger
 
