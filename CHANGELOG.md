@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.9](https://github.com/leg100/otf/compare/v0.4.8...v0.4.9) (2025-11-08)
+
+
+### Features
+
+* delete configs older than a user-specified duration ([#845](https://github.com/leg100/otf/issues/845)) ([b54bd3f](https://github.com/leg100/otf/commit/b54bd3ff2548d0bac7c70e4f3e9409e69d1537fe))
+
 ## [0.4.8](https://github.com/leg100/otf/compare/v0.4.7...v0.4.8) (2025-11-02)
 
 
