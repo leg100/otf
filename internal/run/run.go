@@ -226,6 +226,9 @@ func NewRun(
 	return &run, nil
 }
 
+// GetID implements resource.deleteableResource
+func (r *Run) GetID() resource.TfeID { return r.ID }
+
 func (r *Run) Queued() bool {
 	return runstatus.Queued(r.Status)
 }

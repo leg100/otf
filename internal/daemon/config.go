@@ -49,13 +49,14 @@ type Config struct {
 	SiteAdmins                   []string
 	SkipTLSVerification          bool
 	// skip checks for latest terraform version
-	DisableLatestChecker            *bool
-	PlanningTimeout                 time.Duration
-	ApplyingTimeout                 time.Duration
-	OverrideTimeoutCheckInterval    time.Duration
-	DefaultEngine                   *engine.Engine
-	DeleteRunsAfter                 time.Duration
-	OverrideDeleteRunsCheckInterval time.Duration
+	DisableLatestChecker         *bool
+	PlanningTimeout              time.Duration
+	ApplyingTimeout              time.Duration
+	OverrideTimeoutCheckInterval time.Duration
+	DefaultEngine                *engine.Engine
+	DeleteRunsAfter              time.Duration
+	DeleteConfigsAfter           time.Duration
+	OverrideDeleterInterval      time.Duration
 
 	tokens.GoogleIAPConfig
 }

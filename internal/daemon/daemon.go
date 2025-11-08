@@ -533,11 +533,21 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 		{
 			Name:   "run-deleter",
 			Logger: d.Logger,
-			System: &run.Deleter{
+			System: &resource.Deleter[*run.Run]{
 				Logger:                d.Logger.WithValues("component", "run-deleter"),
-				OverrideCheckInterval: d.OverrideDeleteRunsCheckInterval,
-				Runs:                  d.Runs,
+				OverrideCheckInterval: d.OverrideDeleterInterval,
+				Client:                d.Runs,
 				AgeThreshold:          d.DeleteRunsAfter,
+			},
+		},
+		{
+			Name:   "config-deleter",
+			Logger: d.Logger,
+			System: &resource.Deleter[*configversion.ConfigurationVersion]{
+				Logger:                d.Logger.WithValues("component", "config-deleter"),
+				OverrideCheckInterval: d.OverrideDeleterInterval,
+				Client:                d.Configs,
+				AgeThreshold:          d.DeleteConfigsAfter,
 			},
 		},
 		{
