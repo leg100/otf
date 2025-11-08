@@ -170,6 +170,33 @@ WHERE configuration_versions.workspace_id = $1
 	return resource.NewPage(items, opts.PageOptions, internal.Ptr(count)), nil
 }
 
+func (db *pgdb) listOlderThan(ctx context.Context, t time.Time) ([]*ConfigurationVersion, error) {
+	rows := db.Query(ctx, `
+SELECT
+    cv.configuration_version_id,
+    cv.created_at,
+    cv.auto_queue_runs,
+    cv.source,
+    cv.speculative,
+    cv.status,
+    cv.workspace_id,
+    (
+        SELECT array_agg(cst.*)::configuration_version_status_timestamps[]
+        FROM configuration_version_status_timestamps cst
+        WHERE cst.configuration_version_id = cv.configuration_version_id
+        GROUP BY cst.configuration_version_id
+    ) AS status_timestamps,
+    ia::"ingress_attributes" AS ingress_attributes
+FROM configuration_versions cv
+JOIN workspaces USING (workspace_id)
+LEFT JOIN ingress_attributes ia USING (configuration_version_id)
+WHERE cv.created_at < $1::timestamptz
+`,
+		t,
+	)
+	return sql.CollectRows(rows, db.scan)
+}
+
 func (db *pgdb) get(ctx context.Context, id resource.ID) (*ConfigurationVersion, error) {
 	row := db.Query(ctx, `
 SELECT

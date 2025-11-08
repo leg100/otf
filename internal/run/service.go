@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
@@ -231,6 +232,16 @@ func (s *Service) List(ctx context.Context, opts ListOptions) (*resource.Page[*R
 	s.V(9).Info("listed runs", "count", len(page.Items), "subject", subject)
 
 	return page, nil
+}
+
+// ListOlderThan lists runs created before t. Implements resource.deleterClient.
+func (s *Service) ListOlderThan(ctx context.Context, t time.Time) ([]*Run, error) {
+	return resource.ListAll(func(opts resource.PageOptions) (*resource.Page[*Run], error) {
+		return s.List(ctx, ListOptions{
+			PageOptions:     opts,
+			BeforeCreatedAt: &t,
+		})
+	})
 }
 
 func (s *Service) listStatuses(ctx context.Context) ([]status, error) {
