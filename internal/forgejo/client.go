@@ -16,10 +16,13 @@ import (
 
 	"codeberg.org/mvdkleijn/forgejo-sdk/forgejo/v2"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/vcs"
 )
 
 type Client struct {
+	logr.Logger
+
 	client *forgejo.Client
 }
 
@@ -45,6 +48,7 @@ func NewTokenClient(opts vcs.NewTokenClientOptions) (vcs.Client, error) {
 }
 
 func (c *Client) ListRepositories(ctx context.Context, opts vcs.ListRepositoriesOptions) ([]vcs.Repo, error) {
+	c.V(10).Info("forgejo.ListRepositories called")
 	found := map[vcs.Repo]time.Time{}
 
 	// search for repos the user owns
@@ -87,12 +91,14 @@ func (c *Client) findReposOwned(found map[vcs.Repo]time.Time) error {
 		var err error
 		repolist, resp, err = c.client.ListMyRepos(opt)
 		if err != nil {
+			c.V(2).Info("forgejo: client.ListMyRepos returned error", "err", err)
 			return err
 		}
 		for _, forgejoRepo := range repolist {
 			if forgejoRepo.Permissions.Admin {
 				repo, err := vcs.NewRepo(forgejoRepo.Owner.UserName, forgejoRepo.Name)
 				if err != nil {
+					c.V(2).Info("forgejo: vcs.NewRepo returned error", "err", err, "username", forgejoRepo.Owner.UserName, "name", forgejoRepo.Name)
 					return err
 				}
 				found[repo] = forgejoRepo.Updated
@@ -118,6 +124,7 @@ func (c *Client) findOrgReposOwned(found map[vcs.Repo]time.Time) error {
 		var err error
 		rv, resp, err = c.client.ListMyTeams(&userteamsopt)
 		if err != nil {
+			c.V(2).Info("forgejo: client.ListMyTeams returned error", "err", err)
 			return err
 		}
 		for _, team := range rv {
@@ -143,11 +150,13 @@ func (c *Client) findOrgReposOwned(found map[vcs.Repo]time.Time) error {
 			var err error
 			rv, resp, err = c.client.ListTeamRepositories(teamid, listteamrepoopt)
 			if err != nil {
+				c.V(2).Info("forgejo: client.ListTeamRepositories returned error", "err", err)
 				return err
 			}
 			for _, forgejoRepo := range rv {
 				repo, err := vcs.NewRepo(forgejoRepo.Owner.UserName, forgejoRepo.Name)
 				if err != nil {
+					c.V(2).Info("forgejo: vcs.NewRepo returned error", "err", err, "username", forgejoRepo.Owner.UserName, "name", forgejoRepo.Name)
 					return err
 				}
 				found[repo] = forgejoRepo.Updated
@@ -159,6 +168,7 @@ func (c *Client) findOrgReposOwned(found map[vcs.Repo]time.Time) error {
 }
 
 func (c *Client) GetDefaultBranch(ctx context.Context, identifier string) (string, error) {
+	c.V(10).Info("forgejo.GetDefaultBranch called")
 	parts := strings.Split(identifier, "/")
 	if len(parts) != 2 {
 		return "", fmt.Errorf("identifier '%s' must be in the form 'owner/repo'", identifier)
@@ -166,6 +176,7 @@ func (c *Client) GetDefaultBranch(ctx context.Context, identifier string) (strin
 	owner, reponame := parts[0], parts[1]
 	repo, _, err := c.client.GetRepo(owner, reponame)
 	if err != nil {
+		c.V(2).Info("forgejo: client.GetRepo returned error", "err", err, "owner", owner, "reponame", reponame)
 		return "", err
 	}
 	return repo.DefaultBranch, nil
@@ -207,8 +218,10 @@ func stringSliceToVcs(es []string) ([]vcs.EventType, error) {
 }
 
 func (c *Client) CreateWebhook(ctx context.Context, opts vcs.CreateWebhookOptions) (string, error) {
+	c.V(10).Info("forgejo.CreateWebhook called")
 	events, err := vcsOptToStringSlice(opts)
 	if err != nil {
+		c.V(2).Info("forgejo: vcsOptToStringSlice returned error", "err", err)
 		return "", err
 	}
 	opt := forgejo.CreateHookOption{
@@ -223,18 +236,22 @@ func (c *Client) CreateWebhook(ctx context.Context, opts vcs.CreateWebhookOption
 	}
 	wh, _, err := c.client.CreateRepoHook(opts.Repo.Owner(), opts.Repo.Name(), opt)
 	if err != nil {
+		c.V(2).Info("forgejo: client.CreateRepoHook returned error", "err", err, "owner", opts.Repo.Owner, "name", opts.Repo.Name)
 		return "", err
 	}
 	return strconv.FormatInt(wh.ID, 16), nil
 }
 
 func (c *Client) UpdateWebhook(ctx context.Context, id string, opts vcs.UpdateWebhookOptions) error {
+	c.V(10).Info("forgejo.UpdateWebhook called")
 	idint, err := strconv.ParseInt(id, 16, 64)
 	if err != nil {
+		c.V(2).Info("forgejo: updating non-numeric webhook id?", "err", err, "id", id)
 		return err
 	}
 	events, err := vcsOptToStringSlice(vcs.CreateWebhookOptions(opts))
 	if err != nil {
+		c.V(2).Info("forgejo: vcsOpttoStringSlice returned error", "err", err)
 		return err
 	}
 	opt := forgejo.EditHookOption{
@@ -249,19 +266,24 @@ func (c *Client) UpdateWebhook(ctx context.Context, id string, opts vcs.UpdateWe
 	return err
 }
 func (c *Client) GetWebhook(ctx context.Context, opts vcs.GetWebhookOptions) (vcs.Webhook, error) {
+	c.V(10).Info("forgejo.GetWebhook called")
 	idint, err := strconv.ParseInt(opts.ID, 16, 64)
 	if err != nil {
+		c.V(2).Info("forgejo: getting non-numeric webhook id?", "err", err, "id", opts.ID)
 		return vcs.Webhook{}, err
 	}
 	wh, resp, err := c.client.GetRepoHook(opts.Repo.Owner(), opts.Repo.Name(), idint)
 	if err != nil {
 		if resp != nil && resp.StatusCode == http.StatusNotFound {
+			c.V(2).Info("forgejo: webhook not found")
 			return vcs.Webhook{}, internal.ErrResourceNotFound
 		}
+		c.V(2).Info("forgejo: client.GetRepoHook returned error", "err", err, "id", opts.ID)
 		return vcs.Webhook{}, err
 	}
 	events, err := stringSliceToVcs(wh.Events)
 	if err != nil {
+		c.V(2).Info("forgejo: stringSliceToVcs returned error", "err", err)
 		return vcs.Webhook{}, err
 	}
 	return vcs.Webhook{
@@ -272,8 +294,10 @@ func (c *Client) GetWebhook(ctx context.Context, opts vcs.GetWebhookOptions) (vc
 	}, nil
 }
 func (c *Client) DeleteWebhook(ctx context.Context, opts vcs.DeleteWebhookOptions) error {
+	c.V(10).Info("forgejo.DeleteWebhook called")
 	idint, err := strconv.ParseInt(opts.ID, 16, 64)
 	if err != nil {
+		c.V(2).Info("forgejo: deleting non-numeric webhook id?", "err", err, "id", opts.ID)
 		return err
 	}
 	_, err = c.client.DeleteRepoHook(opts.Repo.Owner(), opts.Repo.Name(), idint)
@@ -285,6 +309,7 @@ func (c *Client) fullyQualifyRef(owner, reponame, ref string) (string, error) {
 	tags := map[string]string{}
 	refs, _, err := c.client.GetRepoRefs(owner, reponame, "")
 	if err != nil {
+		c.V(2).Info("forgejo: client.GetRepoRefs returned error", "err", err, "owner", owner, "reponame", reponame)
 		return "", err
 	}
 	for _, ref := range refs {
@@ -310,6 +335,7 @@ func (c *Client) fullyQualifyRef(owner, reponame, ref string) (string, error) {
 }
 
 func (c *Client) GetRepoTarball(ctx context.Context, opts vcs.GetRepoTarballOptions) ([]byte, string, error) {
+	c.V(10).Info("forgejo.GetRepoTarball called")
 	var (
 		owner = opts.Repo.Owner()
 		name  = opts.Repo.Name()
@@ -322,6 +348,7 @@ func (c *Client) GetRepoTarball(ctx context.Context, opts vcs.GetRepoTarballOpti
 		// nil means default branch
 		repo, _, err := c.client.GetRepo(owner, name)
 		if err != nil {
+			c.V(2).Info("forgejo: client.GetRepo returned error", "err", err, "owner", owner, "name", name)
 			return nil, "", err
 		}
 
@@ -334,7 +361,8 @@ func (c *Client) GetRepoTarball(ctx context.Context, opts vcs.GetRepoTarballOpti
 
 	tarball, _, err := c.client.GetArchive(opts.Repo.Owner(), opts.Repo.Name(), ref, forgejo.TarGZArchive)
 	if err != nil {
-		return nil, "", fmt.Errorf("GetArchive(\"%s\", \"%s\", \"%s\", \"%s\") failed: %v", owner, name, ref, forgejo.TarGZArchive, err)
+		c.V(2).Info("forgejo: client.GetArchive returned error", "err", err, "owner", opts.Repo.Owner(), "name", opts.Repo.Name())
+		return nil, "", err
 	}
 
 	// Forgejo tarball contents are contained within a top-level directory
@@ -342,6 +370,7 @@ func (c *Client) GetRepoTarball(ctx context.Context, opts vcs.GetRepoTarballOpti
 	// so we re-tar the contents without the top-level directory.
 	untarpath, err := os.MkdirTemp("", fmt.Sprintf("forgejo-%s-%s-*", owner, name))
 	if err != nil {
+		c.V(2).Info("forgejo: os.MkdirTemp returned error", "err", err)
 		return nil, "", err
 	}
 	defer func() {
@@ -349,10 +378,12 @@ func (c *Client) GetRepoTarball(ctx context.Context, opts vcs.GetRepoTarballOpti
 	}()
 
 	if err := internal.Unpack(bytes.NewReader(tarball), untarpath); err != nil {
+		c.V(2).Info("forgejo: internal.Unpack returned error", "err", err)
 		return nil, "", err
 	}
 	contents, err := os.ReadDir(untarpath)
 	if err != nil {
+		c.V(2).Info("forgejo: os.ReadDir returned error", "err", err)
 		return nil, "", err
 	}
 	if len(contents) != 1 {
@@ -361,6 +392,7 @@ func (c *Client) GetRepoTarball(ctx context.Context, opts vcs.GetRepoTarballOpti
 	dir := contents[0].Name()
 	tarball, err = internal.Pack(path.Join(untarpath, dir))
 	if err != nil {
+		c.V(2).Info("forgejo: internal.Pack returned error", "err", err)
 		return nil, "", err
 	}
 	return tarball, fqref, nil
@@ -375,6 +407,7 @@ func vcsStateToForgejo(s vcs.Status) forgejo.StatusState {
 	}[s]
 }
 func (c *Client) SetStatus(ctx context.Context, opts vcs.SetStatusOptions) error {
+	c.V(10).Info("forgejo.SetStatus called")
 	opt := forgejo.CreateStatusOption{
 		State:       vcsStateToForgejo(opts.Status),
 		TargetURL:   opts.TargetURL,
@@ -386,6 +419,7 @@ func (c *Client) SetStatus(ctx context.Context, opts vcs.SetStatusOptions) error
 }
 
 func (c *Client) ListTags(ctx context.Context, opts vcs.ListTagsOptions) ([]string, error) {
+	c.V(10).Info("forgejo.ListTags called")
 	opt := forgejo.ListRepoTagsOptions{
 		ListOptions: forgejo.ListOptions{
 			Page:     0,
@@ -400,6 +434,7 @@ func (c *Client) ListTags(ctx context.Context, opts vcs.ListTagsOptions) ([]stri
 		var err error
 		tags, resp, err = c.client.ListRepoTags(opts.Repo.Owner(), opts.Repo.Name(), opt)
 		if err != nil {
+			c.V(2).Info("forgejo: client.ListRepoTags returned error", "err", err)
 			return nil, err
 		}
 		for _, tag := range tags {
@@ -413,6 +448,7 @@ func (c *Client) ListTags(ctx context.Context, opts vcs.ListTagsOptions) ([]stri
 
 // ListPullRequestFiles returns the paths of files that are modified in the pull request
 func (c *Client) ListPullRequestFiles(ctx context.Context, repo vcs.Repo, pull int) ([]string, error) {
+	c.V(10).Info("forgejo.ListPullRequestFiles called")
 	opt := forgejo.ListPullRequestFilesOptions{
 		ListOptions: forgejo.ListOptions{
 			Page:     0,
@@ -427,6 +463,7 @@ func (c *Client) ListPullRequestFiles(ctx context.Context, repo vcs.Repo, pull i
 		var err error
 		files, _, err = c.client.ListPullRequestFiles(repo.Owner(), repo.Name(), int64(pull), opt)
 		if err != nil {
+			c.V(2).Info("forgejo: client.ListPullRequestFiles returned error", "err", err, "owner", repo.Owner(), "name", repo.Name())
 			return nil, err
 		}
 		for _, file := range files {
@@ -438,22 +475,27 @@ func (c *Client) ListPullRequestFiles(ctx context.Context, repo vcs.Repo, pull i
 
 // GetCommit retrieves commit from the repo with the given git ref
 func (c *Client) GetCommit(ctx context.Context, repo vcs.Repo, refname string) (vcs.Commit, error) {
+	c.V(10).Info("forgejo.GetCommit called")
 	rv := vcs.Commit{}
 	refs, _, err := c.client.GetRepoRefs(repo.Owner(), repo.Name(), refname)
 	if err != nil {
+		c.V(2).Info("forgejo: client.GetRepoRefs returned error", "err", err)
 		return rv, err
 	}
 	if len(refs) == 0 {
+		c.V(2).Info("forgejo: ref not found", "refname", refname)
 		return rv, errors.New("ref not found")
 	}
 	// the commit may be both a branch and a tag; just pick one (we only need the SHA, which should be the same for all refs)
 	ref := refs[0]
 	if ref.Object == nil {
+		c.V(2).Info("forgejo: ref has no commit", "refname", refname)
 		return rv, errors.New("ref has no commit")
 	}
 	commit, _, err := c.client.GetSingleCommit(repo.Owner(), repo.Name(), ref.Object.SHA)
 	if err != nil {
-		return rv, fmt.Errorf("forgejo.GetSingleCommit failed: %v", err)
+		c.V(2).Info("forgejo: client.GetSingleCommit returned error", "err", err)
+		return rv, err
 	}
 	if commit.Author != nil {
 		rv.Author.Username = commit.Author.UserName
