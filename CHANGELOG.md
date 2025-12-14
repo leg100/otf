@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.4.10](https://github.com/leg100/otf/compare/v0.4.9...v0.4.10) (2025-12-14)
+
+
+### Bug Fixes
+
+* enrich forgejo list repos errors ([9cdf6f2](https://github.com/leg100/otf/commit/9cdf6f23745183d24ae230639d7eb968f3a703b3))
+
+
+### Miscellaneous
+
+* update Alpine to v3.23 ([#849](https://github.com/leg100/otf/issues/849)) ([1721470](https://github.com/leg100/otf/commit/17214707b969712dcff77d2553b992e875dac1e4))
+
 ## [0.4.9](https://github.com/leg100/otf/compare/v0.4.8...v0.4.9) (2025-11-08)
 
 
