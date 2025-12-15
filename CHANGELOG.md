@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.5.0](https://github.com/leg100/otf/compare/v0.4.10...v0.5.0) (2025-12-15)
+
+
+### ⚠ BREAKING CHANGES
+
+* don't ignore custom hostname overrides for VCS providers ([#855](https://github.com/leg100/otf/issues/855))
+
+### Bug Fixes
+
+* don't ignore custom hostname overrides for VCS providers ([#855](https://github.com/leg100/otf/issues/855)) ([c25801e](https://github.com/leg100/otf/commit/c25801e2ce4dc2289ee3d67bd0bf3f0cf62f8302))
+* run error tests ([be7d10d](https://github.com/leg100/otf/commit/be7d10d47dcadd6f6cc544b778634d51e99a06f1))
+
 ## [0.4.10](https://github.com/leg100/otf/compare/v0.4.9...v0.4.10) (2025-12-14)
 
 
