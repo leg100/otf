@@ -83,8 +83,8 @@ func TestIntegration_WorkspaceAPI_CreateConnected(t *testing.T) {
 
 	oauth, err := client.OAuthClients.Create(ctx, org.Name.String(), tfe.OAuthClientCreateOptions{
 		OAuthToken:      provider.Token,
-		APIURL:          internal.Ptr(vcs.GithubAPIURL),
-		HTTPURL:         internal.Ptr(vcs.GithubHTTPURL),
+		APIURL:          internal.Ptr(daemon.GithubHostname.String()),
+		HTTPURL:         internal.Ptr(daemon.GithubHostname.String()),
 		ServiceProvider: tfe.ServiceProvider(tfe.ServiceProviderGithub),
 	})
 	require.NoError(t, err)
