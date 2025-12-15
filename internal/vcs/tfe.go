@@ -13,11 +13,6 @@ import (
 	"github.com/leg100/otf/internal/tfeapi"
 )
 
-const (
-	GithubAPIURL  = "https://api.github.com"
-	GithubHTTPURL = "https://github.com"
-)
-
 type tfe struct {
 	*Service
 	*tfeapi.Responder
