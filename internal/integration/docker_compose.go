@@ -23,10 +23,6 @@ var composePorts = map[ComposeService]int{
 	PubSub:   8085,
 }
 
-type Compose struct {
-	workdir string
-}
-
 func Up() error {
 	// check docker compose is available by running it.
 	if err := exec.Command("docker", "compose").Run(); err != nil {
