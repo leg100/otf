@@ -40,7 +40,7 @@ services:
     stop_signal: SIGINT
     tty: true
     volumes:
-      - ./internal/integration/fixtures:/etc/squid/certs
+      - ./fixtures:/etc/squid/certs
   pubsub:
     image: google/cloud-sdk:494.0.0-emulators
     ports:
@@ -73,4 +73,4 @@ services:
       - SSL_CERT_FILE=/fixtures/cert.pem
       - OTF_HOSTNAME=otf.local
     volumes:
-      - ./internal/integration/fixtures:/fixtures
+      - ./fixtures:/fixtures

@@ -1,6 +1,4 @@
-// Package testcompose provides interaction with a docker compose stack of
-// services for testing purposes.
-package testcompose
+package integration
 
 import (
 	"bytes"
@@ -12,23 +10,31 @@ import (
 )
 
 const (
-	Postgres Service = "postgres"
-	Squid    Service = "squid"
-	PubSub   Service = "pubsub"
+	Postgres ComposeService = "postgres"
+	Squid    ComposeService = "squid"
+	PubSub   ComposeService = "pubsub"
 )
 
-type Service string
+type ComposeService string
 
-var ports = map[Service]int{
+var composePorts = map[ComposeService]int{
 	Postgres: 5432,
 	Squid:    3128,
 	PubSub:   8085,
 }
 
+type Compose struct {
+	workdir string
+}
+
 func Up() error {
+	// check docker compose is available by running it.
 	if err := exec.Command("docker", "compose").Run(); err != nil {
 		return fmt.Errorf("docker compose error (not installed?): %w", err)
 	}
+
+	// build full docker compose command.
+	//
 	// --wait implies -d, which detaches the containers
 	args := []string{"compose", "-p", "otf", "up", "--wait", "--wait-timeout", "60"}
 	args = append(args, string(Postgres), string(Squid))
@@ -47,12 +53,12 @@ func Up() error {
 	return nil
 }
 
-func GetHost(svc Service) (string, error) {
-	port, ok := ports[svc]
+func GetHost(svc ComposeService) (string, error) {
+	port, ok := composePorts[svc]
 	if !ok {
 		return "", fmt.Errorf("service not found: %s", svc)
 	}
-	args := []string{"docker", "compose", "port", string(svc), strconv.Itoa(port)}
+	args := []string{"docker", "compose", "-p", "otf", "port", string(svc), strconv.Itoa(port)}
 	cmd := exec.Command(args[0], args[1:]...)
 
 	var bufout, buferr bytes.Buffer

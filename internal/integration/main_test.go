@@ -14,7 +14,6 @@ import (
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/engine"
 	"github.com/leg100/otf/internal/testbrowser"
-	"github.com/leg100/otf/internal/testcompose"
 	"github.com/leg100/otf/internal/user"
 	"github.com/playwright-community/playwright-go"
 )
@@ -58,12 +57,12 @@ func TestMain(m *testing.M) {
 
 func doMain(m *testing.M) (int, error) {
 	// Start external services
-	if err := testcompose.Up(); err != nil {
+	if err := Up(); err != nil {
 		return 0, fmt.Errorf("starting external services: %w", err)
 	}
 
 	// get postgres host and set environment variable
-	host, err := testcompose.GetHost(testcompose.Postgres)
+	host, err := GetHost(Postgres)
 	if err != nil {
 		return 0, fmt.Errorf("getting postgres host: %w", err)
 	}
@@ -75,7 +74,7 @@ func doMain(m *testing.M) (int, error) {
 	defer unset()
 
 	// get squid host and set environment variable
-	squid, err := testcompose.GetHost(testcompose.Squid)
+	squid, err := GetHost(Squid)
 	if err != nil {
 		return 0, fmt.Errorf("getting squid host: %w", err)
 	}
@@ -89,7 +88,7 @@ func doMain(m *testing.M) (int, error) {
 	//
 	// NOTE: gcp pub sub emulator only runs on amd64
 	if runtime.GOARCH == "amd64" {
-		pubsub, err := testcompose.GetHost(testcompose.PubSub)
+		pubsub, err := GetHost(PubSub)
 		if err != nil {
 			return 0, fmt.Errorf("getting pub sub emulator host: %w", err)
 		}
