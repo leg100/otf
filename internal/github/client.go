@@ -150,14 +150,6 @@ func setClientURLs(githubURL *internal.WebURL) (*internal.WebURL, *internal.WebU
 	return &baseURL, &uploadURL
 }
 
-func NewTokenClient(opts vcs.NewTokenClientOptions) (vcs.Client, error) {
-	return NewClient(ClientOptions{
-		BaseURL:             opts.BaseURL,
-		PersonalToken:       &opts.Token,
-		SkipTLSVerification: opts.SkipTLSVerification,
-	})
-}
-
 func NewOAuthClient(cfg authenticator.OAuthConfig, token *oauth2.Token) (authenticator.IdentityProviderClient, error) {
 	return NewClient(ClientOptions{
 		BaseURL:             cfg.BaseURL,
