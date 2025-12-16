@@ -55,7 +55,7 @@ If all goes well, OTF's web UI should redirect you to log in using forgejo.
 
 ## Requirements
 
-For now, only one instance of forgejo is supported, and its hostname is specified like `--forgejo-hostname=forgejo.example.com`.  It is assumed that the forgejo instance is running TLS on port 443, and that its certificate was signed by a CA which is trusted by OTF.
+If connecting to the forgejo server with "https", it is assumed that its certificate was signed by a CA which is trusted by OTF.
 
 You will need a personal access token for a user on that Forgejo instance.  It can be either your own user, or a dedicated service account.
 
@@ -68,7 +68,7 @@ The personal access token needs the following permissions:
 
 ## Setup
 
-In OTF, VCS providers are set up within an organization.  Select (or create) an organization, go to the VCS Providers tab, and click New Forgejo VCS Provider (Personal Token).  Give it a name, and paste in the token.
+In OTF, VCS providers are set up within an organization.  Select (or create) an organization, go to the VCS Providers tab, and click New Forgejo VCS Provider (Personal Token).  Give it a name, paste in the token, and ensure the URL is correct (e.g. `https://forgejo.example.com`).
 
 Once the VCS provider is created, you can attach it to a workspace.  Go to the workspace's Settings menu, click "Connect to VCS", select the VCS provider, and select a git repo or type it in.  This will install a webhook, setting up OTF to receive updates for pushes and pull requests.
 
