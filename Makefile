@@ -50,17 +50,17 @@ install-latest-release:
 # Run docker compose stack
 .PHONY: compose-up
 compose-up: image
-	docker compose up -d --wait --wait-timeout 60
+	docker compose -f docker-compose.testing.yml up -d --wait --wait-timeout 60
 
 # Remove docker compose stack
 .PHONY: compose-rm
 compose-rm:
-	docker compose rm -sf
+	docker compose -f docker-compose.testing.yml rm -sf
 
 # Run postgresql via docker compose
 .PHONY: postgres
 postgres:
-	docker compose up -d postgres
+	docker compose -f docker-compose.testing.yml up -d postgres
 
 # Install staticcheck linter
 .PHONY: install-linter
