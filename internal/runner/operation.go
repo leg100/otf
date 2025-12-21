@@ -519,6 +519,19 @@ func (o *operation) plan(ctx context.Context) error {
 	if o.run.IsDestroy {
 		args = append(args, "-destroy")
 	}
+	if !o.run.Refresh {
+		// the default is true
+		args = append(args, "-refresh=false")
+	}
+	if o.run.RefreshOnly {
+		args = append(args, "-refresh-only")
+	}
+	for _, addr := range o.run.ReplaceAddrs {
+		args = append(args, "-replace="+addr)
+	}
+	for _, addr := range o.run.TargetAddrs {
+		args = append(args, "-target="+addr)
+	}
 	args = append(args, "-out="+planFilename)
 	return o.execute(append([]string{o.enginePath}, args...))
 }
