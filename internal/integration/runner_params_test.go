@@ -9,8 +9,6 @@ import (
 	"github.com/leg100/otf/internal"
 	runpkg "github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/runstatus"
-	"github.com/leg100/otf/internal/vcs"
-	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/require"
 )
 
@@ -18,16 +16,9 @@ import (
 func TestIntegration_RunnerParams(t *testing.T) {
 	integrationTest(t)
 
-	// setup daemon along with fake github repo
-	repo := vcs.NewRandomRepo()
 	svc, org, ctx := setup(t)
-	t.Logf("repo == %s", repo.Name())
 
-	ws, err := svc.Workspaces.Create(ctx, workspace.CreateOptions{
-		Name:         internal.Ptr("test"),
-		Organization: &org.Name,
-	})
-	require.NoError(t, err)
+	ws := svc.createWorkspace(t, ctx, org)
 
 	config := []byte(fmt.Sprintf(`terraform {
   cloud {
@@ -50,7 +41,7 @@ resource "random_uuid" "id3" {}
 		// upload config
 		cv := svc.createConfigurationVersion(t, ctx, ws, nil)
 		path := t.TempDir()
-		err = os.WriteFile(filepath.Join(path, "main.tf"), []byte(config), 0o777)
+		err := os.WriteFile(filepath.Join(path, "main.tf"), []byte(config), 0o777)
 		require.NoError(t, err)
 		tarball, err := internal.Pack(path)
 		require.NoError(t, err)
