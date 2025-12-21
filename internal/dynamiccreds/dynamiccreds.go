@@ -197,12 +197,12 @@ func configure[T any](
 		}
 		marshaled, err := json.Marshal(variables)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("marshalling variables to json: %w", err)
 		}
 		fname := fmt.Sprintf("%s_dynamic_credentials.auto.tfvars.json", provider)
 		path := filepath.Join(workdir, fname)
 		if err := os.WriteFile(path, marshaled, 0o644); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("writing variables file: %w", err)
 		}
 		return nil, nil
 	} else {

@@ -9,8 +9,10 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/organization"
+	"github.com/leg100/otf/internal/runner"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/variable"
+	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -120,4 +122,34 @@ data "google_project" "my-project" {}
 
 	run := daemon.createRun(t, ctx, ws1, cv1, nil)
 	daemon.waitRunStatus(t, ctx, run.ID, runstatus.PlannedAndFinished)
+
+	// Now check dynamic creds work on an agent.
+	t.Run("with agent", func(t *testing.T) {
+		pool1, err := daemon.Runners.CreateAgentPool(ctx, runner.CreateAgentPoolOptions{
+			Name:         "pool-1",
+			Organization: org.Name,
+		})
+		require.NoError(t, err)
+
+		_, err = daemon.Workspaces.Update(ctx, ws1.ID, workspace.UpdateOptions{
+			ExecutionMode: internal.Ptr(workspace.AgentExecutionMode),
+			AgentPoolID:   &pool1.ID,
+		})
+		require.NoError(t, err)
+
+		_, shutdown := daemon.startAgent(
+			t,
+			ctx,
+			org.Name,
+			&pool1.ID,
+			"",
+			// override the URL because otherwise it'll default to the system
+			// hostname which set above to a non-localhost hostname.
+			withAgentURL(fmt.Sprintf("https://localhost:%d", daemon.ListenAddress.Port)),
+		)
+		defer shutdown()
+
+		run := daemon.createRun(t, ctx, ws1, cv1, nil)
+		daemon.waitRunStatus(t, ctx, run.ID, runstatus.PlannedAndFinished)
+	})
 }

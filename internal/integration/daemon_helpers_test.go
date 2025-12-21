@@ -429,7 +429,7 @@ func (s *testDaemon) createNotificationConfig(t *testing.T, ctx context.Context,
 // startAgent starts a pool agent, configuring it with the given organization
 // and configuring it to connect to the daemon. The corresponding agent type is
 // returned once registered, along with a function to shutdown the agent down.
-func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, org organization.Name, poolID *resource.TfeID, token string, opts ...runnerConfigOption) (*runner.RunnerMeta, func()) {
+func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, org organization.Name, poolID *resource.TfeID, token string, opts ...agentConfigOption) (*runner.RunnerMeta, func()) {
 	t.Helper()
 
 	// Configure logger; discard logs by default
@@ -458,15 +458,15 @@ func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, org organizat
 		token = string(tokenBytes)
 	}
 
-	cfg := runner.NewConfig()
-	for _, fn := range opts {
-		fn(cfg)
-	}
-	agent, err := runner.NewAgent(logger, runner.AgentOptions{
-		Config: cfg,
+	agentOpts := runner.AgentOptions{
+		Config: runner.NewConfig(),
 		Token:  token,
 		URL:    s.System.URL("/"),
-	})
+	}
+	for _, fn := range opts {
+		fn(&agentOpts)
+	}
+	agent, err := runner.NewAgent(logger, agentOpts)
 	require.NoError(t, err)
 
 	ctx, cancel := context.WithCancel(ctx)
