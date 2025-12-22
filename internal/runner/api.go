@@ -34,7 +34,7 @@ type (
 	}
 
 	generateDynamicCredentialsTokenParams struct {
-		Audience string
+		Audience string `json:"audience"`
 	}
 )
 
@@ -55,7 +55,7 @@ func (a *api) addHandlers(r *mux.Router) {
 }
 
 func (a *api) registerAgent(w http.ResponseWriter, r *http.Request) {
-	var opts registerOptions
+	var opts RegisterRunnerOptions
 	if err := json.NewDecoder(r.Body).Decode(&opts); err != nil {
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -69,7 +69,7 @@ func (a *api) registerAgent(w http.ResponseWriter, r *http.Request) {
 	}
 	opts.IPAddress = &ip
 
-	agent, err := a.Service.register(r.Context(), opts)
+	agent, err := a.Service.Register(r.Context(), opts)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -183,18 +183,20 @@ func (a *api) finishJob(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *api) generateDynamicCredentialsToken(w http.ResponseWriter, r *http.Request) {
-	var params struct {
-		JobID resource.TfeID `schema:"job_id"`
-		generateDynamicCredentialsTokenParams
-	}
-	if err := decode.All(&params, r); err != nil {
+	jobID, err := decode.ID("job_id", r)
+	if err != nil {
 		tfeapi.Error(w, err)
+		return
+	}
+	var params generateDynamicCredentialsTokenParams
+	if err := json.NewDecoder(r.Body).Decode(&params); err != nil {
+		tfeapi.Error(w, err, tfeapi.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 	token, err := a.Service.GenerateDynamicCredentialsToken(
 		r.Context(),
-		params.JobID,
-		params.generateDynamicCredentialsTokenParams.Audience,
+		jobID,
+		params.Audience,
 	)
 	if err != nil {
 		tfeapi.Error(w, err)

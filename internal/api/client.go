@@ -102,7 +102,13 @@ func NewClient(config Config) (*Client, error) {
 				if retryErr != nil {
 					err = retryErr
 				}
-				config.Logger.Error(err, "retrying request", "url", resp.Request.URL)
+				// The http response is nil when there is a problem with the
+				// request and there is no response, e.g. socket timeout.
+				if resp != nil && resp.Request != nil {
+					config.Logger.Error(err, "retrying request", "url", resp.Request.URL)
+				} else {
+					config.Logger.Error(err, "retrying request")
+				}
 			}
 			return retry, retryErr
 		}

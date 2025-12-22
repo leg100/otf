@@ -1,0 +1,261 @@
+package ui
+
+import (
+	"github.com/leg100/otf/internal/http/html/components"
+	"github.com/leg100/otf/internal/http/html/components/paths"
+	"github.com/leg100/otf/internal/module"
+	"github.com/leg100/otf/internal/organization"
+	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/vcs"
+	"html/template"
+	"slices"
+	"strings"
+)
+
+type newViewProps struct {
+	organization organization.Name
+	providers    []*vcs.Provider
+}
+
+templ newView(props newViewProps) {
+	@components.Layout(components.LayoutProps{
+		Title:        "new module",
+		Organization: props.organization,
+		Breadcrumbs: []components.Breadcrumb{
+			{Name: "Modules", Link: paths.Modules(props.organization)},
+			{Name: "new"},
+		},
+	}) {
+		@ConnectionSteps(ConnectStep)
+		<h3 class="font-semibold">Connect to a version control provider</h3>
+		<div>
+			Choose a VCS provider that hosts your module source code.
+		</div>
+		@components.UnpaginatedTable(
+			&vcsTable{Actions: selectVCSProviderAction},
+			props.providers,
+		)
+	}
+}
+
+templ selectVCSProviderAction(vcsProviderID resource.TfeID) {
+	<form action={ paths.ConnectModule(vcsProviderID) }>
+		<input type="hidden" name="vcs_provider_id" value={ vcsProviderID.String() }/>
+		<button class="btn">Select</button>
+	</form>
+}
+
+type connectProps struct {
+	repos    []vcs.Repo
+	provider *vcs.Provider
+}
+
+templ connect(props connectProps) {
+	@components.Layout(components.LayoutProps{
+		Title:        "new module",
+		Organization: props.provider.Organization,
+		Breadcrumbs: []components.Breadcrumb{
+			{Name: "Modules", Link: paths.Modules(props.provider.Organization)},
+			{Name: "new"},
+		},
+	}) {
+		@ConnectionSteps(SelectRepoStep)
+		<h3 class="font-semibold">Choose a repository</h3>
+		<div>
+			Choose the repository that hosts your module source code. We'll watch this for commits and tags. The format of your repository name should be `{ "terraform-<PROVIDER>-<NAME>" }`.
+		</div>
+		<form action={ paths.CreateModule(props.provider.Organization) } method="POST">
+			<input type="hidden" name="vcs_provider_id" id="vcs_provider_id" value={ props.provider.ID.String() }/>
+			<input class="input" type="text" name="identifier" id="identifier" value="" placeholder="{owner}/{repository}" required/>
+			<button class="btn">Connect</button>
+		</form>
+		@components.UnpaginatedTable(
+			&ReposTable{
+				Actions: moduleRepoSelector{
+					provider: props.provider,
+				}.action,
+			},
+			props.repos,
+		)
+	}
+}
+
+type moduleRepoSelector struct {
+	provider *vcs.Provider
+}
+
+templ (s moduleRepoSelector) action(repo vcs.Repo) {
+	<form action={ paths.CreateModule(s.provider.Organization) } method="POST">
+		<input type="hidden" name="vcs_provider_id" value={ s.provider.ID.String() }/>
+		<input type="hidden" name="identifier" id="identifier" value={ repo.String() }/>
+		<button class="btn">Connect</button>
+	</form>
+}
+
+type moduleListProps struct {
+	organization          organization.Name
+	page                  *resource.Page[*module.Module]
+	canPublishModule      bool
+	providerFilterVisible bool
+	allProviders          []string
+	selectedProviders     []string
+}
+
+templ moduleList(props moduleListProps) {
+	@components.Layout(components.LayoutProps{
+		Title:          "Modules",
+		Organization:   props.organization,
+		ContentActions: moduleListActions(props),
+		Breadcrumbs: []components.Breadcrumb{
+			{Name: "Modules"},
+		},
+	}) {
+		<form action={ templ.SafeURL(components.CurrentURL(ctx)) }>
+			@components.Filter(components.FilterProps[string]{
+				Title:            "Filter by provider",
+				All:              props.allProviders,
+				Selected:         props.selectedProviders,
+				ParamName:        "search[providers]",
+				Visible:          props.providerFilterVisible,
+				VisibleParamName: "provider_filter_visible",
+				Label:            providerFilterLabel,
+				CheckboxClass: func(_ string) string {
+					return "checkbox-accent"
+				},
+			})
+		</form>
+		@components.Table(&moduleTable{}, props.page)
+	}
+}
+
+templ providerFilterLabel(provider string) {
+	<span id={ "provider-" + provider } class="badge badge-accent badge-soft">
+		{ provider }
+	</span>
+}
+
+templ moduleListActions(props moduleListProps) {
+	if props.canPublishModule {
+		<form action={ paths.NewModule(props.organization) } method="GET">
+			<button class="btn" id="list-module-vcs-providers-button">Publish</button>
+		</form>
+	}
+}
+
+type moduleTable struct{}
+
+templ (t moduleTable) Header() {
+	<th>Name</th>
+	<th>Provider</th>
+	<th>Created</th>
+}
+
+templ (t moduleTable) Row(mod *module.Module) {
+	<tr id={ "mod-item-" + mod.Name }>
+		<td>
+			<a class="link" href={ paths.Module(mod.ID) }>
+				{ mod.Name }
+			</a>
+		</td>
+		<td>
+			{ mod.Provider }
+		</td>
+		<td>
+			@components.Ago(mod.CreatedAt)
+		</td>
+	</tr>
+}
+
+type moduleGetProps struct {
+	module           *module.Module
+	terraformModule  *module.TerraformModule
+	readme           template.HTML
+	currentVersion   *module.ModuleVersion
+	canPublishModule bool
+	hostname         string
+}
+
+templ moduleGet(props moduleGetProps) {
+	@components.Layout(components.LayoutProps{
+		Title:        "modules",
+		Organization: props.module.Organization,
+		Breadcrumbs: []components.Breadcrumb{
+			{Name: "Modules", Link: paths.Modules(props.module.Organization)},
+			{Name: props.module.Name},
+		},
+	}) {
+		<div class="flex flex-col gap-4">
+			switch props.module.Status {
+				case module.ModuleStatusPending:
+					Module status is still pending.
+				case module.ModuleStatusNoVersionTags:
+					Module source repository has no tags.
+				case module.ModuleStatusSetupFailed:
+					Module setup failed.
+				case module.ModuleStatusSetupComplete:
+					<div class="flex gap-4 items-center">
+						<form class="flex gap-2 items-center" action={ paths.Module(props.module.ID) } method="GET">
+							<label>Version</label>
+							<select class="select w-32" name="version" id="version" onchange="this.form.submit()">
+								{{ slices.Reverse(props.module.AvailableVersions()) }}
+								for _, mv := range props.module.AvailableVersions() {
+									if mv.Status == module.ModuleVersionStatusOK {
+										<option value={ mv.Version } selected?={ mv.Version == props.currentVersion.Version }>{ mv.Version }</option>
+									}
+								}
+							</select>
+						</form>
+						if props.module.Connection != nil {
+							<div>
+								Source <span class="bg-base-300" id="vcs-repo">{ props.module.Connection.Repo.String() }</span>
+							</div>
+						}
+					</div>
+					<div>
+						<h3 class="font-semibold"></h3>
+						<div class="flex flex-col gap-2">
+							<label for="usage">Usage</label>
+							<div>
+								<div class="whitespace-pre overflow-auto border-1 p-1 font-mono" id="usage">
+									{ `module "` + props.module.Name + `" {
+	source = "` + props.hostname + `/` + props.module.Organization.String() + `/` + props.module.Name + `/` + props.module.Provider + `"
+	version = "` + props.currentVersion.Version + `"
+}` }
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="prose">
+						@templ.Raw(strings.TrimSpace(string(props.readme)))
+					</div>
+					<div>
+						<h3 class="font-semibold">Resources</h3>
+						for resource := range props.terraformModule.ManagedResources {
+							<div>
+								<span class="bg-base-300">{ resource }</span>
+							</div>
+						}
+					</div>
+					<div>
+						<h3 class="font-semibold">Variables</h3>
+						for v := range props.terraformModule.Variables {
+							<div>
+								<span class="bg-base-300">{ v }</span>
+							</div>
+						}
+					</div>
+					<div>
+						<h3 class="font-semibold">Outputs</h3>
+						for output := range props.terraformModule.Outputs {
+							<div>
+								<span class="bg-base-300">{ output }</span>
+							</div>
+						}
+					</div>
+			}
+			<form id="module-delete-button" action={ paths.DeleteModule(props.module.ID) } method="POST">
+				<button class="btn btn-error btn-outline" onclick="return confirm('Are you sure you want to delete?')">Delete module</button>
+			</form>
+		</div>
+	}
+}

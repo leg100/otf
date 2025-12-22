@@ -50,13 +50,13 @@ func (c *Client) ListRepositories(ctx context.Context, opts vcs.ListRepositories
 	// search for repos the user owns
 	err := c.findReposOwned(found)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("listing user-owned repos: %w", err)
 	}
 
 	// search for repos in orgs which the user owns
 	err = c.findOrgReposOwned(found)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("listing repos in user-owned organizations: %w", err)
 	}
 
 	// sort by updated time (desc)
@@ -118,7 +118,7 @@ func (c *Client) findOrgReposOwned(found map[vcs.Repo]time.Time) error {
 		var err error
 		rv, resp, err = c.client.ListMyTeams(&userteamsopt)
 		if err != nil {
-			return err
+			return fmt.Errorf("listing user's teams: %w", err)
 		}
 		for _, team := range rv {
 			// save the teams with "admin" permissions
@@ -143,7 +143,7 @@ func (c *Client) findOrgReposOwned(found map[vcs.Repo]time.Time) error {
 			var err error
 			rv, resp, err = c.client.ListTeamRepositories(teamid, listteamrepoopt)
 			if err != nil {
-				return err
+				return fmt.Errorf("listing team repos: %w", err)
 			}
 			for _, forgejoRepo := range rv {
 				repo, err := vcs.NewRepo(forgejoRepo.Owner.UserName, forgejoRepo.Name)

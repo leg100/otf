@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: postgres:13-alpine
+    image: postgres:18-alpine
     ports:
       - 5432
     healthcheck:
@@ -8,51 +8,12 @@ services:
       interval: 5s
       timeout: 5s
       retries: 3
-    # * setting high max_connections number avoids the error when running large number of
-    #   integration tests in parallel:
-    #
-    #   FATAL: sorry, too many clients already
-    #
-    # * disabling fsync dramatically improves integration test speed
-    #
-    # NOTE: neither setting is appropriate for a production deployment
-    command: -c fsync=off -c max_connections=999
     environment:
      - POSTGRES_PASSWORD=postgres
-  # Terraform-based tests spawn `terraform`. These tests retrieve providers from
-  # the internet which can consume quite a lot of bandwidth and slow down the tests
-  # significantly. To cache these providers we use the squid caching
-  # proxy (http://www.squid-cache.org/).
-  #
-  # It is configured to use
-  # [SSL-bumping](https://wiki.squid-cache.org/Features/SslBump), which permits
-  # caching content transported via SSL (`terraform` retrieves providers only via
-  # SSL).
-  squid:
-    image: leg100/squid:0.2.2
-    ports:
-      - 3128
-    healthcheck:
-      test: ["CMD-SHELL", "nc -zw1 localhost 3128"]
-      interval: 5s
-      timeout: 5s
-      retries: 3
-    stop_signal: SIGINT
-    tty: true
-    volumes:
-      - ./internal/integration/fixtures:/etc/squid/certs
-  pubsub:
-    image: google/cloud-sdk:494.0.0-emulators
-    ports:
-      - 8085
-    stop_signal: SIGINT
-    command: gcloud beta emulators pubsub start --project=abc123 --host-port=0.0.0.0:8085
   otfd:
     image: leg100/otfd:latest
     depends_on:
       postgres:
-        condition: service_healthy
-      squid:
         condition: service_healthy
     ports:
       - "8080:8080"
@@ -62,15 +23,14 @@ services:
       timeout: 5s
       retries: 3
     environment:
-      - OTF_DATABASE=postgres://postgres:postgres@postgres/postgres?sslmode=disable
-      - OTF_SECRET=6b07b57377755b07cf61709780ee7484
-      - OTF_SITE_TOKEN=site-token
-      - OTF_SSL=true
-      - OTF_CERT_FILE=/fixtures/cert.pem
-      - OTF_KEY_FILE=/fixtures/key.pem
-      - OTF_LOG_HTTP_REQUESTS=true
-      - HTTPS_PROXY=squid:3128
-      - SSL_CERT_FILE=/fixtures/cert.pem
-      - OTF_HOSTNAME=otf.local
-    volumes:
-      - ./internal/integration/fixtures:/fixtures
+      OTF_DATABASE: "postgres://postgres:postgres@postgres/postgres?sslmode=disable"
+      OTF_SECRET_FILE: /run/secrets/secret
+      OTF_SITE_TOKEN_FILE: /run/secrets/site-token
+    secrets:
+      - secret
+      - site-token
+secrets:
+  secret:
+    environment: OTF_SECRET
+  site-token:
+    environment: OTF_SITE_TOKEN

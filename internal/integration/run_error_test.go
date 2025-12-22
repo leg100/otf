@@ -12,6 +12,7 @@ import (
 	runpkg "github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/workspace"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -93,23 +94,24 @@ func TestRunError(t *testing.T) {
 				gotErrorStatus bool
 				gotErrorLogs   bool
 			)
-			errorRegex := regexp.MustCompile(`Error: exit status 1: Error: Invalid resource type on main.tf line 5, in resource "null_resourc" "e2e": 5: resource "null_resourc" "e2e" {} The provider hashicorp/null does not support resource type "null_resourc". Did you mean "null_resource"?`)
-			require.NoError(t, err)
-			for {
-				select {
-				case chunk := <-logs:
-					if errorRegex.Match(chunk.Data) {
-						gotErrorLogs = true
-					}
-				case event := <-daemon.runEvents:
-					if event.Payload.Status == runstatus.Errored {
-						gotErrorStatus = true
-					}
-				}
-				if gotErrorLogs && gotErrorStatus {
-					return
+
+			errorRegex := regexp.MustCompile(`Error: executing plan: exit status 1: Error: Invalid resource type on main.tf line 5, in resource "null_resourc" "e2e": 5: resource "null_resourc" "e2e" {} The provider hashicorp/null does not support resource type "null_resourc". Did you mean "null_resource"?`)
+			for chunk := range logs {
+				stripped := internal.StripAnsi(string(chunk.Data))
+				if errorRegex.MatchString(stripped) {
+					gotErrorLogs = true
+					break
 				}
 			}
+			assert.True(t, gotErrorLogs)
+
+			for event := range daemon.runEvents {
+				if event.Payload.Status == runstatus.Errored {
+					gotErrorStatus = true
+					break
+				}
+			}
+			assert.True(t, gotErrorStatus)
 		})
 	}
 }

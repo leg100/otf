@@ -18,7 +18,7 @@ type TerraformModule struct {
 	readme []byte
 }
 
-func unmarshalTerraformModule(tarball []byte) (*TerraformModule, error) {
+func UnmarshalTerraformModule(tarball []byte) (*TerraformModule, error) {
 	dir, err := os.MkdirTemp("", "")
 	if err != nil {
 		return nil, errors.Wrap(err, "creating temporary directory")
@@ -42,4 +42,9 @@ func unmarshalTerraformModule(tarball []byte) (*TerraformModule, error) {
 
 	// valid module
 	return tfmod, nil
+}
+
+// GetReadme returns the module's readme content
+func (t *TerraformModule) GetReadme() []byte {
+	return t.readme
 }

@@ -90,6 +90,20 @@ func withTimeouts(planning, applying, checkInterval time.Duration) configOption 
 	}
 }
 
+func withDeleteRunsAfter(deleteRunsAfter, checkInterval time.Duration) configOption {
+	return func(cfg *config) {
+		cfg.DeleteRunsAfter = deleteRunsAfter
+		cfg.OverrideDeleterInterval = checkInterval
+	}
+}
+
+func withDeleteConfigsAfter(deleteConfigsAfter, checkInterval time.Duration) configOption {
+	return func(cfg *config) {
+		cfg.DeleteConfigsAfter = deleteConfigsAfter
+		cfg.OverrideDeleterInterval = checkInterval
+	}
+}
+
 func disableRunner() configOption {
 	return func(cfg *config) {
 		cfg.DisableRunner = true
@@ -101,23 +115,9 @@ func disableScheduler() configOption {
 	}
 }
 
-type runnerConfigOption func(*runner.Config)
-
 func withDefaultEngine(engine *engine.Engine) configOption {
 	return func(cfg *config) {
 		cfg.DefaultEngine = engine
-	}
-}
-
-func withEngineBinDir(dir string) runnerConfigOption {
-	return func(cfg *runner.Config) {
-		cfg.EngineBinDir = dir
-	}
-}
-
-func withRunnerDebug() runnerConfigOption {
-	return func(cfg *runner.Config) {
-		cfg.Debug = true
 	}
 }
 
@@ -131,5 +131,26 @@ func withKeyPairPaths(private, public string) configOption {
 func withHostname(hostname string) configOption {
 	return func(cfg *config) {
 		cfg.Host = hostname
+	}
+}
+
+type agentConfigOption func(*runner.AgentOptions)
+
+func withEngineBinDir(dir string) agentConfigOption {
+	return func(opts *runner.AgentOptions) {
+		opts.EngineBinDir = dir
+	}
+}
+
+func withRunnerDebug() agentConfigOption {
+	return func(opts *runner.AgentOptions) {
+		opts.Debug = true
+	}
+}
+
+// withAgentURL sets the URL of the server that the agent talks to.
+func withAgentURL(url string) agentConfigOption {
+	return func(opts *runner.AgentOptions) {
+		opts.URL = url
 	}
 }

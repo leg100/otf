@@ -10,6 +10,10 @@ import (
 	"github.com/leg100/otf/internal/vcs"
 )
 
+// AppEventsPath is the URL path for the endpoint receiving VCS events from the
+// Github App
+const AppEventsPath = "/webhooks/github-app"
+
 type AppEventHandler struct {
 	logr.Logger
 	vcs.Publisher

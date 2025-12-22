@@ -23,8 +23,7 @@ import (
 
 // pgdb is a database of runs on postgres
 type pgdb struct {
-	*sql.DB       // provides access to generated SQL queries
-	configService *configversion.Service
+	*sql.DB // provides access to generated SQL queries
 }
 
 // CreateRun persists a Run to the DB.
@@ -421,6 +420,7 @@ AND runs.status                  LIKE ANY($5::text[])
 AND runs.plan_only::text         LIKE ANY($6::text[])
 AND (($7::text IS NULL) OR ia.commit_sha = $7)
 AND (($8::text IS NULL) OR ia.sender_username = $8)
+AND (($11::timestamptz IS NULL) OR runs.created_at < $11::timestamptz)
 ORDER BY runs.created_at DESC
 LIMIT $9::int
 OFFSET $10::int
@@ -435,6 +435,7 @@ OFFSET $10::int
 		opts.VCSUsername,
 		sql.GetLimit(opts.PageOptions),
 		sql.GetOffset(opts.PageOptions),
+		opts.BeforeCreatedAt,
 	)
 	items, err := sql.CollectRows(rows, db.scan)
 	if err != nil {
@@ -454,6 +455,7 @@ AND runs.status                  LIKE ANY($5::text[])
 AND runs.plan_only::text         LIKE ANY($6::text[])
 AND (($7::text IS NULL) OR ia.commit_sha = $7)
 AND (($8::text IS NULL) OR ia.sender_username = $8)
+AND (($9::timestamptz IS NULL) OR runs.created_at < $9::timestamptz)
 `,
 
 		[]string{organization},
@@ -464,6 +466,7 @@ AND (($8::text IS NULL) OR ia.sender_username = $8)
 		[]string{planOnly},
 		opts.CommitSHA,
 		opts.VCSUsername,
+		opts.BeforeCreatedAt,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("counting runs: %w", err)
@@ -842,7 +845,6 @@ func (db *pgdb) scan(row pgx.CollectableRow) (*Run, error) {
 		AutoApply:              m.AutoApply,
 		PlanOnly:               m.PlanOnly,
 		Source:                 m.Source,
-		SourceIcon:             db.configService.GetSourceIcon(m.Source),
 		Status:                 m.Status,
 		WorkspaceID:            m.WorkspaceID,
 		ConfigurationVersionID: m.ConfigurationVersionID,

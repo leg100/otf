@@ -326,7 +326,7 @@ func scanJob(row pgx.CollectableRow) (*Job, error) {
 
 // agent tokens
 
-func (db *db) createAgentToken(ctx context.Context, token *agentToken) error {
+func (db *db) createAgentToken(ctx context.Context, token *AgentToken) error {
 	_, err := db.Exec(ctx, `
 INSERT INTO agent_tokens (
     agent_token_id,
@@ -347,7 +347,7 @@ INSERT INTO agent_tokens (
 	return err
 }
 
-func (db *db) getAgentTokenByID(ctx context.Context, id resource.TfeID) (*agentToken, error) {
+func (db *db) getAgentTokenByID(ctx context.Context, id resource.TfeID) (*AgentToken, error) {
 	rows := db.Query(ctx, `
 SELECT agent_token_id, created_at, description, agent_pool_id
 FROM agent_tokens
@@ -356,7 +356,7 @@ WHERE agent_token_id = $1
 	return sql.CollectOneRow(rows, scanAgentToken)
 }
 
-func (db *db) listAgentTokens(ctx context.Context, poolID resource.TfeID) ([]*agentToken, error) {
+func (db *db) listAgentTokens(ctx context.Context, poolID resource.TfeID) ([]*AgentToken, error) {
 	rows := db.Query(ctx, `
 SELECT agent_token_id, created_at, description, agent_pool_id
 FROM agent_tokens
@@ -375,7 +375,7 @@ WHERE agent_token_id = $1
 	return err
 }
 
-func scanAgentToken(row pgx.CollectableRow) (*agentToken, error) {
+func scanAgentToken(row pgx.CollectableRow) (*AgentToken, error) {
 	type model struct {
 		ID          resource.TfeID `db:"agent_token_id"`
 		AgentPoolID resource.TfeID `db:"agent_pool_id"`
@@ -386,7 +386,7 @@ func scanAgentToken(row pgx.CollectableRow) (*agentToken, error) {
 	if err != nil {
 		return nil, err
 	}
-	token := &agentToken{
+	token := &AgentToken{
 		ID:          m.ID,
 		AgentPoolID: m.AgentPoolID,
 		CreatedAt:   m.CreatedAt,
@@ -518,7 +518,7 @@ GROUP BY ap.agent_pool_id
 	return sql.CollectOneRow[*Pool](rows, pgx.RowToAddrOfStructByName)
 }
 
-func (db *db) listPoolsByOrganization(ctx context.Context, organization organization.Name, opts listPoolOptions) ([]*Pool, error) {
+func (db *db) listPoolsByOrganization(ctx context.Context, organization organization.Name, opts ListPoolOptions) ([]*Pool, error) {
 	rows := db.Query(ctx, `
 SELECT ap.agent_pool_id, ap.name, ap.created_at, ap.organization_name, ap.organization_scoped,
     (

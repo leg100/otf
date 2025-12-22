@@ -17,7 +17,6 @@ import (
 	"strings"
 
 	"github.com/go-logr/logr"
-	"github.com/gorilla/websocket"
 )
 
 type etagResponseWriter struct {
@@ -43,7 +42,7 @@ func (e *etagMiddleware) middleware(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 			return
 		}
-		if websocket.IsWebSocketUpgrade(r) {
+		if r.Header.Get("Accept") == "text/event-stream" {
 			next.ServeHTTP(w, r)
 			return
 		}

@@ -50,17 +50,17 @@ install-latest-release:
 # Run docker compose stack
 .PHONY: compose-up
 compose-up: image
-	docker compose up -d --wait --wait-timeout 60
+	docker compose -f docker-compose.testing.yml up -d --wait --wait-timeout 60
 
 # Remove docker compose stack
 .PHONY: compose-rm
 compose-rm:
-	docker compose rm -sf
+	docker compose -f docker-compose.testing.yml rm -sf
 
 # Run postgresql via docker compose
 .PHONY: postgres
 postgres:
-	docker compose up -d postgres
+	docker compose -f docker-compose.testing.yml up -d postgres
 
 # Install staticcheck linter
 .PHONY: install-linter
@@ -84,8 +84,8 @@ vet:
 
 # Build docker image
 .PHONY: image
-image:
-	docker build -f Dockerfile -t $(IMAGE_NAME):$(IMAGE_TAG) -t $(IMAGE_NAME):latest --target otfd .
+image: build
+	docker build -f Dockerfile -t $(IMAGE_NAME):$(IMAGE_TAG) -t $(IMAGE_NAME):latest ./_build
 
 # Build and load image into k8s kind
 .PHONY: load
@@ -94,8 +94,8 @@ load: image
 
 # Build docker image for otf-agent
 .PHONY: image-agent
-image-agent:
-	docker build -f Dockerfile -t $(IMAGE_NAME_AGENT):$(IMAGE_TAG) -t $(IMAGE_NAME_AGENT):latest --target otf-agent .
+image-agent: build
+	docker build -f ./Dockerfile.agent -t $(IMAGE_NAME_AGENT):$(IMAGE_TAG) -t $(IMAGE_NAME_AGENT):latest ./_build
 
 # Build and load otf-agent image into k8s kind
 .PHONY: load-agent

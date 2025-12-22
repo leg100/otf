@@ -16,7 +16,6 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/html"
-	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/json"
 )
@@ -44,7 +43,6 @@ type (
 		SSL                  bool
 		CertFile, KeyFile    string
 		EnableRequestLogging bool
-		AllowedOrigins       string
 
 		Handlers []internal.Handlers
 		// middleware to intercept requests, executed in the order given.
@@ -136,8 +134,6 @@ func NewServer(logger logr.Logger, cfg ServerConfig) (*Server, error) {
 		logger: logger,
 		prefix: paths.UIPrefix,
 	}).middleware)
-
-	components.SetAllowedOrigins(cfg.AllowedOrigins)
 
 	return &Server{
 		Logger:       logger,

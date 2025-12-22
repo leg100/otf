@@ -79,13 +79,19 @@ func parseFlags(ctx context.Context, args []string, out io.Writer) error {
 	cmd.Flags().BytesHexVar(&cfg.Secret, "secret", nil, "Hex-encoded 16 byte secret for cryptographic work. Required.")
 	cmd.Flags().Int64Var(&cfg.MaxConfigSize, "max-config-size", cfg.MaxConfigSize, "Maximum permitted configuration size in bytes.")
 	cmd.Flags().StringVar(&cfg.WebhookHost, "webhook-hostname", "", "External hostname for otf webhooks")
-	cmd.Flags().StringVar(&cfg.AllowedOrigins, "allowed-origins", "", "Allowed origins for websocket upgrades")
+
+	// TODO: remove after given amount of time
+	_ = cmd.Flags().String("allowed-origins", "", "Allowed origins for websocket upgrades")
+	cmd.Flags().MarkDeprecated("allowed-origins", "websockets no longer implemented so this flag has no effect")
 
 	cmd.Flags().StringVar(&cfg.PublicKeyPath, "public-key-path", "", "Path to public key for dynamic credentials.")
 	cmd.Flags().StringVar(&cfg.PrivateKeyPath, "private-key-path", "", "Path to private key for dynamic credentials.")
 
 	cmd.Flags().IntVar(&cfg.CacheConfig.Size, "cache-size", 0, "Maximum cache size in MB. 0 means unlimited size.")
 	cmd.Flags().DurationVar(&cfg.CacheConfig.TTL, "cache-expiry", internal.DefaultCacheTTL, "Cache entry TTL.")
+
+	cmd.Flags().DurationVar(&cfg.DeleteRunsAfter, "delete-runs-after", 0, "Delete runs older than the specified age. Specifying 0 disables run deletion.")
+	cmd.Flags().DurationVar(&cfg.DeleteConfigsAfter, "delete-configs-after", 0, "Delete configs older than the specified age. Specifying 0 disables config deletion.")
 
 	cmd.Flags().BoolVar(&cfg.SSL, "ssl", false, "Toggle SSL")
 	cmd.Flags().StringVar(&cfg.CertFile, "cert-file", "", "Path to SSL certificate (required if enabling SSL)")
@@ -100,8 +106,7 @@ func parseFlags(ctx context.Context, args []string, out io.Writer) error {
 	cmd.Flags().StringVar(&cfg.GitlabClientID, "gitlab-client-id", "", "gitlab client ID")
 	cmd.Flags().StringVar(&cfg.GitlabClientSecret, "gitlab-client-secret", "", "gitlab client secret")
 
-	// TODO: forgejo is often self-hosted, and there may be more than one of them.  this should be a per-VCS setting
-	cmd.Flags().Var(cfg.ForgejoHostname, "forgejo-hostname", "forgejo hostname")
+	cmd.Flags().Var(cfg.ForgejoHostname, "forgejo-hostname", "forgejo default hostname")
 
 	cmd.Flags().StringVar(&cfg.OIDC.Name, "oidc-name", "", "User friendly OIDC name")
 	cmd.Flags().StringVar(&cfg.OIDC.IssuerURL, "oidc-issuer-url", "", "OIDC issuer URL")

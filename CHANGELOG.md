@@ -1,5 +1,55 @@
 # Changelog
 
+## [0.5.0](https://github.com/leg100/otf/compare/v0.4.10...v0.5.0) (2025-12-15)
+
+
+### ⚠ BREAKING CHANGES
+
+* don't ignore custom hostname overrides for VCS providers ([#855](https://github.com/leg100/otf/issues/855))
+
+### Bug Fixes
+
+* don't ignore custom hostname overrides for VCS providers ([#855](https://github.com/leg100/otf/issues/855)) ([c25801e](https://github.com/leg100/otf/commit/c25801e2ce4dc2289ee3d67bd0bf3f0cf62f8302))
+* run error tests ([be7d10d](https://github.com/leg100/otf/commit/be7d10d47dcadd6f6cc544b778634d51e99a06f1))
+
+## [0.4.10](https://github.com/leg100/otf/compare/v0.4.9...v0.4.10) (2025-12-14)
+
+
+### Bug Fixes
+
+* enrich forgejo list repos errors ([9cdf6f2](https://github.com/leg100/otf/commit/9cdf6f23745183d24ae230639d7eb968f3a703b3))
+
+
+### Miscellaneous
+
+* update Alpine to v3.23 ([#849](https://github.com/leg100/otf/issues/849)) ([1721470](https://github.com/leg100/otf/commit/17214707b969712dcff77d2553b992e875dac1e4))
+
+## [0.4.9](https://github.com/leg100/otf/compare/v0.4.8...v0.4.9) (2025-11-08)
+
+
+### Features
+
+* delete configs older than a user-specified duration ([#845](https://github.com/leg100/otf/issues/845)) ([b54bd3f](https://github.com/leg100/otf/commit/b54bd3ff2548d0bac7c70e4f3e9409e69d1537fe))
+
+## [0.4.8](https://github.com/leg100/otf/compare/v0.4.7...v0.4.8) (2025-11-02)
+
+
+### Features
+
+* delete runs after user-specified time period ([#844](https://github.com/leg100/otf/issues/844)) ([fb5547c](https://github.com/leg100/otf/commit/fb5547c75f4f6872c69e59a376b8cf0ddf25cb27)), closes [#834](https://github.com/leg100/otf/issues/834)
+
+
+### Bug Fixes
+
+* **ui:** polling table not sending page number param ([7591827](https://github.com/leg100/otf/commit/7591827fee43539c1d72eb373899607172abda83))
+* workspace sql cascade set null on user or run deletion ([687c35c](https://github.com/leg100/otf/commit/687c35c37cacc499f8b42234083ad1e6fe4b00ec))
+
+
+### Miscellaneous
+
+* document dynamic credentials test setup ([efecef2](https://github.com/leg100/otf/commit/efecef20d7b5a8539ce5b77c83751a9cc9ae1cef))
+* remove unnecessary double html error ([53cb12d](https://github.com/leg100/otf/commit/53cb12d25d00c664daf7ebe7eb7fcd38e609fad5))
+
 ## [0.4.7](https://github.com/leg100/otf/compare/v0.4.6...v0.4.7) (2025-10-10)
 
 

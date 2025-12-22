@@ -9,14 +9,31 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/organization"
+	"github.com/leg100/otf/internal/runner"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/variable"
+	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-// TestDynamicCredentials tests enabling dynamic provider credentials.
-func TestDynamicCredentials(t *testing.T) {
+// TestDynamicCredentialsGCP tests dynamic provider credentials on GCP.
+//
+// NOTE: this test requires significant manual configuration and if any of the
+// expected env vars are missing it'll be skipped. Consult the docs [1] on how
+// to setup dynamic creds on GCP and specify the env vars accordingly.
+//
+// NOTE: dynamic credentials usually require otfd to publicly expose a couple of
+// endpoints over HTTPS, via which the provider validates the JWKS. But that
+// won't work for this test, not least because the daemon is run on a random
+// port. Instead, you should manually upload the JWKS to GCP first [2] (run
+// `otfd` with dynamic credentials enabled and then retrieve the JWKS from
+// `https://localhost:8080/.well-known/jwks` and run the command in the linked
+// document). GCP will then not attempt to connect to the daemon.
+//
+// [1]: https://docs.otf.ninja/dynamic_credentials/
+// [2]: https://cloud.google.com/iam/docs/workload-identity-federation-with-other-providers#manage-oidc-keys
+func TestDynamicCredentialsGCP(t *testing.T) {
 	integrationTest(t)
 
 	privateKeyPath, ok := os.LookupEnv("OTF_INTEGRATION_PRIVATE_KEY_PATH")
@@ -105,4 +122,34 @@ data "google_project" "my-project" {}
 
 	run := daemon.createRun(t, ctx, ws1, cv1, nil)
 	daemon.waitRunStatus(t, ctx, run.ID, runstatus.PlannedAndFinished)
+
+	// Now check dynamic creds work on an agent.
+	t.Run("with agent", func(t *testing.T) {
+		pool1, err := daemon.Runners.CreateAgentPool(ctx, runner.CreateAgentPoolOptions{
+			Name:         "pool-1",
+			Organization: org.Name,
+		})
+		require.NoError(t, err)
+
+		_, err = daemon.Workspaces.Update(ctx, ws1.ID, workspace.UpdateOptions{
+			ExecutionMode: internal.Ptr(workspace.AgentExecutionMode),
+			AgentPoolID:   &pool1.ID,
+		})
+		require.NoError(t, err)
+
+		_, shutdown := daemon.startAgent(
+			t,
+			ctx,
+			org.Name,
+			&pool1.ID,
+			"",
+			// override the URL because otherwise it'll default to the system
+			// hostname which set above to a non-localhost hostname.
+			withAgentURL(fmt.Sprintf("https://localhost:%d", daemon.ListenAddress.Port)),
+		)
+		defer shutdown()
+
+		run := daemon.createRun(t, ctx, ws1, cv1, nil)
+		daemon.waitRunStatus(t, ctx, run.ID, runstatus.PlannedAndFinished)
+	})
 }

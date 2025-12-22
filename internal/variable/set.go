@@ -73,7 +73,7 @@ func (s *VariableSet) addVariable(organizationSets []*VariableSet, opts CreateVa
 }
 
 func (s *VariableSet) updateVariable(organizationSets []*VariableSet, variableID resource.TfeID, opts UpdateVariableOptions) (*Variable, error) {
-	v := s.getVariable(variableID)
+	v := s.GetVariableByID(variableID)
 	if v == nil {
 		return nil, fmt.Errorf("cannot find variable %s in set", v.ID)
 	}
@@ -105,7 +105,7 @@ func (s *VariableSet) updateProperties(organizationSets []*VariableSet, opts Upd
 	return nil
 }
 
-func (s *VariableSet) getVariable(variableID resource.TfeID) *Variable {
+func (s *VariableSet) GetVariableByID(variableID resource.TfeID) *Variable {
 	for _, v := range s.Variables {
 		if v.ID == variableID {
 			return v

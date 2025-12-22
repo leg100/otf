@@ -110,11 +110,11 @@ templ BareLayout(props BareLayoutProps) {
 			<script src={ AssetPath(ctx, "/static/js/main.js") }></script>
 			<script src={ AssetPath(ctx, "/static/js/htmx.2.0.4.min.js") }></script>
 			<script src={ AssetPath(ctx, "/static/js/htmx-sse.2.2.2.js") }></script>
-			<script src={ AssetPath(ctx, "/static/js/htmx-ext-ws.2.0.2.js") }></script>
+			<script src="https://unpkg.com/idiomorph@0.7.3/dist/idiomorph-ext.min.js" integrity="sha384-szktAZju9fwY15dZ6D2FKFN4eZoltuXiHStNDJWK9+FARrxJtquql828JzikODob" crossorigin="anonymous"></script>
 			<script defer src={ AssetPath(ctx, "/static/js/alpine.3.14.8.min.js") }></script>
 			<link rel="stylesheet" href={ AssetPath(ctx, "/static/css/output.css") }/>
 		</head>
-		<body class="min-h-screen grid grid-rows-[auto_1fr_auto] grid-cols-[200px_3fr]">
+		<body hx-ext="morph" class="min-h-screen grid grid-rows-[auto_1fr_auto] grid-cols-[200px_3fr]">
 			<header class="col-span-2 border-b-1 border-base-content/30">
 				@navbar(props.Organization)
 			</header>
