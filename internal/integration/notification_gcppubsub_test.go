@@ -7,7 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"cloud.google.com/go/pubsub"
+	"cloud.google.com/go/pubsub/v2"
+	"cloud.google.com/go/pubsub/v2/apiv1/pubsubpb"
 	"github.com/google/uuid"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/notifications"
@@ -29,25 +30,29 @@ func TestIntegration_NotificationGCPPubSub(t *testing.T) {
 	started := time.Now()
 
 	integrationTest(t)
-	ctx := context.Background()
 
-	client, err := pubsub.NewClient(ctx, "abc123")
+	client, err := pubsub.NewClient(t.Context(), "abc123")
 	require.NoError(t, err)
-	defer client.Close()
 
 	// topic id must begin with a letter
-	topic, err := client.CreateTopic(ctx, "a"+uuid.NewString())
+	topicID := "a" + uuid.NewString()
+	topic, err := client.TopicAdminClient.CreateTopic(t.Context(), &pubsubpb.Topic{
+		Name: "projects/abc123/topics/" + topicID,
+	})
 	require.NoError(t, err)
 	// sub id must begin with a letter
-	sub, err := client.CreateSubscription(ctx, "a"+uuid.NewString(), pubsub.SubscriptionConfig{
-		Topic: topic,
+	subscription, err := client.SubscriptionAdminClient.CreateSubscription(t.Context(), &pubsubpb.Subscription{
+		Name:  "projects/abc123/subscriptions/a" + uuid.NewString(),
+		Topic: topic.GetName(),
 	})
 	require.NoError(t, err)
 	received := make(chan *pubsub.Message)
+	sub := client.Subscriber(subscription.GetName())
 	go func() {
-		_ = sub.Receive(ctx, func(_ context.Context, m *pubsub.Message) {
+		err := sub.Receive(t.Context(), func(_ context.Context, m *pubsub.Message) {
 			received <- m
 		})
+		require.NoError(t, err)
 	}()
 
 	daemon, _, ctx := setup(t)
@@ -63,7 +68,7 @@ func TestIntegration_NotificationGCPPubSub(t *testing.T) {
 		DestinationType: notifications.DestinationGCPPubSub,
 		Enabled:         internal.Ptr(true),
 		Name:            internal.Ptr("testing"),
-		URL:             internal.Ptr("gcppubsub://abc123/" + topic.ID()),
+		URL:             internal.Ptr("gcppubsub://abc123/" + topicID),
 		Triggers: []notifications.Trigger{
 			notifications.TriggerCreated,
 			notifications.TriggerPlanning,

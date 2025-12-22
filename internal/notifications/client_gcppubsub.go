@@ -8,7 +8,7 @@ import (
 	"net/url"
 	"regexp"
 
-	"cloud.google.com/go/pubsub"
+	"cloud.google.com/go/pubsub/v2"
 )
 
 var (
@@ -34,8 +34,8 @@ var (
 
 type (
 	pubsubClient struct {
-		client *pubsub.Client
-		topic  *pubsub.Topic
+		client    *pubsub.Client
+		publisher *pubsub.Publisher
 	}
 )
 
@@ -57,7 +57,7 @@ func newPubSubClient(cfg *Config) (*pubsubClient, error) {
 	project := u.Host
 
 	if len(u.Path) == 0 || u.Path[0] != '/' || !gcpPubSubTopicRegex.MatchString(u.Path[1:]) {
-		return nil, ErrInvalidGooglePubSubTopic
+		return nil, fmt.Errorf("%w: %s", ErrInvalidGooglePubSubTopic, u.Path)
 	}
 	topic := u.Path[1:]
 
@@ -66,8 +66,8 @@ func newPubSubClient(cfg *Config) (*pubsubClient, error) {
 		return nil, err
 	}
 	return &pubsubClient{
-		client: client,
-		topic:  client.Topic(topic),
+		client:    client,
+		publisher: client.Publisher(topic),
 	}, nil
 }
 
@@ -94,11 +94,12 @@ func (c *pubsubClient) Publish(ctx context.Context, n *notification) error {
 		attrs[key] = "true"
 	}
 
-	c.topic.Publish(ctx, &pubsub.Message{
+	res := c.publisher.Publish(ctx, &pubsub.Message{
 		Attributes: attrs,
 		Data:       data,
 	})
-	return nil
+	_, err = res.Get(ctx)
+	return err
 }
 
 func (c *pubsubClient) Close() {

@@ -90,7 +90,7 @@ func HandleEvent(r *http.Request, secret string) (*vcs.EventPayload, error) {
 		}
 		to.CommitSHA = event.ObjectAttributes.LastCommit.ID
 		to.CommitURL = event.ObjectAttributes.LastCommit.URL
-		to.PullRequestNumber = event.ObjectAttributes.IID
+		to.PullRequestNumber = int(event.ObjectAttributes.IID)
 		to.PullRequestURL = event.ObjectAttributes.URL
 		to.PullRequestTitle = event.ObjectAttributes.Title
 		to.DefaultBranch = event.Project.DefaultBranch

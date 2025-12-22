@@ -16,6 +16,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/api/idtoken"
+	"google.golang.org/api/option"
 )
 
 // getGoogleCredentialsPath is a test helper to retrieve the path to a google
@@ -121,7 +122,7 @@ func newIAPToken(t *testing.T, aud string) string {
 
 	ctx := context.Background()
 	credspath := getGoogleCredentialsPath(t)
-	src, err := idtoken.NewTokenSource(ctx, aud, idtoken.WithCredentialsFile(credspath))
+	src, err := idtoken.NewTokenSource(ctx, aud, option.WithAuthCredentialsFile(option.ServiceAccount, credspath))
 	require.NoError(t, err)
 
 	token, err := src.Token()
