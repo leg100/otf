@@ -5,4 +5,8 @@ RUN apk add --no-cache git
 
 COPY otfd /usr/local/bin/otfd
 
+# Create and run as non-root user and group.
+RUN adduser -D -H -u 4096 otf
+USER otf
+
 ENTRYPOINT ["/usr/local/bin/otfd"]
