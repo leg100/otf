@@ -95,7 +95,7 @@ func TestRunError(t *testing.T) {
 				gotErrorLogs   bool
 			)
 
-			errorRegex := regexp.MustCompile(`Error: exit status 1: Error: Invalid resource type on main.tf line 5, in resource "null_resourc" "e2e": 5: resource "null_resourc" "e2e" {} The provider hashicorp/null does not support resource type "null_resourc". Did you mean "null_resource"?`)
+			errorRegex := regexp.MustCompile(`Error: executing plan: exit status 1: Error: Invalid resource type on main.tf line 5, in resource "null_resourc" "e2e": 5: resource "null_resourc" "e2e" {} The provider hashicorp/null does not support resource type "null_resourc". Did you mean "null_resource"?`)
 			for chunk := range logs {
 				stripped := internal.StripAnsi(string(chunk.Data))
 				if errorRegex.MatchString(stripped) {

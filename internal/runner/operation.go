@@ -410,6 +410,8 @@ func (o *operation) execute(args []string, funcs ...executionOptionFunc) error {
 	}
 	o.proc = cmd.Process
 
+	o.Logger.V(5).Info("executing process", "process", args[0], "args", args[1:])
+
 	if err := cmd.Wait(); err != nil {
 		return fmt.Errorf("%w: %s", err, cleanStderr(stderr.String()))
 	}
@@ -419,7 +421,10 @@ func (o *operation) execute(args []string, funcs ...executionOptionFunc) error {
 func (o *operation) downloadEngine(ctx context.Context) error {
 	var err error
 	o.enginePath, err = o.downloader.Download(ctx, o.run.EngineVersion, o.out)
-	return err
+	if err != nil {
+		return fmt.Errorf("downloading engine: %w", err)
+	}
+	return nil
 }
 
 func (o *operation) downloadConfig(ctx context.Context) error {
@@ -504,14 +509,17 @@ func (o *operation) setupDynamicCredentials(ctx context.Context) error {
 		o.envs,
 	)
 	if err != nil {
-		return err
+		return fmt.Errorf("setting up dynamic provider credentials: %w", err)
 	}
 	o.envs = append(o.envs, envs...)
 	return nil
 }
 
 func (o *operation) init(ctx context.Context) error {
-	return o.execute([]string{o.enginePath, "init", "-input=false"})
+	if err := o.execute([]string{o.enginePath, "init", "-input=false"}); err != nil {
+		return fmt.Errorf("executing init: %w", err)
+	}
+	return nil
 }
 
 func (o *operation) plan(ctx context.Context) error {
@@ -519,8 +527,24 @@ func (o *operation) plan(ctx context.Context) error {
 	if o.run.IsDestroy {
 		args = append(args, "-destroy")
 	}
+	if !o.run.Refresh {
+		// the default is true
+		args = append(args, "-refresh=false")
+	}
+	if o.run.RefreshOnly {
+		args = append(args, "-refresh-only")
+	}
+	for _, addr := range o.run.ReplaceAddrs {
+		args = append(args, "-replace="+addr)
+	}
+	for _, addr := range o.run.TargetAddrs {
+		args = append(args, "-target="+addr)
+	}
 	args = append(args, "-out="+planFilename)
-	return o.execute(append([]string{o.enginePath}, args...))
+	if err := o.execute(append([]string{o.enginePath}, args...)); err != nil {
+		return fmt.Errorf("executing plan: %w", err)
+	}
+	return nil
 }
 
 func (o *operation) apply(ctx context.Context) (err error) {
@@ -561,16 +585,20 @@ func (o *operation) apply(ctx context.Context) (err error) {
 
 func (o *operation) convertPlanToJSON(ctx context.Context) error {
 	args := []string{"show", "-json", planFilename}
-	return o.execute(
+	err := o.execute(
 		append([]string{o.enginePath}, args...),
 		redirectStdout(jsonPlanFilename),
 	)
+	if err != nil {
+		return fmt.Errorf("converting plan file to json: %w", err)
+	}
+	return nil
 }
 
 func (o *operation) uploadPlan(ctx context.Context) error {
 	file, err := o.readFile(planFilename)
 	if err != nil {
-		return err
+		return fmt.Errorf("reading plan file: %w", err)
 	}
 
 	if err := o.runs.UploadPlanFile(ctx, o.run.ID, file, runpkg.PlanFormatBinary); err != nil {
@@ -583,7 +611,7 @@ func (o *operation) uploadPlan(ctx context.Context) error {
 func (o *operation) uploadJSONPlan(ctx context.Context) error {
 	jsonFile, err := o.readFile(jsonPlanFilename)
 	if err != nil {
-		return err
+		return fmt.Errorf("reading plan in json format: %w", err)
 	}
 	if err := o.runs.UploadPlanFile(ctx, o.run.ID, jsonFile, runpkg.PlanFormatJSON); err != nil {
 		return fmt.Errorf("unable to upload JSON plan: %w", err)

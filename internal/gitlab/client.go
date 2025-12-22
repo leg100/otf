@@ -49,7 +49,8 @@ func NewClient(cfg ClientOptions) (*Client, error) {
 		))
 	}
 	if cfg.OAuthToken != nil {
-		client, err = gitlab.NewOAuthClient(cfg.OAuthToken.AccessToken, options...)
+		ts := oauth2.StaticTokenSource(cfg.OAuthToken)
+		client, err = gitlab.NewAuthSourceClient(gitlab.OAuthTokenSource{TokenSource: ts}, options...)
 	} else if cfg.PersonalToken != nil {
 		client, err = gitlab.NewClient(*cfg.PersonalToken, options...)
 	} else {
@@ -105,7 +106,7 @@ func (g *Client) GetDefaultBranch(ctx context.Context, identifier string) (strin
 func (g *Client) ListRepositories(ctx context.Context, lopts vcs.ListRepositoriesOptions) ([]vcs.Repo, error) {
 	opts := &gitlab.ListProjectsOptions{
 		ListOptions: gitlab.ListOptions{
-			PerPage: lopts.PageSize,
+			PerPage: int64(lopts.PageSize),
 		},
 		// limit results to those repos the authenticated user is a member of,
 		// otherwise we'll get *all* accessible repos, public and private.
@@ -198,11 +199,11 @@ func (g *Client) CreateWebhook(ctx context.Context, opts vcs.CreateWebhookOption
 	if err != nil {
 		return "", err
 	}
-	return strconv.Itoa(hook.ID), nil
+	return strconv.FormatInt(hook.ID, 10), nil
 }
 
 func (g *Client) UpdateWebhook(ctx context.Context, id string, opts vcs.UpdateWebhookOptions) error {
-	intID, err := strconv.Atoi(id)
+	intID, err := strconv.ParseInt(id, 10, 64)
 	if err != nil {
 		return err
 	}
@@ -221,7 +222,7 @@ func (g *Client) UpdateWebhook(ctx context.Context, id string, opts vcs.UpdateWe
 		}
 	}
 
-	_, _, err = g.client.Projects.EditProjectHook(opts.Repo.String(), intID, editOpts)
+	_, _, err = g.client.Projects.EditProjectHook(opts.Repo.String(), int64(intID), editOpts)
 	if err != nil {
 		return err
 	}
@@ -229,12 +230,12 @@ func (g *Client) UpdateWebhook(ctx context.Context, id string, opts vcs.UpdateWe
 }
 
 func (g *Client) GetWebhook(ctx context.Context, opts vcs.GetWebhookOptions) (vcs.Webhook, error) {
-	id, err := strconv.Atoi(opts.ID)
+	intID, err := strconv.ParseInt(opts.ID, 10, 64)
 	if err != nil {
 		return vcs.Webhook{}, err
 	}
 
-	hook, resp, err := g.client.Projects.GetProjectHook(opts.Repo.String(), id)
+	hook, resp, err := g.client.Projects.GetProjectHook(opts.Repo.String(), intID)
 	if err != nil {
 		if resp.StatusCode == http.StatusNotFound {
 			return vcs.Webhook{}, internal.ErrResourceNotFound
@@ -251,7 +252,7 @@ func (g *Client) GetWebhook(ctx context.Context, opts vcs.GetWebhookOptions) (vc
 	}
 
 	return vcs.Webhook{
-		ID:       strconv.Itoa(id),
+		ID:       opts.ID,
 		Repo:     opts.Repo,
 		Events:   events,
 		Endpoint: hook.URL,
@@ -259,12 +260,12 @@ func (g *Client) GetWebhook(ctx context.Context, opts vcs.GetWebhookOptions) (vc
 }
 
 func (g *Client) DeleteWebhook(ctx context.Context, opts vcs.DeleteWebhookOptions) error {
-	id, err := strconv.Atoi(opts.ID)
+	intID, err := strconv.ParseInt(opts.ID, 10, 64)
 	if err != nil {
 		return err
 	}
 
-	_, err = g.client.Projects.DeleteProjectHook(opts.Repo.String(), id)
+	_, err = g.client.Projects.DeleteProjectHook(opts.Repo.String(), intID)
 	return err
 }
 
@@ -274,7 +275,7 @@ func (g *Client) SetStatus(ctx context.Context, opts vcs.SetStatusOptions) error
 }
 
 func (g *Client) ListPullRequestFiles(ctx context.Context, repo vcs.Repo, pull int) ([]string, error) {
-	diffs, _, err := g.client.MergeRequests.ListMergeRequestDiffs(repo.String(), pull, &gitlab.ListMergeRequestDiffsOptions{})
+	diffs, _, err := g.client.MergeRequests.ListMergeRequestDiffs(repo.String(), int64(pull), &gitlab.ListMergeRequestDiffsOptions{})
 	if err != nil {
 		return nil, err
 	}
