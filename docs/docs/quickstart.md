@@ -22,7 +22,7 @@ nt=database
 ```
 
 !!! note
-    The secret must be a hex-encoded 16-byte array
+    The secret must be a hex-encoded 16-byte array. Generate using `openssl rand -hex 16`.
 
 You have now successfully installed `otfd` and confirmed you can start `otfd` with minimal configuration. Proceed to create your first organization.
 
