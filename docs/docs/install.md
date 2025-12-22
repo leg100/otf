@@ -53,8 +53,8 @@ docker compose up
 
 Login to the web app at `http://localhost:8080` and use the site token configured above to login.
 
-!!! note
-    You may also want a reverse proxy such as nginx to proxy SSL traffic to the `otfd` container.
+!!! warning
+    Use at your own risk. This exposes port 8080 on all interfaces, using plaintext HTTP. It also hardcodes the postgres account credentials.
 
 ## Install helm chart
 
@@ -80,3 +80,5 @@ go install github.com/leg100/otf/cmd/otfd@latest
 ```
 
 That'll install the latest `otfd` binary into your go bin directory (defaults to `$HOME/go/bin`).
+
+See the [quickstart](quickstart.md) for configuring and running `otfd` locally.
