@@ -7,13 +7,24 @@ import (
 	"strings"
 )
 
-templ menu(organization resource.ID) {
-	if organization != nil {
+templ menu(organization resource.ID, workspace *WorkspaceMenuProps) {
+	if workspace != nil {
+		@workspaceMenu(*workspace)
+	} else if organization != nil {
 		@organizationMenu(organization)
 	} else if Authenticated(ctx) {
 		@siteMenu()
 	}
 	// don't show menu if user unauthenticated
+}
+
+templ workspaceMenu(props WorkspaceMenuProps) {
+	<ul id="workspace-menu" class="menu w-full">
+		<li class="menu-title text-lg">{ props.Name }</li>
+	</ul>
+	<ul id="workspace-menu" class="menu w-full">
+		<li class="menu-title text-lg">{ props.Name }</li>
+	</ul>
 }
 
 templ organizationMenu(organization resource.ID) {

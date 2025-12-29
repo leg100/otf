@@ -22,6 +22,7 @@ type Breadcrumb struct {
 type LayoutProps struct {
 	Title          string
 	Organization   resource.ID
+	Workspace      *WorkspaceMenuProps
 	Breadcrumbs    []Breadcrumb
 	ContentActions templ.Component
 	ContentLinks   templ.Component
@@ -29,6 +30,12 @@ type LayoutProps struct {
 	PreContent     templ.Component
 	PostContent    templ.Component
 	Menu           templ.Component
+}
+
+type WorkspaceMenuProps struct {
+	OrganizationName string
+	ID               resource.ID
+	Name             string
 }
 
 func Layout(props LayoutProps) templ.Component {
@@ -99,7 +106,7 @@ func Layout(props LayoutProps) templ.Component {
 					var templ_7745c5c3_Var5 templ.SafeURL
 					templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinURLErrs(crumb.Link)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/html/components/layout.templ`, Line: 41, Col: 27}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/html/components/layout.templ`, Line: 49, Col: 27}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 					if templ_7745c5c3_Err != nil {
@@ -112,7 +119,7 @@ func Layout(props LayoutProps) templ.Component {
 					var templ_7745c5c3_Var6 string
 					templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(crumb.Name)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/html/components/layout.templ`, Line: 42, Col: 22}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/html/components/layout.templ`, Line: 50, Col: 22}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 					if templ_7745c5c3_Err != nil {
@@ -126,7 +133,7 @@ func Layout(props LayoutProps) templ.Component {
 					var templ_7745c5c3_Var7 string
 					templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(crumb.Name)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/html/components/layout.templ`, Line: 44, Col: 21}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/html/components/layout.templ`, Line: 52, Col: 21}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 					if templ_7745c5c3_Err != nil {
@@ -195,6 +202,7 @@ func Layout(props LayoutProps) templ.Component {
 		templ_7745c5c3_Err = BareLayout(BareLayoutProps{
 			Title:        props.Title,
 			Organization: props.Organization,
+			Workspace:    props.Workspace,
 			PreContent:   props.PreContent,
 			PostContent:  props.PostContent,
 		}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
@@ -234,12 +242,6 @@ func BareLayout(props BareLayoutProps) templ.Component {
 			templ_7745c5c3_Var8 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		var menu templ.Component
-		if props.Organization != nil {
-			menu = organizationMenu(props.Organization)
-		} else if Authenticated(ctx) {
-			menu = siteMenu()
-		}
 		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "<!doctype html><html lang=\"en\"><head><script src=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
@@ -366,12 +368,12 @@ func BareLayout(props BareLayoutProps) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if menu != nil {
+		if props.Menu != nil {
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "<div class=\"border-r-1 border-base-content/30\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = menu.Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = props.Menu.Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -380,8 +382,8 @@ func BareLayout(props BareLayoutProps) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		var templ_7745c5c3_Var17 = []any{templ.KV("col-span-2", menu == nil),
-			templ.KV("max-w-7xl", menu != nil),
+		var templ_7745c5c3_Var17 = []any{templ.KV("col-span-2", props.Menu == nil),
+			templ.KV("max-w-7xl", props.Menu != nil),
 		}
 		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var17...)
 		if templ_7745c5c3_Err != nil {

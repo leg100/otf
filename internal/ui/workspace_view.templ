@@ -169,6 +169,10 @@ templ workspaceGet(props workspaceGetProps) {
 		layoutProps := components.LayoutProps{
 			Title:        "workspaces",
 			Organization: props.ws.Organization,
+			Workspace: &components.WorkspaceMenuProps{
+				ID:   props.ws.ID,
+				Name: props.ws.Name,
+			},
 			ContentLinks: workspaceHeaderLinksAndStartRunSelector(props),
 			Breadcrumbs: []components.Breadcrumb{
 				{Name: "Workspaces"},

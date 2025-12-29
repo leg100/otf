@@ -3,7 +3,9 @@ package ui
 import (
 	"context"
 	"net/http"
+	"regexp"
 
+	"github.com/a-h/templ"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/decode"
@@ -54,6 +56,16 @@ func addOrganizationHandlers(r *mux.Router, svc organizationClient, restrictCrea
 	r.HandleFunc("/organizations/{organization_name}/tokens/show", h.organizationToken).Methods("GET")
 	r.HandleFunc("/organizations/{organization_name}/tokens/delete", h.deleteOrganizationToken).Methods("POST")
 	r.HandleFunc("/organizations/{organization_name}/tokens/create", h.createOrganizationToken).Methods("POST")
+}
+
+var organizationPathRe = regexp.MustCompile(`/organizations/([^/]+)`)
+
+func resolveOrganization(ctx context.Context, path string) templ.Component {
+	matches := organizationPathRe.FindStringSubmatch(path)
+	if len(matches) < 2 {
+		return nil
+	}
+	name := matches[1]
 }
 
 func (a *organizationHandlers) new(w http.ResponseWriter, r *http.Request) {

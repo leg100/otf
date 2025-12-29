@@ -14,6 +14,7 @@ type Breadcrumb struct {
 type LayoutProps struct {
 	Title          string
 	Organization   resource.ID
+	Workspace      *WorkspaceMenuProps
 	Breadcrumbs    []Breadcrumb
 	ContentActions templ.Component
 	ContentLinks   templ.Component
@@ -23,10 +24,17 @@ type LayoutProps struct {
 	Menu           templ.Component
 }
 
+type WorkspaceMenuProps struct {
+	OrganizationName string
+	ID               resource.ID
+	Name             string
+}
+
 templ Layout(props LayoutProps) {
 	@BareLayout(BareLayoutProps{
 		Title:        props.Title,
 		Organization: props.Organization,
+		Workspace:    props.Workspace,
 		PreContent:   props.PreContent,
 		PostContent:  props.PostContent,
 	}) {
@@ -80,14 +88,6 @@ type BareLayoutProps struct {
 }
 
 templ BareLayout(props BareLayoutProps) {
-	{{
-		var menu templ.Component
-		if props.Organization != nil {
-			menu = organizationMenu(props.Organization)
-		} else if Authenticated(ctx) {
-			menu = siteMenu()
-		}
-	}}
 	<!DOCTYPE html>
 	<html lang="en">
 		<head>
@@ -118,15 +118,15 @@ templ BareLayout(props BareLayoutProps) {
 			<header class="col-span-2 border-b-1 border-base-content/30">
 				@navbar(props.Organization)
 			</header>
-			if menu != nil {
+			if props.Menu != nil {
 				<div class="border-r-1 border-base-content/30">
-					@menu
+					@props.Menu
 				</div>
 			}
 			<main
 				class={
-					templ.KV("col-span-2", menu == nil),
-					templ.KV("max-w-7xl", menu != nil),
+					templ.KV("col-span-2", props.Menu == nil),
+					templ.KV("max-w-7xl", props.Menu != nil),
 				}
 			>
 				@Flashes()
