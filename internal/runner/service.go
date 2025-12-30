@@ -181,7 +181,7 @@ func (s *Service) WatchJobs(ctx context.Context) (<-chan pubsub.Event[*JobEvent]
 	return s.jobBroker.Subscribe(ctx)
 }
 
-func (s *Service) Register(ctx context.Context, opts RegisterRunnerOptions) (*RunnerMeta, error) {
+func (s *Service) register(ctx context.Context, opts RegisterRunnerOptions) (*RunnerMeta, error) {
 	runner, err := func() (*RunnerMeta, error) {
 		subject, err := authz.SubjectFromContext(ctx)
 		if err != nil {

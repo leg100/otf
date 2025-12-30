@@ -131,7 +131,7 @@ func (c *Client) updateStatus(ctx context.Context, agentID resource.TfeID, statu
 
 // agent tokens
 
-func (c *Client) CreateAgentToken(ctx context.Context, poolID resource.TfeID, opts CreateAgentTokenOptions) (*agentToken, []byte, error) {
+func (c *Client) CreateAgentToken(ctx context.Context, poolID resource.TfeID, opts CreateAgentTokenOptions) (*AgentToken, []byte, error) {
 	u := fmt.Sprintf("agent-tokens/%s/create", poolID)
 	req, err := c.newRequest("POST", u, &opts)
 	if err != nil {
