@@ -14,7 +14,7 @@ import (
 const runnerIDHeaderKey = "otf-agent-id"
 
 type client interface {
-	register(ctx context.Context, opts registerOptions) (*RunnerMeta, error)
+	register(ctx context.Context, opts RegisterRunnerOptions) (*RunnerMeta, error)
 	updateStatus(ctx context.Context, agentID resource.TfeID, status RunnerStatus) error
 
 	awaitAllocatedJobs(ctx context.Context, agentID resource.TfeID) ([]*Job, error)
@@ -42,7 +42,7 @@ func (c *Client) newRequest(method, path string, v interface{}) (*retryablehttp.
 	return req, err
 }
 
-func (c *Client) register(ctx context.Context, opts registerOptions) (*RunnerMeta, error) {
+func (c *Client) register(ctx context.Context, opts RegisterRunnerOptions) (*RunnerMeta, error) {
 	req, err := c.newRequest("POST", "agents/register", &opts)
 	if err != nil {
 		return nil, err
