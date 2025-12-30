@@ -21,9 +21,9 @@ version: 0.3.19
 appVersion: "0.3.22"
 dependencies:
   - condition: postgres.enabled
-    name: postgresql
-    repository: https://charts.bitnami.com/bitnami
-    version: 12.8.*
+    name: postgres
+    repository: "file://charts/postgres"
+    version: 0.1.0
 maintainers:
   - name: Louis Garman
     email: louisgarman@gmail.com

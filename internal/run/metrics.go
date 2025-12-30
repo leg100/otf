@@ -21,22 +21,30 @@ var runStatusMetric = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 }, []string{"status"})
 
 type MetricsCollector struct {
-	Service         *Service
+	service         metricsService
 	currentStatuses map[resource.TfeID]runstatus.Status
+}
+
+type status struct {
+	ID     resource.TfeID `db:"run_id"`
+	Status runstatus.Status
+}
+
+type metricsService interface {
+	Watch(ctx context.Context) (<-chan pubsub.Event[*Event], func())
+	listStatuses(ctx context.Context) ([]status, error)
 }
 
 func (mc *MetricsCollector) Start(ctx context.Context) error {
 	// subscribe to run events
-	sub, unsub := mc.Service.Watch(ctx)
+	sub, unsub := mc.service.Watch(ctx)
 	defer unsub()
 
-	runs, err := resource.ListAll(func(opts resource.PageOptions) (*resource.Page[*Run], error) {
-		return mc.Service.List(ctx, ListOptions{PageOptions: opts})
-	})
+	statuses, err := mc.service.listStatuses(ctx)
 	if err != nil {
 		return err
 	}
-	mc.bootstrap(runs...)
+	mc.bootstrap(statuses...)
 
 	for event := range sub {
 		mc.update(event)
@@ -44,9 +52,9 @@ func (mc *MetricsCollector) Start(ctx context.Context) error {
 	return pubsub.ErrSubscriptionTerminated
 }
 
-func (mc *MetricsCollector) bootstrap(runs ...*Run) {
-	mc.currentStatuses = make(map[resource.TfeID]runstatus.Status, len(runs))
-	for _, run := range runs {
+func (mc *MetricsCollector) bootstrap(statuses ...status) {
+	mc.currentStatuses = make(map[resource.TfeID]runstatus.Status, len(statuses))
+	for _, run := range statuses {
 		mc.currentStatuses[run.ID] = run.Status
 		runStatusMetric.WithLabelValues(run.Status.String()).Inc()
 	}

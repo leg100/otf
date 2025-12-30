@@ -2,6 +2,7 @@ package configversion
 
 import (
 	"context"
+	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
@@ -116,6 +117,11 @@ func (s *Service) List(ctx context.Context, workspaceID resource.TfeID, opts Lis
 
 	s.V(9).Info("listed configuration versions", "subject", subject)
 	return cvl, nil
+}
+
+// ListOlderThan lists configs created before t. Implements resource.deleterClient.
+func (s *Service) ListOlderThan(ctx context.Context, t time.Time) ([]*ConfigurationVersion, error) {
+	return s.db.listOlderThan(ctx, t)
 }
 
 func (s *Service) Get(ctx context.Context, id resource.TfeID) (*ConfigurationVersion, error) {

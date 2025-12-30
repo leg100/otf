@@ -2,11 +2,9 @@ package authenticator
 
 import (
 	"context"
-	"net/http"
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/tokens"
 	"github.com/leg100/otf/internal/user"
@@ -87,7 +85,10 @@ func (a *Service) AddHandlers(r *mux.Router) {
 	for _, authenticator := range a.clients {
 		authenticator.addHandlers(r)
 	}
-	r.HandleFunc("/login", a.loginHandler)
+}
+
+func (a *Service) Clients() []*OAuthClient {
+	return a.clients
 }
 
 func (a *Service) RegisterOAuthClient(cfg OpaqueHandlerConfig) error {
@@ -111,8 +112,4 @@ func (a *Service) RegisterOAuthClient(cfg OpaqueHandlerConfig) error {
 	a.V(0).Info("activated OAuth client", "name", cfg.Name, "hostname", cfg.BaseURL)
 
 	return nil
-}
-
-func (a *Service) loginHandler(w http.ResponseWriter, r *http.Request) {
-	html.Render(login(a.clients), w, r)
 }

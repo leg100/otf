@@ -48,7 +48,7 @@ type fakeRunnerClient struct {
 	updates      chan RunnerStatus
 }
 
-func (f *fakeRunnerClient) register(ctx context.Context, opts registerOptions) (*RunnerMeta, error) {
+func (f *fakeRunnerClient) Register(ctx context.Context, opts RegisterRunnerOptions) (*RunnerMeta, error) {
 	return &RunnerMeta{ID: f.registeredID}, nil
 }
 

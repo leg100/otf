@@ -50,17 +50,17 @@ install-latest-release:
 # Run docker compose stack
 .PHONY: compose-up
 compose-up: image
-	docker compose up -d --wait --wait-timeout 60
+	docker compose -f docker-compose.testing.yml up -d --wait --wait-timeout 60
 
 # Remove docker compose stack
 .PHONY: compose-rm
 compose-rm:
-	docker compose rm -sf
+	docker compose -f docker-compose.testing.yml rm -sf
 
 # Run postgresql via docker compose
 .PHONY: postgres
 postgres:
-	docker compose up -d postgres
+	docker compose -f docker-compose.testing.yml up -d postgres
 
 # Install staticcheck linter
 .PHONY: install-linter
@@ -123,24 +123,16 @@ doc-screenshots: # update documentation screenshots
 tunnel:
 	cloudflared tunnel run otf
 
-.PHONY: install-goimports
-install-goimports:
-	go get -tool golang.org/x/tools/cmd/goimports@v0.32.0
-
 # Generate path helpers
 .PHONY: paths
-paths: install-goimports
+paths:
 	go generate ./internal/http/html/paths
 	go tool goimports -w ./internal/http/html/paths
 	go tool goimports -w ./internal/http/html/components/paths
 
-.PHONY: install-stringer
-install-stringer:
-	go get -tool golang.org/x/tools/cmd/stringer@v0.32.0
-
 # Re-generate RBAC action strings
 .PHONY: actions
-actions: install-stringer
+actions:
 	go tool stringer -type Action ./internal/authz
 
 .PHONY: debug
@@ -151,22 +143,18 @@ debug:
 connect:
 	dlv connect 127.0.0.1:4300 .
 
-.PHONY: install-playwright
-install-playwright:
-	go get -tool github.com/playwright-community/playwright-go/cmd/playwright@v0.5200.0
-
 .PHONY: playwright-ubuntu
-install-playwright-ubuntu: install-playwright
+install-playwright-ubuntu:
 	go tool playwright install chromium --with-deps
 
 .PHONY: playwright-arch
-install-playwright-arch: install-playwright
+install-playwright-arch:
 	go tool playwright install chromium
 
 # run templ generation in watch mode to detect all .templ files and
 # re-create _templ.txt files on change, then send reload event to browser.
-# Default url: http://localhost:7331
-live/templ: install-templ
+# Default url: https://localhost:7331
+live/templ:
 	go tool templ generate --watch --proxy="https://localhost:8080" --open-browser=false --cmd="go run ./cmd/otfd/main.go"
 
 # run tailwindcss to generate the styles.css bundle in watch mode.
@@ -189,10 +177,7 @@ live/sync_assets:
 live:
 	make -j live/tailwind live/sync_assets live/templ
 
-install-templ:
-	go get -tool github.com/a-h/templ/cmd/templ@v0.3.906
-
-generate-templates: install-templ
+generate-templates:
 	go tool templ generate
 
 check-no-diff: paths actions generate-templates

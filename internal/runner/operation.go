@@ -52,7 +52,6 @@ type (
 		logr.Logger
 		*workdir
 
-		Sandbox     bool // isolate privileged ops within sandbox
 		Debug       bool // toggle debug mode
 		PluginCache bool // toggle use of engine's shared plugin cache
 
@@ -171,7 +170,6 @@ func doOperation(parentCtx context.Context, g *errgroup.Group, opts operationOpt
 
 	op := &operation{
 		Logger:       opts.logger.WithValues("job", opts.job),
-		Sandbox:      opts.Sandbox,
 		Debug:        opts.Debug,
 		job:          opts.job,
 		engineBinDir: opts.engineBinDir,
@@ -281,7 +279,7 @@ func (o *operation) do() error {
 	if err != nil {
 		return fmt.Errorf("retreiving workspace: %w", err)
 	}
-	wd, err := newWorkdir(ws.WorkingDirectory)
+	wd, err := newWorkdir(ws.WorkingDirectory, o.job.RunID.String())
 	if err != nil {
 		return fmt.Errorf("constructing working directory: %w", err)
 	}
@@ -310,7 +308,6 @@ func (o *operation) do() error {
 		fmt.Fprintln(o.out, "------------------")
 		fmt.Fprintf(o.out, "Hostname: %s\n", hostname)
 		fmt.Fprintf(o.out, "External agent: %t\n", o.isAgent)
-		fmt.Fprintf(o.out, "Sandbox mode: %t\n", o.Sandbox)
 		fmt.Fprintln(o.out, "------------------")
 		fmt.Fprintln(o.out)
 	}
@@ -389,20 +386,11 @@ func (o *operation) cancel(force, sendSignal bool) {
 type (
 	// executionOptions are options that modify the execution of a process.
 	executionOptions struct {
-		sandboxIfEnabled bool
-		redirectStdout   *string
+		redirectStdout *string
 	}
 
 	executionOptionFunc func(*executionOptions)
 )
-
-// sandboxIfEnabled sandboxes the execution process *if* the daemon is configured
-// with a sandbox.
-func sandboxIfEnabled() executionOptionFunc {
-	return func(e *executionOptions) {
-		e.sandboxIfEnabled = true
-	}
-}
 
 // redirectStdout redirects stdout to the destination path.
 func redirectStdout(dst string) executionOptionFunc {
@@ -419,9 +407,6 @@ func (o *operation) execute(args []string, funcs ...executionOptionFunc) error {
 	var opts executionOptions
 	for _, fn := range funcs {
 		fn(&opts)
-	}
-	if opts.sandboxIfEnabled && o.Sandbox {
-		args = o.addSandboxWrapper(args)
 	}
 	cmd := exec.Command(args[0], args[1:]...)
 	cmd.Dir = o.workdir.String()
@@ -449,39 +434,21 @@ func (o *operation) execute(args []string, funcs ...executionOptionFunc) error {
 	}
 	o.proc = cmd.Process
 
+	o.Logger.V(5).Info("executing process", "process", args[0], "args", args[1:])
+
 	if err := cmd.Wait(); err != nil {
 		return fmt.Errorf("%w: %s", err, cleanStderr(stderr.String()))
 	}
 	return nil
 }
 
-// addSandboxWrapper wraps the args within a bubblewrap sandbox.
-func (o *operation) addSandboxWrapper(args []string) []string {
-	bargs := []string{
-		"bwrap",
-		"--ro-bind", args[0], path.Join("/bin", path.Base(args[0])),
-		"--bind", o.root, "/config",
-		// for DNS lookups
-		"--ro-bind", "/etc/resolv.conf", "/etc/resolv.conf",
-		// for verifying SSL connections
-		"--ro-bind", internal.SSLCertsDir(), internal.SSLCertsDir(),
-		"--chdir", path.Join("/config", o.relative),
-		// terraform v1.0.10 (but not v1.2.2) reads /proc/self/exe.
-		"--proc", "/proc",
-		// avoids provider error "failed to read schema..."
-		"--tmpfs", "/tmp",
-	}
-	if o.PluginCache {
-		bargs = append(bargs, "--ro-bind", PluginCacheDir, PluginCacheDir)
-	}
-	bargs = append(bargs, path.Join("/bin", path.Base(args[0])))
-	return append(bargs, args[1:]...)
-}
-
 func (o *operation) downloadEngine(ctx context.Context) error {
 	var err error
 	o.enginePath, err = o.downloader.Download(ctx, o.run.EngineVersion, o.out)
-	return err
+	if err != nil {
+		return fmt.Errorf("downloading engine: %w", err)
+	}
+	return nil
 }
 
 func (o *operation) downloadConfig(ctx context.Context) error {
@@ -566,14 +533,17 @@ func (o *operation) setupDynamicCredentials(ctx context.Context) error {
 		o.envs,
 	)
 	if err != nil {
-		return err
+		return fmt.Errorf("setting up dynamic provider credentials: %w", err)
 	}
 	o.envs = append(o.envs, envs...)
 	return nil
 }
 
 func (o *operation) init(ctx context.Context) error {
-	return o.execute([]string{o.enginePath, "init", "-input=false"})
+	if err := o.execute([]string{o.enginePath, "init", "-input=false"}); err != nil {
+		return fmt.Errorf("executing init: %w", err)
+	}
+	return nil
 }
 
 func (o *operation) plan(ctx context.Context) error {
@@ -581,8 +551,24 @@ func (o *operation) plan(ctx context.Context) error {
 	if o.run.IsDestroy {
 		args = append(args, "-destroy")
 	}
+	if !o.run.Refresh {
+		// the default is true
+		args = append(args, "-refresh=false")
+	}
+	if o.run.RefreshOnly {
+		args = append(args, "-refresh-only")
+	}
+	for _, addr := range o.run.ReplaceAddrs {
+		args = append(args, "-replace="+addr)
+	}
+	for _, addr := range o.run.TargetAddrs {
+		args = append(args, "-target="+addr)
+	}
 	args = append(args, "-out="+planFilename)
-	return o.execute(append([]string{o.enginePath}, args...))
+	if err := o.execute(append([]string{o.enginePath}, args...)); err != nil {
+		return fmt.Errorf("executing plan: %w", err)
+	}
+	return nil
 }
 
 func (o *operation) apply(ctx context.Context) (err error) {
@@ -618,21 +604,25 @@ func (o *operation) apply(ctx context.Context) (err error) {
 		args = append(args, "-destroy")
 	}
 	args = append(args, planFilename)
-	return o.execute(append([]string{o.enginePath}, args...), sandboxIfEnabled())
+	return o.execute(append([]string{o.enginePath}, args...))
 }
 
 func (o *operation) convertPlanToJSON(ctx context.Context) error {
 	args := []string{"show", "-json", planFilename}
-	return o.execute(
+	err := o.execute(
 		append([]string{o.enginePath}, args...),
 		redirectStdout(jsonPlanFilename),
 	)
+	if err != nil {
+		return fmt.Errorf("converting plan file to json: %w", err)
+	}
+	return nil
 }
 
 func (o *operation) uploadPlan(ctx context.Context) error {
 	file, err := o.readFile(planFilename)
 	if err != nil {
-		return err
+		return fmt.Errorf("reading plan file: %w", err)
 	}
 
 	if err := o.runs.UploadPlanFile(ctx, o.run.ID, file, runpkg.PlanFormatBinary); err != nil {
@@ -645,7 +635,7 @@ func (o *operation) uploadPlan(ctx context.Context) error {
 func (o *operation) uploadJSONPlan(ctx context.Context) error {
 	jsonFile, err := o.readFile(jsonPlanFilename)
 	if err != nil {
-		return err
+		return fmt.Errorf("reading plan in json format: %w", err)
 	}
 	if err := o.runs.UploadPlanFile(ctx, o.run.ID, jsonFile, runpkg.PlanFormatJSON); err != nil {
 		return fmt.Errorf("unable to upload JSON plan: %w", err)

@@ -23,7 +23,7 @@ fullnameOverride: ""
 hostname: ""
 
 postgres:
-  # -- Install postgres chart dependency.
+  # -- Install postgres chart dependency. NOTE: this should only be used for testing purposes.
   enabled: false
 
 # -- Postgres connection string
@@ -160,9 +160,6 @@ ingress:
 serviceMonitor:
   enabled: false
 
-# -- Enable sandboxing of terraform apply - note, this will run pods as privileged
-sandbox: false
-
 caCerts:
   # -- Mount a secret containing CA certificates and make them available to both terraform and otfd, allowing them to communicate with API endpoints that use custom CA certificates.
   enabled: false
@@ -175,9 +172,6 @@ caCerts:
 proxy:
 # -- Specify hosts for which outbound connections should not use the proxy.
 no_proxy:
-
-# -- Allowed origins for websocket connections. See [docs](https://docs.otf.ninja/config/flags/#-allowed-origins)
-allowedOrigins: []
 
 resources: {}
   # We usually recommend not to specify default resources and to leave this as a conscious

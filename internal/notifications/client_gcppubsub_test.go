@@ -29,7 +29,7 @@ func TestPubSubClient_New(t *testing.T) {
 			_, err := newPubSubClient(&Config{
 				URL: internal.Ptr(tt.u),
 			})
-			require.Equal(t, tt.want, err)
+			require.ErrorIs(t, err, tt.want)
 		})
 	}
 }

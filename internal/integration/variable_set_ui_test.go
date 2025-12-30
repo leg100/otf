@@ -298,7 +298,7 @@ func TestIntegration_VariableSetUI_WorkspaceVariables(t *testing.T) {
 		require.NoError(t, err)
 
 		// click through to the variable set variable's edit page
-		err = page.Locator(`//*[@id='variables-table']//tbody/tr[1]/td[2]/s`).Click()
+		err = page.Locator(`//*[@id='variables-table']//tr[1]//button[@id='edit-button']`).Click()
 		require.NoError(t, err)
 
 		// expect variable set variable's edit page to load with title

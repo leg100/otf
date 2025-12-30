@@ -2,6 +2,7 @@
 package configversion
 
 import (
+	"log/slog"
 	"time"
 
 	"github.com/leg100/otf/internal"
@@ -44,6 +45,10 @@ type (
 		AutoQueueRuns *bool
 		Speculative   *bool
 		Source        source.Source
+		// CreatedAt overrides the time the config was created at - for testing
+		// purposes only.
+		CreatedAt *time.Time
+
 		*IngressAttributes
 	}
 
@@ -107,6 +112,9 @@ func NewConfigurationVersion(workspaceID resource.TfeID, opts CreateOptions) *Co
 	}
 	cv.updateStatus(ConfigurationPending)
 
+	if opts.CreatedAt != nil {
+		cv.CreatedAt = *opts.CreatedAt
+	}
 	if opts.Source != "" {
 		cv.Source = opts.Source
 	}
@@ -121,6 +129,9 @@ func NewConfigurationVersion(workspaceID resource.TfeID, opts CreateOptions) *Co
 	}
 	return &cv
 }
+
+// GetID implements resource.deleteableResource
+func (cv *ConfigurationVersion) GetID() resource.TfeID { return cv.ID }
 
 func (cv *ConfigurationVersion) StatusTimestamp(status ConfigurationStatus) (time.Time, error) {
 	for _, sts := range cv.StatusTimestamps {
@@ -138,4 +149,12 @@ func (cv *ConfigurationVersion) updateStatus(status ConfigurationStatus) {
 		Status:                 status,
 		Timestamp:              internal.CurrentTimestamp(nil),
 	})
+}
+
+// LogValue implements slog.LogValuer.
+func (cv *ConfigurationVersion) LogValue() slog.Value {
+	return slog.GroupValue(
+		slog.String("id", cv.ID.String()),
+		slog.Time("created", cv.CreatedAt),
+	)
 }

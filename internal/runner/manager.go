@@ -25,9 +25,9 @@ type manager struct {
 }
 
 type managerClient interface {
-	listRunners(ctx context.Context, opts ListOptions) ([]*RunnerMeta, error)
+	ListRunners(ctx context.Context, opts ListOptions) ([]*RunnerMeta, error)
 	updateStatus(ctx context.Context, runnerID resource.TfeID, status RunnerStatus) error
-	deleteRunner(ctx context.Context, runnerID resource.TfeID) error
+	DeleteRunner(ctx context.Context, runnerID resource.TfeID) error
 }
 
 func newManager(s *Service) *manager {
@@ -48,7 +48,7 @@ func (m *manager) Start(ctx context.Context) error {
 	ctx = authz.AddSubjectToContext(ctx, m)
 
 	updateAll := func() error {
-		runners, err := m.client.listRunners(ctx, ListOptions{})
+		runners, err := m.client.ListRunners(ctx, ListOptions{})
 		if err != nil {
 			return fmt.Errorf("retrieving runners to check their status: %w", err)
 		}
@@ -96,7 +96,7 @@ func (m *manager) update(ctx context.Context, runner *RunnerMeta) error {
 		// purge runner from database once a further 1 hour has elapsed for
 		// runners in a terminal state.
 		if time.Since(runner.LastStatusAt) > time.Hour {
-			return m.client.deleteRunner(ctx, runner.ID)
+			return m.client.DeleteRunner(ctx, runner.ID)
 		}
 	}
 	return nil

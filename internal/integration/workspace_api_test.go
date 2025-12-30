@@ -58,7 +58,7 @@ func TestIntegration_WorkspaceAPI_IncludeOutputs(t *testing.T) {
 }
 
 // TestIntegration_WorkspaceAPI_CreateConnected demonstrates creating a
-// worskspace connected to a VCS repo via the API, and then creating a run that
+// workspace connected to a VCS repo via the API, and then creating a run that
 // sources configuration from the repo.
 func TestIntegration_WorkspaceAPI_CreateConnected(t *testing.T) {
 	integrationTest(t)
@@ -83,8 +83,8 @@ func TestIntegration_WorkspaceAPI_CreateConnected(t *testing.T) {
 
 	oauth, err := client.OAuthClients.Create(ctx, org.Name.String(), tfe.OAuthClientCreateOptions{
 		OAuthToken:      provider.Token,
-		APIURL:          internal.Ptr(vcs.GithubAPIURL),
-		HTTPURL:         internal.Ptr(vcs.GithubHTTPURL),
+		APIURL:          internal.Ptr(daemon.GithubHostname.String()),
+		HTTPURL:         internal.Ptr(daemon.GithubHostname.String()),
 		ServiceProvider: tfe.ServiceProvider(tfe.ServiceProviderGithub),
 	})
 	require.NoError(t, err)

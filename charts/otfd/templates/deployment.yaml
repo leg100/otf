@@ -124,8 +124,6 @@ spec:
                   key: {{ .key }}
             {{- end }}
             {{- end }}
-            - name: OTF_SANDBOX
-              value: "{{ .Values.sandbox }}"
             {{ if .Values.caCerts.enabled -}}
             - name: SSL_CERT_DIR
               value: /certs
@@ -154,8 +152,6 @@ spec:
             - name: OTF_SITE_ADMINS
               value: "{{ . | join ","}}"
             {{- end }}
-          securityContext:
-            privileged: {{ .Values.sandbox }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:

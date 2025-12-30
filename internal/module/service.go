@@ -2,6 +2,7 @@ package module
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -28,7 +29,6 @@ type (
 		db *pgdb
 
 		api          *api
-		web          *webHandlers
 		vcsproviders *vcs.Service
 		connections  *connections.Service
 	}
@@ -60,12 +60,6 @@ func NewService(opts Options) *Service {
 		svc:    &svc,
 		Signer: opts.Signer,
 	}
-	svc.web = &webHandlers{
-		authorizer:   opts.Authorizer,
-		client:       &svc,
-		vcsproviders: opts.VCSProviderService,
-		system:       opts.HostnameService,
-	}
 	publisher := &publisher{
 		Logger:       opts.Logger.WithValues("component", "publisher"),
 		vcsproviders: opts.VCSProviderService,
@@ -79,7 +73,6 @@ func NewService(opts Options) *Service {
 
 func (s *Service) AddHandlers(r *mux.Router) {
 	s.api.addHandlers(r)
-	s.web.addHandlers(r)
 }
 
 // PublishModule publishes a new module from a VCS repository, enumerating through
@@ -148,7 +141,8 @@ func (s *Service) publishModule(ctx context.Context, organization organization.N
 		return nil
 	}()
 	if err != nil {
-		return s.updateModuleStatus(ctx, mod, ModuleStatusSetupFailed)
+		mod, updateErr := s.updateModuleStatus(ctx, mod, ModuleStatusSetupFailed)
+		return mod, errors.Join(err, updateErr)
 	}
 	if len(tags) == 0 {
 		return s.updateModuleStatus(ctx, mod, ModuleStatusNoVersionTags)
@@ -239,7 +233,7 @@ func (s *Service) ListModules(ctx context.Context, opts ListOptions) ([]*Module,
 	return page, nil
 }
 
-func (s *Service) listProviders(ctx context.Context, organization organization.Name) ([]string, error) {
+func (s *Service) ListProviders(ctx context.Context, organization organization.Name) ([]string, error) {
 	return s.db.listProviders(ctx, organization)
 }
 
@@ -337,7 +331,7 @@ func (s *Service) GetModuleInfo(ctx context.Context, versionID resource.TfeID) (
 	if err != nil {
 		return nil, err
 	}
-	return unmarshalTerraformModule(tarball)
+	return UnmarshalTerraformModule(tarball)
 }
 
 func (s *Service) updateModuleStatus(ctx context.Context, mod *Module, status ModuleStatus) (*Module, error) {
@@ -358,7 +352,7 @@ func (s *Service) uploadVersion(ctx context.Context, versionID resource.TfeID, t
 	}
 
 	// validate tarball
-	if _, err := unmarshalTerraformModule(tarball); err != nil {
+	if _, err := UnmarshalTerraformModule(tarball); err != nil {
 		s.Error(err, "uploading module version", "module_version", versionID)
 		return s.db.updateModuleVersionStatus(ctx, UpdateModuleVersionStatusOptions{
 			ID:     versionID,

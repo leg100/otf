@@ -31,7 +31,6 @@ type (
 
 		tfeapi       *tfe
 		api          *api
-		web          *webHandlers
 		poolBroker   pubsub.SubscriptionService[*Pool]
 		runnerBroker pubsub.SubscriptionService[*RunnerEvent]
 		jobBroker    pubsub.SubscriptionService[*JobEvent]
@@ -88,7 +87,6 @@ func NewService(opts ServiceOptions) *Service {
 		Service:   svc,
 		Responder: opts.Responder,
 	}
-	svc.web = newWebHandlers(svc, opts)
 	svc.poolBroker = pubsub.NewBroker[*Pool](
 		opts.Logger,
 		opts.Listener,
@@ -156,7 +154,6 @@ func NewService(opts ServiceOptions) *Service {
 func (s *Service) AddHandlers(r *mux.Router) {
 	s.tfeapi.addHandlers(r)
 	s.api.addHandlers(r)
-	s.web.addHandlers(r)
 }
 
 func (s *Service) NewAllocator(logger logr.Logger) *allocator {
@@ -184,7 +181,7 @@ func (s *Service) WatchJobs(ctx context.Context) (<-chan pubsub.Event[*JobEvent]
 	return s.jobBroker.Subscribe(ctx)
 }
 
-func (s *Service) register(ctx context.Context, opts registerOptions) (*RunnerMeta, error) {
+func (s *Service) Register(ctx context.Context, opts RegisterRunnerOptions) (*RunnerMeta, error) {
 	runner, err := func() (*RunnerMeta, error) {
 		subject, err := authz.SubjectFromContext(ctx)
 		if err != nil {
@@ -272,14 +269,14 @@ type ListOptions struct {
 }
 
 func (s *Service) List(ctx context.Context, opts ListOptions) (*resource.Page[*RunnerMeta], error) {
-	runners, err := s.listRunners(ctx, opts)
+	runners, err := s.ListRunners(ctx, opts)
 	if err != nil {
 		return nil, err
 	}
 	return resource.NewPage(runners, opts.PageOptions, nil), nil
 }
 
-func (s *Service) listRunners(ctx context.Context, opts ListOptions) ([]*RunnerMeta, error) {
+func (s *Service) ListRunners(ctx context.Context, opts ListOptions) ([]*RunnerMeta, error) {
 	// Set scope in which caller is requesting to list runners.
 	var scope resource.ID
 	if opts.PoolID != nil {
@@ -296,7 +293,7 @@ func (s *Service) listRunners(ctx context.Context, opts ListOptions) ([]*RunnerM
 	return s.db.list(ctx, opts)
 }
 
-func (s *Service) deleteRunner(ctx context.Context, runnerID resource.TfeID) error {
+func (s *Service) DeleteRunner(ctx context.Context, runnerID resource.TfeID) error {
 	if err := s.db.deleteRunner(ctx, runnerID); err != nil {
 		s.Error(err, "deleting runner", "runner_id", runnerID)
 		return err
@@ -338,8 +335,7 @@ func (s *Service) cancelJob(ctx context.Context, run *otfrun.Run) error {
 	})
 	if err != nil {
 		if errors.Is(err, internal.ErrResourceNotFound) {
-			s.Error(err, "not found", "run", run)
-			// ignore when no job has yet been created for the run.
+			// Don't raise error when no job has yet been created for the run.
 			return nil
 		}
 		s.Error(err, "canceling job for run", "run", run)
@@ -534,14 +530,12 @@ func (s *Service) GenerateDynamicCredentialsToken(ctx context.Context, jobID res
 		if err != nil {
 			return nil, err
 		}
-		return dynamiccreds.GenerateToken(
-			s.dynamiccreds.PrivateKey(),
+		return s.dynamiccreds.GenerateToken(
 			s.hostnames.URL(""),
 			job.Organization,
 			job.WorkspaceID,
 			workspace.Name,
 			job.RunID,
-			jobID,
 			job.Phase,
 			audience,
 		)
@@ -556,8 +550,8 @@ func (s *Service) GenerateDynamicCredentialsToken(ctx context.Context, jobID res
 
 // agent tokens
 
-func (s *Service) CreateAgentToken(ctx context.Context, poolID resource.TfeID, opts CreateAgentTokenOptions) (*agentToken, []byte, error) {
-	at, token, subject, err := func() (*agentToken, []byte, authz.Subject, error) {
+func (s *Service) CreateAgentToken(ctx context.Context, poolID resource.TfeID, opts CreateAgentTokenOptions) (*AgentToken, []byte, error) {
+	at, token, subject, err := func() (*AgentToken, []byte, authz.Subject, error) {
 		pool, err := s.db.getPool(ctx, poolID)
 		if err != nil {
 			return nil, nil, nil, err
@@ -584,8 +578,8 @@ func (s *Service) CreateAgentToken(ctx context.Context, poolID resource.TfeID, o
 	return at, token, nil
 }
 
-func (s *Service) GetAgentToken(ctx context.Context, tokenID resource.TfeID) (*agentToken, error) {
-	at, subject, err := func() (*agentToken, authz.Subject, error) {
+func (s *Service) GetAgentToken(ctx context.Context, tokenID resource.TfeID) (*AgentToken, error) {
+	at, subject, err := func() (*AgentToken, authz.Subject, error) {
 		at, err := s.db.getAgentTokenByID(ctx, tokenID)
 		if err != nil {
 			return nil, nil, err
@@ -608,7 +602,7 @@ func (s *Service) GetAgentToken(ctx context.Context, tokenID resource.TfeID) (*a
 	return at, nil
 }
 
-func (s *Service) ListAgentTokens(ctx context.Context, poolID resource.TfeID) ([]*agentToken, error) {
+func (s *Service) ListAgentTokens(ctx context.Context, poolID resource.TfeID) ([]*AgentToken, error) {
 	pool, err := s.db.getPool(ctx, poolID)
 	if err != nil {
 		return nil, err
@@ -627,8 +621,8 @@ func (s *Service) ListAgentTokens(ctx context.Context, poolID resource.TfeID) ([
 	return tokens, nil
 }
 
-func (s *Service) DeleteAgentToken(ctx context.Context, tokenID resource.TfeID) (*agentToken, error) {
-	at, subject, err := func() (*agentToken, authz.Subject, error) {
+func (s *Service) DeleteAgentToken(ctx context.Context, tokenID resource.TfeID) (*AgentToken, error) {
+	at, subject, err := func() (*AgentToken, authz.Subject, error) {
 		// retrieve agent token and pool in order to get organization for authorization
 		at, err := s.db.getAgentTokenByID(ctx, tokenID)
 		if err != nil {
@@ -702,7 +696,7 @@ func (s *Service) CreateAgentPool(ctx context.Context, opts CreateAgentPoolOptio
 	return pool, nil
 }
 
-func (s *Service) updateAgentPool(ctx context.Context, poolID resource.TfeID, opts updatePoolOptions) (*Pool, error) {
+func (s *Service) UpdateAgentPool(ctx context.Context, poolID resource.TfeID, opts UpdatePoolOptions) (*Pool, error) {
 	var (
 		subject       authz.Subject
 		before, after Pool
@@ -761,7 +755,7 @@ func (s *Service) GetAgentPool(ctx context.Context, poolID resource.TfeID) (*Poo
 	return pool, nil
 }
 
-func (s *Service) listAgentPoolsByOrganization(ctx context.Context, organization organization.Name, opts listPoolOptions) ([]*Pool, error) {
+func (s *Service) ListAgentPoolsByOrganization(ctx context.Context, organization organization.Name, opts ListPoolOptions) ([]*Pool, error) {
 	subject, err := s.Authorize(ctx, authz.ListAgentPoolsAction, organization)
 	if err != nil {
 		return nil, err
@@ -775,7 +769,7 @@ func (s *Service) listAgentPoolsByOrganization(ctx context.Context, organization
 	return pools, nil
 }
 
-func (s *Service) deleteAgentPool(ctx context.Context, poolID resource.TfeID) (*Pool, error) {
+func (s *Service) DeleteAgentPool(ctx context.Context, poolID resource.TfeID) (*Pool, error) {
 	pool, subject, err := func() (*Pool, authz.Subject, error) {
 		// retrieve pool in order to get organization for authorization
 		pool, err := s.db.getPool(ctx, poolID)

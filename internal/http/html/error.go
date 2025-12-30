@@ -33,7 +33,36 @@ const errorTemplateContent = `
 
 var errorTemplate = template.Must(template.New("error").Parse(errorTemplateContent))
 
-func Error(w http.ResponseWriter, err string, code int) {
-	w.WriteHeader(code)
-	errorTemplate.Execute(w, err)
+// Error sends an appropriate error response to an http request. If the request
+// was to carry out an operation, i.e. a POST action, then a flash message is
+// set and the user is redirected to the last page. Otherwise it's assumed the
+// request was a normal page navigation request, i.e. a GET action, and an error
+// notice is rendered with an optional status code, defaulting to HTTP500.
+func Error(r *http.Request, w http.ResponseWriter, err string, opts ...ErrorOption) {
+	var cfg errorConfig
+	for _, fn := range opts {
+		fn(&cfg)
+	}
+	if r.Method == "POST" && r.Referer() != "" {
+		FlashError(w, err)
+		http.Redirect(w, r, r.Referer(), http.StatusFound)
+	} else {
+		if cfg.statusCode == 0 {
+			cfg.statusCode = http.StatusInternalServerError
+		}
+		w.WriteHeader(cfg.statusCode)
+		errorTemplate.Execute(w, err)
+	}
+}
+
+type errorConfig struct {
+	statusCode int
+}
+
+type ErrorOption func(*errorConfig)
+
+func WithStatus(statusCode int) ErrorOption {
+	return func(cfg *errorConfig) {
+		cfg.statusCode = statusCode
+	}
 }

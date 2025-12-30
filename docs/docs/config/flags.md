@@ -54,6 +54,31 @@ Sets the number of workers that can process runs concurrently.
 
 Specifies the default engine for new workspaces. Specify either `terraform` or `tofu`.
 
+## `--delete-configs-after`
+
+* System: `otfd`
+* Default: `0`
+
+Deletes configs older than the specified age. Specifying `0` disables config deletion.
+
+A config is the tarball of terraform configuration usually created for each run (retrying a run re-uses the existing run's config). Over a long period of time it can consume a lot of database disk space and the only other way to delete configs is to delete the parent workspace.
+
+Deleting a config also deletes any runs that use that config.
+
+Note that the only valid time units are `s`, `m`, and `h`. To specify longer periods of time you need to perform the necessary arithmetric, e.g. for 180 days, 180 x 24, which is `4320h`.
+
+## `--delete-runs-after`
+
+* System: `otfd`
+* Default: `0`
+
+Deletes runs older than the specified age. Specifying `0` disables run deletion.
+
+Deleting a run does not delete its associated config. To delete both the run and the config use `--delete-configs-after` instead.
+
+Note that the only valid time units are `s`, `m`, and `h`. To specify longer periods of time you need to perform the necessary arithmetric, e.g. for 180 days, 180 x 24, which is `4320h`.
+
+
 ## `--engine-bins-dir`
 
 * System: `otfd`, `otf-agent`
@@ -117,20 +142,6 @@ It is highly advisable to set this flag in a production deployment.
 * Default: `localhost:8080` or `--address` if specified.
 
 Sets the hostname that VCS providers can use to access the OTF webhooks.
-
-## `--allowed-origins`
-
-* System: `otfd`
-* Default: ""
-
-Specifies a comma-separated list of hostnames which are checked
-against the Origin: header for websocket upgrades.
-
-By default, websocket upgrade requests are validated by comparing the
-Origin: and Host: headers.  This works for direct connections, but can fail
-in reverse proxy configurations.
-
-This parameter provides a list of valid hostnames to check Origin: against.
 
 ## `--log-format`
 
@@ -205,13 +216,6 @@ Sets the amount of time a run is permitted to be in the `planning` state before 
 * Default: false
 
 Restricts the ability to create organizations to users possessing the site admin role. By default _any_ user can create organizations.
-
-## `--sandbox`
-
-* System: `otfd`
-* Default: false
-
-Enable sandbox box; isolates `terraform apply` using [bubblewrap](https://github.com/containers/bubblewrap) for additional security.
 
 ## `--secret`
 

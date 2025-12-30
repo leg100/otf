@@ -61,6 +61,10 @@ func (id TfeID) String() string {
 	return fmt.Sprintf("%s-%s", id.kind, id.id)
 }
 
+func (id TfeID) IsZero() bool {
+	return id.id == "" && id.kind == ""
+}
+
 func (id TfeID) Kind() Kind {
 	return id.kind
 }

@@ -356,6 +356,14 @@ func (a *tfe) updateWorkspace(w http.ResponseWriter, r *http.Request, workspaceI
 		return
 	}
 
+	if params.AgentPoolID != nil && params.AgentPoolID.IsZero() {
+		// The tfe terraform provider sends an empty string for the agent pool
+		// ID when it should be sending nil.
+		//
+		// https://github.com/leg100/otf/issues/827
+		params.AgentPoolID = nil
+	}
+
 	opts := UpdateOptions{
 		AgentPoolID:                params.AgentPoolID,
 		AllowDestroyPlan:           params.AllowDestroyPlan,

@@ -303,13 +303,13 @@ func WriteTerraformVars(dir string, vars []*Variable) error {
 	return nil
 }
 
-// mergeVariables merges variables for a run according to the precedence rules
+// Merge merges variables for a run according to the precedence rules
 // documented here:
 //
 // https://developer.hashicorp.com/terraform/cloud-docs/workspaces/variables#precedence
 //
 // Note: If run is nil then it is ignored.
-func mergeVariables(workspaceSets []*VariableSet, workspaceVariables []*Variable, run *run.Run) []*Variable {
+func Merge(workspaceSets []*VariableSet, workspaceVariables []*Variable, run *run.Run) []*Variable {
 	// terraform variables keyed by variable key
 	tfVars := make(map[string]*Variable)
 	// environment variables keyed by variable key

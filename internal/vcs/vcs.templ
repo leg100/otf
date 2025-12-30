@@ -1,0 +1,13 @@
+package vcs
+
+import "github.com/leg100/otf/internal/configversion/source"
+
+templ triggerIcon(source source.Source, icon templ.Component) {
+	<div
+		class="size-6"
+		id={ "run-trigger-" + string(source) }
+		title={ "run triggered via " + string(source) }
+	>
+		@icon
+	</div>
+}

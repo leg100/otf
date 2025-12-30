@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
@@ -32,13 +33,13 @@ type (
 	Service struct {
 		logr.Logger
 		authz.Interface
+		*MetricsCollector
 
 		workspaces             *workspace.Service
 		cache                  internal.Cache
 		db                     *pgdb
 		tfeapi                 *tfe
 		api                    *api
-		web                    *webHandlers
 		afterCancelHooks       []func(context.Context, *Run) error
 		afterForceCancelHooks  []func(context.Context, *Run) error
 		afterEnqueuePlanHooks  []func(context.Context, *Run) error
@@ -71,13 +72,16 @@ type (
 )
 
 func NewService(opts Options) *Service {
-	db := &pgdb{opts.DB, opts.ConfigVersionService}
+	db := &pgdb{opts.DB}
 	svc := Service{
 		Logger:     opts.Logger,
 		workspaces: opts.WorkspaceService,
 		db:         db,
 		cache:      opts.Cache,
 		Interface:  opts.Authorizer,
+	}
+	svc.MetricsCollector = &MetricsCollector{
+		service: &svc,
 	}
 	svc.factory = &factory{
 		organizations: opts.OrganizationService,
@@ -86,7 +90,6 @@ func NewService(opts Options) *Service {
 		vcs:           opts.VCSProviderService,
 		releases:      opts.EngineService,
 	}
-	svc.web = newWebHandlers(&svc, opts)
 	svc.tfeapi = &tfe{
 		Service:    &svc,
 		workspaces: opts.WorkspaceService,
@@ -150,7 +153,6 @@ func NewService(opts Options) *Service {
 }
 
 func (s *Service) AddHandlers(r *mux.Router) {
-	s.web.addHandlers(r)
 	s.tfeapi.addHandlers(r)
 	s.api.addHandlers(r)
 }
@@ -230,6 +232,20 @@ func (s *Service) List(ctx context.Context, opts ListOptions) (*resource.Page[*R
 	s.V(9).Info("listed runs", "count", len(page.Items), "subject", subject)
 
 	return page, nil
+}
+
+// ListOlderThan lists runs created before t. Implements resource.deleterClient.
+func (s *Service) ListOlderThan(ctx context.Context, t time.Time) ([]*Run, error) {
+	return resource.ListAll(func(opts resource.PageOptions) (*resource.Page[*Run], error) {
+		return s.List(ctx, ListOptions{
+			PageOptions:     opts,
+			BeforeCreatedAt: &t,
+		})
+	})
+}
+
+func (s *Service) listStatuses(ctx context.Context) ([]status, error) {
+	return s.db.listStatuses(ctx)
 }
 
 // EnqueuePlan enqueues a plan for the run.

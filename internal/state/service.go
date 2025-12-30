@@ -28,7 +28,6 @@ type (
 
 		db     *pgdb
 		cache  internal.Cache // cache state file
-		web    *webHandlers
 		tfeapi *tfe
 		api    *api
 
@@ -56,9 +55,6 @@ func NewService(opts Options) *Service {
 		cache:      opts.Cache,
 		db:         db,
 		factory:    &factory{db},
-	}
-	svc.web = &webHandlers{
-		Service: &svc,
 	}
 	svc.tfeapi = &tfe{
 		Responder:  opts.Responder,
@@ -91,7 +87,6 @@ func NewService(opts Options) *Service {
 }
 
 func (a *Service) AddHandlers(r *mux.Router) {
-	a.web.addHandlers(r)
 	a.tfeapi.addHandlers(r)
 	a.api.addHandlers(r)
 }

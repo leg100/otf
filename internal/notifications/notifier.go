@@ -172,10 +172,10 @@ func (s *Notifier) handleRunEvent(ctx context.Context, event pubsub.Event[*run.E
 			config:    cfg,
 			hostname:  s.system.Hostname(),
 		}
-		s.V(3).Info("publishing notification", "notification", msg)
 		if err := client.Publish(ctx, msg); err != nil {
-			return err
+			return fmt.Errorf("publishing notification: %w", err)
 		}
+		s.V(3).Info("published notification", "notification", msg)
 	}
 	return nil
 }

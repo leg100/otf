@@ -39,7 +39,6 @@ Note: you should only use this for testing purposes.
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | affinity | object | `{}` |  |
-| allowedOrigins | list | `[]` | Allowed origins for websocket connections. See [docs](https://docs.otf.ninja/config/flags/#-allowed-origins) |
 | caCerts.enabled | bool | `false` | Mount a secret containing CA certificates and make them available to both terraform and otfd, allowing them to communicate with API endpoints that use custom CA certificates. |
 | caCerts.secretItems | list | `[]` | Specify individual items in secret containing CA certificates. Use the [KeyToPath](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.28/#keytopath-v1-core) schema for each item. If unspecified, all items are mounted from the secret. |
 | caCerts.secretName | string | `"certs"` | Name of secret containing the CA certificates to mount. |
@@ -83,11 +82,10 @@ Note: you should only use this for testing purposes.
 | oidc.usernameClaim | string | `""` | Override OIDC claim used for username. See [docs](https://docs.otf.ninja/auth/providers/oidc/). |
 | podAnnotations | object | `{}` | Add annotations to otfd pod |
 | podSecurityContext | object | `{}` | Set security context for otfd pod |
-| postgres.enabled | bool | `false` | Install postgres chart dependency. |
+| postgres.enabled | bool | `false` | Install postgres chart dependency. NOTE: this should only be used for testing purposes. |
 | proxy | string | `nil` | Specify an http(s) proxy for outbound connections. |
 | replicaCount | int | `1` | Number of otfd nodes to cluster |
 | resources | object | `{}` |  |
-| sandbox | bool | `false` | Enable sandboxing of terraform apply - note, this will run pods as privileged |
 | secret | string | `""` | Cryptographic secret. Must be a hex-encoded 16-byte string. See [docs](https://docs.otf.ninja/config/flags/#-secret). |
 | secretFromSecret | object | `{}` | Source cryptographic secret from a kubernetes secret instead. |
 | service.annotations | object | `{}` |  |

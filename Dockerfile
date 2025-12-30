@@ -1,9 +1,12 @@
-FROM alpine:3.17
+FROM alpine:3.23
 
-# bubblewrap is for sandboxing, and git permits pulling modules via
-# the git protocol
-RUN apk add --no-cache bubblewrap git
+# git permits pulling modules via the git protocol
+RUN apk add --no-cache git
 
 COPY otfd /usr/local/bin/otfd
+
+# Create and run as non-root user and group.
+RUN adduser -D -H -u 4096 otf
+USER otf
 
 ENTRYPOINT ["/usr/local/bin/otfd"]

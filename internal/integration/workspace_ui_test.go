@@ -12,7 +12,6 @@ import (
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/playwright-community/playwright-go"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -22,24 +21,52 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 
 	t.Run("create", func(t *testing.T) {
 		daemon, org, ctx := setup(t)
-		browser.New(t, ctx, func(page playwright.Page) {
-			_, err := page.Goto(organizationURL(daemon.System.Hostname(), org.Name))
-			require.NoError(t, err)
 
-			err = page.Locator("#menu-item-workspaces > a").Click()
-			require.NoError(t, err)
+		t.Run("create with no error", func(t *testing.T) {
+			browser.New(t, ctx, func(page playwright.Page) {
+				_, err := page.Goto(organizationURL(daemon.System.Hostname(), org.Name))
+				require.NoError(t, err)
 
-			err = page.Locator("#new-workspace-button").Click()
-			require.NoError(t, err)
+				err = page.Locator("#menu-item-workspaces > a").Click()
+				require.NoError(t, err)
 
-			err = page.Locator("input#name").Fill("workspace-1")
-			require.NoError(t, err)
+				err = page.Locator("#new-workspace-button").Click()
+				require.NoError(t, err)
 
-			err = page.Locator("#create-workspace-button").Click()
-			require.NoError(t, err)
+				err = page.Locator("input#name").Fill("workspace-1")
+				require.NoError(t, err)
 
-			err = expect.Locator(page.GetByRole("alert")).ToHaveText("created workspace: workspace-1")
-			require.NoError(t, err)
+				err = page.Locator("#create-workspace-button").Click()
+				require.NoError(t, err)
+
+				err = expect.Locator(page.GetByRole("alert")).ToHaveText("created workspace: workspace-1")
+				require.NoError(t, err)
+			})
+		})
+
+		t.Run("create with error", func(t *testing.T) {
+			browser.New(t, ctx, func(page playwright.Page) {
+				_, err := page.Goto(organizationURL(daemon.System.Hostname(), org.Name))
+				require.NoError(t, err)
+
+				err = page.Locator("#menu-item-workspaces > a").Click()
+				require.NoError(t, err)
+
+				err = page.Locator("#new-workspace-button").Click()
+				require.NoError(t, err)
+
+				// invalid name
+				err = page.Locator("input#name").Fill("$&$*(&*(@")
+				require.NoError(t, err)
+
+				err = page.Locator("#create-workspace-button").Click()
+				require.NoError(t, err)
+
+				err = expect.Locator(page.GetByRole("alert")).ToHaveText("invalid value for name")
+				require.NoError(t, err)
+				err = expect.Locator(page.GetByRole("alert")).ToContainClass("alert-error")
+				require.NoError(t, err)
+			})
 		})
 	})
 
@@ -54,15 +81,6 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 
 			err = expect.Locator(page.Locator("//div[@id='latest-run']//tbody/tr")).ToHaveId("run-item-" + run.ID.String())
 			require.NoError(t, err)
-
-			// click clipboard icon to copy run ID into clipboard
-			err = page.Locator(`//div[@id='latest-run']//img[@id='clipboard-icon']`).Click()
-			require.NoError(t, err)
-
-			// read run ID from clipboard and check it matches actual run ID
-			clipboardContents, err := page.EvaluateHandle(`window.navigator.clipboard.readText()`)
-			require.NoError(t, err)
-			assert.Equal(t, run.ID.String(), clipboardContents.String())
 
 			// confirm 'overview' submenu button is active
 			err = expect.Locator(page.Locator(`//*[@id="menu-item-overview"]/a`)).ToHaveClass(`menu-active`)
@@ -185,7 +203,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 
 			// search for 'workspace-1' should produce 13 results (1,
 			// 10-19, 100, 101)
-			err = expect.Locator(page.Locator(`//div[@id='page-results']//tbody//tr`)).ToHaveCount(13)
+			err = expect.Locator(page.Locator(`//table//tbody//tr`)).ToHaveCount(13)
 			require.NoError(t, err)
 
 			// and workspace-2 should not be visible

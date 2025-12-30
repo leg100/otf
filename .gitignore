@@ -35,6 +35,8 @@ prometheus.yml
 main.tf
 # direnv
 .envrc
+# docker compose env
+.env
 # Created by https://www.gitignore.io/api/go,vim,emacs,visualstudiocode
 ### Emacs ###
 # -*- mode: gitignore; -*-
