@@ -9,6 +9,7 @@ import (
 	cmdutil "github.com/leg100/otf/cmd"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/api"
+	"github.com/leg100/otf/internal/engine"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runner"
@@ -49,28 +50,26 @@ func run(ctx context.Context, args []string) error {
 			if err != nil {
 				return err
 			}
-			// Construct an API client using the job token.
-			client, err := api.NewClient(api.Config{
-				URL:           url,
-				Token:         string(jobToken),
-				Logger:        logger,
-				RetryRequests: true,
-			})
+			client, err := runner.NewRemoteOperationClient([]byte(jobToken), url, logger)
 			if err != nil {
 				return err
 			}
 			// Retrieve job
-			job, err := (&runner.Client{Client: client}).GetJob(ctx, jobID)
+			job, err := client.Jobs.GetJob(ctx, jobID)
 			if err != nil {
 				return err
 			}
-			spawner := &runner.RemoteOperationSpawner{
-				Config: runner.OperationConfig{},
+			// blocks until operation completes
+			runner.DoOperation(ctx, nil, runner.OperationOptions{
 				Logger: logger,
-				URL:    url,
-			}
-			// blocks until job completion
-			return spawner.SpawnOperation(cmd.Context(), nil, job, []byte(jobToken))
+				OperationConfig: runner.OperationConfig{
+					EngineBinDir: engine.DefaultBinDir,
+				},
+				Job:      job,
+				JobToken: []byte(jobToken),
+				Client:   client,
+			})
+			return nil
 		},
 	}
 

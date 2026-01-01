@@ -146,7 +146,7 @@ func NewService(opts ServiceOptions) *Service {
 	// Register with auth middleware the job token and a means of
 	// retrieving Job corresponding to token.
 	opts.TokensService.RegisterKind(resource.JobKind, func(ctx context.Context, jobID resource.TfeID) (authz.Subject, error) {
-		return svc.getJob(ctx, jobID)
+		return svc.GetJob(ctx, jobID)
 	})
 	return svc
 }
@@ -181,7 +181,7 @@ func (s *Service) WatchJobs(ctx context.Context) (<-chan pubsub.Event[*JobEvent]
 	return s.jobBroker.Subscribe(ctx)
 }
 
-func (s *Service) register(ctx context.Context, opts RegisterRunnerOptions) (*RunnerMeta, error) {
+func (s *Service) Register(ctx context.Context, opts RegisterRunnerOptions) (*RunnerMeta, error) {
 	runner, err := func() (*RunnerMeta, error) {
 		subject, err := authz.SubjectFromContext(ctx)
 		if err != nil {
@@ -387,7 +387,7 @@ func (s *Service) awaitAllocatedJobs(ctx context.Context, runnerID resource.TfeI
 			}
 		}
 		if match {
-			job, err := s.getJob(ctx, event.Payload.ID)
+			job, err := s.GetJob(ctx, event.Payload.ID)
 			if err != nil {
 				return nil, fmt.Errorf("retrieving job: %w", err)
 			}
@@ -397,7 +397,7 @@ func (s *Service) awaitAllocatedJobs(ctx context.Context, runnerID resource.TfeI
 	return nil, nil
 }
 
-func (s *Service) getJob(ctx context.Context, jobID resource.TfeID) (*Job, error) {
+func (s *Service) GetJob(ctx context.Context, jobID resource.TfeID) (*Job, error) {
 	return s.db.getJob(ctx, jobID)
 }
 
@@ -522,7 +522,7 @@ func (s *Service) GenerateDynamicCredentialsToken(ctx context.Context, jobID res
 		if s.dynamiccreds.PrivateKey() == nil {
 			return nil, errors.New("no private key has been configured")
 		}
-		job, err := s.getJob(ctx, jobID)
+		job, err := s.GetJob(ctx, jobID)
 		if err != nil {
 			return nil, err
 		}

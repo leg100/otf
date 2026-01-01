@@ -459,7 +459,7 @@ func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, org organizat
 	}
 
 	agentOpts := runner.AgentOptions{
-		Config: runner.NewConfig(),
+		Config: runner.NewDefaultConfig(),
 		Token:  token,
 		URL:    s.System.URL("/"),
 	}

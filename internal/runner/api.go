@@ -69,7 +69,7 @@ func (a *api) registerAgent(w http.ResponseWriter, r *http.Request) {
 	}
 	opts.IPAddress = &ip
 
-	agent, err := a.Service.register(r.Context(), opts)
+	agent, err := a.Service.Register(r.Context(), opts)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -102,7 +102,7 @@ func (a *api) getJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	job, err := a.Service.getJob(r.Context(), jobID)
+	job, err := a.Service.GetJob(r.Context(), jobID)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return

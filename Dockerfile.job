@@ -1,0 +1,12 @@
+FROM alpine:3.23
+
+# git permits pulling modules via the git protocol
+RUN apk add --no-cache git
+
+COPY otf-job /usr/local/bin/otf-job
+
+# Create and run as non-root user and group.
+RUN adduser -D -H -u 4096 otf
+USER otf
+
+ENTRYPOINT ["/usr/local/bin/otf-job"]

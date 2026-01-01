@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -33,10 +32,9 @@ func main() {
 
 func run(ctx context.Context, args []string) error {
 	var (
-		loggerConfig *logr.Config
-		config       *runner.Config
-		url          string
-		token        string
+		config *runner.Config
+		url    string
+		token  string
 	)
 
 	cmd := &cobra.Command{
@@ -45,50 +43,31 @@ func run(ctx context.Context, args []string) error {
 		SilenceErrors: true,
 		Version:       internal.Version,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			logger, err := logr.New(loggerConfig)
+			logger, err := logr.New(config.LoggerConfig)
 			if err != nil {
 				return err
 			}
-			// Create an API client authenticating with the agent token.
-			client, err := api.NewClient(api.Config{
-				URL:           url,
-				Token:         token,
-				Logger:        logger,
-				RetryRequests: true,
+			agent, err := runner.NewAgent(logger, runner.AgentOptions{
+				Config: config,
+				URL:    url,
+				Token:  token,
 			})
 			if err != nil {
 				return err
 			}
-			config.OperationConfig.IsAgent = true
-			// Construct and start the runner.
-			runner, err := runner.New(
-				logger,
-				&runner.Client{Client: client},
-				&runner.RemoteOperationSpawner{
-					Logger: logger,
-					Config: config.OperationConfig,
-					URL:    url,
-				},
-				true,
-				*config,
-			)
-			if err != nil {
-				return fmt.Errorf("initializing agent: %w", err)
-			}
 			// blocks
-			return runner.Start(cmd.Context())
+			return agent.Start(cmd.Context())
 		},
 	}
 
-	config = runner.NewConfigFromFlags(cmd.Flags())
-	cmd.Flags().StringVar(&name, "name", "", "Give agent a descriptive name. Optional.")
+	loggerConfig := logr.NewConfigFromFlags(cmd.Flags())
+	config = runner.NewConfigFromFlags(cmd.Flags(), loggerConfig)
+	cmd.Flags().StringVar(&config.Name, "name", "", "Give agent a descriptive name. Optional.")
 	cmd.Flags().StringVar(&url, "url", api.DefaultURL, "URL of OTF server")
 	cmd.Flags().StringVar(&token, "token", "", "Agent token for authentication")
 
 	cmd.MarkFlagRequired("token")
 	cmd.SetArgs(args)
-
-	loggerConfig = logr.NewConfigFromFlags(cmd.Flags())
 
 	if err := cmdutil.SetFlagsFromEnvVariables(cmd.Flags()); err != nil {
 		return errors.Wrap(err, "failed to populate config from environment vars")
