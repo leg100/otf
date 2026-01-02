@@ -84,8 +84,8 @@ vet:
 
 # Build docker image
 .PHONY: image
-image: build
-	docker build -f Dockerfile -t $(IMAGE_NAME):$(IMAGE_TAG) -t $(IMAGE_NAME):latest ./_build
+image:
+	docker build -f Dockerfile -t $(IMAGE_NAME):$(IMAGE_TAG) -t $(IMAGE_NAME):latest --target otfd .
 
 # Build and load image into k8s kind
 .PHONY: load
@@ -94,8 +94,8 @@ load: image
 
 # Build docker image for otf-agent
 .PHONY: image-agent
-image-agent: build
-	docker build -f ./Dockerfile.agent -t $(IMAGE_NAME_AGENT):$(IMAGE_TAG) -t $(IMAGE_NAME_AGENT):latest ./_build
+image-agent:
+	docker build -f Dockerfile -t $(IMAGE_NAME_AGENT):$(IMAGE_TAG) -t $(IMAGE_NAME_AGENT):latest --target otf-agent .
 
 # Build and load otf-agent image into k8s kind
 .PHONY: load-agent
