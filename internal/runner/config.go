@@ -21,7 +21,7 @@ func NewDefaultConfig() *Config {
 	}
 }
 
-func LoadConfigFromFlags(flags *pflag.FlagSet, cfg *Config) {
+func RegisterFlags(flags *pflag.FlagSet, cfg *Config) {
 	flags.IntVar(&cfg.MaxJobs, "concurrency", DefaultMaxJobs, "Number of runs that can be processed concurrently")
 	flags.BoolVar(&cfg.Debug, "debug", false, "Enable runner debug mode which dumps additional info to terraform runs.")
 	flags.BoolVar(&cfg.PluginCache, "plugin-cache", false, "Enable shared plugin cache for terraform providers.")

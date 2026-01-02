@@ -32,10 +32,10 @@ type (
 	Format string
 )
 
-// LoadConfigFromFlags adds flags to the given flagset, and, after the
+// RegisterFlags adds flags to the given flagset, and, after the
 // flagset is parsed by the caller, the flags populate the returned logger
 // config.
-func LoadConfigFromFlags(flags *pflag.FlagSet, cfg *Config) {
+func RegisterFlags(flags *pflag.FlagSet, cfg *Config) {
 	flags.IntVarP(&cfg.Verbosity, "v", "v", 0, "Logging level")
 	flags.StringVar(&cfg.Format, "log-format", string(DefaultFormat), "Logging format: text or json")
 }

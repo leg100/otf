@@ -73,7 +73,7 @@ func run(ctx context.Context, args []string) error {
 		},
 	}
 
-	logr.LoadConfigFromFlags(cmd.Flags(), loggerConfig)
+	logr.RegisterFlags(cmd.Flags(), loggerConfig)
 
 	cmd.Flags().StringVar(&jobToken, "job-token", "", "Job token for authentication")
 	cmd.Flags().Var(&jobID, "job-id", "ID of job to execute")
