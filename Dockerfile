@@ -1,12 +1,58 @@
-FROM alpine:3.23
+# This is a multi-stage build with layers optimized for efficient caching and
+# to minimize the final image sizes.
+#
+# Use --target to choose which image to build:
+# docker build --tag otfd --target otfd .
+# docker build --tag otf-agent --target otf-agent .
+
+# STAGE: builder Used for building the `otfd` and `otf-agent` binaries. This
+# stage/layer will not be included in the final images, as only the compiled
+# binaries are copied from it.
+FROM golang:alpine3.23 AS builder
+
+WORKDIR /app
+
+# Build cache optimization: use cache mounts
+# https://docs.docker.com/build/cache/optimize/#use-cache-mounts Mounting
+# /etc/apk/cache with type=cache lets the image build system handle apk's cache
+# for us, without leaving any cache files in the image itself.
+RUN --mount=type=cache,target=/etc/apk/cache \
+  apk add make git
+
+# Unused files/folders are filtered out with the .dockerignore file.
+COPY . .
+
+# Compile the binaries
+# Chmod 0555 ensures that the binaries don't have potentially dangerous
+# permissions, like setuid and world writable.
+RUN --mount=type=cache,target=/go/pkg/mod \
+  make build && chmod 0555 _build/*
+
+# STAGE: base
+# This stage contains the files/packages that are used by the final images.
+FROM alpine:3.23 AS base
+
+# Create non-root user and group, which will be used in the final image. We
+# can't switch to it now, because the change only lasts until the end of the
+# stage.
+RUN adduser -D -H -u 4096 otf
 
 # git permits pulling modules via the git protocol
-RUN apk add --no-cache git
+RUN --mount=type=cache,target=/etc/apk/cache \
+  apk add git
 
-COPY otfd /usr/local/bin/otfd
 
-# Create and run as non-root user and group.
-RUN adduser -D -H -u 4096 otf
+# STAGE: otfd
+# Final stage that takes the `base` stage and the `otfd` binary
+FROM base AS otfd
+COPY --from=builder /app/_build/otfd /usr/local/bin/
 USER otf
-
 ENTRYPOINT ["/usr/local/bin/otfd"]
+
+
+# STAGE: otf-agent
+# Final stage that takes the `base` stage and the `otf-agent` binary
+FROM base AS otf-agent
+COPY --from=builder /app/_build/otf-agent /usr/local/bin/
+USER otf
+ENTRYPOINT ["/usr/local/bin/otf-agent"]
