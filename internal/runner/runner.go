@@ -89,6 +89,8 @@ func New(
 			return nil, fmt.Errorf("constructing kubernetes executor: %w", err)
 		}
 		r.executor = executor
+	default:
+		return nil, fmt.Errorf("invalid executor kind: '%s'", cfg.ExecutorKind)
 	}
 	return r, nil
 }

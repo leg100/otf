@@ -14,8 +14,8 @@ import (
 const badKey = "!BADKEY"
 
 type (
-	// Alias for callers to use so that don't need to import both upstream logr
-	// and this logr.
+	// Alias for callers to use so that they don't need to import both upstream
+	// logr and this logr.
 	Logger = logr.Logger
 
 	// logSink implements the logr interface for slog

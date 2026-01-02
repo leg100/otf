@@ -23,14 +23,10 @@ func NewDefaultConfig() *Config {
 	}
 }
 
-func NewConfigFromFlags(flags *pflag.FlagSet, loggerConfig *logr.Config) *Config {
-	opts := Config{
-		LoggerConfig: loggerConfig,
-	}
-	flags.IntVar(&opts.MaxJobs, "concurrency", DefaultMaxJobs, "Number of runs that can be processed concurrently")
-	flags.BoolVar(&opts.Debug, "debug", false, "Enable runner debug mode which dumps additional info to terraform runs.")
-	flags.BoolVar(&opts.PluginCache, "plugin-cache", false, "Enable shared plugin cache for terraform providers.")
-	flags.StringVar(&opts.EngineBinDir, "engine-bins-dir", engine.DefaultBinDir, "Destination directory for engine binary downloads.")
-	flags.Var(&opts.ExecutorKind, "executor", "Executor for executing jobs: 'process' or 'kubernetes'")
-	return &opts
+func LoadConfigFromFlags(flags *pflag.FlagSet, cfg *Config) {
+	flags.IntVar(&cfg.MaxJobs, "concurrency", DefaultMaxJobs, "Number of runs that can be processed concurrently")
+	flags.BoolVar(&cfg.Debug, "debug", false, "Enable runner debug mode which dumps additional info to terraform runs.")
+	flags.BoolVar(&cfg.PluginCache, "plugin-cache", false, "Enable shared plugin cache for terraform providers.")
+	flags.StringVar(&cfg.EngineBinDir, "engine-bins-dir", engine.DefaultBinDir, "Destination directory for engine binary downloads.")
+	flags.Var(&cfg.ExecutorKind, "executor", "Executor for executing jobs: 'process' or 'kubernetes'")
 }

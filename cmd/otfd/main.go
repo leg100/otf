@@ -42,7 +42,7 @@ func main() {
 func parseFlags(ctx context.Context, args []string, out io.Writer) error {
 	cfg := daemon.NewConfig()
 
-	var loggerConfig *logr.Config
+	var loggerConfig logr.Config
 
 	cmd := &cobra.Command{
 		Use:           "otfd",
@@ -124,8 +124,10 @@ func parseFlags(ctx context.Context, args []string, out io.Writer) error {
 
 	cmd.Flags().Var(cfg.DefaultEngine, "default-engine", "Default engine for runs: terraform or tofu")
 
-	loggerConfig = logr.NewConfigFromFlags(cmd.Flags())
-	cfg.RunnerConfig = runner.NewConfigFromFlags(cmd.Flags(), loggerConfig)
+	logr.LoadConfigFromFlags(cmd.Flags(), &loggerConfig)
+	runner.LoadConfigFromFlags(cmd.Flags(), cfg.RunnerConfig)
+
+	cfg.RunnerConfig.LoggerConfig = &loggerConfig
 
 	if err := cmdutil.SetFlagsFromEnvVariables(cmd.Flags()); err != nil {
 		return errors.Wrap(err, "failed to populate config from environment vars")

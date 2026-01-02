@@ -25,14 +25,12 @@ const (
 	JSONFormat    Format = "json"
 )
 
-// NewConfigFromFlags adds flags to the given flagset, and, after the
+// LoadConfigFromFlags adds flags to the given flagset, and, after the
 // flagset is parsed by the caller, the flags populate the returned logger
 // config.
-func NewConfigFromFlags(flags *pflag.FlagSet) *Config {
-	cfg := Config{}
+func LoadConfigFromFlags(flags *pflag.FlagSet, cfg *Config) {
 	flags.IntVarP(&cfg.Verbosity, "v", "v", 0, "Logging level")
 	flags.StringVar(&cfg.Format, "log-format", string(DefaultFormat), "Logging format: text or json")
-	return &cfg
 }
 
 // New constructs a new logger that satisfies the logr interface

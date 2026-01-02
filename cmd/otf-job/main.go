@@ -73,7 +73,8 @@ func run(ctx context.Context, args []string) error {
 		},
 	}
 
-	loggerConfig = logr.NewConfigFromFlags(cmd.Flags())
+	logr.LoadConfigFromFlags(cmd.Flags(), loggerConfig)
+
 	cmd.Flags().StringVar(&jobToken, "job-token", "", "Job token for authentication")
 	cmd.Flags().Var(&jobID, "job-id", "ID of job to execute")
 	cmd.Flags().StringVar(&url, "url", api.DefaultURL, "URL of OTF server")

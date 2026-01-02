@@ -60,8 +60,8 @@ func run(ctx context.Context, args []string) error {
 		},
 	}
 
-	loggerConfig := logr.NewConfigFromFlags(cmd.Flags())
-	config = runner.NewConfigFromFlags(cmd.Flags(), loggerConfig)
+	loggerConfig := logr.LoadConfigFromFlags(cmd.Flags())
+	config = runner.LoadConfigFromFlags(cmd.Flags(), loggerConfig)
 	cmd.Flags().StringVar(&config.Name, "name", "", "Give agent a descriptive name. Optional.")
 	cmd.Flags().StringVar(&url, "url", api.DefaultURL, "URL of OTF server")
 	cmd.Flags().StringVar(&token, "token", "", "Agent token for authentication")
