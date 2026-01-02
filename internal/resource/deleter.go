@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/go-logr/logr"
+	"github.com/leg100/otf/internal/logr"
 )
 
 // By default check resources every minute

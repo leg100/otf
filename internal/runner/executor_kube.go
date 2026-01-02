@@ -25,12 +25,11 @@ type kubeExecutor struct {
 	URL             string
 	Config          KubeConfig
 	OperationConfig OperationConfig
-	LoggerConfig    *logr.Config
 
 	kube *kubernetes.Clientset
 }
 
-func newKubeExecutor(logger logr.Logger, cfg OperationConfig, loggerConfig *logr.Config, url string) (*kubeExecutor, error) {
+func newKubeExecutor(logger logr.Logger, cfg OperationConfig, url string) (*kubeExecutor, error) {
 	config, err := rest.InClusterConfig()
 	if err != nil {
 		return nil, fmt.Errorf("creating kubernetes config: %w", err)
@@ -40,10 +39,10 @@ func newKubeExecutor(logger logr.Logger, cfg OperationConfig, loggerConfig *logr
 		return nil, fmt.Errorf("creating kubernetes clientset: %w", err)
 	}
 	return &kubeExecutor{
-		Logger:       logger,
-		LoggerConfig: loggerConfig,
-		URL:          url,
-		kube:         clientset,
+		Logger:          logger,
+		URL:             url,
+		OperationConfig: cfg,
+		kube:            clientset,
 	}, nil
 }
 
@@ -87,11 +86,11 @@ func (s *kubeExecutor) SpawnOperation(ctx context.Context, _ *errgroup.Group, jo
 								},
 								{
 									Name:  "OTF_V",
-									Value: strconv.Itoa(s.LoggerConfig.Verbosity),
+									Value: strconv.Itoa(s.Logger.GetV()),
 								},
 								{
 									Name:  "OTF_LOG_FORMAT",
-									Value: string(s.LoggerConfig.Format),
+									Value: string(s.Logger.Format),
 								},
 							},
 						},

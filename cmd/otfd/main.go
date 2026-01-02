@@ -52,7 +52,7 @@ func parseFlags(ctx context.Context, args []string, out io.Writer) error {
 		SilenceErrors: true,
 		Version:       internal.Version,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			logger, err := logr.New(loggerConfig)
+			logger, err := logr.New(&loggerConfig)
 			if err != nil {
 				return err
 			}
@@ -126,8 +126,6 @@ func parseFlags(ctx context.Context, args []string, out io.Writer) error {
 
 	logr.LoadConfigFromFlags(cmd.Flags(), &loggerConfig)
 	runner.LoadConfigFromFlags(cmd.Flags(), cfg.RunnerConfig)
-
-	cfg.RunnerConfig.LoggerConfig = &loggerConfig
 
 	if err := cmdutil.SetFlagsFromEnvVariables(cmd.Flags()); err != nil {
 		return errors.Wrap(err, "failed to populate config from environment vars")

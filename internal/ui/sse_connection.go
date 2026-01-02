@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/a-h/templ"
-	"github.com/go-logr/logr"
+	"github.com/leg100/otf/internal/logr"
 )
 
 type sseConnection struct {

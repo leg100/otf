@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/go-logr/logr"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/logr"
 	"github.com/stretchr/testify/require"
 )
 

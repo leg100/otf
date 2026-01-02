@@ -2,7 +2,6 @@ package runner
 
 import (
 	"github.com/leg100/otf/internal/engine"
-	"github.com/leg100/otf/internal/logr"
 	"github.com/spf13/pflag"
 )
 
@@ -13,7 +12,6 @@ type Config struct {
 	MaxJobs      int          // number of jobs the runner can execute at any one time
 	ExecutorKind ExecutorKind // how jobs are launched: forked processes or kubernetes jobs
 	KubeConfig   KubeConfig
-	LoggerConfig *logr.Config
 }
 
 func NewDefaultConfig() *Config {

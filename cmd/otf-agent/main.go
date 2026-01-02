@@ -32,9 +32,10 @@ func main() {
 
 func run(ctx context.Context, args []string) error {
 	var (
-		config *runner.Config
-		url    string
-		token  string
+		config       runner.Config
+		loggerConfig logr.Config
+		url          string
+		token        string
 	)
 
 	cmd := &cobra.Command{
@@ -43,12 +44,12 @@ func run(ctx context.Context, args []string) error {
 		SilenceErrors: true,
 		Version:       internal.Version,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			logger, err := logr.New(config.LoggerConfig)
+			logger, err := logr.New(&loggerConfig)
 			if err != nil {
 				return err
 			}
 			agent, err := runner.NewAgent(logger, runner.AgentOptions{
-				Config: config,
+				Config: &config,
 				URL:    url,
 				Token:  token,
 			})
@@ -60,8 +61,9 @@ func run(ctx context.Context, args []string) error {
 		},
 	}
 
-	loggerConfig := logr.LoadConfigFromFlags(cmd.Flags())
-	config = runner.LoadConfigFromFlags(cmd.Flags(), loggerConfig)
+	logr.LoadConfigFromFlags(cmd.Flags(), &loggerConfig)
+	runner.LoadConfigFromFlags(cmd.Flags(), &config)
+
 	cmd.Flags().StringVar(&config.Name, "name", "", "Give agent a descriptive name. Optional.")
 	cmd.Flags().StringVar(&url, "url", api.DefaultURL, "URL of OTF server")
 	cmd.Flags().StringVar(&token, "token", "", "Agent token for authentication")

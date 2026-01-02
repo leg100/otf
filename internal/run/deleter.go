@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/go-logr/logr"
+	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/resource"
 )
 
