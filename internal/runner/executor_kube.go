@@ -122,7 +122,7 @@ func (s *kubeExecutor) SpawnOperation(ctx context.Context, _ *errgroup.Group, jo
 								},
 								{
 									Name:  "OTF_V",
-									Value: strconv.Itoa(s.Logger.GetV()),
+									Value: strconv.Itoa(s.Logger.Verbosity),
 								},
 								{
 									Name:  "OTF_LOG_FORMAT",

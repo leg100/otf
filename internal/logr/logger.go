@@ -21,7 +21,7 @@ type (
 	Logger struct {
 		logr.Logger
 
-		Format Format
+		*Config
 	}
 
 	Config struct {
@@ -57,7 +57,7 @@ func New(cfg *Config) (Logger, error) {
 	}
 	return Logger{
 		Logger: logr.New(newLogSink(h)),
-		Format: Format(cfg.Format),
+		Config: cfg,
 	}, nil
 }
 
@@ -68,7 +68,7 @@ func Discard() Logger { return Logger{Logger: logr.Discard()} }
 func (l Logger) WithValues(keysAndValues ...any) Logger {
 	return Logger{
 		Logger: l.Logger.WithValues(keysAndValues...),
-		Format: l.Format,
+		Config: l.Config,
 	}
 }
 
@@ -83,7 +83,7 @@ func (l Logger) Error(err error, msg string, keysAndValues ...any) {
 func (l Logger) V(level int) Logger {
 	return Logger{
 		Logger: l.Logger.V(level),
-		Format: l.Format,
+		Config: l.Config,
 	}
 }
 
