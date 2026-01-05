@@ -159,17 +159,30 @@ templ (t runsTable) Row(run *run.Run) {
 					</form>
 				}
 				if run.Cancelable() {
-					<form action={ paths.CancelRun(run.ID) } method="POST">
-						<button class="btn btn-sm btn-error btn-outline" onclick="return confirm('Are you sure you want to cancel?')">Cancel</button>
-					</form>
+					<button
+						class="btn btn-sm btn-error btn-outline"
+						hx-post={ paths.CancelRun(run.ID) }
+						hx-confirm="Are you sure you want to cancel?"
+					>
+						Cancel
+					</button>
 				} else if run.ForceCancelable() {
-					<form action={ paths.ForceCancelRun(run.ID) } method="POST">
-						<button class="btn btn-sm btn-error btn-outline" onclick="return confirm('Are you sure you want to force cancel?')">Force cancel</button>
-					</form>
+					<button
+						class="btn btn-sm btn-error btn-outline"
+						hx-post={ paths.ForceCancelRun(run.ID) }
+						hx-confirm="Are you sure you want to force cancel?"
+					>
+						Force cancel
+					</button>
 				} else if run.Discardable() {
-					<form action={ paths.DiscardRun(run.ID) } method="POST">
-						<button id="run-discard-button" class="btn btn-sm btn-error btn-outline" onclick="return confirm('Are you sure you want to discard?')">Discard</button>
-					</form>
+					<button
+						id="run-discard-button"
+						class="btn btn-sm btn-error btn-outline"
+						hx-post={ paths.DiscardRun(run.ID) }
+						hx-confirm="Are you sure you want to discard?"
+					>
+						Discard
+					</button>
 				} else if run.Done() {
 					<form action={ paths.RetryRun(run.ID) } method="POST">
 						<button id="retry-button" class="btn btn-sm btn-soft btn-info">Retry</button>

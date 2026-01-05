@@ -34,7 +34,7 @@ func main() {
 
 func run(ctx context.Context, args []string) error {
 	var (
-		loggerConfig *logr.Config
+		loggerConfig logr.Config
 		jobToken     string
 		jobID        resource.TfeID
 		url          string
@@ -46,7 +46,7 @@ func run(ctx context.Context, args []string) error {
 		SilenceErrors: true,
 		Version:       internal.Version,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			logger, err := logr.New(loggerConfig)
+			logger, err := logr.New(&loggerConfig)
 			if err != nil {
 				return err
 			}
@@ -73,7 +73,7 @@ func run(ctx context.Context, args []string) error {
 		},
 	}
 
-	logr.RegisterFlags(cmd.Flags(), loggerConfig)
+	logr.RegisterFlags(cmd.Flags(), &loggerConfig)
 
 	cmd.Flags().StringVar(&jobToken, "job-token", "", "Job token for authentication")
 	cmd.Flags().Var(&jobID, "job-id", "ID of job to execute")

@@ -104,6 +104,13 @@ func withDeleteConfigsAfter(deleteConfigsAfter, checkInterval time.Duration) con
 	}
 }
 
+func withKubernetesExecutor(configPath string) configOption {
+	return func(cfg *config) {
+		cfg.RunnerConfig.ExecutorKind = runner.KubeExecutorKind
+		cfg.RunnerConfig.KubeConfig.ConfigPath = configPath
+	}
+}
+
 func disableRunner() configOption {
 	return func(cfg *config) {
 		cfg.DisableRunner = true

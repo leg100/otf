@@ -2,9 +2,14 @@ package runner
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strconv"
+	"strings"
 
+	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/logr"
 	"golang.org/x/sync/errgroup"
 	batchv1 "k8s.io/api/batch/v1"
@@ -12,25 +17,51 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
-const kubeExecutorKind = "kubernetes"
+const KubeExecutorKind = "kubernetes"
 
-type KubeConfig struct {
-	Namespace string
+func init() {
+	homeDir, _ = os.UserHomeDir()
+	defaultKubeConfig = kubeConfig{
+		Image:      "leg100/otf-job:" + internal.Version,
+		ConfigPath: filepath.Join(homeDir, ".kube", "config"),
+		Namespace:  "default",
+	}
+}
+
+var (
+	homeDir           string
+	defaultKubeConfig kubeConfig
+)
+
+type kubeConfig struct {
+	Namespace  string
+	Image      string
+	ConfigPath string
 }
 
 type kubeExecutor struct {
 	Logger          logr.Logger
 	URL             string
-	Config          KubeConfig
+	Config          kubeConfig
 	OperationConfig OperationConfig
 
 	kube *kubernetes.Clientset
 }
 
-func newKubeExecutor(logger logr.Logger, cfg OperationConfig, url string) (*kubeExecutor, error) {
+func newKubeExecutor(
+	logger logr.Logger,
+	operationConfig OperationConfig,
+	kubeConfig kubeConfig,
+	url string,
+) (*kubeExecutor, error) {
+	// assume running in-cluster; otherwise use config path
 	config, err := rest.InClusterConfig()
+	if errors.Is(err, rest.ErrNotInCluster) {
+		config, err = clientcmd.BuildConfigFromFlags("", kubeConfig.ConfigPath)
+	}
 	if err != nil {
 		return nil, fmt.Errorf("creating kubernetes config: %w", err)
 	}
@@ -41,7 +72,8 @@ func newKubeExecutor(logger logr.Logger, cfg OperationConfig, url string) (*kube
 	return &kubeExecutor{
 		Logger:          logger,
 		URL:             url,
-		OperationConfig: cfg,
+		OperationConfig: operationConfig,
+		Config:          kubeConfig,
 		kube:            clientset,
 	}, nil
 }
@@ -55,8 +87,8 @@ func (s *kubeExecutor) SpawnOperation(ctx context.Context, _ *errgroup.Group, jo
 	// 	* provider cache (will opentofu concurrency support work?)
 	spec := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      job.String(),
-			Namespace: s.Config.Namespace,
+			GenerateName: strings.ToLower(job.ID.String()),
+			Namespace:    s.Config.Namespace,
 			Labels: map[string]string{
 				"job-id":       job.ID.String(),
 				"runner-id":    job.RunnerID.String(),
@@ -65,12 +97,16 @@ func (s *kubeExecutor) SpawnOperation(ctx context.Context, _ *errgroup.Group, jo
 			},
 		},
 		Spec: batchv1.JobSpec{
+			// A job by default will re-create pods upon failure (up to 6 times
+			// with backoff), but we can't guarantee idempotency.
+			BackoffLimit: internal.Ptr(int32(0)),
 			Template: corev1.PodTemplateSpec{
 				Spec: corev1.PodSpec{
+					RestartPolicy: corev1.RestartPolicyNever,
 					Containers: []corev1.Container{
 						{
 							Name:  "otf-job",
-							Image: "leg100/otfd:latest",
+							Image: s.Config.Image,
 							Env: []corev1.EnvVar{
 								{
 									Name:  "OTF_URL",
@@ -101,7 +137,7 @@ func (s *kubeExecutor) SpawnOperation(ctx context.Context, _ *errgroup.Group, jo
 	}
 	_, err := s.kube.BatchV1().Jobs(s.Config.Namespace).Create(ctx, spec, metav1.CreateOptions{})
 	if err != nil {
-		return err
+		return fmt.Errorf("creating kubernetes job: %w", err)
 	}
 	return nil
 }

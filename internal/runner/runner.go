@@ -83,8 +83,8 @@ func New(
 			logger:                     logger,
 			operationClientConstructor: operationClientConstructor,
 		}
-	case kubeExecutorKind:
-		executor, err := newKubeExecutor(logger, cfg.OperationConfig, url)
+	case KubeExecutorKind:
+		executor, err := newKubeExecutor(logger, cfg.OperationConfig, cfg.KubeConfig, url)
 		if err != nil {
 			return nil, fmt.Errorf("constructing kubernetes executor: %w", err)
 		}

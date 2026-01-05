@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	"github.com/a-h/templ"
-	"github.com/leg100/otf/internal/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
@@ -15,6 +14,7 @@ import (
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/paths"
+	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
 	runpkg "github.com/leg100/otf/internal/run"
@@ -242,12 +242,14 @@ func (h *runHandlers) cancel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	h.logger.V(0).Info("receive cancel request", "run_id", runID)
+
 	if err := h.runs.Cancel(r.Context(), runID); err != nil {
 		html.Error(r, w, err.Error())
 		return
 	}
 
-	http.Redirect(w, r, paths.Run(runID), http.StatusFound)
+	w.Header().Add("HX-Redirect", paths.Run(runID))
 }
 
 func (h *runHandlers) forceCancel(w http.ResponseWriter, r *http.Request) {
@@ -262,7 +264,7 @@ func (h *runHandlers) forceCancel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, paths.Run(runID), http.StatusFound)
+	w.Header().Add("HX-Redirect", paths.Run(runID))
 }
 
 func (h *runHandlers) apply(w http.ResponseWriter, r *http.Request) {
@@ -272,11 +274,11 @@ func (h *runHandlers) apply(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.runs.Apply(r.Context(), runID)
-	if err != nil {
+	if err := h.runs.Apply(r.Context(), runID); err != nil {
 		html.Error(r, w, err.Error())
 		return
 	}
+
 	http.Redirect(w, r, paths.Run(runID)+"#apply", http.StatusFound)
 }
 
@@ -287,12 +289,12 @@ func (h *runHandlers) discard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.runs.Discard(r.Context(), runID)
-	if err != nil {
+	if err := h.runs.Discard(r.Context(), runID); err != nil {
 		html.Error(r, w, err.Error())
 		return
 	}
-	http.Redirect(w, r, paths.Run(runID), http.StatusFound)
+
+	w.Header().Add("HX-Redirect", paths.Run(runID))
 }
 
 func (h *runHandlers) retry(w http.ResponseWriter, r *http.Request) {

@@ -81,7 +81,10 @@ func (l Logger) Error(err error, msg string, keysAndValues ...any) {
 }
 
 func (l Logger) V(level int) Logger {
-	return Logger{Logger: l.Logger.V(level)}
+	return Logger{
+		Logger: l.Logger.V(level),
+		Format: l.Format,
+	}
 }
 
 // toSlogLevel converts a logr v-level to a slog level.

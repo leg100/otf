@@ -11,13 +11,14 @@ type Config struct {
 	Name         string       // descriptive name given to runner
 	MaxJobs      int          // number of jobs the runner can execute at any one time
 	ExecutorKind ExecutorKind // how jobs are launched: forked processes or kubernetes jobs
-	KubeConfig   KubeConfig
+	KubeConfig   kubeConfig
 }
 
 func NewDefaultConfig() *Config {
 	return &Config{
 		MaxJobs:      DefaultMaxJobs,
 		ExecutorKind: processExecutorKind,
+		KubeConfig:   defaultKubeConfig,
 	}
 }
 

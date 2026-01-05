@@ -83,11 +83,11 @@ func (c *Client) GetJob(ctx context.Context, jobID resource.TfeID) (*Job, error)
 	if err != nil {
 		return nil, err
 	}
-	var job *Job
+	var job Job
 	if err := c.Do(ctx, req, &job); err != nil {
 		return nil, err
 	}
-	return job, nil
+	return &job, nil
 }
 
 func (c *Client) awaitJobSignal(ctx context.Context, jobID resource.TfeID) func() (jobSignal, error) {
