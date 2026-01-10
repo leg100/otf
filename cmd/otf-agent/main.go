@@ -48,10 +48,19 @@ func run(ctx context.Context, args []string) error {
 			if err != nil {
 				return err
 			}
+			// if using the kubernetes executor then the server url should be
+			// set to the value of the --url flag
+			if config.ExecutorKind == runner.KubeExecutorKind {
+				flag := &runner.KubeServerURLFlag{}
+				if err := flag.Set(url); err != nil {
+					return err
+				}
+				config.KubeConfig.ServerURL = flag
+			}
 			agent, err := runner.NewAgent(logger, runner.AgentOptions{
-				Config: &config,
-				URL:    url,
-				Token:  token,
+				Config:    &config,
+				ServerURL: url,
+				Token:     token,
 			})
 			if err != nil {
 				return err
@@ -62,7 +71,7 @@ func run(ctx context.Context, args []string) error {
 	}
 
 	logr.RegisterFlags(cmd.Flags(), &loggerConfig)
-	runner.RegisterFlags(cmd.Flags(), &config)
+	runner.RegisterFlags(cmd.Flags(), &config, true)
 
 	cmd.Flags().StringVar(&config.Name, "name", "", "Give agent a descriptive name. Optional.")
 	cmd.Flags().StringVar(&url, "url", api.DefaultURL, "URL of OTF server")

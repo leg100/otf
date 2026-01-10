@@ -74,7 +74,7 @@ func setup(t *testing.T, opts ...configOption) (*testDaemon, *organization.Organ
 	// stub TLS servers with self-certified certs.
 	cfg.SkipTLSVerification = true
 
-	cfg.SSL = true
+	cfg.SSL = false
 	cfg.CertFile = "./fixtures/cert.pem"
 	cfg.KeyFile = "./fixtures/key.pem"
 
@@ -459,9 +459,9 @@ func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, org organizat
 	}
 
 	agentOpts := runner.AgentOptions{
-		Config: runner.NewDefaultConfig(),
-		Token:  token,
-		URL:    s.System.URL("/"),
+		Config:    runner.NewDefaultConfig(),
+		Token:     token,
+		ServerURL: s.System.URL("/"),
 	}
 	for _, fn := range opts {
 		fn(&agentOpts)

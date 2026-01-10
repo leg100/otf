@@ -125,7 +125,7 @@ func parseFlags(ctx context.Context, args []string, out io.Writer) error {
 	cmd.Flags().Var(cfg.DefaultEngine, "default-engine", "Default engine for runs: terraform or tofu")
 
 	logr.RegisterFlags(cmd.Flags(), &loggerConfig)
-	runner.RegisterFlags(cmd.Flags(), cfg.RunnerConfig)
+	runner.RegisterFlags(cmd.Flags(), cfg.RunnerConfig, false)
 
 	if err := cmdutil.SetFlagsFromEnvVariables(cmd.Flags()); err != nil {
 		return errors.Wrap(err, "failed to populate config from environment vars")

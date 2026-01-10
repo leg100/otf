@@ -39,7 +39,7 @@ RUN adduser -D -H -u 4096 otf
 
 # git permits pulling modules via the git protocol
 RUN --mount=type=cache,target=/etc/apk/cache \
-  apk add git
+  apk add git bind-tools curl
 
 # STAGE: otfd
 # Final stage that takes the `base` stage and the `otfd` binary
@@ -60,5 +60,4 @@ ENTRYPOINT ["/usr/local/bin/otf-agent"]
 # Final stage that takes the `base` stage and the `otf-job` binary
 FROM base AS otf-job
 COPY --from=builder /app/_build/otf-job /usr/local/bin/
-USER otf
 ENTRYPOINT ["/usr/local/bin/otf-job"]

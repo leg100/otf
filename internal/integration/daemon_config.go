@@ -104,10 +104,12 @@ func withDeleteConfigsAfter(deleteConfigsAfter, checkInterval time.Duration) con
 	}
 }
 
-func withKubernetesExecutor(configPath string) configOption {
+func withKubernetesExecutor(configPath, image string, serverURL runner.KubeConfigServerURL) configOption {
 	return func(cfg *config) {
 		cfg.RunnerConfig.ExecutorKind = runner.KubeExecutorKind
 		cfg.RunnerConfig.KubeConfig.ConfigPath = configPath
+		cfg.RunnerConfig.KubeConfig.Image = image
+		cfg.RunnerConfig.KubeConfig.ServerURL = serverURL
 	}
 }
 
@@ -158,6 +160,6 @@ func withRunnerDebug() agentConfigOption {
 // withAgentURL sets the URL of the server that the agent talks to.
 func withAgentURL(url string) agentConfigOption {
 	return func(opts *runner.AgentOptions) {
-		opts.URL = url
+		opts.ServerURL = url
 	}
 }

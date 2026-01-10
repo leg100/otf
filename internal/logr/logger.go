@@ -20,7 +20,6 @@ type (
 	// Logger wraps the upstream logr logger, adding further functionality.
 	Logger struct {
 		logr.Logger
-
 		*Config
 	}
 

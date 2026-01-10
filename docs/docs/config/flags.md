@@ -125,23 +125,62 @@ claim is not validated. See the [Google IAP](../auth/providers/iap.md#verificati
 ## `--hostname`
 
 * System: `otfd`
-* Default: `localhost:8080` or `--address` if specified.
+* Default: the value of `--address`
 
-Sets the hostname that clients can use to access the OTF cluster. This value is
-used within links sent to various clients, including:
+Sets the hostname advertised to external clients, for example:
 
-* The `terraform` CLI when it is streaming logs for a remote `plan` or `apply`.
-* Pull requests on VCS providers, e.g. the link beside the status check on a
-Github pull request.
+* The hostname within the link beside the status check on a GitHub pull request.
+* The hostname to which to send webhook events to trigger runs when a workspace is connected to a GitHub repository (see `--webhook-hostname` below.
 
-It is highly advisable to set this flag in a production deployment.
+It is advisable to set this flag in a production deployment. Otherwise it defaults to the listening address set with `--address` which is unlikely to be accessible to external clients.
 
 ## `--webhook-hostname`
 
 * System: `otfd`
-* Default: `localhost:8080` or `--address` if specified.
+* Default: the value of `--hostname`
 
-Sets the hostname that VCS providers can use to access the OTF webhooks.
+Overrides `--hostname` specifically for webhooks. This is useful if you want to set a separate firewalled inbound route for VCS providers (such as GitHub) via which to send their webhook events.
+
+## `--executor`
+
+* System: `otfd`, `otf-agent`
+* Default: `process`
+
+Specifies how runs should be executed.
+
+By default it is set to `process`, which means executables such as `terraform` are forked as child processes of `otfd` (or `otf-agent` if the workspace is set to use an agent).
+
+If set to `kubernetes` then for each plan and apply a Kubernetes job is created. Executables such as `terraform` are then forked as child processes in the job pod.
+
+## `--kubernetes-job-image`
+
+* System: `otfd`, `otf-agent`
+* Default: `leg100/otf-job:<current version>`
+
+The container image for kubernetes jobs. The default image tag is set to the version of the `otfd` or `otf-agent` process that creates the job.
+
+## `--kubernetes-job-namespace`
+
+* System: `otfd`, `otf-agent`
+* Default: `default`
+
+Kubernetes namespace in which jobs are created.
+
+## `--kubernetes-job-url`
+
+* System: `otfd`
+* Default: see below
+
+Specifies the URL that kubernetes jobs use to connect to `otfd`.
+
+The kubernetes executor creates a kubernetes job for each plan and apply. The job needs to connect to `otfd` to execute each plan and apply, so it needs to use a valid URL that allows it to connect to `otfd`.
+
+By default the URL is set to use the value of `--hostname` for the host and `https` for the scheme, e.g. if `--hostname=otf.example.org` is set then the URL is set to `https://example.org/`.
+
+However, if `otfd` is deployed in a kubernetes cluster using the [helm chart](https://github.com/leg100/otf-charts) then the the chart's kubernetes service name, port and namespace is used for the URL, with `http` for the scheme, e.g. if the service name is `otfd`, the service port is `8080`, and the namespace is `otf`, then the URL is set to `http://otfd.otf:8080`. Note that this should be a valid accessible URL as long as the kubernetes job is running on the same cluster as `otfd`.
+
+!!! note
+    This flag is not valid in `otf-agent`, which instead instructs the kubernetes job to use the value of the `--url` flag to connect to `otfd`.
 
 ## `--log-format`
 

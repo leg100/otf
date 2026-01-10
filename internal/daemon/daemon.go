@@ -356,7 +356,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 				Server:     hostnameService,
 			}, nil
 		},
-		hostnameService.URL("/"),
 		*cfg.RunnerConfig,
 	)
 	if err != nil {

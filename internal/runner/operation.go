@@ -459,6 +459,7 @@ func (o *operation) downloadEngine(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("downloading engine: %w", err)
 	}
+	o.Logger.V(5).Info("downloaded engine", "engine", o.run.Engine, "version", o.run.EngineVersion, "path", o.enginePath)
 	return nil
 }
 

@@ -8,14 +8,14 @@ import (
 type AgentOptions struct {
 	*Config
 
-	Token string
-	URL   string
+	Token     string
+	ServerURL string
 }
 
 func NewAgent(logger logr.Logger, opts AgentOptions) (*Runner, error) {
 	// Create an API client authenticating with the agent token.
 	client, err := apipkg.NewClient(apipkg.Config{
-		URL:           opts.URL,
+		URL:           opts.ServerURL,
 		Token:         opts.Token,
 		Logger:        logger,
 		RetryRequests: true,
@@ -30,9 +30,8 @@ func NewAgent(logger logr.Logger, opts AgentOptions) (*Runner, error) {
 		logger,
 		&Client{Client: client},
 		func(jobToken []byte) (OperationClient, error) {
-			return NewRemoteOperationClient(jobToken, opts.URL, logger)
+			return NewRemoteOperationClient(jobToken, opts.ServerURL, logger)
 		},
-		opts.URL,
 		*opts.Config,
 	)
 }
