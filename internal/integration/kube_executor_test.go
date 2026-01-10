@@ -15,7 +15,9 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/testutils"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -31,7 +33,7 @@ func TestKubeExecutor(t *testing.T) {
 	}
 
 	// Kind must have cluster running
-	cmd := exec.CommandContext(t.Context(), "kind", "get", "cluster")
+	cmd := exec.CommandContext(t.Context(), "kind", "get", "clusters")
 	out, err := cmd.CombinedOutput()
 	require.NoError(t, err, string(out))
 	if strings.Contains(string(out), "No kind clusters found") {
@@ -91,19 +93,15 @@ func TestKubeExecutor(t *testing.T) {
 	)
 	serverURL.port = daemon.ListenAddress.Port
 
+	// create workspace, config, and run.
 	ws := daemon.createWorkspace(t, ctx, org)
-
-	// upload config
 	cv := daemon.createAndUploadConfigurationVersion(t, ctx, ws, nil)
+	run := daemon.createRun(t, ctx, ws, cv, nil)
 
-	// let it run to completion
-	//daemon.waitRunStatus(t, ctx, run.ID, runstatus.Planned)
-
-	// create run
-	_ = daemon.createRun(t, ctx, ws, cv, nil)
-
+	// pod should succeed and run should reach planned status
 	waitPodSucceeded(t, clientset, ws.ID)
-
+	run = daemon.getRun(t, ctx, run.ID)
+	assert.Equal(t, runstatus.Planned, run.Status)
 }
 
 func waitPodSucceeded(t *testing.T, clientset *kubernetes.Clientset, workspaceID resource.TfeID) {

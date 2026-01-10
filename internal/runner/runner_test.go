@@ -20,7 +20,7 @@ func TestRunner(t *testing.T) {
 		func(jobToken []byte) (OperationClient, error) {
 			return OperationClient{}, nil
 		},
-		Config{},
+		NewDefaultConfig(),
 	)
 	require.NoError(t, err)
 

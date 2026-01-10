@@ -44,7 +44,7 @@ func New(
 	logger logr.Logger,
 	runnerClient client,
 	operationClientConstructor operationClientConstructor,
-	cfg Config,
+	cfg *Config,
 ) (*Runner, error) {
 	r := &Runner{
 		RunnerMeta: &RunnerMeta{

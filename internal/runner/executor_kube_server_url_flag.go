@@ -14,7 +14,7 @@ func (k KubeServerURLFlag) Type() string { return "kubernetes-job-url" }
 
 func (k KubeServerURLFlag) String() string { return k.url }
 
-func (e *KubeServerURLFlag) Set(v string) error {
-	e.url = v
+func (k *KubeServerURLFlag) Set(v string) error {
+	k.url = v
 	return nil
 }

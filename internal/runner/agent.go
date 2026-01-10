@@ -32,6 +32,6 @@ func NewAgent(logger logr.Logger, opts AgentOptions) (*Runner, error) {
 		func(jobToken []byte) (OperationClient, error) {
 			return NewRemoteOperationClient(jobToken, opts.ServerURL, logger)
 		},
-		*opts.Config,
+		opts.Config,
 	)
 }
