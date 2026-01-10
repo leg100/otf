@@ -23,7 +23,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-func TestDocker(t *testing.T) {
+func TestKubeExecutor(t *testing.T) {
 	integrationTest(t)
 
 	if _, err := exec.LookPath("kind"); err != nil {
@@ -84,7 +84,6 @@ func TestDocker(t *testing.T) {
 	// test to use a callback, which is only called when the job is created.
 	ip, err := internal.GetOutboundIP()
 	require.NoError(t, err)
-
 	serverURL := serverURLTestCallback{ip: ip}
 
 	daemon, org, ctx := setup(t,
