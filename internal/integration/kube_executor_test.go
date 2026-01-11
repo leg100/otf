@@ -2,6 +2,7 @@ package integration
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"net"
@@ -73,6 +74,19 @@ func TestKubeExecutor(t *testing.T) {
 	clientset, err := kubernetes.NewForConfig(restcfg)
 	require.NoError(t, err)
 
+	// Delete all jobs at test finish.
+	t.Cleanup(func() {
+		err := clientset.BatchV1().Jobs(kubeNamespace).DeleteCollection(
+			context.Background(),
+			metav1.DeleteOptions{
+				// Delete pods too.
+				PropagationPolicy: internal.Ptr(metav1.DeletePropagationBackground),
+			},
+			metav1.ListOptions{},
+		)
+		require.NoError(t, err)
+	})
+
 	// Because the daemon is running on the host, and the job is running in a
 	// k3s cluster in a container, the job needs Job needs an endpoint with
 	// which it can communicate with the daemon.
@@ -92,6 +106,7 @@ func TestKubeExecutor(t *testing.T) {
 
 	daemon, org, ctx := setup(t,
 		withKubernetesExecutor(kubeconfigPath, image, kubeNamespace, &serverURL),
+		withSSLDisabled(),
 	)
 	serverURL.port = daemon.ListenAddress.Port
 

@@ -52,7 +52,7 @@ func parseFlags(ctx context.Context, args []string, out io.Writer) error {
 		SilenceErrors: true,
 		Version:       internal.Version,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			logger, err := logr.New(&loggerConfig)
+			logger, err := logr.New(loggerConfig)
 			if err != nil {
 				return err
 			}

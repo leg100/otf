@@ -20,7 +20,7 @@ type (
 	// Logger wraps the upstream logr logger, adding further functionality.
 	Logger struct {
 		logr.Logger
-		*Config
+		Config
 	}
 
 	Config struct {
@@ -40,7 +40,7 @@ func RegisterFlags(flags *pflag.FlagSet, cfg *Config) {
 }
 
 // New constructs a new logger that satisfies the logr interface
-func New(cfg *Config) (Logger, error) {
+func New(cfg Config) (Logger, error) {
 	var h slog.Handler
 	level := toSlogLevel(cfg.Verbosity)
 
@@ -51,6 +51,9 @@ func New(cfg *Config) (Logger, error) {
 		h = slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: level})
 	case JSONFormat:
 		h = slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: level})
+	case "":
+		// Empty string for format means discard all logs. Undocumented.
+		return Discard(), nil
 	default:
 		return Logger{}, fmt.Errorf("unrecognised logging format: %s", cfg.Format)
 	}

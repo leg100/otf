@@ -144,6 +144,12 @@ func withHostname(hostname string) configOption {
 	}
 }
 
+func withSSLDisabled() configOption {
+	return func(cfg *config) {
+		cfg.SSL = false
+	}
+}
+
 type agentConfigOption func(*runner.AgentOptions)
 
 func withEngineBinDir(dir string) agentConfigOption {
