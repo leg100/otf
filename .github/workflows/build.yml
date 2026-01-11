@@ -24,6 +24,7 @@ jobs:
           kind get clusters || true
           kind get kubeconfig || true
           kind get nodes || true
+          kubectl cluster-info --context kind-chart-testing
       - name: Checkout
         uses: actions/checkout@v4
       - name: Build job image
