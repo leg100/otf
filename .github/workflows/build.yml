@@ -60,7 +60,7 @@ jobs:
         with:
           verbosity: 10
       - name: Test kind
-        run:
+        run: |
           kind version
           kind get clusters
           kind get nodes
