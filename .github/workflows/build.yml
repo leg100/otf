@@ -20,6 +20,7 @@ jobs:
       - name: Test kind
         run: |
           docker ps
+          which -a kind || true
           kind version || true
           kind get clusters || true
           kind get kubeconfig || true
