@@ -25,6 +25,8 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
+const kubeNamespace = "default"
+
 func TestKubeExecutor(t *testing.T) {
 	integrationTest(t)
 
@@ -89,7 +91,7 @@ func TestKubeExecutor(t *testing.T) {
 	serverURL := serverURLTestCallback{ip: ip}
 
 	daemon, org, ctx := setup(t,
-		withKubernetesExecutor(kubeconfigPath, image, &serverURL),
+		withKubernetesExecutor(kubeconfigPath, image, kubeNamespace, &serverURL),
 	)
 	serverURL.port = daemon.ListenAddress.Port
 
@@ -107,14 +109,13 @@ func TestKubeExecutor(t *testing.T) {
 func waitPodSucceeded(t *testing.T, clientset *kubernetes.Clientset, workspaceID resource.TfeID) {
 	t.Helper()
 
-	watch, err := clientset.CoreV1().Pods("default").Watch(t.Context(), metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("workspace-id=%s", workspaceID.String()),
-	})
+	opts := metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("otf.ninja/workspace-id=%s", workspaceID.String()),
+	}
+	watch, err := clientset.CoreV1().Pods(kubeNamespace).Watch(t.Context(), opts)
 	require.NoError(t, err)
 
-	podList, err := clientset.CoreV1().Pods("default").List(t.Context(), metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("workspace-id=%s", workspaceID.String()),
-	})
+	podList, err := clientset.CoreV1().Pods(kubeNamespace).List(t.Context(), opts)
 	require.NoError(t, err)
 
 	if len(podList.Items) > 0 {

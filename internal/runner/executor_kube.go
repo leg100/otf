@@ -106,18 +106,19 @@ func (s *kubeExecutor) SpawnOperation(ctx context.Context, _ *errgroup.Group, jo
 	// * support optional persistent volumes for:
 	// 	* engine binaries
 	// 	* provider cache (will opentofu concurrency support work?)
+	// TODO: prefix labels with an otf qualifier
+	labels := map[string]string{
+		"otf.ninja/job-id":       job.ID.String(),
+		"otf.ninja/run-id":       job.RunID.String(),
+		"otf.ninja/runner-id":    job.RunnerID.String(),
+		"otf.ninja/workspace-id": job.WorkspaceID.String(),
+		"otf.ninja/organization": job.Organization.String(),
+	}
 	spec := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: strings.ToLower(job.ID.String()),
 			Namespace:    s.Config.Namespace,
-			// TODO: prefix labels with an otf qualifier
-			Labels: map[string]string{
-				"job-id":       job.ID.String(),
-				"run-id":       job.RunID.String(),
-				"runner-id":    job.RunnerID.String(),
-				"workspace-id": job.WorkspaceID.String(),
-				"organization": job.Organization.String(),
-			},
+			Labels:       labels,
 		},
 		Spec: batchv1.JobSpec{
 			// A job by default will re-create pods upon failure (up to 6 times
@@ -127,14 +128,7 @@ func (s *kubeExecutor) SpawnOperation(ctx context.Context, _ *errgroup.Group, jo
 			TTLSecondsAfterFinished: internal.Ptr(int32(time.Hour.Seconds())),
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
-					// TODO: prefix labels with an otf qualifier
-					Labels: map[string]string{
-						"job-id":       job.ID.String(),
-						"run-id":       job.RunID.String(),
-						"runner-id":    job.RunnerID.String(),
-						"workspace-id": job.WorkspaceID.String(),
-						"organization": job.Organization.String(),
-					},
+					Labels: labels,
 				},
 				Spec: corev1.PodSpec{
 					RestartPolicy: corev1.RestartPolicyNever,
