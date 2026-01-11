@@ -51,7 +51,7 @@ func TestKubeExecutor(t *testing.T) {
 	require.NoError(t, err, imageBuildOutput)
 
 	// Extract image tag that was just built
-	re := regexp.MustCompile(`leg100/otf-job:(?!latest)`)
+	re := regexp.MustCompile(`leg100/otf-job:[^ ]+`)
 	image := re.FindString(imageBuildOutput)
 	require.NotEqual(t, "", image, imageBuildOutput)
 

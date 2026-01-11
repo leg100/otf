@@ -100,7 +100,7 @@ image-agent:
 # Build docker image for otf-job
 .PHONY: image-job
 image-job:
-	docker build -f Dockerfile -t $(IMAGE_NAME_JOB):$(IMAGE_TAG) -t $(IMAGE_NAME_JOB):latest --target otf-job .
+	docker build -f Dockerfile -t $(IMAGE_NAME_JOB):$(IMAGE_TAG) --target otf-job .
 
 # Build and load otf-agent image into k8s kind
 .PHONY: load-agent
