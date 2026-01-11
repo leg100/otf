@@ -16,7 +16,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Build job image
-        run: make image-job
+        run: git describe --tags --dirty --always
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
