@@ -60,7 +60,11 @@ jobs:
         with:
           verbosity: 10
       - name: Test kind
-        run: kind get nodes
+        run:
+          kind version
+          kind get clusters
+          kind get nodes
+          kind get kubeconfig
       - name: Tests
         env:
           GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
