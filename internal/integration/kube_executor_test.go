@@ -53,7 +53,7 @@ func TestKubeExecutor(t *testing.T) {
 	// Extract image tag that was just built
 	re := regexp.MustCompile(`leg100/otf-job:v[^ ]+`)
 	image := re.FindString(imageBuildOutput)
-	require.NotEqual(t, "", image)
+	require.NotEqual(t, "", image, imageBuildOutput)
 
 	// Load image into kind
 	cmd = exec.CommandContext(t.Context(), "kind", "load", "docker-image", image)
