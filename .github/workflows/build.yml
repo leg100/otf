@@ -17,6 +17,7 @@ jobs:
         uses: helm/kind-action@v1.13.0
         with:
           verbosity: 10
+          cluster_name: kind
       - name: Test kind
         run: |
           docker ps
