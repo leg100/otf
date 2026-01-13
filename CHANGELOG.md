@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.5.1](https://github.com/leg100/otf/compare/v0.5.0...v0.5.1) (2026-01-13)
+
+
+### Features
+
+* docker compose install ([#862](https://github.com/leg100/otf/issues/862)) ([c9946a6](https://github.com/leg100/otf/commit/c9946a6858f1c60d876eb245959174d6526d231b)), closes [#850](https://github.com/leg100/otf/issues/850)
+* passthrough command-line parameters which affect planning ([#859](https://github.com/leg100/otf/issues/859)) ([b9405d0](https://github.com/leg100/otf/commit/b9405d09b58431a820a0bec94969d929dc5bd436))
+* run as non-root user in container ([#823](https://github.com/leg100/otf/issues/823)) ([06ced51](https://github.com/leg100/otf/commit/06ced5159e610998833a5a5ffad36395fbf0ff18))
+
+
+### Bug Fixes
+
+* **agent:** don't panic when server goes offline ([6017b6e](https://github.com/leg100/otf/commit/6017b6e0a77884709b0c53eea8c14e4ef84fcde8))
+* **agent:** dynamic provider creds broken on agents ([acafaee](https://github.com/leg100/otf/commit/acafaee03f50dd86b179605604faa4fac6d70dc9))
+* **ui:** cancel run button sometimes doesn't do anything ([d29a0ef](https://github.com/leg100/otf/commit/d29a0ef7ea55abf4060b190365c799ea3cc1c159))
+
+
+### Miscellaneous
+
+* add more logging and error context ([a7adab5](https://github.com/leg100/otf/commit/a7adab5013f8054b82f821d2485e3c32c185394f))
+* bump everything ([73a0f6a](https://github.com/leg100/otf/commit/73a0f6ad2ca3113263ba29036705e83000c8b6c5))
+
 ## [0.5.0](https://github.com/leg100/otf/compare/v0.4.10...v0.5.0) (2025-12-15)
 
 
