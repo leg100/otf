@@ -39,7 +39,8 @@ RUN adduser -D -H -u 4096 otf
 
 # git permits pulling modules via the git protocol
 RUN --mount=type=cache,target=/etc/apk/cache \
-  apk add git bind-tools curl
+  apk add git
+
 
 # STAGE: otfd
 # Final stage that takes the `base` stage and the `otfd` binary
