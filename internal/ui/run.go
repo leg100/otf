@@ -242,8 +242,6 @@ func (h *runHandlers) cancel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.logger.V(0).Info("receive cancel request", "run_id", runID)
-
 	if err := h.runs.Cancel(r.Context(), runID); err != nil {
 		html.Error(r, w, err.Error())
 		return
