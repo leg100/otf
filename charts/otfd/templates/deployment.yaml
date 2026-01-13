@@ -51,7 +51,7 @@ spec:
               value: "{{ .http }}"
             {{- end }}
             - name: OTF_DATABASE
-              value: {{ .Values.database }}
+              value: {{ .Values.database | quote }}
             {{ with .Values.databaseUsernameFromSecret }}
             - name: PGUSER
               valueFrom:
@@ -152,10 +152,12 @@ spec:
             - name: OTF_SITE_ADMINS
               value: "{{ . | join ","}}"
             {{- end }}
+            - name: OTF_ENGINE_BINS_DIR
+              value: "/cache/engines"
             - name: OTF_KUBERNETES_OTFD_SERVICE_NAME
               value: {{ include "otfd.fullname" . }}
             - name: OTF_KUBERNETES_OTFD_SERVICE_PORT
-              value: {{ .Values.service.port }}
+              value: {{ .Values.service.port | quote }}
             - name: OTF_KUBERNETES_OTFD_SERVICE_NAMESPACE
               valueFrom:
                 fieldRef:
@@ -179,6 +181,8 @@ spec:
           volumeMounts:
           - name: tmp
             mountPath: /tmp
+          - name: engine-cache
+            mountPath: /cache/engines
           {{- with .Values.volumeMounts }}
             {{- toYaml . | nindent 10 }}
           {{- end }}
@@ -189,6 +193,13 @@ spec:
       volumes:
         - name: tmp
           emptyDir:
+        - name: engine-cache
+        {{- if .Values.engineCache }}
+          persistentVolumeClaim:
+            claimName: {{ include "otfd.fullname" . }}-engine-cache
+        {{- else }}
+          emptyDir:
+        {{- end }}
         {{ if .Values.caCerts.enabled -}}
         - name: certs
           secret:

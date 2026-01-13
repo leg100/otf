@@ -170,7 +170,7 @@ install-playwright-arch:
 # re-create _templ.txt files on change, then send reload event to browser.
 # Default url: https://localhost:7331
 live/templ:
-	go tool templ generate --watch --proxy="https://localhost:8080" --open-browser=false --cmd="make live/run"
+	go tool templ generate --watch --proxybind 0.0.0.0 --proxy="https://localhost:8080" --open-browser=false --cmd="make live/run"
 
 live/run:
 	go run -ldflags $(LD_FLAGS) ./cmd/otfd/main.go

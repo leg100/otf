@@ -1,0 +1,25 @@
+{{- if .Values.engineCache.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "otfd.fullname" . }}-engine-cache
+  labels:
+    {{- include "otfd.labels" . | nindent 4 }}
+spec:
+{{- with .Values.engineCache }}
+  accessModes:
+  {{- range .accessModes }}
+  - {{ . | quote }}
+  {{ end }}
+  resources:
+    requests:
+      storage: {{ .size | quote }}
+  {{- with .storageClass }}
+    {{- if (eq "-" .) }}
+      storageClassName: ""
+    {{- else }}
+      storageClassName: "{{ . }}"
+    {{- end }}
+  {{- end }}
+{{- end }}
+{{- end }}

@@ -11,7 +11,6 @@ image:
   # Overrides the image tag whose default is the chart appVersion.
   tag: ""
 
-
 imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""
@@ -196,6 +195,22 @@ volumes: []
 
 # -- Additional volume mounts for the main otfd container
 volumeMounts: []
+
+# -- Persistent volume for caching downloaded engine binaries (terraform, tofu).
+engineCache:
+  # -- Enable persistent volume.
+  enabled: false
+  # -- Persistent volume storage class.
+  ## If defined, storageClassName: <storageClass>
+  ## If set to "-", storageClassName: "", which disables dynamic provisioning
+  ## If undefined (the default) or set to null, no storageClassName spec is
+  ## set, choosing the default provisioner.
+  storageClass: ~
+  # -- Persistent volume access modes.
+  accessModes:
+    - ReadWriteMany
+  # -- Persistent volume size.
+  size: 10Gi
 
 # -- Additional sidecar containers to run alongside the main otfd container
 sidecars: []

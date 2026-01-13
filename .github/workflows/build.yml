@@ -13,21 +13,6 @@ jobs:
     # You must use a Linux environment when using service containers or container jobs
     runs-on: ubuntu-latest
     steps:
-      - name: Create kind cluster for integration tests
-        uses: helm/kind-action@v1.13.0
-        with:
-          verbosity: 10
-          cluster_name: kind
-      - name: Test kind
-        run: |
-          docker ps
-          which -a kind || true
-          kind version || true
-          kind get clusters || true
-          kind get kubeconfig || true
-          kind get nodes || true
-          kubectl cluster-info --context kind-chart-testing || true
-          kubectl --context kind-chart-testing get nodes || true
       - name: Checkout
         uses: actions/checkout@v4
       - name: Build job image
@@ -70,6 +55,10 @@ jobs:
           terraform_wrapper: false
       - name: Setup provider mirror for integration tests
         run: ./hack/setup_mirror.sh
+      - name: Create kind cluster for integration tests
+        uses: helm/kind-action@v1.13.0
+        with:
+          cluster_name: kind
       - name: Tests
         env:
           GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
