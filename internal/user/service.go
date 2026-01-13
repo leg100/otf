@@ -22,12 +22,12 @@ var ErrCannotDeleteOnlyOwner = errors.New("cannot remove the last owner")
 type (
 	Service struct {
 		logr.Logger
+		*authz.Authorizer
 
-		authorizer *authz.Authorizer
-		teams      *team.Service
-		db         *pgdb
-		tfeapi     *tfe
-		api        *api
+		teams  *team.Service
+		db     *pgdb
+		tfeapi *tfe
+		api    *api
 
 		*userTokenFactory
 	}
@@ -47,7 +47,7 @@ type (
 func NewService(opts Options) *Service {
 	svc := Service{
 		Logger:     opts.Logger,
-		authorizer: opts.Authorizer,
+		Authorizer: opts.Authorizer,
 		db:         &pgdb{opts.DB, opts.Logger},
 		userTokenFactory: &userTokenFactory{
 			tokens: opts.TokensService,
@@ -119,7 +119,7 @@ func (a *Service) AddHandlers(r *mux.Router) {
 }
 
 func (a *Service) Create(ctx context.Context, username string, opts ...NewUserOption) (*User, error) {
-	subject, err := a.authorizer.Authorize(ctx, authz.CreateUserAction, resource.SiteID)
+	subject, err := a.Authorize(ctx, authz.CreateUserAction, resource.SiteID)
 	if err != nil {
 		return nil, err
 	}
@@ -140,7 +140,7 @@ func (a *Service) Create(ctx context.Context, username string, opts ...NewUserOp
 }
 
 func (a *Service) UpdateAvatar(ctx context.Context, username Username, avatarURL string) error {
-	subject, err := a.authorizer.Authorize(ctx, authz.UpdateUserAction, resource.SiteID)
+	subject, err := a.Authorize(ctx, authz.UpdateUserAction, resource.SiteID)
 	if err != nil {
 		return err
 	}
@@ -156,7 +156,7 @@ func (a *Service) UpdateAvatar(ctx context.Context, username Username, avatarURL
 }
 
 func (a *Service) GetUser(ctx context.Context, spec UserSpec) (*User, error) {
-	subject, err := a.authorizer.Authorize(ctx, authz.GetUserAction, resource.SiteID)
+	subject, err := a.Authorize(ctx, authz.GetUserAction, resource.SiteID)
 	if err != nil {
 		return nil, err
 	}
@@ -174,7 +174,7 @@ func (a *Service) GetUser(ctx context.Context, spec UserSpec) (*User, error) {
 
 // List lists all users.
 func (a *Service) List(ctx context.Context) ([]*User, error) {
-	_, err := a.authorizer.Authorize(ctx, authz.ListUsersAction, resource.SiteID)
+	_, err := a.Authorize(ctx, authz.ListUsersAction, resource.SiteID)
 	if err != nil {
 		return nil, err
 	}
@@ -184,7 +184,7 @@ func (a *Service) List(ctx context.Context) ([]*User, error) {
 
 // ListOrganizationUsers lists an organization's users
 func (a *Service) ListOrganizationUsers(ctx context.Context, organization organization.Name) ([]*User, error) {
-	_, err := a.authorizer.Authorize(ctx, authz.ListUsersAction, organization)
+	_, err := a.Authorize(ctx, authz.ListUsersAction, organization)
 	if err != nil {
 		return nil, err
 	}
@@ -201,7 +201,7 @@ func (a *Service) ListTeamUsers(ctx context.Context, teamID resource.TfeID) ([]*
 		return nil, err
 	}
 
-	subject, err := a.authorizer.Authorize(ctx, authz.ListUsersAction, &team.Organization)
+	subject, err := a.Authorize(ctx, authz.ListUsersAction, &team.Organization)
 	if err != nil {
 		return nil, err
 	}
@@ -218,7 +218,7 @@ func (a *Service) ListTeamUsers(ctx context.Context, teamID resource.TfeID) ([]*
 }
 
 func (a *Service) Delete(ctx context.Context, username Username) error {
-	subject, err := a.authorizer.Authorize(ctx, authz.DeleteUserAction, resource.SiteID)
+	subject, err := a.Authorize(ctx, authz.DeleteUserAction, resource.SiteID)
 	if err != nil {
 		return err
 	}
@@ -242,7 +242,7 @@ func (a *Service) AddTeamMembership(ctx context.Context, teamID resource.TfeID, 
 		return fmt.Errorf("retrieving team: %w", err)
 	}
 
-	subject, err := a.authorizer.Authorize(ctx, authz.AddTeamMembershipAction, &team.Organization)
+	subject, err := a.Authorize(ctx, authz.AddTeamMembershipAction, &team.Organization)
 	if err != nil {
 		return err
 	}
@@ -281,7 +281,7 @@ func (a *Service) RemoveTeamMembership(ctx context.Context, teamID resource.TfeI
 		return err
 	}
 
-	subject, err := a.authorizer.Authorize(ctx, authz.RemoveTeamMembershipAction, &team.Organization)
+	subject, err := a.Authorize(ctx, authz.RemoveTeamMembershipAction, &team.Organization)
 	if err != nil {
 		return err
 	}

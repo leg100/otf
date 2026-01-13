@@ -15,7 +15,7 @@ import (
 type (
 	Service struct {
 		logr.Logger
-		authz.Interface
+		*authz.Authorizer
 
 		db     *pgdb
 		api    *tfe
@@ -34,9 +34,9 @@ type (
 
 func NewService(opts Options) *Service {
 	svc := Service{
-		Logger:    opts.Logger,
-		Interface: opts.Authorizer,
-		db:        &pgdb{opts.DB},
+		Logger:     opts.Logger,
+		Authorizer: opts.Authorizer,
+		db:         &pgdb{opts.DB},
 	}
 	svc.api = &tfe{
 		Service:   &svc,
