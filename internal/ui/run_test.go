@@ -70,7 +70,37 @@ func TestRuns_CancelHandler(t *testing.T) {
 	r := httptest.NewRequest("POST", "/?run_id=run-1", nil)
 	w := httptest.NewRecorder()
 	h.cancel(w, r)
-	testutils.AssertRedirect(t, w, paths.Run(run.ID))
+
+	assert.Equal(t, 200, w.Code, w.Body.String())
+	assert.Equal(t, paths.Run(run.ID), w.Header().Get("HX-Redirect"))
+}
+
+func TestRuns_ForceCancelHandler(t *testing.T) {
+	run := &run.Run{ID: testutils.ParseID(t, "run-1")}
+	h := &runHandlers{
+		runs: &fakeRunClient{},
+	}
+
+	r := httptest.NewRequest("POST", "/?run_id=run-1", nil)
+	w := httptest.NewRecorder()
+	h.forceCancel(w, r)
+
+	assert.Equal(t, 200, w.Code, w.Body.String())
+	assert.Equal(t, paths.Run(run.ID), w.Header().Get("HX-Redirect"))
+}
+
+func TestRuns_DiscardHandler(t *testing.T) {
+	run := &run.Run{ID: testutils.ParseID(t, "run-1")}
+	h := &runHandlers{
+		runs: &fakeRunClient{},
+	}
+
+	r := httptest.NewRequest("POST", "/?run_id=run-1", nil)
+	w := httptest.NewRecorder()
+	h.discard(w, r)
+
+	assert.Equal(t, 200, w.Code, w.Body.String())
+	assert.Equal(t, paths.Run(run.ID), w.Header().Get("HX-Redirect"))
 }
 
 func TestWebHandlers_CreateRun_Connected(t *testing.T) {
@@ -146,6 +176,14 @@ func (f *fakeRunClient) GetChunk(ctx context.Context, opts run.GetChunkOptions) 
 }
 
 func (f *fakeRunClient) Cancel(ctx context.Context, id resource.TfeID) error {
+	return nil
+}
+
+func (f *fakeRunClient) ForceCancel(ctx context.Context, id resource.TfeID) error {
+	return nil
+}
+
+func (f *fakeRunClient) Discard(ctx context.Context, id resource.TfeID) error {
 	return nil
 }
 
