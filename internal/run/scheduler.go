@@ -4,7 +4,7 @@ import (
 	"context"
 	"slices"
 
-	"github.com/go-logr/logr"
+	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"

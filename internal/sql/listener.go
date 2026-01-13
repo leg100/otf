@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/go-logr/logr"
 	"github.com/jackc/pgx/v5"
+	"github.com/leg100/otf/internal/logr"
 	"golang.org/x/sync/errgroup"
 )
 

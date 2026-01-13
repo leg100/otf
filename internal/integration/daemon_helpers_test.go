@@ -90,7 +90,7 @@ func setup(t *testing.T, opts ...configOption) (*testDaemon, *organization.Organ
 	var logger logr.Logger
 	if _, ok := os.LookupEnv("OTF_INTEGRATION_TEST_ENABLE_LOGGER"); ok {
 		var err error
-		logger, err = logr.New(&logr.Config{Verbosity: 9, Format: "default"})
+		logger, err = logr.New(logr.Config{Verbosity: 9, Format: "default"})
 		require.NoError(t, err)
 		cfg.EnableRequestLogging = true
 	} else {
@@ -436,7 +436,7 @@ func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, org organizat
 	var logger logr.Logger
 	if _, ok := os.LookupEnv("OTF_INTEGRATION_TEST_ENABLE_LOGGER"); ok {
 		var err error
-		logger, err = logr.New(&logr.Config{Verbosity: 1, Format: "default"})
+		logger, err = logr.New(logr.Config{Verbosity: 1, Format: "default"})
 		require.NoError(t, err)
 	} else {
 		logger = logr.Discard()

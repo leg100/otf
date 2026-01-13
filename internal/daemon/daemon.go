@@ -7,7 +7,6 @@ import (
 	"net"
 	"time"
 
-	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/api"
@@ -24,6 +23,7 @@ import (
 	"github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/inmem"
 	"github.com/leg100/otf/internal/loginserver"
+	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/module"
 	"github.com/leg100/otf/internal/notifications"
 	"github.com/leg100/otf/internal/organization"

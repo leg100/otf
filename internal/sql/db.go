@@ -9,12 +9,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-logr/logr"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/logr"
 )
 
 // max conns avail in a pgx pool

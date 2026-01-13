@@ -32,7 +32,7 @@ func main() {
 
 func run(ctx context.Context, args []string) error {
 	var (
-		loggerConfig *logr.Config
+		loggerConfig logr.Config
 		opts         *runner.AgentOptions
 	)
 
@@ -58,7 +58,7 @@ func run(ctx context.Context, args []string) error {
 	cmd.MarkFlagRequired("token")
 	cmd.SetArgs(args)
 
-	loggerConfig = logr.NewConfigFromFlags(cmd.Flags())
+	logr.RegisterFlags(cmd.Flags(), &loggerConfig)
 	opts = runner.NewAgentOptionsFromFlags(cmd.Flags())
 
 	if err := cmdutil.SetFlagsFromEnvVariables(cmd.Flags()); err != nil {

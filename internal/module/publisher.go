@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/go-logr/logr"
+	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/semver"
 	"github.com/leg100/otf/internal/vcs"

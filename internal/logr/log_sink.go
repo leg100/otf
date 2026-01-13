@@ -14,18 +14,12 @@ import (
 const badKey = "!BADKEY"
 
 type (
-	// Alias for callers to use so that don't need to import both upstream logr
-	// and this logr.
-	Logger = logr.Logger
-
 	// logSink implements the logr interface for slog
 	logSink struct {
 		h     slog.Handler
 		depth int
 	}
 )
-
-func Discard() logr.Logger { return logr.Discard() }
 
 func newLogSink(h slog.Handler) *logSink {
 	return &logSink{h: h}
