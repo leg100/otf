@@ -12,7 +12,6 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/logr"
-	"github.com/spf13/pflag"
 	"golang.org/x/sync/errgroup"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -26,16 +25,35 @@ const KubeExecutorKind = "kubernetes"
 
 func init() {
 	homeDir, _ = os.UserHomeDir()
+
 	defaultKubeConfig = &kubeConfig{
-		Image:      fmt.Sprintf("leg100/otf-job:%s", internal.Version),
+		// Default to using the same version of the job image as the current
+		// version of otfd.
+		Image: fmt.Sprintf("leg100/otf-job:%s", internal.Version),
+		// ConfigPath is only used as a fallback in case we aren't running
+		// 'in-cluster', in which case it's assumed we're running on a
+		// workstation for dev/testing purposes and there should be a home dir
+		// and a kubectl config file.
 		ConfigPath: filepath.Join(homeDir, ".kube", "config"),
-		// TODO: namespace should match whatever namespace otf is deployed into.
-		Namespace: "default",
+		// OTF_KUBERNETES_NAMESPACE is set in the otfd helm chart to the value
+		// of the current namespace otfd is deployed in.
+		// If unset, this means otfd is probably running outside of a cluster,
+		// in which case the namespace will be "", which is equivalent to the
+		// 'default' namespace.
+		Namespace: os.Getenv("OTF_KUBERNETES_NAMESPACE"),
+		// OTF_KUBERNETES_SERVICE_ACCOUNT is set in the otfd helm chart to the value
+		// of the current service account that otfd is running as.
+		// If unset, this means otfd is probably running outside of a cluster,
+		// in which case the job won't have an assigned service account.
+		ServiceAccount: os.Getenv("OTF_KUBERNETES_SERVICE_ACCOUNT"),
+		// OTF_KUBERNETES_CACHE_PVC is set in the otfd helm chart to the name of
+		// the optional persistent volume claim for caching.
+		CachePVC: os.Getenv("OTF_KUBERNETES_CACHE_PVC"),
 		ServerURL: &KubeServerURLFlag{
 			url: fmt.Sprintf("http://%s.%s:%s/",
-				os.Getenv("OTF_KUBERNETES_OTFD_SERVICE_NAME"),
-				os.Getenv("OTF_KUBERNETES_OTFD_SERVICE_NAMESPACE"),
-				os.Getenv("OTF_KUBERNETES_OTFD_SERVICE_PORT"),
+				os.Getenv("OTF_KUBERNETES_SERVICE_NAME"),
+				os.Getenv("OTF_KUBERNETES_NAMESPACE"),
+				os.Getenv("OTF_KUBERNETES_SERVICE_PORT"),
 			),
 		},
 	}
@@ -47,10 +65,12 @@ var (
 )
 
 type kubeConfig struct {
-	Namespace  string
-	Image      string
-	ConfigPath string
-	ServerURL  KubeConfigServerURL
+	Namespace      string
+	Image          string
+	ConfigPath     string
+	ServerURL      KubeConfigServerURL
+	ServiceAccount string
+	CachePVC       string
 }
 
 type KubeConfigServerURL interface {
@@ -63,15 +83,6 @@ type kubeExecutor struct {
 	OperationConfig OperationConfig
 
 	kube *kubernetes.Clientset
-}
-
-func registerKubeFlags(flags *pflag.FlagSet, cfg *kubeConfig, agent bool) {
-	flags.StringVar(&cfg.Namespace, "kubernetes-job-namespace", cfg.Namespace, "Namespace in which to create kubernetes jobs")
-	flags.StringVar(&cfg.Image, "kubernetes-job-image", cfg.Image, "Container image to use for kubernetes jobs")
-	if !agent {
-		serverURL := cfg.ServerURL.(*KubeServerURLFlag)
-		flags.Var(serverURL, "kubernetes-job-url", "URL that kubernetes jobs use to connect to otfd")
-	}
 }
 
 func newKubeExecutor(
@@ -106,7 +117,6 @@ func (s *kubeExecutor) SpawnOperation(ctx context.Context, _ *errgroup.Group, jo
 	// * support optional persistent volumes for:
 	// 	* engine binaries
 	// 	* provider cache (will opentofu concurrency support work?)
-	// TODO: prefix labels with an otf qualifier
 	labels := map[string]string{
 		"otf.ninja/job-id":       job.ID.String(),
 		"otf.ninja/run-id":       job.RunID.String(),
@@ -131,7 +141,8 @@ func (s *kubeExecutor) SpawnOperation(ctx context.Context, _ *errgroup.Group, jo
 					Labels: labels,
 				},
 				Spec: corev1.PodSpec{
-					RestartPolicy: corev1.RestartPolicyNever,
+					ServiceAccountName: s.Config.ServiceAccount,
+					RestartPolicy:      corev1.RestartPolicyNever,
 					Containers: []corev1.Container{
 						{
 							Name:  "otf-job",
@@ -157,6 +168,36 @@ func (s *kubeExecutor) SpawnOperation(ctx context.Context, _ *errgroup.Group, jo
 									Name:  "OTF_LOG_FORMAT",
 									Value: string(s.Logger.Format),
 								},
+								{
+									Name:  "OTF_ENGINE_BINS_DIR",
+									Value: s.OperationConfig.EngineBinDir,
+								},
+								{
+									Name:  "OTF_PLUGIN_CACHE",
+									Value: strconv.FormatBool(s.OperationConfig.PluginCache),
+								},
+								{
+									Name:  "OTF_PLUGIN_CACHE_DIR",
+									Value: s.OperationConfig.PluginCacheDir,
+								},
+								{
+									Name:  "OTF_DEBUG",
+									Value: strconv.FormatBool(s.OperationConfig.Debug),
+								},
+							},
+							VolumeMounts: []corev1.VolumeMount{
+								{
+									Name:      "cache",
+									MountPath: "/cache",
+								},
+							},
+						},
+					},
+					Volumes: []corev1.Volume{
+						{
+							Name: "cache",
+							VolumeSource: corev1.VolumeSource{
+								EmptyDir: &corev1.EmptyDirVolumeSource{},
 							},
 						},
 					},
@@ -164,6 +205,14 @@ func (s *kubeExecutor) SpawnOperation(ctx context.Context, _ *errgroup.Group, jo
 			},
 		},
 	}
+	if s.Config.CachePVC != "" {
+		spec.Spec.Template.Spec.Volumes[0].VolumeSource = corev1.VolumeSource{
+			PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+				ClaimName: s.Config.CachePVC,
+			},
+		}
+	}
+
 	kjob, err := s.kube.BatchV1().Jobs(s.Config.Namespace).Create(ctx, spec, metav1.CreateOptions{})
 	if err != nil {
 		return fmt.Errorf("creating kubernetes job: %w", err)

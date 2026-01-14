@@ -46,7 +46,13 @@ Note: you should only use this for testing purposes.
 | databasePasswordFromSecret | object | `nil` | Source database password from a secret |
 | databaseUsernameFromSecret | object | `nil` | Source database username from a secret |
 | defaultEngine | string | `""` | The default engine to use. Specify either 'terraform' or 'tofu'. See [docs](https://docs.otf.ninja/config/flags/#-default-engine). |
+| engineCache | object | `{"accessModes":["ReadWriteMany"],"enabled":false,"size":"10Gi","storageClass":null}` | Persistent volume for caching downloaded engine binaries (terraform, tofu). |
+| engineCache.accessModes | list | `["ReadWriteMany"]` | Persistent volume access modes. |
+| engineCache.enabled | bool | `false` | Enable persistent volume. |
+| engineCache.size | string | `"10Gi"` | Persistent volume size. |
+| engineCache.storageClass | string | `nil` | Persistent volume storage class. # If defined, storageClassName: <storageClass> # If set to "-", storageClassName: "", which disables dynamic provisioning # If undefined (the default) or set to null, no storageClassName spec is # set, choosing the default provisioner. |
 | envsFromSecret | string | `""` | Environment variables to be passed to the deployment from the named kubernetes secret. |
+| executor | string | `""` | The executor to use. Specify either 'process' or 'kubernetes'. See [docs](https://docs.otf.ninja/config/flags/#-executor) |
 | extraEnvs | object | `{}` | Extra environment variables to be passed to the deployment. |
 | fullnameOverride | string | `""` |  |
 | github.clientID | string | `""` | Github OAuth client ID. See [docs](https://docs.otf.ninja/config/flags/#-github-client-id). |
@@ -84,6 +90,7 @@ Note: you should only use this for testing purposes.
 | podSecurityContext | object | `{}` | Set security context for otfd pod |
 | postgres.enabled | bool | `false` | Install postgres chart dependency. NOTE: this should only be used for testing purposes. |
 | proxy | string | `nil` | Specify an http(s) proxy for outbound connections. |
+| rbac.create | bool | `true` | Create and use RBAC resources |
 | replicaCount | int | `1` | Number of otfd nodes to cluster |
 | resources | object | `{}` |  |
 | secret | string | `""` | Cryptographic secret. Must be a hex-encoded 16-byte string. See [docs](https://docs.otf.ninja/config/flags/#-secret). |

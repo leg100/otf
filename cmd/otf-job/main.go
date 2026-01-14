@@ -9,7 +9,6 @@ import (
 	cmdutil "github.com/leg100/otf/cmd"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/api"
-	"github.com/leg100/otf/internal/engine"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runner"
@@ -34,10 +33,11 @@ func main() {
 
 func run(ctx context.Context, args []string) error {
 	var (
-		loggerConfig logr.Config
-		jobToken     string
-		jobID        resource.TfeID
-		url          string
+		loggerConfig    logr.Config
+		operationConfig runner.OperationConfig
+		jobToken        string
+		jobID           resource.TfeID
+		url             string
 	)
 
 	cmd := &cobra.Command{
@@ -61,19 +61,18 @@ func run(ctx context.Context, args []string) error {
 			}
 			// blocks until operation completes
 			runner.DoOperation(ctx, nil, runner.OperationOptions{
-				Logger: logger,
-				OperationConfig: runner.OperationConfig{
-					EngineBinDir: engine.DefaultBinDir,
-				},
-				Job:      job,
-				JobToken: []byte(jobToken),
-				Client:   client,
+				Logger:          logger,
+				OperationConfig: operationConfig,
+				Job:             job,
+				JobToken:        []byte(jobToken),
+				Client:          client,
 			})
 			return nil
 		},
 	}
 
 	logr.RegisterFlags(cmd.Flags(), &loggerConfig)
+	runner.RegisterOperationFlags(cmd.Flags(), &operationConfig)
 
 	cmd.Flags().StringVar(&jobToken, "job-token", "", "Job token for authentication")
 	cmd.Flags().Var(&jobID, "job-id", "ID of job to execute")

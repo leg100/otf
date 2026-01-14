@@ -198,7 +198,7 @@ live:
 generate-templates:
 	go tool templ generate
 
-check-no-diff: paths actions generate-templates
+check-no-diff: paths actions generate-templates helm-docs
 	git diff --exit-code
 
 .PHONY: deploy-otfd
@@ -212,3 +212,8 @@ test-otfd: deploy-otfd
 .PHONY: bump-chart-version
 bump-chart-version:
 	yq -i '.version |= (split(".") | .[-1] |= ((. tag = "!!int") + 1) | join("."))' ./charts/${CHART}/Chart.yaml
+
+.PHONY: helm-docs
+helm-docs:
+	helm-docs
+

@@ -30,6 +30,7 @@ import (
 	"github.com/leg100/otf/internal/state"
 	"github.com/leg100/otf/internal/variable"
 	"github.com/leg100/otf/internal/workspace"
+	"github.com/spf13/pflag"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -54,22 +55,18 @@ type (
 		logr.Logger
 		*workdir
 
-		Debug       bool // toggle debug mode
-		PluginCache bool // toggle use of engine's shared plugin cache
-
 		job           *Job
 		run           *runpkg.Run
 		canceled      bool
 		ctx           context.Context
 		cancelfn      context.CancelFunc
 		out           io.Writer
-		enginePath    string
 		envs          []string
 		terraformVars []*variable.Variable
 		proc          *os.Process
 		downloader    downloader
-		isAgent       bool
-		engineBinDir  string
+		cfg           OperationConfig
+		enginePath    string // path of downloaded engine
 
 		client OperationClient
 	}
@@ -85,9 +82,10 @@ type (
 	}
 
 	OperationConfig struct {
-		Debug        bool   // toggle debug mode
-		PluginCache  bool   // toggle use of engine's shared plugin cache
-		EngineBinDir string // destination directory for engine binaries
+		Debug          bool   // toggle debug mode
+		PluginCache    bool   // toggle use of engine's shared plugin cache
+		PluginCacheDir string // directory for shared plugin cache.
+		EngineBinDir   string // destination directory for engine binaries
 
 		isAgent bool // set to true if operation is running on an agent
 	}
@@ -147,6 +145,20 @@ type (
 	operationClientConstructor func(jobToken []byte) (OperationClient, error)
 )
 
+func defaultOperationConfig() OperationConfig {
+	return OperationConfig{
+		PluginCacheDir: filepath.Join(os.TempDir(), "plugin-cache"),
+		EngineBinDir:   engine.DefaultBinDir,
+	}
+}
+
+func RegisterOperationFlags(flags *pflag.FlagSet, cfg *OperationConfig) {
+	flags.BoolVar(&cfg.Debug, "debug", cfg.Debug, "Enable runner debug mode which dumps additional info to terraform runs.")
+	flags.BoolVar(&cfg.PluginCache, "plugin-cache", cfg.PluginCache, "Enable shared plugin cache for provider plugins.")
+	flags.StringVar(&cfg.PluginCacheDir, "plugin-cache-dir", cfg.PluginCacheDir, "Directory for shared plugin cache.")
+	flags.StringVar(&cfg.EngineBinDir, "engine-bins-dir", cfg.EngineBinDir, "Destination directory for engine binary downloads.")
+}
+
 // NewRemoteOperationClient constructs a remote API client for an operation.
 func NewRemoteOperationClient(jobToken []byte, url string, logger logr.Logger) (OperationClient, error) {
 	client, err := apipkg.NewClient(apipkg.Config{
@@ -179,22 +191,17 @@ func DoOperation(runnerCtx context.Context, g *errgroup.Group, opts OperationOpt
 	ctx = authz.AddSubjectToContext(ctx, opts.Job)
 
 	envs := defaultEnvs
-	if opts.PluginCache {
-		envs = append(envs, "TF_PLUGIN_CACHE_DIR="+PluginCacheDir)
-	}
 	// make token available to engine CLI
 	envs = append(envs, internal.CredentialEnv(opts.Client.Server.Hostname(), opts.JobToken))
 
 	op := &operation{
-		Logger:       opts.Logger.WithValues("job", opts.Job),
-		Debug:        opts.Debug,
-		job:          opts.Job,
-		engineBinDir: opts.EngineBinDir,
-		envs:         envs,
-		ctx:          ctx,
-		cancelfn:     cancelfn,
-		client:       opts.Client,
-		isAgent:      opts.isAgent,
+		Logger:   opts.Logger.WithValues("job", opts.Job),
+		job:      opts.Job,
+		envs:     envs,
+		ctx:      ctx,
+		cancelfn: cancelfn,
+		client:   opts.Client,
+		cfg:      opts.OperationConfig,
 	}
 	// When runner context is done (i.e. runner is exiting), gracefully cancel the op.
 	go func() {
@@ -280,7 +287,10 @@ func (o *operation) do() error {
 		return err
 	}
 	o.run = run
-	o.downloader = engine.NewDownloader(o.run.Engine, o.engineBinDir)
+	o.downloader, err = engine.NewDownloader(o.Logger, o.run.Engine, o.cfg.EngineBinDir)
+	if err != nil {
+		return err
+	}
 
 	// Get workspace in order to get working directory path
 	//
@@ -309,7 +319,7 @@ func (o *operation) do() error {
 	o.out = writer
 
 	// dump info if in debug mode
-	if o.Debug {
+	if o.cfg.Debug {
 		hostname, err := os.Hostname()
 		if err != nil {
 			return err
@@ -318,7 +328,7 @@ func (o *operation) do() error {
 		fmt.Fprintln(o.out, "Debug mode enabled")
 		fmt.Fprintln(o.out, "------------------")
 		fmt.Fprintf(o.out, "Hostname: %s\n", hostname)
-		fmt.Fprintf(o.out, "External agent: %t\n", o.isAgent)
+		fmt.Fprintf(o.out, "External agent: %t\n", o.cfg.isAgent)
 		fmt.Fprintln(o.out, "------------------")
 		fmt.Fprintln(o.out)
 	}
@@ -333,6 +343,9 @@ func (o *operation) do() error {
 		o.writeTerraformVars,
 		o.deleteBackendConfig,
 		o.downloadState,
+	}
+	if o.cfg.PluginCache {
+		steps = append(steps, o.enablePluginCache)
 	}
 	switch run.Phase() {
 	case runpkg.PlanPhase:
@@ -450,6 +463,14 @@ func (o *operation) execute(args []string, funcs ...executionOptionFunc) error {
 	if err := cmd.Wait(); err != nil {
 		return fmt.Errorf("%w: %s", err, cleanStderr(stderr.String()))
 	}
+	return nil
+}
+
+func (o *operation) enablePluginCache(ctx context.Context) error {
+	if err := os.MkdirAll(o.cfg.PluginCacheDir, 0o755); err != nil {
+		return fmt.Errorf("creating plugin cache directory: %w", err)
+	}
+	o.envs = append(o.envs, "TF_PLUGIN_CACHE_DIR="+o.cfg.PluginCacheDir)
 	return nil
 }
 

@@ -1,16 +1,16 @@
-{{- if .Values.engineCache.enabled }}
+{{- if .Values.cacheVolume.enabled }}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: {{ include "otfd.fullname" . }}-engine-cache
+  name: {{ include "otfd.cacheVolumeName" . }}
   labels:
     {{- include "otfd.labels" . | nindent 4 }}
 spec:
-{{- with .Values.engineCache }}
+{{- with .Values.cacheVolume }}
   accessModes:
   {{- range .accessModes }}
   - {{ . | quote }}
-  {{ end }}
+  {{- end }}
   resources:
     requests:
       storage: {{ .size | quote }}

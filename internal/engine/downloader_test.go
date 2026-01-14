@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	otfhttp "github.com/leg100/otf/internal/http"
+	"github.com/leg100/otf/internal/logr"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -32,7 +33,8 @@ func TestDownloader(t *testing.T) {
 		u: u,
 	}
 
-	dl := NewDownloader(engine, t.TempDir())
+	dl, err := NewDownloader(logr.Discard(), engine, t.TempDir())
+	require.NoError(t, err)
 	dl.client = &http.Client{Transport: otfhttp.InsecureTransport}
 
 	// Download bin from fake server

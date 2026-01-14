@@ -69,6 +69,9 @@ maxConfigSize: ""
 # -- The default engine to use. Specify either 'terraform' or 'tofu'. See [docs](https://docs.otf.ninja/config/flags/#-default-engine).
 defaultEngine: ""
 
+# -- The executor to use. Specify either 'process' or 'kubernetes'. See [docs](https://docs.otf.ninja/config/flags/#-executor)
+executor: ""
+
 logging:
   # -- Logging verbosity, the higher the number the more verbose the logs. See [docs](https://docs.otf.ninja/config/flags/#-v).
   verbosity: 0
@@ -196,9 +199,12 @@ volumes: []
 # -- Additional volume mounts for the main otfd container
 volumeMounts: []
 
-# -- Persistent volume for caching downloaded engine binaries (terraform, tofu).
-engineCache:
-  # -- Enable persistent volume.
+# -- Enable provider plugin cache. Note this is only concurrency safe in opentofu 1.10.0 and greater.
+enableProviderCache: false
+
+# -- Persistent volume for cache, e.g. for downloaded engine binaries (terraform, tofu), and caching provider plugins.
+cacheVolume:
+  # -- Enable persistent volume for cache.
   enabled: false
   # -- Persistent volume storage class.
   ## If defined, storageClassName: <storageClass>
@@ -210,7 +216,14 @@ engineCache:
   accessModes:
     - ReadWriteMany
   # -- Persistent volume size.
-  size: 10Gi
+  size: 100Gi
 
 # -- Additional sidecar containers to run alongside the main otfd container
 sidecars: []
+
+## Role Based Access
+## Ref: https://kubernetes.io/docs/admin/authorization/rbac/
+##
+rbac:
+  # -- Create and use RBAC resources
+  create: true

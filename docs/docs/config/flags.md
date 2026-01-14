@@ -152,36 +152,6 @@ By default it is set to `process`, which means executables such as `terraform` a
 
 If set to `kubernetes` then for each plan and apply a Kubernetes job is created. Executables such as `terraform` are then forked as child processes in the job pod.
 
-## `--kubernetes-job-image`
-
-* System: `otfd`, `otf-agent`
-* Default: `leg100/otf-job:<current version>`
-
-The container image for kubernetes jobs. The default image tag is set to the version of the `otfd` or `otf-agent` process that creates the job.
-
-## `--kubernetes-job-namespace`
-
-* System: `otfd`, `otf-agent`
-* Default: `default`
-
-Kubernetes namespace in which jobs are created.
-
-## `--kubernetes-job-url`
-
-* System: `otfd`
-* Default: see below
-
-Specifies the URL that kubernetes jobs use to connect to `otfd`.
-
-The kubernetes executor creates a kubernetes job for each plan and apply. The job needs to connect to `otfd` to execute each plan and apply, so it needs to use a valid URL that allows it to connect to `otfd`.
-
-By default the URL is set to use the value of `--hostname` for the host and `https` for the scheme, e.g. if `--hostname=otf.example.org` is set then the URL is set to `https://example.org/`.
-
-However, if `otfd` is deployed in a kubernetes cluster using the [helm chart](https://github.com/leg100/otf-charts) then the the chart's kubernetes service name, port and namespace is used for the URL, with `http` for the scheme, e.g. if the service name is `otfd`, the service port is `8080`, and the namespace is `otf`, then the URL is set to `http://otfd.otf:8080`. Note that this should be a valid accessible URL as long as the kubernetes job is running on the same cluster as `otfd`.
-
-!!! note
-    This flag is not valid in `otf-agent`, which instead instructs the kubernetes job to use the value of the `--url` flag to connect to `otfd`.
-
 ## `--log-format`
 
 * System: `otfd`, `otf-agent`

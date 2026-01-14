@@ -81,9 +81,13 @@ spec:
             - name: OTF_MAX_CONFIG_SIZE
               value: "{{ .Values.maxConfigSize }}"
             {{ end }}
-            {{ if .Values.defaultEngine }}
+            {{- if .Values.defaultEngine }}
             - name: OTF_DEFAULT_ENGINE
               value: "{{ .Values.defaultEngine }}"
+            {{- end }}
+            {{ if .Values.executor }}
+            - name: OTF_EXECUTOR
+              value: "{{ .Values.executor }}"
             {{ end }}
             - name: OTF_GITHUB_CLIENT_ID
               value: {{ .Values.github.clientID }}
@@ -154,14 +158,26 @@ spec:
             {{- end }}
             - name: OTF_ENGINE_BINS_DIR
               value: "/cache/engines"
-            - name: OTF_KUBERNETES_OTFD_SERVICE_NAME
+            - name: OTF_KUBERNETES_SERVICE_NAME
               value: {{ include "otfd.fullname" . }}
-            - name: OTF_KUBERNETES_OTFD_SERVICE_PORT
+            - name: OTF_KUBERNETES_SERVICE_PORT
               value: {{ .Values.service.port | quote }}
-            - name: OTF_KUBERNETES_OTFD_SERVICE_NAMESPACE
+            - name: OTF_KUBERNETES_NAMESPACE
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
+            - name: OTF_KUBERNETES_SERVICE_ACCOUNT
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.serviceAccountName
+            {{- if .Values.cacheVolume.enabled }}
+            - name: OTF_KUBERNETES_CACHE_PVC
+              value: {{ include "otfd.cacheVolumeName" . }}
+            {{- end }}
+            {{- with .Values.enableProviderCache }}
+            - name: OTF_PLUGIN_CACHE
+              value: /cache/providers
+            {{- end }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
@@ -181,8 +197,8 @@ spec:
           volumeMounts:
           - name: tmp
             mountPath: /tmp
-          - name: engine-cache
-            mountPath: /cache/engines
+          - name: cache
+            mountPath: /cache
           {{- with .Values.volumeMounts }}
             {{- toYaml . | nindent 10 }}
           {{- end }}
@@ -193,10 +209,10 @@ spec:
       volumes:
         - name: tmp
           emptyDir:
-        - name: engine-cache
-        {{- if .Values.engineCache }}
+        - name: cache
+        {{- if .Values.cacheVolume.enabled }}
           persistentVolumeClaim:
-            claimName: {{ include "otfd.fullname" . }}-engine-cache
+            claimName: {{ include "otfd.cacheVolumeName" . }}
         {{- else }}
           emptyDir:
         {{- end }}

@@ -7,8 +7,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/cenkalti/backoff"
@@ -19,8 +17,6 @@ import (
 )
 
 const DefaultMaxJobs = 5
-
-var PluginCacheDir = filepath.Join(os.TempDir(), "plugin-cache")
 
 // Runner runs jobs.
 type Runner struct {
@@ -68,12 +64,6 @@ func New(
 	}
 	if cfg.Debug {
 		r.logger.V(r.v).Info("enabled debug mode")
-	}
-	if cfg.PluginCache {
-		if err := os.MkdirAll(PluginCacheDir, 0o755); err != nil {
-			return nil, fmt.Errorf("creating plugin cache directory: %w", err)
-		}
-		r.logger.V(r.v).Info("enabled plugin cache", "path", PluginCacheDir)
 	}
 	switch cfg.ExecutorKind {
 	case processExecutorKind:

@@ -2,15 +2,18 @@ package engine
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 	"os"
 	"path"
+	"path/filepath"
 	"time"
 
 	"github.com/gofrs/flock"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/logr"
 )
 
 var DefaultBinDir = path.Join(os.TempDir(), "otf-engine-bins")
@@ -21,6 +24,7 @@ type downloader struct {
 	client  *http.Client // client for downloading from server via http
 	lock    *flock.Flock // ensures only one download at a time
 	engine  engineSource
+	logger  logr.Logger
 }
 
 type engineSource interface {
@@ -32,17 +36,23 @@ type engineSource interface {
 // NewDownloader constructs a terraform downloader, with destdir set as the
 // parent directory into which the binaries are downloaded. Pass an empty string
 // to use a default.
-func NewDownloader(engine engineSource, destdir string) *downloader {
+func NewDownloader(logger logr.Logger, engine engineSource, destdir string) (*downloader, error) {
 	if destdir == "" {
 		destdir = DefaultBinDir
+	}
+
+	lockFile := filepath.Join(destdir, "otf.lock")
+	if err := os.MkdirAll(filepath.Dir(lockFile), 0o777); err != nil {
+		return nil, fmt.Errorf("creating directory for lock file: %w", err)
 	}
 
 	return &downloader{
 		destdir: destdir,
 		client:  &http.Client{},
-		lock:    flock.New("/var/lock/otf.lock"),
+		lock:    flock.New(lockFile),
 		engine:  engine,
-	}
+		logger:  logger.WithValues("component", "engine-downloader"),
+	}, nil
 }
 
 // Download ensures the given engine version is available on the local
@@ -60,7 +70,7 @@ func (d *downloader) Download(ctx context.Context, version string, w io.Writer) 
 	}
 	defer func() {
 		if err := d.lock.Unlock(); err != nil {
-			// log error
+			d.logger.Error(err, "unlocking lockfile", "engine", d.engine.String(), "version", version)
 		}
 	}()
 

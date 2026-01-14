@@ -1,7 +1,6 @@
 package runner
 
 import (
-	"github.com/leg100/otf/internal/engine"
 	"github.com/spf13/pflag"
 )
 
@@ -16,17 +15,15 @@ type Config struct {
 
 func NewDefaultConfig() *Config {
 	return &Config{
-		MaxJobs:      DefaultMaxJobs,
-		ExecutorKind: processExecutorKind,
-		KubeConfig:   defaultKubeConfig,
+		MaxJobs:         DefaultMaxJobs,
+		ExecutorKind:    processExecutorKind,
+		KubeConfig:      defaultKubeConfig,
+		OperationConfig: defaultOperationConfig(),
 	}
 }
 
-func RegisterFlags(flags *pflag.FlagSet, cfg *Config, agent bool) {
-	flags.IntVar(&cfg.MaxJobs, "concurrency", DefaultMaxJobs, "Number of runs that can be processed concurrently")
-	flags.BoolVar(&cfg.Debug, "debug", false, "Enable runner debug mode which dumps additional info to terraform runs.")
-	flags.BoolVar(&cfg.PluginCache, "plugin-cache", false, "Enable shared plugin cache for terraform providers.")
-	flags.StringVar(&cfg.EngineBinDir, "engine-bins-dir", engine.DefaultBinDir, "Destination directory for engine binary downloads.")
+func RegisterFlags(flags *pflag.FlagSet, cfg *Config) {
+	flags.IntVar(&cfg.MaxJobs, "concurrency", cfg.MaxJobs, "Number of runs that can be processed concurrently")
 	flags.Var(&cfg.ExecutorKind, "executor", "Executor for executing jobs: 'process' or 'kubernetes'")
-	registerKubeFlags(flags, cfg.KubeConfig, agent)
+	RegisterOperationFlags(flags, &cfg.OperationConfig)
 }
