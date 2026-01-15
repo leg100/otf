@@ -64,7 +64,7 @@ type Config struct {
 // NewConfig constructs an otfd configuration with defaults.
 func NewConfig() Config {
 	return Config{
-		RunnerConfig:    runner.NewConfig(),
+		RunnerConfig:    runner.NewDefaultConfig(),
 		CacheConfig:     &inmem.CacheConfig{},
 		MaxConfigSize:   configversion.DefaultConfigMaxSize,
 		DefaultEngine:   engine.Default,

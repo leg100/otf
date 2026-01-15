@@ -14,12 +14,13 @@ func TestRunner(t *testing.T) {
 	updates := make(chan RunnerStatus)
 	wantID := resource.NewTfeID(resource.RunnerKind)
 
-	r, err := newRunner(
+	r, err := New(
 		logr.Discard(),
 		&fakeRunnerClient{registeredID: wantID, updates: updates},
-		&fakeOperationSpawner{},
-		false,
-		Config{},
+		func(jobToken []byte) (OperationClient, error) {
+			return OperationClient{}, nil
+		},
+		NewDefaultConfig(),
 	)
 	require.NoError(t, err)
 
@@ -61,8 +62,4 @@ func (f *fakeRunnerClient) awaitAllocatedJobs(ctx context.Context, _ resource.Tf
 func (f *fakeRunnerClient) updateStatus(ctx context.Context, agentID resource.TfeID, status RunnerStatus) error {
 	f.updates <- status
 	return nil
-}
-
-type fakeOperationSpawner struct {
-	operationSpawner
 }

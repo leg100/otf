@@ -104,6 +104,16 @@ func withDeleteConfigsAfter(deleteConfigsAfter, checkInterval time.Duration) con
 	}
 }
 
+func withKubernetesExecutor(configPath, image, namespace string, serverURL runner.KubeConfigServerURL) configOption {
+	return func(cfg *config) {
+		cfg.RunnerConfig.ExecutorKind = runner.KubeExecutorKind
+		cfg.RunnerConfig.KubeConfig.ConfigPath = configPath
+		cfg.RunnerConfig.KubeConfig.Image = image
+		cfg.RunnerConfig.KubeConfig.Namespace = namespace
+		cfg.RunnerConfig.KubeConfig.ServerURL = serverURL
+	}
+}
+
 func disableRunner() configOption {
 	return func(cfg *config) {
 		cfg.DisableRunner = true
@@ -134,6 +144,12 @@ func withHostname(hostname string) configOption {
 	}
 }
 
+func withSSLDisabled() configOption {
+	return func(cfg *config) {
+		cfg.SSL = false
+	}
+}
+
 type agentConfigOption func(*runner.AgentOptions)
 
 func withEngineBinDir(dir string) agentConfigOption {
@@ -151,6 +167,6 @@ func withRunnerDebug() agentConfigOption {
 // withAgentURL sets the URL of the server that the agent talks to.
 func withAgentURL(url string) agentConfigOption {
 	return func(opts *runner.AgentOptions) {
-		opts.URL = url
+		opts.ServerURL = url
 	}
 }

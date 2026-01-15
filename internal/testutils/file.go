@@ -15,3 +15,19 @@ func ReadFile(t *testing.T, path string) []byte {
 	require.NoError(t, err)
 	return contents
 }
+
+func TempFile(t *testing.T, data []byte) (path string) {
+	t.Helper()
+
+	f, err := os.CreateTemp(os.TempDir(), "")
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		os.Remove(f.Name())
+	})
+
+	_, err = f.Write(data)
+	require.NoError(t, err)
+
+	return f.Name()
+}

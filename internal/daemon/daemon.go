@@ -342,18 +342,22 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		return nil, fmt.Errorf("registering github oauth client: %w", err)
 	}
 
-	serverRunner, err := runner.NewServerRunner(runner.ServerRunnerOptions{
-		Logger:     logger,
-		Config:     cfg.RunnerConfig,
-		Runners:    runnerService,
-		Workspaces: workspaceService,
-		Variables:  variableService,
-		State:      stateService,
-		Configs:    configService,
-		Runs:       runService,
-		Jobs:       runnerService,
-		Server:     hostnameService,
-	})
+	serverRunner, err := runner.New(
+		logger,
+		runnerService,
+		func([]byte) (runner.OperationClient, error) {
+			return runner.OperationClient{
+				Workspaces: workspaceService,
+				Variables:  variableService,
+				State:      stateService,
+				Configs:    configService,
+				Runs:       runService,
+				Jobs:       runnerService,
+				Server:     hostnameService,
+			}, nil
+		},
+		cfg.RunnerConfig,
+	)
 	if err != nil {
 		return nil, err
 	}

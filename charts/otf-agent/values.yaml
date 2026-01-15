@@ -102,3 +102,6 @@ volumeMounts: []
 
 # -- Additional sidecar containers to run alongside the main otf-agent container
 sidecars: []
+
+# -- The executor to use. Specify either 'process' or 'kubernetes'. See [docs](https://docs.otf.ninja/config/flags/#-executor)
+executor: ""

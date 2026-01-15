@@ -1,6 +1,6 @@
 # Helm Chart for `otf-agent`
 
-![Version: 0.1.16](https://img.shields.io/badge/Version-0.1.16-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 0.3.22](https://img.shields.io/badge/AppVersion-0.3.22-informational?style=flat-square)
+![Version: 0.1.17](https://img.shields.io/badge/Version-0.1.17-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 0.3.22](https://img.shields.io/badge/AppVersion-0.3.22-informational?style=flat-square)
 
 Installs the [otf agent](https://docs.otf.ninja/runners/).
 
@@ -57,6 +57,7 @@ address=10.244.0.18 agent.pool_id=apool-5b90443ed82ef769
 |-----|------|---------|-------------|
 | affinity | object | `{}` |  |
 | concurrency | int | `nil` | Set the number of runs that can be processed concurrently. See [docs](https://docs.otf.ninja/config/flags/#-concurrency). |
+| executor | string | `""` | The executor to use. Specify either 'process' or 'kubernetes'. See [docs](https://docs.otf.ninja/config/flags/#-executor) |
 | extraEnvs | list | `[]` | Extra environment variables to be passed to the deployment. |
 | fullnameOverride | string | `""` |  |
 | image.pullPolicy | string | `"IfNotPresent"` |  |

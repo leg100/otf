@@ -65,7 +65,7 @@ func NewClient(config Config) (*Client, error) {
 
 	baseURL, err := otfhttp.ParseURL(config.URL)
 	if err != nil {
-		return nil, fmt.Errorf("invalid server url: %v", err)
+		return nil, fmt.Errorf("invalid server url: %s: %v", config.URL, err)
 	}
 	baseURL.Path = path.Join(baseURL.Path, config.BasePath)
 	if !strings.HasSuffix(baseURL.Path, "/") {

@@ -15,6 +15,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Build job image
+        run: git describe --tags --dirty --always
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
@@ -51,8 +53,12 @@ jobs:
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_wrapper: false
-      - name: Setup provider mirror for e2e tests
+      - name: Setup provider mirror for integration tests
         run: ./hack/setup_mirror.sh
+      - name: Create kind cluster for integration tests
+        uses: helm/kind-action@v1.13.0
+        with:
+          cluster_name: kind
       - name: Tests
         env:
           GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
@@ -123,8 +129,6 @@ jobs:
           helm lint ./charts/otf-agent
           helm template ./charts/otfd > /dev/null
           helm template ./charts/otf-agent --set token=my_agent_token --set url=https://otf.ninja > /dev/null
-      - name: Create kind cluster
-        uses: helm/kind-action@v1.12.0
       - name: Test
         run: |
           make test-otfd

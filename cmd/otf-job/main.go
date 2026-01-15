@@ -10,6 +10,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/logr"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runner"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -32,14 +33,15 @@ func main() {
 
 func run(ctx context.Context, args []string) error {
 	var (
-		config       runner.Config
-		loggerConfig logr.Config
-		url          string
-		token        string
+		loggerConfig    logr.Config
+		operationConfig runner.OperationConfig
+		jobToken        string
+		jobID           resource.TfeID
+		url             string
 	)
 
 	cmd := &cobra.Command{
-		Use:           "otf-agent",
+		Use:           "otf-job",
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		Version:       internal.Version,
@@ -48,36 +50,34 @@ func run(ctx context.Context, args []string) error {
 			if err != nil {
 				return err
 			}
-			// if using the kubernetes executor then the server url should be
-			// set to the value of the --url flag
-			if config.ExecutorKind == runner.KubeExecutorKind {
-				flag := &runner.KubeServerURLFlag{}
-				if err := flag.Set(url); err != nil {
-					return err
-				}
-				config.KubeConfig.ServerURL = flag
-			}
-			agent, err := runner.NewAgent(logger, runner.AgentOptions{
-				Config:    &config,
-				ServerURL: url,
-				Token:     token,
-			})
+			client, err := runner.NewRemoteOperationClient([]byte(jobToken), url, logger)
 			if err != nil {
 				return err
 			}
-			// blocks
-			return agent.Start(cmd.Context())
+			// Retrieve job
+			job, err := client.Jobs.GetJob(ctx, jobID)
+			if err != nil {
+				return err
+			}
+			// blocks until operation completes
+			runner.DoOperation(ctx, nil, runner.OperationOptions{
+				Logger:          logger,
+				OperationConfig: operationConfig,
+				Job:             job,
+				JobToken:        []byte(jobToken),
+				Client:          client,
+			})
+			return nil
 		},
 	}
 
 	logr.RegisterFlags(cmd.Flags(), &loggerConfig)
-	runner.RegisterFlags(cmd.Flags(), &config)
+	runner.RegisterOperationFlags(cmd.Flags(), &operationConfig)
 
-	cmd.Flags().StringVar(&config.Name, "name", "", "Give agent a descriptive name. Optional.")
+	cmd.Flags().StringVar(&jobToken, "job-token", "", "Job token for authentication")
+	cmd.Flags().Var(&jobID, "job-id", "ID of job to execute")
 	cmd.Flags().StringVar(&url, "url", api.DefaultURL, "URL of OTF server")
-	cmd.Flags().StringVar(&token, "token", "", "Agent token for authentication")
 
-	cmd.MarkFlagRequired("token")
 	cmd.SetArgs(args)
 
 	if err := cmdutil.SetFlagsFromEnvVariables(cmd.Flags()); err != nil {

@@ -7,58 +7,52 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/cenkalti/backoff"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/logr"
-	"github.com/leg100/otf/internal/resource"
 	"golang.org/x/sync/errgroup"
 )
 
 const DefaultMaxJobs = 5
 
-var PluginCacheDir = filepath.Join(os.TempDir(), "plugin-cache")
+// Runner runs jobs.
+type Runner struct {
+	*RunnerMeta
 
-type (
-	Runner struct {
-		*RunnerMeta
+	Debug           bool   // toggle debug mode
+	PluginCache     bool   // toggle use of terraform's shared plugin cache
+	TerraformBinDir string // destination directory for terraform binaries
 
-		Debug           bool   // toggle debug mode
-		PluginCache     bool   // toggle use of terraform's shared plugin cache
-		TerraformBinDir string // destination directory for terraform binaries
+	client                     client
+	operationClientConstructor operationClientConstructor
+	executor                   executor
+	registered                 chan struct{}
 
-		client     client
-		spawner    operationSpawner
-		registered chan struct{}
+	logger logr.Logger // logger that logs messages regardless of whether runner is a server or agent runner.
+	v      int         // logger verbosity
+}
 
-		logger logr.Logger // logger that logs messages regardless of whether runner is a pool runner or not.
-		v      int         // logger verbosity
-	}
-)
-
-// newRunner constructs a runner.
-func newRunner(
+// New constructs a runner.
+func New(
 	logger logr.Logger,
-	client client,
-	spawner operationSpawner,
-	isAgent bool,
-	cfg Config,
+	runnerClient client,
+	operationClientConstructor operationClientConstructor,
+	cfg *Config,
 ) (*Runner, error) {
 	r := &Runner{
 		RunnerMeta: &RunnerMeta{
 			Name:    cfg.Name,
 			MaxJobs: cfg.MaxJobs,
 		},
-		client:     client,
-		registered: make(chan struct{}),
-		logger:     logger,
-		spawner:    spawner,
+		client:                     runnerClient,
+		operationClientConstructor: operationClientConstructor,
+		registered:                 make(chan struct{}),
+		logger:                     logger,
 	}
-	if !isAgent {
+	if !cfg.isAgent {
 		// Set a higher threshold for logging on server runner where the runner is
 		// but one of several components and many of the actions that are logged
 		// here are also logged on the service endpoints, resulting in duplicate
@@ -71,11 +65,21 @@ func newRunner(
 	if cfg.Debug {
 		r.logger.V(r.v).Info("enabled debug mode")
 	}
-	if cfg.PluginCache {
-		if err := os.MkdirAll(PluginCacheDir, 0o755); err != nil {
-			return nil, fmt.Errorf("creating plugin cache directory: %w", err)
+	switch cfg.ExecutorKind {
+	case processExecutorKind:
+		r.executor = &processExecutor{
+			config:                     cfg.OperationConfig,
+			logger:                     logger,
+			operationClientConstructor: operationClientConstructor,
 		}
-		r.logger.V(r.v).Info("enabled plugin cache", "path", PluginCacheDir)
+	case KubeExecutorKind:
+		executor, err := newKubeExecutor(logger, cfg.OperationConfig, *cfg.KubeConfig)
+		if err != nil {
+			return nil, fmt.Errorf("constructing kubernetes executor: %w", err)
+		}
+		r.executor = executor
+	default:
+		return nil, fmt.Errorf("invalid executor kind: '%s'", cfg.ExecutorKind)
 	}
 	return r, nil
 }
@@ -83,9 +87,6 @@ func newRunner(
 // Start the runner daemon.
 func (r *Runner) Start(ctx context.Context) error {
 	r.logger.V(r.v).Info("starting runner", "version", internal.Version)
-
-	// Initialize tracker, to keep track of active jobs.
-	tracker := &jobTracker{mapping: make(map[resource.TfeID]cancelable)}
 
 	// Authenticate as unregistered runner with the registration endpoint. This
 	// is only necessary for the server runner; the agent runner relies on
@@ -138,7 +139,7 @@ func (r *Runner) Start(ctx context.Context) error {
 			case <-ticker.C:
 				// send runner status update
 				status := RunnerIdle
-				if tracker.totalJobs() > 0 {
+				if r.executor.currentJobs() > 0 {
 					status = RunnerBusy
 				}
 				if err := r.client.updateStatus(ctx, registrationMetadata.ID, status); err != nil {
@@ -167,18 +168,7 @@ func (r *Runner) Start(ctx context.Context) error {
 	})
 
 	g.Go(func() (err error) {
-		defer func() {
-			if tracker.totalJobs() > 0 {
-				r.logger.Info("gracefully canceling in-progress jobs", "total", tracker.totalJobs())
-				// NOTE: The interrupt sent to the main process is also sent to
-				// any forked terraform processes, which is what we want, but it
-				// is also necessary to instruct operations to stop.
-				tracker.stopAll()
-			}
-		}()
-
-		// fetch jobs allocated to this runner and spawn operations to do jobs; also
-		// handle cancelation signals for jobs
+		// fetch jobs allocated to this runner and spawn operations to do jobs
 		for {
 			processJobs := func() error {
 				r.logger.V(r.v).Info("waiting for next job")
@@ -203,19 +193,9 @@ func (r *Runner) Start(ctx context.Context) error {
 						}
 						return fmt.Errorf("starting job and retrieving job token: %w", err)
 					}
-					op, err := r.spawner.newOperation(j, token)
-					if err != nil {
+					if err := r.executor.SpawnOperation(ctx, g, j, token); err != nil {
 						return fmt.Errorf("spawning job operation: %w", err)
 					}
-					// check job operation in with the tracker, so that if the
-					// runner shuts down then the operation is shutdown too.
-					tracker.checkIn(j.ID, op)
-					op.V(0).Info("started job")
-					g.Go(func() error {
-						op.doAndFinish()
-						tracker.checkOut(op.job.ID)
-						return nil
-					})
 				}
 				return nil
 			}

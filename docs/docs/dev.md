@@ -81,10 +81,10 @@ If you make any changes to a chart you need to bump its chart version. You can e
 # requires `yq`
 #
 # To update the otfd chart version
-CHART=otfd make bump
+CHART=otfd make bump-chart-version
 #
 # To update the otf-agent chart version
-CHART=otf-agent make bump
+CHART=otf-agent make bump-chart-version
 ```
 
 ### Generating README.md's

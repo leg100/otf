@@ -54,6 +54,16 @@ func setup(t *testing.T, opts ...configOption) (*testDaemon, *organization.Organ
 	cfg := &config{
 		Config: daemon.NewConfig(),
 	}
+
+	// Skip TLS verification for tests because they'll be standing up various
+	// stub TLS servers with self-certified certs.
+	cfg.SkipTLSVerification = true
+
+	// Enable SSL by default, because tests running terraform binary mandate it
+	cfg.SSL = true
+	cfg.CertFile = "./fixtures/cert.pem"
+	cfg.KeyFile = "./fixtures/key.pem"
+
 	for _, fn := range opts {
 		fn(cfg)
 	}
@@ -70,14 +80,6 @@ func setup(t *testing.T, opts ...configOption) (*testDaemon, *organization.Organ
 	if cfg.DisableLatestChecker == nil || !*cfg.DisableLatestChecker {
 		cfg.DisableLatestChecker = internal.Ptr(true)
 	}
-	// Skip TLS verification for tests because they'll be standing up various
-	// stub TLS servers with self-certified certs.
-	cfg.SkipTLSVerification = true
-
-	cfg.SSL = true
-	cfg.CertFile = "./fixtures/cert.pem"
-	cfg.KeyFile = "./fixtures/key.pem"
-
 	// Start stub github server, unless test has set its own github stub
 	var githubServer *github.TestServer
 	if !cfg.skipGithubStub {
@@ -459,9 +461,9 @@ func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, org organizat
 	}
 
 	agentOpts := runner.AgentOptions{
-		Config: runner.NewConfig(),
-		Token:  token,
-		URL:    s.System.URL("/"),
+		Config:    runner.NewDefaultConfig(),
+		Token:     token,
+		ServerURL: s.System.URL("/"),
 	}
 	for _, fn := range opts {
 		fn(&agentOpts)

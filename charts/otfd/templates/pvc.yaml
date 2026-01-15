@@ -1,0 +1,25 @@
+{{- if .Values.cacheVolume.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "otfd.cacheVolumeName" . }}
+  labels:
+    {{- include "otfd.labels" . | nindent 4 }}
+spec:
+{{- with .Values.cacheVolume }}
+  accessModes:
+  {{- range .accessModes }}
+  - {{ . | quote }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .size | quote }}
+  {{- with .storageClass }}
+    {{- if (eq "-" .) }}
+      storageClassName: ""
+    {{- else }}
+      storageClassName: "{{ . }}"
+    {{- end }}
+  {{- end }}
+{{- end }}
+{{- end }}
