@@ -111,12 +111,6 @@ func newKubeExecutor(
 }
 
 func (s *kubeExecutor) SpawnOperation(ctx context.Context, _ *errgroup.Group, job *Job, jobToken []byte) error {
-	// Launch k8s job
-	//
-	// TODO:
-	// * support optional persistent volumes for:
-	// 	* engine binaries
-	// 	* provider cache (will opentofu concurrency support work?)
 	labels := map[string]string{
 		"otf.ninja/job-id":       job.ID.String(),
 		"otf.ninja/run-id":       job.RunID.String(),
@@ -124,6 +118,9 @@ func (s *kubeExecutor) SpawnOperation(ctx context.Context, _ *errgroup.Group, jo
 		"otf.ninja/workspace-id": job.WorkspaceID.String(),
 		"otf.ninja/organization": job.Organization.String(),
 	}
+
+	const cacheVolumeName = "cache"
+
 	spec := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: strings.ToLower(job.ID.String()),
@@ -187,15 +184,21 @@ func (s *kubeExecutor) SpawnOperation(ctx context.Context, _ *errgroup.Group, jo
 							},
 							VolumeMounts: []corev1.VolumeMount{
 								{
-									Name:      "cache",
-									MountPath: "/cache",
+									Name:      cacheVolumeName,
+									MountPath: s.OperationConfig.EngineBinDir,
+									SubPath:   filepath.Base(s.OperationConfig.EngineBinDir),
+								},
+								{
+									Name:      cacheVolumeName,
+									MountPath: s.OperationConfig.PluginCacheDir,
+									SubPath:   filepath.Base(s.OperationConfig.PluginCacheDir),
 								},
 							},
 						},
 					},
 					Volumes: []corev1.Volume{
 						{
-							Name: "cache",
+							Name: cacheVolumeName,
 							VolumeSource: corev1.VolumeSource{
 								EmptyDir: &corev1.EmptyDirVolumeSource{},
 							},
