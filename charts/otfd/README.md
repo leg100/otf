@@ -1,6 +1,6 @@
 # Helm chart for `otfd`
 
-![Version: 0.3.19](https://img.shields.io/badge/Version-0.3.19-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 0.3.22](https://img.shields.io/badge/AppVersion-0.3.22-informational?style=flat-square)
+![Version: 0.3.20](https://img.shields.io/badge/Version-0.3.20-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 0.3.22](https://img.shields.io/badge/AppVersion-0.3.22-informational?style=flat-square)
 
 Installs the [otf](https://github.com/leg100/otf) daemon.
 
@@ -42,15 +42,16 @@ Note: you should only use this for testing purposes.
 | caCerts.enabled | bool | `false` | Mount a secret containing CA certificates and make them available to both terraform and otfd, allowing them to communicate with API endpoints that use custom CA certificates. |
 | caCerts.secretItems | list | `[]` | Specify individual items in secret containing CA certificates. Use the [KeyToPath](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.28/#keytopath-v1-core) schema for each item. If unspecified, all items are mounted from the secret. |
 | caCerts.secretName | string | `"certs"` | Name of secret containing the CA certificates to mount. |
+| cacheVolume | object | `{"accessModes":["ReadWriteMany"],"enabled":false,"size":"100Gi","storageClass":null}` | Persistent volume for cache, e.g. for downloaded engine binaries (terraform, tofu), and caching provider plugins. |
+| cacheVolume.accessModes | list | `["ReadWriteMany"]` | Persistent volume access modes. |
+| cacheVolume.enabled | bool | `false` | Enable persistent volume for cache. |
+| cacheVolume.size | string | `"100Gi"` | Persistent volume size. |
+| cacheVolume.storageClass | string | `nil` | Persistent volume storage class. # If defined, storageClassName: <storageClass> # If set to "-", storageClassName: "", which disables dynamic provisioning # If undefined (the default) or set to null, no storageClassName spec is # set, choosing the default provisioner. |
 | database | string | `""` | Postgres connection string |
 | databasePasswordFromSecret | object | `nil` | Source database password from a secret |
 | databaseUsernameFromSecret | object | `nil` | Source database username from a secret |
 | defaultEngine | string | `""` | The default engine to use. Specify either 'terraform' or 'tofu'. See [docs](https://docs.otf.ninja/config/flags/#-default-engine). |
-| engineCache | object | `{"accessModes":["ReadWriteMany"],"enabled":false,"size":"10Gi","storageClass":null}` | Persistent volume for caching downloaded engine binaries (terraform, tofu). |
-| engineCache.accessModes | list | `["ReadWriteMany"]` | Persistent volume access modes. |
-| engineCache.enabled | bool | `false` | Enable persistent volume. |
-| engineCache.size | string | `"10Gi"` | Persistent volume size. |
-| engineCache.storageClass | string | `nil` | Persistent volume storage class. # If defined, storageClassName: <storageClass> # If set to "-", storageClassName: "", which disables dynamic provisioning # If undefined (the default) or set to null, no storageClassName spec is # set, choosing the default provisioner. |
+| enableProviderCache | bool | `false` | Enable provider plugin cache. Note this is only concurrency safe in opentofu 1.10.0 and greater. |
 | envsFromSecret | string | `""` | Environment variables to be passed to the deployment from the named kubernetes secret. |
 | executor | string | `""` | The executor to use. Specify either 'process' or 'kubernetes'. See [docs](https://docs.otf.ninja/config/flags/#-executor) |
 | extraEnvs | object | `{}` | Extra environment variables to be passed to the deployment. |
