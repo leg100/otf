@@ -44,8 +44,9 @@ func New(
 ) (*Runner, error) {
 	r := &Runner{
 		RunnerMeta: &RunnerMeta{
-			Name:    cfg.Name,
-			MaxJobs: cfg.MaxJobs,
+			Name:         cfg.Name,
+			MaxJobs:      cfg.MaxJobs,
+			ExecutorKind: cfg.ExecutorKind,
 		},
 		client:                     runnerClient,
 		operationClientConstructor: operationClientConstructor,
@@ -96,9 +97,10 @@ func (r *Runner) Start(ctx context.Context) error {
 	// register runner with server, which responds with an updated runner
 	// registrationMetadata, including a unique ID.
 	registrationMetadata, err := r.client.Register(ctx, RegisterRunnerOptions{
-		Name:        r.Name,
-		Version:     internal.Version,
-		Concurrency: r.MaxJobs,
+		Name:         r.Name,
+		Version:      internal.Version,
+		Concurrency:  r.MaxJobs,
+		ExecutorKind: r.ExecutorKind,
 	})
 	if err != nil {
 		return fmt.Errorf("registering runner: %w", err)

@@ -69,9 +69,6 @@ maxConfigSize: ""
 # -- The default engine to use. Specify either 'terraform' or 'tofu'. See [docs](https://docs.otf.ninja/config/flags/#-default-engine).
 defaultEngine: ""
 
-# -- The executor to use. Specify either 'process' or 'kubernetes'. See [docs](https://docs.otf.ninja/config/flags/#-executor)
-executor: ""
-
 logging:
   # -- Logging verbosity, the higher the number the more verbose the logs. See [docs](https://docs.otf.ninja/config/flags/#-v).
   verbosity: 0
@@ -198,25 +195,6 @@ volumes: []
 
 # -- Additional volume mounts for the main otfd container
 volumeMounts: []
-
-# -- Enable provider plugin cache. Note this is only concurrency safe in opentofu 1.10.0 and greater.
-enableProviderCache: false
-
-# -- Persistent volume for cache, e.g. for downloaded engine binaries (terraform, tofu), and caching provider plugins.
-cacheVolume:
-  # -- Enable persistent volume for cache.
-  enabled: false
-  # -- Persistent volume storage class.
-  ## If defined, storageClassName: <storageClass>
-  ## If set to "-", storageClassName: "", which disables dynamic provisioning
-  ## If undefined (the default) or set to null, no storageClassName spec is
-  ## set, choosing the default provisioner.
-  storageClass: ~
-  # -- Persistent volume access modes.
-  accessModes:
-    - ReadWriteMany
-  # -- Persistent volume size.
-  size: 100Gi
 
 # -- Additional sidecar containers to run alongside the main otfd container
 sidecars: []

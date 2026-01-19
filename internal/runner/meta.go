@@ -20,7 +20,8 @@ type RunnerMeta struct {
 	Version string `jsonapi:"attribute" json:"version"`
 	// Current status of runner
 	Status RunnerStatus `jsonapi:"attribute" json:"status"`
-	// Max number of jobs runner can execute
+	// Max number of jobs runner can execute. Only applicable to the 'process'
+	// executor.
 	MaxJobs int `jsonapi:"attribute" json:"max_jobs" db:"max_jobs"`
 	// Current number of jobs allocated to runner.
 	CurrentJobs int `jsonapi:"attribute" json:"current_jobs" db:"current_jobs"`
@@ -30,6 +31,8 @@ type RunnerMeta struct {
 	LastStatusAt time.Time `jsonapi:"attribute" json:"last-status-at" db:"last_status_at"`
 	// IP address of runner.
 	IPAddress netip.Addr `jsonapi:"attribute" json:"ip-address" db:"ip_address"`
+	// ExecutorKind is the runner's execution kind.
+	ExecutorKind ExecutorKind `jsonapi:"attribute" json:"executor_kind" db:"executor_kind"`
 	// Info about the runner's agent pool. Non-nil if agent runner; nil if server
 	// runner.
 	AgentPool *Pool `jsonapi:"attribute" json:"agent-pool" db:"agent_pool"`
@@ -45,6 +48,8 @@ type RegisterRunnerOptions struct {
 	// IPAddress of agent. Optional. Not sent over the wire; instead the server
 	// handler is responsible for determining client's IP address.
 	IPAddress *netip.Addr `json:"-"`
+	// ExecutorKind is the runner's execution kind.
+	ExecutorKind ExecutorKind `jsonapi:"attribute" json:"executor_kind" db:"executor_kind"`
 	// ID of agent's pool. Only set if runner is an agent.
 	AgentPoolID *string `json:"-"`
 	// CurrentJobs are those jobs the agent has discovered leftover from a
@@ -57,11 +62,12 @@ type RegisterRunnerOptions struct {
 // provides info about the newly registered runner.
 func register(runner *unregistered, opts RegisterRunnerOptions) (*RunnerMeta, error) {
 	meta := &RunnerMeta{
-		ID:        resource.NewTfeID(resource.RunnerKind),
-		Name:      opts.Name,
-		Version:   opts.Version,
-		MaxJobs:   opts.Concurrency,
-		AgentPool: runner.pool,
+		ID:           resource.NewTfeID(resource.RunnerKind),
+		Name:         opts.Name,
+		Version:      opts.Version,
+		MaxJobs:      opts.Concurrency,
+		AgentPool:    runner.pool,
+		ExecutorKind: opts.ExecutorKind,
 	}
 	if err := meta.setStatus(RunnerIdle, true); err != nil {
 		return nil, err

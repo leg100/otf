@@ -5,16 +5,12 @@ metadata:
   labels:
     {{- include "postgres.labels" . | nindent 4 }}
 spec:
-  replicas: {{ .Values.replicaCount }}
+  replicas: 1
   selector:
     matchLabels:
       {{- include "postgres.selectorLabels" . | nindent 6 }}
   template:
     metadata:
-      {{- with .Values.podAnnotations }}
-      annotations:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
       labels:
         {{- include "postgres.labels" . | nindent 8 }}
         {{- with .Values.podLabels }}
@@ -35,8 +31,8 @@ spec:
           securityContext:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          image: "postgres:13-alpine"
+          imagePullPolicy: IfNotPresent
           env:
             - name: POSTGRES_PASSWORD
               value: postgres
@@ -44,14 +40,13 @@ spec:
             - name: postgres
               containerPort: 5432
               protocol: TCP
-          {{- with .Values.livenessProbe }}
-          livenessProbe:
-            {{- toYaml . | nindent 12 }}
-          {{- end }}
           {{- with .Values.readinessProbe }}
           readinessProbe:
-            {{- toYaml . | nindent 12 }}
-          {{- end }}
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - postgres
           {{- with .Values.resources }}
           resources:
             {{- toYaml . | nindent 12 }}
