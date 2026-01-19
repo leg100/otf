@@ -56,6 +56,8 @@ func init() {
 				os.Getenv("OTF_KUBERNETES_SERVICE_PORT"),
 			),
 		},
+		// Delete job by default 1 hour after it has finished
+		TTLAfterFinish: time.Hour,
 	}
 }
 
@@ -71,6 +73,7 @@ type kubeConfig struct {
 	ServerURL      KubeConfigServerURL
 	ServiceAccount string
 	CachePVC       string
+	TTLAfterFinish time.Duration
 }
 
 type KubeConfigServerURL interface {
@@ -124,12 +127,25 @@ func (s *kubeExecutor) SpawnOperation(ctx context.Context, _ *errgroup.Group, jo
 		jobTokenSecretKey = "jobToken"
 	)
 
+	// Generate name for k8s job. OTF uses TFE IDs, which use the base58 alphabet, which
+	// includes upper case letters; but they're not permissible in k8s resource
+	// names. Instead we lower case the OTF job TFE ID and add a random suffix
+	// to reduce the possibility of duplicate names (the risk of which by using lower cased
+	// base58 is slightly increased).
+	//
+	// We could have instead used k8s' GenerateName func, which generates a
+	// random name on the server side, but we would like more control over the
+	// format of the generated name.
+	lowerCaseAndNumbers := "abcdefghijkmnopqrstuvwxyz0123456789"
+	suffix := internal.GenerateRandomStringFromAlphabet(4, lowerCaseAndNumbers)
+	jobName := fmt.Sprintf("%s-%s", strings.ToLower(job.ID.String()), suffix)
+
 	// Create secret containing job token.
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: strings.ToLower(job.ID.String()),
-			Namespace:    s.Config.Namespace,
-			Labels:       labels,
+			Name:      jobName,
+			Namespace: s.Config.Namespace,
+			Labels:    labels,
 		},
 		Immutable: internal.Ptr(true),
 		StringData: map[string]string{
@@ -140,21 +156,20 @@ func (s *kubeExecutor) SpawnOperation(ctx context.Context, _ *errgroup.Group, jo
 	if err != nil {
 		return fmt.Errorf("creating kubernetes secret for job token: %w", err)
 	}
-	s.Logger.V(4).Info("created kubernetes secret for job token", "name", ksecret.GetGenerateName(), "namespace", ksecret.GetNamespace(), "otf-job", job)
+	s.Logger.V(4).Info("created kubernetes secret for job token", "name", ksecret.GetName(), "namespace", ksecret.GetNamespace(), "otf-job", job)
 
 	// Create k8s job for OTF job.
 	spec := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: strings.ToLower(job.ID.String()),
-			Namespace:    s.Config.Namespace,
-			Labels:       labels,
+			Name:      jobName,
+			Namespace: s.Config.Namespace,
+			Labels:    labels,
 		},
 		Spec: batchv1.JobSpec{
 			// A job by default will re-create pods upon failure (up to 6 times
 			// with backoff), but we can't guarantee idempotency.
-			BackoffLimit: internal.Ptr(int32(0)),
-			// Delete job an hour after it has finished.
-			TTLSecondsAfterFinished: internal.Ptr(int32(time.Hour.Seconds())),
+			BackoffLimit:            internal.Ptr(int32(0)),
+			TTLSecondsAfterFinished: internal.Ptr(int32(s.Config.TTLAfterFinish.Seconds())),
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: labels,
@@ -180,7 +195,7 @@ func (s *kubeExecutor) SpawnOperation(ctx context.Context, _ *errgroup.Group, jo
 									ValueFrom: &corev1.EnvVarSource{
 										SecretKeyRef: &corev1.SecretKeySelector{
 											LocalObjectReference: corev1.LocalObjectReference{
-												Name: ksecret.GetGenerateName(),
+												Name: ksecret.GetName(),
 											},
 											Key: jobTokenSecretKey,
 										},
@@ -248,12 +263,19 @@ func (s *kubeExecutor) SpawnOperation(ctx context.Context, _ *errgroup.Group, jo
 	if err != nil {
 		return fmt.Errorf("creating kubernetes job: %w", err)
 	}
-	s.Logger.V(1).Info("created kubernetes job", "name", kjob.GetGenerateName(), "namespace", kjob.GetNamespace(), "otf-job", job)
+	s.Logger.V(1).Info("created kubernetes job", "name", kjob.GetName(), "namespace", kjob.GetNamespace(), "otf-job", job)
 
 	// Set secret's owner to its job, so that it is deleted when its job is
 	// deleted.
 	secret.OwnerReferences = []metav1.OwnerReference{
-		*metav1.NewControllerRef(kjob, kjob.GroupVersionKind()),
+		{
+			// NOTE: the API version and kind are empty strings in the returned
+			// job struct, so we're forced to hardcode them.
+			APIVersion: "batch/v1",
+			Kind:       "job",
+			Name:       kjob.Name,
+			UID:        kjob.UID,
+		},
 	}
 	_, err = s.kube.CoreV1().Secrets(s.Config.Namespace).Update(ctx, secret, metav1.UpdateOptions{})
 	if err != nil {

@@ -13,15 +13,16 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	k8swait "k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 )
@@ -105,7 +106,8 @@ func TestKubeExecutor(t *testing.T) {
 	serverURL := serverURLTestCallback{ip: ip}
 
 	daemon, org, ctx := setup(t,
-		withKubernetesExecutor(kubeconfigPath, image, kubeNamespace, &serverURL),
+		// Delete job 1 second after it has finished.
+		withKubernetesExecutor(kubeconfigPath, image, kubeNamespace, &serverURL, time.Second),
 		withSSLDisabled(),
 	)
 	serverURL.port = daemon.ListenAddress.Port
@@ -116,17 +118,34 @@ func TestKubeExecutor(t *testing.T) {
 	run := daemon.createRun(t, ctx, ws, cv, nil)
 
 	// pod should succeed and run should reach planned status
-	waitPodSucceeded(t, clientset, ws.ID)
+	opts := metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("otf.ninja/workspace-id=%s", ws.ID.String()),
+	}
+	waitPodSucceeded(t, clientset, opts)
 	run = daemon.getRun(t, ctx, run.ID)
 	assert.Equal(t, runstatus.Planned, run.Status)
+
+	// Ensure k8s garbage collection works as configured with both job and
+	// secret resources deleted.
+	k8swait.PollUntilContextCancel(ctx, time.Second, true, func(ctx context.Context) (bool, error) {
+		secrets, err := clientset.CoreV1().Secrets(kubeNamespace).List(t.Context(), opts)
+		if err != nil {
+			return false, err
+		}
+		return len(secrets.Items) == 0, nil
+	})
+	k8swait.PollUntilContextCancel(ctx, time.Second, true, func(ctx context.Context) (bool, error) {
+		jobs, err := clientset.BatchV1().Jobs(kubeNamespace).List(t.Context(), opts)
+		if err != nil {
+			return false, err
+		}
+		return len(jobs.Items) == 0, nil
+	})
 }
 
-func waitPodSucceeded(t *testing.T, clientset *kubernetes.Clientset, workspaceID resource.TfeID) {
+func waitPodSucceeded(t *testing.T, clientset *kubernetes.Clientset, opts metav1.ListOptions) {
 	t.Helper()
 
-	opts := metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("otf.ninja/workspace-id=%s", workspaceID.String()),
-	}
 	watch, err := clientset.CoreV1().Pods(kubeNamespace).Watch(t.Context(), opts)
 	require.NoError(t, err)
 
@@ -157,7 +176,7 @@ func waitPodSucceeded(t *testing.T, clientset *kubernetes.Clientset, workspaceID
 func dumpPodLogs(t *testing.T, pod *corev1.Pod, clientset *kubernetes.Clientset) {
 	t.Helper()
 
-	req := clientset.CoreV1().Pods("default").GetLogs(pod.Name, &corev1.PodLogOptions{})
+	req := clientset.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, &corev1.PodLogOptions{})
 	podLogs, err := req.Stream(t.Context())
 	require.NoError(t, err)
 	t.Cleanup(func() {
