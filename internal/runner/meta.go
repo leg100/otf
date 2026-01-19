@@ -20,7 +20,7 @@ type RunnerMeta struct {
 	Version string `jsonapi:"attribute" json:"version"`
 	// Current status of runner
 	Status RunnerStatus `jsonapi:"attribute" json:"status"`
-	// Max number of jobs runner can execute. Only applicable to the 'process'
+	// Max number of jobs runner can execute. Only applicable to the 'fork'
 	// executor.
 	MaxJobs int `jsonapi:"attribute" json:"max_jobs" db:"max_jobs"`
 	// Current number of jobs allocated to runner.

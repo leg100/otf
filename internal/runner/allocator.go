@@ -210,10 +210,10 @@ func (a *allocator) allocate(ctx context.Context, job *Job) error {
 			continue
 		}
 		// skip runners with insufficient capacity (only applicable to runners
-		// with a 'process' executor kind - an infinite number of jobs can be
+		// with a 'fork' executor kind - an infinite number of jobs can be
 		// allocated to the 'kubernetes' executor kind, where kubernetes itself
 		// is then responsible for allocation of resources.
-		if runner.ExecutorKind == processExecutorKind && runner.MaxJobs == a.currentJobs[runner.ID] {
+		if runner.ExecutorKind == ForkExecutorKind && runner.MaxJobs == a.currentJobs[runner.ID] {
 			insufficientCapacity = true
 			continue
 		}

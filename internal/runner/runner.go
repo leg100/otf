@@ -67,8 +67,8 @@ func New(
 		r.logger.V(r.v).Info("enabled debug mode")
 	}
 	switch cfg.ExecutorKind {
-	case processExecutorKind:
-		r.executor = &processExecutor{
+	case ForkExecutorKind:
+		r.executor = &forkExecutor{
 			config:                     cfg.OperationConfig,
 			logger:                     logger,
 			operationClientConstructor: operationClientConstructor,

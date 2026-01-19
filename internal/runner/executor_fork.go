@@ -7,9 +7,9 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-const processExecutorKind = "process"
+const ForkExecutorKind = "fork"
 
-type processExecutor struct {
+type forkExecutor struct {
 	config                     OperationConfig
 	logger                     logr.Logger
 	operationClientConstructor operationClientConstructor
@@ -17,7 +17,7 @@ type processExecutor struct {
 	n int
 }
 
-func (s *processExecutor) SpawnOperation(ctx context.Context, g *errgroup.Group, job *Job, jobToken []byte) error {
+func (s *forkExecutor) SpawnOperation(ctx context.Context, g *errgroup.Group, job *Job, jobToken []byte) error {
 	client, err := s.operationClientConstructor(jobToken)
 	if err != nil {
 		return err
@@ -34,6 +34,6 @@ func (s *processExecutor) SpawnOperation(ctx context.Context, g *errgroup.Group,
 	return nil
 }
 
-func (s *processExecutor) currentJobs() int {
+func (s *forkExecutor) currentJobs() int {
 	return s.n
 }

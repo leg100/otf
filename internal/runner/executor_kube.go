@@ -119,8 +119,30 @@ func (s *kubeExecutor) SpawnOperation(ctx context.Context, _ *errgroup.Group, jo
 		"otf.ninja/organization": job.Organization.String(),
 	}
 
-	const cacheVolumeName = "cache"
+	const (
+		cacheVolumeName   = "cache"
+		jobTokenSecretKey = "jobToken"
+	)
 
+	// Create secret containing job token.
+	secret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: strings.ToLower(job.ID.String()),
+			Namespace:    s.Config.Namespace,
+			Labels:       labels,
+		},
+		Immutable: internal.Ptr(true),
+		StringData: map[string]string{
+			jobTokenSecretKey: string(jobToken),
+		},
+	}
+	ksecret, err := s.kube.CoreV1().Secrets(s.Config.Namespace).Create(ctx, secret, metav1.CreateOptions{})
+	if err != nil {
+		return fmt.Errorf("creating kubernetes secret for job token: %w", err)
+	}
+	s.Logger.V(4).Info("created kubernetes secret for job token", "name", ksecret.GetGenerateName(), "namespace", ksecret.GetNamespace(), "otf-job", job)
+
+	// Create k8s job for OTF job.
 	spec := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: strings.ToLower(job.ID.String()),
@@ -154,8 +176,15 @@ func (s *kubeExecutor) SpawnOperation(ctx context.Context, _ *errgroup.Group, jo
 									Value: job.ID.String(),
 								},
 								{
-									Name:  "OTF_JOB_TOKEN",
-									Value: string(jobToken),
+									Name: "OTF_JOB_TOKEN",
+									ValueFrom: &corev1.EnvVarSource{
+										SecretKeyRef: &corev1.SecretKeySelector{
+											LocalObjectReference: corev1.LocalObjectReference{
+												Name: ksecret.GetGenerateName(),
+											},
+											Key: jobTokenSecretKey,
+										},
+									},
 								},
 								{
 									Name:  "OTF_V",
@@ -215,12 +244,22 @@ func (s *kubeExecutor) SpawnOperation(ctx context.Context, _ *errgroup.Group, jo
 			},
 		}
 	}
-
 	kjob, err := s.kube.BatchV1().Jobs(s.Config.Namespace).Create(ctx, spec, metav1.CreateOptions{})
 	if err != nil {
 		return fmt.Errorf("creating kubernetes job: %w", err)
 	}
 	s.Logger.V(1).Info("created kubernetes job", "name", kjob.GetGenerateName(), "namespace", kjob.GetNamespace(), "otf-job", job)
+
+	// Set secret's owner to its job, so that it is deleted when its job is
+	// deleted.
+	secret.OwnerReferences = []metav1.OwnerReference{
+		*metav1.NewControllerRef(kjob, kjob.GroupVersionKind()),
+	}
+	_, err = s.kube.CoreV1().Secrets(s.Config.Namespace).Update(ctx, secret, metav1.UpdateOptions{})
+	if err != nil {
+		return fmt.Errorf("setting kubernetes job token secret owner reference: %w", err)
+	}
+
 	return nil
 }
 

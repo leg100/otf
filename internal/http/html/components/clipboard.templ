@@ -7,12 +7,17 @@ templ CopyableContent() {
 		<span x-ref="content" class="font-mono break-all text-gray-500 text-xs">
 			{ children... }
 		</span>
-		<a class="shrink-0" @click="navigator.clipboard.writeText($refs.content.innerHTML); open = true; setTimeout(() => open = false, 1000)">
+		<a class="copyable-content shrink-0" @click="navigator.clipboard.writeText($refs.content.innerHTML); open = true; setTimeout(() => open = false, 1000)">
 			<img id="clipboard-icon" src={ AssetPath(ctx, "/static/images/clipboard_copy.svg") }/>
+			<span
+				class="bg-black text-white p-1 text-xs font-bold absolute"
+				style="display: none"
+				x-cloak
+				x-show="open"
+			>
+				copied!
+			</span>
 		</a>
-		<div class="relative">
-			<span class="bg-black text-white p-1 text-xs font-bold absolute" x-cloak x-show="open" x-transition>copied!</span>
-		</div>
 	</div>
 }
 

@@ -144,11 +144,11 @@ Overrides `--hostname` specifically for webhooks. This is useful if you want to 
 ## `--executor`
 
 * System: `otfd`, `otf-agent`
-* Default: `process`
+* Default: `fork`
 
 Specifies how runs should be executed.
 
-By default it is set to `process`, which means executables such as `terraform` are forked as child processes of `otfd` (or `otf-agent` if the workspace is set to use an agent).
+By default it is set to `fork`, which means executables such as `terraform` are forked as child processes of `otfd` (or `otf-agent` if the workspace is set to use an agent).
 
 If set to `kubernetes` then for each plan and apply a Kubernetes job is created. Executables such as `terraform` are then forked as child processes in the job pod.
 

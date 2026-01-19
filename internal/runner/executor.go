@@ -18,9 +18,9 @@ func (e *ExecutorKind) String() string     { return string(*e) }
 
 func (e *ExecutorKind) set(v string) error {
 	switch ExecutorKind(v) {
-	case processExecutorKind, KubeExecutorKind:
+	case ForkExecutorKind, KubeExecutorKind:
 	default:
-		return fmt.Errorf("no executor named %s: must be %s or %s", v, processExecutorKind, KubeExecutorKind)
+		return fmt.Errorf("no executor named %s: must be %s or %s", v, ForkExecutorKind, KubeExecutorKind)
 	}
 	*e = ExecutorKind(v)
 	return nil

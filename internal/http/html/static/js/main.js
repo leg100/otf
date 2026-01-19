@@ -14,3 +14,9 @@ window.addEventListener("load", (e) => {
 		});
 	});
 });
+
+window.addEventListener("load", (e) => {
+	document.body.addEventListener("htmx:afterSettle", function (evt) {
+		Alpine.initTree(evt.detail.elt);
+	});
+});
