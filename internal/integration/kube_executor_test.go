@@ -117,11 +117,27 @@ func TestKubeExecutor(t *testing.T) {
 	cv := daemon.createAndUploadConfigurationVersion(t, ctx, ws, nil)
 	run := daemon.createRun(t, ctx, ws, cv, nil)
 
-	// pod should succeed and run should reach planned status
+	// Pod should succeed and run should reach planned status
 	opts := metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("otf.ninja/workspace-id=%s", ws.ID.String()),
 	}
-	waitPodSucceeded(t, clientset, opts)
+	k8swait.PollUntilContextCancel(ctx, time.Second, true, func(ctx context.Context) (bool, error) {
+		pods, err := clientset.CoreV1().Pods(kubeNamespace).List(t.Context(), opts)
+		if err != nil {
+			return false, err
+		}
+		if len(pods.Items) == 0 {
+			return false, nil
+		}
+		switch pod := pods.Items[0]; pod.Status.Phase {
+		case corev1.PodFailed:
+			dumpPodLogs(t, &pod, clientset)
+			t.FailNow()
+		case corev1.PodSucceeded:
+			return true, nil
+		}
+		return false, nil
+	})
 	run = daemon.getRun(t, ctx, run.ID)
 	assert.Equal(t, runstatus.Planned, run.Status)
 
@@ -141,36 +157,6 @@ func TestKubeExecutor(t *testing.T) {
 		}
 		return len(jobs.Items) == 0, nil
 	})
-}
-
-func waitPodSucceeded(t *testing.T, clientset *kubernetes.Clientset, opts metav1.ListOptions) {
-	t.Helper()
-
-	watch, err := clientset.CoreV1().Pods(kubeNamespace).Watch(t.Context(), opts)
-	require.NoError(t, err)
-
-	podList, err := clientset.CoreV1().Pods(kubeNamespace).List(t.Context(), opts)
-	require.NoError(t, err)
-
-	if len(podList.Items) > 0 {
-		switch pod := podList.Items[0]; pod.Status.Phase {
-		case corev1.PodFailed:
-			dumpPodLogs(t, &pod, clientset)
-			t.FailNow()
-		case corev1.PodSucceeded:
-			return
-		}
-	}
-
-	for event := range watch.ResultChan() {
-		switch pod := event.Object.(*corev1.Pod); pod.Status.Phase {
-		case corev1.PodFailed:
-			dumpPodLogs(t, pod, clientset)
-			t.FailNow()
-		case corev1.PodSucceeded:
-			return
-		}
-	}
 }
 
 func dumpPodLogs(t *testing.T, pod *corev1.Pod, clientset *kubernetes.Clientset) {
