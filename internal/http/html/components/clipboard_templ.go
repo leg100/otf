@@ -39,7 +39,7 @@ func CopyableContent() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</span> <a class=\"shrink-0\" @click=\"navigator.clipboard.writeText($refs.content.innerHTML); open = true; setTimeout(() => open = false, 1000)\"><img id=\"clipboard-icon\" src=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</span> <a class=\"copyable-content shrink-0\" @click=\"navigator.clipboard.writeText($refs.content.innerHTML); open = true; setTimeout(() => open = false, 1000)\"><img id=\"clipboard-icon\" src=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -52,7 +52,7 @@ func CopyableContent() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "\"></a><div class=\"relative\"><span class=\"bg-black text-white p-1 text-xs font-bold absolute\" x-cloak x-show=\"open\" x-transition>copied!</span></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "\"> <span class=\"bg-black text-white p-1 text-xs font-bold absolute\" style=\"display: none\" x-cloak x-show=\"open\">copied!</span></a></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -100,7 +100,7 @@ func Identifier(id resource.TfeID) templ.Component {
 			var templ_7745c5c3_Var5 string
 			templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(id.String())
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/html/components/clipboard.templ`, Line: 22, Col: 16}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/html/components/clipboard.templ`, Line: 27, Col: 16}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 			if templ_7745c5c3_Err != nil {

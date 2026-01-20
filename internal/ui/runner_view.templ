@@ -6,13 +6,13 @@ import (
 	"github.com/leg100/otf/internal/http/html/components/paths"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
-	"github.com/leg100/otf/internal/runner"
+	runnerpkg "github.com/leg100/otf/internal/runner"
 )
 
 type listRunnersProps struct {
 	organization      organization.Name
 	hideServerRunners bool
-	page              *resource.Page[*runner.RunnerMeta]
+	page              *resource.Page[*runnerpkg.RunnerMeta]
 }
 
 templ listRunners(props listRunnersProps) {
@@ -41,12 +41,12 @@ templ listRunners(props listRunnersProps) {
 	}
 }
 
-var runnerStatusColors = map[runner.RunnerStatus]string{
-	runner.RunnerIdle:    "status-success",
-	runner.RunnerBusy:    "status-success",
-	runner.RunnerUnknown: "status-warning",
-	runner.RunnerErrored: "status-error",
-	runner.RunnerExited:  "status-info",
+var runnerStatusColors = map[runnerpkg.RunnerStatus]string{
+	runnerpkg.RunnerIdle:    "status-success",
+	runnerpkg.RunnerBusy:    "status-success",
+	runnerpkg.RunnerUnknown: "status-warning",
+	runnerpkg.RunnerErrored: "status-error",
+	runnerpkg.RunnerExited:  "status-info",
 }
 
 type runnersTable struct{}
@@ -61,7 +61,7 @@ templ (t runnersTable) Header() {
 	<th>Last seen</th>
 }
 
-templ (t runnersTable) Row(runner *runner.RunnerMeta) {
+templ (t runnersTable) Row(runner *runnerpkg.RunnerMeta) {
 	<tr id={ "item-" + runner.ID.String() }>
 		<td>
 			<div class="flex flex-col gap-2">
@@ -114,7 +114,7 @@ templ (t runnersTable) Row(runner *runner.RunnerMeta) {
 
 type listAgentPoolProps struct {
 	organization organization.Name
-	pools        *resource.Page[*runner.Pool]
+	pools        *resource.Page[*runnerpkg.Pool]
 }
 
 templ listAgentPools(props listAgentPoolProps) {
@@ -156,7 +156,7 @@ templ (t agentPoolsTable) Header() {
 	<th>Created</th>
 }
 
-templ (t agentPoolsTable) Row(pool *runner.Pool) {
+templ (t agentPoolsTable) Row(pool *runnerpkg.Pool) {
 	<tr id={ pool.ID.String() }>
 		<td>
 			<a class="link" href={ paths.AgentPool(pool.ID) }>
@@ -173,7 +173,7 @@ templ (t agentPoolsTable) Row(pool *runner.Pool) {
 }
 
 type agentPoolListAllowedProps struct {
-	pools         []*runner.Pool
+	pools         []*runnerpkg.Pool
 	currentPoolID *resource.TfeID
 }
 
@@ -186,12 +186,12 @@ templ agentPoolListAllowed(props agentPoolListAllowedProps) {
 }
 
 type getAgentPoolProps struct {
-	pool                           *runner.Pool
+	pool                           *runnerpkg.Pool
 	allowedButUnassignedWorkspaces []poolWorkspace
 	assignedWorkspaces             []poolWorkspace
 	availableWorkspaces            []poolWorkspace
-	tokens                         []*runner.AgentToken
-	agents                         *resource.Page[*runner.RunnerMeta]
+	tokens                         []*runnerpkg.AgentToken
+	agents                         *resource.Page[*runnerpkg.RunnerMeta]
 	canDeleteAgentPool             bool
 }
 
@@ -330,7 +330,7 @@ templ (t agentTokensTable) Header() {
 	<th>Actions</th>
 }
 
-templ (t agentTokensTable) Row(token *runner.AgentToken) {
+templ (t agentTokensTable) Row(token *runnerpkg.AgentToken) {
 	<tr>
 		<td>{ token.Description }</td>
 		<td>

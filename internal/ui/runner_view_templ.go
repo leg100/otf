@@ -14,13 +14,13 @@ import (
 	"github.com/leg100/otf/internal/http/html/components/paths"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
-	"github.com/leg100/otf/internal/runner"
+	runnerpkg "github.com/leg100/otf/internal/runner"
 )
 
 type listRunnersProps struct {
 	organization      organization.Name
 	hideServerRunners bool
-	page              *resource.Page[*runner.RunnerMeta]
+	page              *resource.Page[*runnerpkg.RunnerMeta]
 }
 
 func listRunners(props listRunnersProps) templ.Component {
@@ -107,12 +107,12 @@ func listRunners(props listRunnersProps) templ.Component {
 	})
 }
 
-var runnerStatusColors = map[runner.RunnerStatus]string{
-	runner.RunnerIdle:    "status-success",
-	runner.RunnerBusy:    "status-success",
-	runner.RunnerUnknown: "status-warning",
-	runner.RunnerErrored: "status-error",
-	runner.RunnerExited:  "status-info",
+var runnerStatusColors = map[runnerpkg.RunnerStatus]string{
+	runnerpkg.RunnerIdle:    "status-success",
+	runnerpkg.RunnerBusy:    "status-success",
+	runnerpkg.RunnerUnknown: "status-warning",
+	runnerpkg.RunnerErrored: "status-error",
+	runnerpkg.RunnerExited:  "status-info",
 }
 
 type runnersTable struct{}
@@ -146,7 +146,7 @@ func (t runnersTable) Header() templ.Component {
 	})
 }
 
-func (t runnersTable) Row(runner *runner.RunnerMeta) templ.Component {
+func (t runnersTable) Row(runner *runnerpkg.RunnerMeta) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -363,7 +363,7 @@ func (t runnersTable) Row(runner *runner.RunnerMeta) templ.Component {
 
 type listAgentPoolProps struct {
 	organization organization.Name
-	pools        *resource.Page[*runner.Pool]
+	pools        *resource.Page[*runnerpkg.Pool]
 }
 
 func listAgentPools(props listAgentPoolProps) templ.Component {
@@ -467,7 +467,7 @@ func (t agentPoolsTable) Header() templ.Component {
 	})
 }
 
-func (t agentPoolsTable) Row(pool *runner.Pool) templ.Component {
+func (t agentPoolsTable) Row(pool *runnerpkg.Pool) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -552,7 +552,7 @@ func (t agentPoolsTable) Row(pool *runner.Pool) templ.Component {
 }
 
 type agentPoolListAllowedProps struct {
-	pools         []*runner.Pool
+	pools         []*runnerpkg.Pool
 	currentPoolID *resource.TfeID
 }
 
@@ -632,12 +632,12 @@ func agentPoolListAllowed(props agentPoolListAllowedProps) templ.Component {
 }
 
 type getAgentPoolProps struct {
-	pool                           *runner.Pool
+	pool                           *runnerpkg.Pool
 	allowedButUnassignedWorkspaces []poolWorkspace
 	assignedWorkspaces             []poolWorkspace
 	availableWorkspaces            []poolWorkspace
-	tokens                         []*runner.AgentToken
-	agents                         *resource.Page[*runner.RunnerMeta]
+	tokens                         []*runnerpkg.AgentToken
+	agents                         *resource.Page[*runnerpkg.RunnerMeta]
 	canDeleteAgentPool             bool
 }
 
@@ -959,7 +959,7 @@ func (t agentTokensTable) Header() templ.Component {
 	})
 }
 
-func (t agentTokensTable) Row(token *runner.AgentToken) templ.Component {
+func (t agentTokensTable) Row(token *runnerpkg.AgentToken) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
