@@ -29,7 +29,7 @@ func NewUserCommand(apiClient *otfapi.Client) *cobra.Command {
 			if err := cmd.Parent().PersistentPreRunE(cmd.Parent(), args); err != nil {
 				return err
 			}
-			cli.client = &client{Client: apiClient}
+			cli.client = &Client{Client: apiClient}
 			return nil
 		},
 	}
@@ -98,7 +98,7 @@ func NewTeamMembershipCommand(apiclient *otfapi.Client) *cobra.Command {
 			if err := cmd.Parent().PersistentPreRunE(cmd.Parent(), args); err != nil {
 				return err
 			}
-			cli.client = &client{Client: apiclient}
+			cli.client = &Client{Client: apiclient}
 			cli.teams = &team.Client{Client: apiclient}
 			return nil
 		},

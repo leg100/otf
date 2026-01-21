@@ -5,7 +5,8 @@ import (
 	"context"
 	"fmt"
 
-	otfapi "github.com/leg100/otf/internal/api"
+	otfhttp "github.com/leg100/otf/internal/http"
+
 	"github.com/leg100/otf/internal/resource"
 
 	"github.com/hashicorp/go-retryablehttp"
@@ -13,18 +14,9 @@ import (
 
 const runnerIDHeaderKey = "otf-agent-id"
 
-type client interface {
-	Register(ctx context.Context, opts RegisterRunnerOptions) (*RunnerMeta, error)
-	updateStatus(ctx context.Context, agentID resource.TfeID, status RunnerStatus) error
-
-	awaitAllocatedJobs(ctx context.Context, agentID resource.TfeID) ([]*Job, error)
-	startJob(ctx context.Context, jobID resource.TfeID) ([]byte, error)
-	finishJob(ctx context.Context, jobID resource.TfeID, opts finishJobOptions) error
-}
-
 // client accesses the service endpoints via RPC.
 type Client struct {
-	*otfapi.Client
+	*otfhttp.Client
 
 	// agentID is the ID of the agent using the client
 	agentID *resource.TfeID

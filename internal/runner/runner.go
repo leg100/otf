@@ -128,7 +128,7 @@ func (r *Runner) Start(ctx context.Context) error {
 
 			r.logger.V(r.v).Info("sending final status update before shutting down")
 
-			if updateErr := r.client.updateStatus(ctx, registrationMetadata.ID, RunnerExited); updateErr != nil {
+			if updateErr := r.runners.updateStatus(ctx, registrationMetadata.ID, RunnerExited); updateErr != nil {
 				err = fmt.Errorf("sending final status update: %w", updateErr)
 			}
 			r.logger.V(r.v).Info("sent final status update")
@@ -144,7 +144,7 @@ func (r *Runner) Start(ctx context.Context) error {
 				if r.executor.currentJobs() > 0 {
 					status = RunnerBusy
 				}
-				if err := r.client.updateStatus(ctx, registrationMetadata.ID, status); err != nil {
+				if err := r.runners.updateStatus(ctx, registrationMetadata.ID, status); err != nil {
 					if ctx.Err() != nil {
 						// context canceled
 						return nil
@@ -175,7 +175,7 @@ func (r *Runner) Start(ctx context.Context) error {
 			processJobs := func() error {
 				r.logger.V(r.v).Info("waiting for next job")
 				// block on waiting for jobs
-				jobs, err := r.client.awaitAllocatedJobs(ctx, registrationMetadata.ID)
+				jobs, err := r.runners.awaitAllocatedJobs(ctx, registrationMetadata.ID)
 				if err != nil {
 					return err
 				}
@@ -186,7 +186,7 @@ func (r *Runner) Start(ctx context.Context) error {
 					}
 					r.logger.V(r.v).Info("received job", "job", j)
 					// start job and receive job token in return
-					token, err := r.client.startJob(ctx, j.ID)
+					token, err := r.runners.startJob(ctx, j.ID)
 					if err != nil {
 						if ctx.Err() != nil {
 							// context cancelled means process is shutting

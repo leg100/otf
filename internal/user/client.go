@@ -5,16 +5,16 @@ import (
 	"fmt"
 	"net/url"
 
-	otfapi "github.com/leg100/otf/internal/api"
+	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/resource"
 )
 
-type client struct {
-	*otfapi.Client
+type Client struct {
+	*otfhttp.Client
 }
 
 // Create creates a user via HTTP/JSONAPI. Options are ignored.
-func (c *client) Create(ctx context.Context, username string, _ ...NewUserOption) (*User, error) {
+func (c *Client) Create(ctx context.Context, username string, _ ...NewUserOption) (*User, error) {
 	req, err := c.NewRequest("POST", "admin/users", &CreateUserOptions{
 		Username: username,
 	})
@@ -29,7 +29,7 @@ func (c *client) Create(ctx context.Context, username string, _ ...NewUserOption
 }
 
 // Delete deletes a user via HTTP/JSONAPI.
-func (c *client) Delete(ctx context.Context, username Username) error {
+func (c *Client) Delete(ctx context.Context, username Username) error {
 	u := fmt.Sprintf("admin/users/%s", url.QueryEscape(username.String()))
 	req, err := c.NewRequest("DELETE", u, nil)
 	if err != nil {
@@ -42,7 +42,7 @@ func (c *client) Delete(ctx context.Context, username Username) error {
 }
 
 // AddTeamMembership adds users to a team via HTTP.
-func (c *client) AddTeamMembership(ctx context.Context, teamID resource.TfeID, usernames []Username) error {
+func (c *Client) AddTeamMembership(ctx context.Context, teamID resource.TfeID, usernames []Username) error {
 	u := fmt.Sprintf("teams/%s/relationships/users", url.QueryEscape(teamID.String()))
 	req, err := c.NewRequest("POST", u, &modifyTeamMembershipOptions{
 		Usernames: usernames,
@@ -57,7 +57,7 @@ func (c *client) AddTeamMembership(ctx context.Context, teamID resource.TfeID, u
 }
 
 // RemoveTeamMembership removes users from a team via HTTP.
-func (c *client) RemoveTeamMembership(ctx context.Context, teamID resource.TfeID, usernames []Username) error {
+func (c *Client) RemoveTeamMembership(ctx context.Context, teamID resource.TfeID, usernames []Username) error {
 	u := fmt.Sprintf("teams/%s/relationships/users", url.QueryEscape(teamID.String()))
 	req, err := c.NewRequest("DELETE", u, &modifyTeamMembershipOptions{
 		Usernames: usernames,
