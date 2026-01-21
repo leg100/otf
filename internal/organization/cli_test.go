@@ -36,7 +36,6 @@ func TestOrganizationCommandMissingName(t *testing.T) {
 
 type fakeCLIService struct {
 	org *Organization
-	cliService
 }
 
 func newFakeCLI(org *Organization) *CLI {

@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/stretchr/testify/assert"
@@ -44,14 +45,13 @@ func TestKubeExecutor(t *testing.T) {
 		t.Fatal("kind installed but no cluster found")
 	}
 
-	// Build leg100/otf-job image
-	cmd = exec.CommandContext(t.Context(), "make", "image-job")
+	// Build and load leg100/otf-job image into kind
+	cmd = exec.CommandContext(t.Context(), "make", "load-job")
 	cmd.Dir = "../.."
 	out, err = cmd.CombinedOutput()
 	imageBuildOutput := string(out)
 	require.NoError(t, err, imageBuildOutput)
 
-	// Extract image tag that was just built
 	re := regexp.MustCompile(`leg100/otf-job:[^ ]+`)
 	image := re.FindString(imageBuildOutput)
 	require.NotEqual(t, "", image, imageBuildOutput)
@@ -111,6 +111,8 @@ func TestKubeExecutor(t *testing.T) {
 		withSSLDisabled(),
 	)
 	serverURL.port = daemon.ListenAddress.Port
+
+	client, err := api.NewClient(api.Config{})
 
 	// create workspace, config, and run.
 	ws := daemon.createWorkspace(t, ctx, org)
