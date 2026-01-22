@@ -9,7 +9,6 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/authenticator"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/configversion"
@@ -345,16 +344,14 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	serverRunner, err := runner.New(
 		logger,
 		runnerService,
-		func([]byte) (runner.OperationClient, error) {
-			return runner.OperationClient{
-				Workspaces: workspaceService,
-				Variables:  variableService,
-				State:      stateService,
-				Configs:    configService,
-				Runs:       runService,
-				Jobs:       runnerService,
-				Server:     hostnameService,
-			}, nil
+		runner.OperationClient{
+			Workspaces: workspaceService,
+			Variables:  variableService,
+			State:      stateService,
+			Configs:    configService,
+			Runs:       runService,
+			Jobs:       runnerService,
+			Server:     hostnameService,
 		},
 		cfg.RunnerConfig,
 	)
@@ -390,7 +387,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		notificationService,
 		runnerService,
 		disco.Service{},
-		&api.Handlers{},
 		&tfeapi.Handlers{},
 		&ui.Handlers{
 			Logger:                       logger,

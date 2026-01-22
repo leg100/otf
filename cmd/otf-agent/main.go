@@ -8,9 +8,10 @@ import (
 
 	cmdutil "github.com/leg100/otf/cmd"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/api"
+	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/runner"
+	"github.com/leg100/otf/internal/runner/agent"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -57,16 +58,13 @@ func run(ctx context.Context, args []string) error {
 				}
 				config.KubeConfig.ServerURL = flag
 			}
-			agent, err := runner.NewAgent(logger, runner.AgentOptions{
-				Config:    &config,
-				ServerURL: url,
-				Token:     token,
-			})
+			// Construct runner.
+			runner, err := agent.New(logger, url, token, &config)
 			if err != nil {
 				return err
 			}
 			// blocks
-			return agent.Start(cmd.Context())
+			return runner.Start(cmd.Context())
 		},
 	}
 
@@ -74,7 +72,7 @@ func run(ctx context.Context, args []string) error {
 	runner.RegisterFlags(cmd.Flags(), &config)
 
 	cmd.Flags().StringVar(&config.Name, "name", "", "Give agent a descriptive name. Optional.")
-	cmd.Flags().StringVar(&url, "url", api.DefaultURL, "URL of OTF server")
+	cmd.Flags().StringVar(&url, "url", otfhttp.DefaultURL, "URL of OTF server")
 	cmd.Flags().StringVar(&token, "token", "", "Agent token for authentication")
 
 	cmd.MarkFlagRequired("token")

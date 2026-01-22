@@ -4,9 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
-	otfapi "github.com/leg100/otf/internal/api"
-
 	"github.com/gorilla/mux"
+	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/tfeapi"
 )
@@ -17,7 +16,7 @@ type api struct {
 }
 
 func (a *api) addHandlers(r *mux.Router) {
-	r = r.PathPrefix(otfapi.DefaultBasePath).Subrouter()
+	r = r.PathPrefix(otfhttp.APIBasePath).Subrouter()
 
 	r.HandleFunc("/organizations", a.createOrganization).Methods("POST")
 	r.HandleFunc("/organizations/{name}", a.deleteOrganization).Methods("DELETE")

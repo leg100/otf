@@ -4,7 +4,8 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/api"
+	"github.com/leg100/otf/internal/client"
+	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/assert"
@@ -24,7 +25,7 @@ func TestIntegration_OrganizationTokens(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, org.Name, ot.Organization)
 
-	apiClient, err := api.NewClient(api.Config{
+	client, err := client.New(otfhttp.ClientConfig{
 		URL:   daemon.System.URL("/"),
 		Token: string(token),
 	})
@@ -36,8 +37,7 @@ func TestIntegration_OrganizationTokens(t *testing.T) {
 	daemon.createWorkspace(t, ctx, org)
 	daemon.createWorkspace(t, ctx, org)
 
-	wsClient := &workspace.Client{Client: apiClient}
-	got, err := wsClient.List(ctx, workspace.ListOptions{
+	got, err := client.Workspaces.List(ctx, workspace.ListOptions{
 		Organization: &org.Name,
 	})
 	require.NoError(t, err)
@@ -50,7 +50,7 @@ func TestIntegration_OrganizationTokens(t *testing.T) {
 	require.NoError(t, err)
 
 	// access with previous token should now be refused
-	_, err = wsClient.List(ctx, workspace.ListOptions{
+	_, err = client.Workspaces.List(ctx, workspace.ListOptions{
 		Organization: &org.Name,
 	})
 	require.Equal(t, internal.ErrUnauthorized, err)

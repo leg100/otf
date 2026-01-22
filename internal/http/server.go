@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	APIBasePath     = "/otfapi"
+	APIBasePath     = "/otfhttp"
 	APIPingEndpoint = "ping"
 	DefaultURL      = "https://localhost:8080"
 

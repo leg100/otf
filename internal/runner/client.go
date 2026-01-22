@@ -5,11 +5,9 @@ import (
 	"context"
 	"fmt"
 
-	otfhttp "github.com/leg100/otf/internal/http"
-
-	"github.com/leg100/otf/internal/resource"
-
 	"github.com/hashicorp/go-retryablehttp"
+	otfhttp "github.com/leg100/otf/internal/http"
+	"github.com/leg100/otf/internal/resource"
 )
 
 const runnerIDHeaderKey = "otf-agent-id"

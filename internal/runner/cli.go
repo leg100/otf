@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	otfapi "github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/resource"
 
 	"github.com/spf13/cobra"
@@ -20,7 +19,7 @@ type (
 	}
 )
 
-func NewAgentsCommand(apiClient *otfapi.Client) *cobra.Command {
+func NewAgentsCommand(client agentCLIService) *cobra.Command {
 	cli := &agentCLI{}
 	cmd := &cobra.Command{
 		Use:   "agents",
@@ -29,7 +28,7 @@ func NewAgentsCommand(apiClient *otfapi.Client) *cobra.Command {
 			if err := cmd.Parent().PersistentPreRunE(cmd.Parent(), args); err != nil {
 				return err
 			}
-			cli.agentCLIService = &Client{Client: apiClient}
+			cli.agentCLIService = client
 			return nil
 		},
 	}

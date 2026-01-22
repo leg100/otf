@@ -16,7 +16,6 @@ import (
 	"time"
 
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/stretchr/testify/assert"
@@ -89,7 +88,7 @@ func TestKubeExecutor(t *testing.T) {
 	})
 
 	// Because the daemon is running on the host, and the job is running in a
-	// k3s cluster in a container, the job needs Job needs an endpoint with
+	// kind cluster in a container, the job needs Job needs an endpoint with
 	// which it can communicate with the daemon.
 	//
 	// The IP address of the host needs to be routable, so we get the IP address
@@ -112,7 +111,7 @@ func TestKubeExecutor(t *testing.T) {
 	)
 	serverURL.port = daemon.ListenAddress.Port
 
-	client, err := api.NewClient(api.Config{})
+	//client, err := otfhttp.NewClient(api.Config{})
 
 	// create workspace, config, and run.
 	ws := daemon.createWorkspace(t, ctx, org)

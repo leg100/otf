@@ -10,25 +10,25 @@ import (
 const ForkExecutorKind = "fork"
 
 type forkExecutor struct {
-	config                     OperationConfig
-	logger                     logr.Logger
-	operationClientConstructor operationClientConstructor
+	config          OperationConfig
+	logger          logr.Logger
+	operationClient OperationClient
 
 	n int
 }
 
 func (s *forkExecutor) SpawnOperation(ctx context.Context, g *errgroup.Group, job *Job, jobToken []byte) error {
-	client, err := s.operationClientConstructor(jobToken)
-	if err != nil {
-		return err
+	if s.operationClient.OperationClientUseToken != nil {
+		s.operationClient.UseToken(string(jobToken))
 	}
+
 	s.n++
 	DoOperation(ctx, g, OperationOptions{
 		Logger:          s.logger,
 		OperationConfig: s.config,
 		Job:             job,
 		JobToken:        jobToken,
-		Client:          client,
+		Client:          s.operationClient,
 	})
 	s.n--
 	return nil

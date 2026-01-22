@@ -8,7 +8,8 @@ import (
 
 	cmdutil "github.com/leg100/otf/cmd"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/api"
+	"github.com/leg100/otf/internal/client"
+	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/runner"
@@ -22,18 +23,18 @@ import (
 
 // CLI is the `otf` cli application
 type CLI struct {
-	client *api.Client
+	client *client.Client
 	creds  CredentialsStore
 }
 
 func NewCLI() *CLI {
 	return &CLI{
-		client: &api.Client{},
+		client: &client.Client{},
 	}
 }
 
 func (a *CLI) Run(ctx context.Context, args []string, out io.Writer) error {
-	var cfg api.Config
+	var cfg otfhttp.ClientConfig
 
 	creds, err := NewCredentialsStore()
 	if err != nil {
@@ -48,20 +49,20 @@ func (a *CLI) Run(ctx context.Context, args []string, out io.Writer) error {
 		PersistentPreRunE: a.newClient(&cfg),
 	}
 
-	cmd.PersistentFlags().StringVar(&cfg.URL, "url", api.DefaultURL, "URL of OTF server")
+	cmd.PersistentFlags().StringVar(&cfg.URL, "url", otfhttp.DefaultURL, "URL of OTF server")
 	cmd.PersistentFlags().StringVar(&cfg.Token, "token", "", "API authentication token")
 
 	cmd.SetArgs(args)
 	cmd.SetOut(out)
 
-	cmd.AddCommand(organization.NewCommand(a.client))
-	cmd.AddCommand(user.NewUserCommand(a.client))
-	cmd.AddCommand(user.NewTeamMembershipCommand(a.client))
-	cmd.AddCommand(team.NewTeamCommand(a.client))
-	cmd.AddCommand(workspace.NewCommand(a.client))
-	cmd.AddCommand(run.NewCommand(a.client))
-	cmd.AddCommand(state.NewCommand(a.client))
-	cmd.AddCommand(runner.NewAgentsCommand(a.client))
+	cmd.AddCommand(organization.NewCommand(a.client.Organizations))
+	cmd.AddCommand(user.NewUserCommand(a.client.Users))
+	cmd.AddCommand(user.NewTeamMembershipCommand(a.client.Teams, a.client.Users))
+	cmd.AddCommand(team.NewTeamCommand(a.client.Teams))
+	cmd.AddCommand(workspace.NewCommand(a.client.Workspaces))
+	cmd.AddCommand(run.NewCommand(a.client.Runs, a.client.Configs))
+	cmd.AddCommand(state.NewCommand(a.client.States, a.client.Workspaces))
+	cmd.AddCommand(runner.NewAgentsCommand(a.client.Runners))
 
 	if err := cmdutil.SetFlagsFromEnvVariables(cmd.Flags()); err != nil {
 		return errors.Wrap(err, "failed to populate config from environment vars")
@@ -70,7 +71,7 @@ func (a *CLI) Run(ctx context.Context, args []string, out io.Writer) error {
 	return cmd.ExecuteContext(ctx)
 }
 
-func (a *CLI) newClient(cfg *api.Config) func(*cobra.Command, []string) error {
+func (a *CLI) newClient(cfg *otfhttp.ClientConfig) func(*cobra.Command, []string) error {
 	return func(*cobra.Command, []string) error {
 		// Set API token according to the following precedence:
 		// (1) flag
@@ -87,11 +88,12 @@ func (a *CLI) newClient(cfg *api.Config) func(*cobra.Command, []string) error {
 			cfg.Token = token
 		}
 
-		httpClient, err := api.NewClient(*cfg)
+		client, err := client.New(*cfg)
 		if err != nil {
 			return err
 		}
-		*a.client = *httpClient
+		// TODO: is it necessary to de-ref?
+		*a.client = *client
 		return nil
 	}
 }

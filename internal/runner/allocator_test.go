@@ -137,7 +137,7 @@ func TestAllocator_allocate(t *testing.T) {
 			name:  "do not allocate job to agent with insufficient capacity",
 			pools: []*Pool{{ID: pool1ID}},
 			runners: []*RunnerMeta{
-				{ID: runner1ID, Status: RunnerIdle, CurrentJobs: 1, MaxJobs: 1},
+				{ID: runner1ID, Status: RunnerIdle, CurrentJobs: 1, MaxJobs: 1, ExecutorKind: ForkExecutorKind},
 			},
 			job: &Job{
 				ID:     job1ID,
@@ -148,7 +148,7 @@ func TestAllocator_allocate(t *testing.T) {
 				Status: JobUnallocated,
 			},
 			wantRunners: map[resource.TfeID]*RunnerMeta{
-				runner1ID: {ID: runner1ID, Status: RunnerIdle, MaxJobs: 1, CurrentJobs: 1},
+				runner1ID: {ID: runner1ID, Status: RunnerIdle, MaxJobs: 1, CurrentJobs: 1, ExecutorKind: ForkExecutorKind},
 			},
 		},
 		{

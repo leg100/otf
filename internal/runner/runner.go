@@ -13,6 +13,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/logr"
+	"github.com/leg100/otf/internal/resource"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -26,20 +27,27 @@ type Runner struct {
 	PluginCache     bool   // toggle use of terraform's shared plugin cache
 	TerraformBinDir string // destination directory for terraform binaries
 
-	client                     client
-	operationClientConstructor operationClientConstructor
-	executor                   executor
-	registered                 chan struct{}
+	runners         RunnerClient
+	operationClient OperationClient
+	executor        executor
+	registered      chan struct{}
 
 	logger logr.Logger // logger that logs messages regardless of whether runner is a server or agent runner.
 	v      int         // logger verbosity
 }
 
+type RunnerClient interface {
+	Register(ctx context.Context, opts RegisterRunnerOptions) (*RunnerMeta, error)
+	awaitAllocatedJobs(ctx context.Context, agentID resource.TfeID) ([]*Job, error)
+	updateStatus(ctx context.Context, agentID resource.TfeID, status RunnerStatus) error
+	startJob(ctx context.Context, jobID resource.TfeID) ([]byte, error)
+}
+
 // New constructs a runner.
 func New(
 	logger logr.Logger,
-	runnerClient client,
-	operationClientConstructor operationClientConstructor,
+	runnerClient RunnerClient,
+	operationClient OperationClient,
 	cfg *Config,
 ) (*Runner, error) {
 	r := &Runner{
@@ -48,12 +56,12 @@ func New(
 			MaxJobs:      cfg.MaxJobs,
 			ExecutorKind: cfg.ExecutorKind,
 		},
-		client:                     runnerClient,
-		operationClientConstructor: operationClientConstructor,
-		registered:                 make(chan struct{}),
-		logger:                     logger,
+		runners:         runnerClient,
+		operationClient: operationClient,
+		registered:      make(chan struct{}),
+		logger:          logger,
 	}
-	if !cfg.isAgent {
+	if !cfg.IsAgent {
 		// Set a higher threshold for logging on server runner where the runner is
 		// but one of several components and many of the actions that are logged
 		// here are also logged on the service endpoints, resulting in duplicate
@@ -69,9 +77,9 @@ func New(
 	switch cfg.ExecutorKind {
 	case ForkExecutorKind:
 		r.executor = &forkExecutor{
-			config:                     cfg.OperationConfig,
-			logger:                     logger,
-			operationClientConstructor: operationClientConstructor,
+			config:          cfg.OperationConfig,
+			logger:          logger,
+			operationClient: operationClient,
 		}
 	case KubeExecutorKind:
 		executor, err := newKubeExecutor(logger, cfg.OperationConfig, *cfg.KubeConfig)
@@ -96,7 +104,7 @@ func (r *Runner) Start(ctx context.Context) error {
 
 	// register runner with server, which responds with an updated runner
 	// registrationMetadata, including a unique ID.
-	registrationMetadata, err := r.client.Register(ctx, RegisterRunnerOptions{
+	registrationMetadata, err := r.runners.Register(ctx, RegisterRunnerOptions{
 		Name:         r.Name,
 		Version:      internal.Version,
 		Concurrency:  r.MaxJobs,

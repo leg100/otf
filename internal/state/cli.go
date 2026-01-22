@@ -8,7 +8,6 @@ import (
 	"fmt"
 
 	"github.com/leg100/otf/internal"
-	otfapi "github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/workspace"
@@ -32,7 +31,7 @@ type cliWorkspaceService interface {
 	GetByName(ctx context.Context, organization organization.Name, workspace string) (*workspace.Workspace, error)
 }
 
-func NewCommand(client *otfapi.Client) *cobra.Command {
+func NewCommand(client cliStateService, workspaceClient cliWorkspaceService) *cobra.Command {
 	cli := &CLI{}
 	cmd := &cobra.Command{
 		Use:   "state",
@@ -41,8 +40,8 @@ func NewCommand(client *otfapi.Client) *cobra.Command {
 			if err := cmd.Parent().PersistentPreRunE(cmd.Parent(), args); err != nil {
 				return err
 			}
-			cli.state = &Client{Client: client}
-			cli.workspaces = &workspace.Client{Client: client}
+			cli.state = client
+			cli.workspaces = workspaceClient
 			return nil
 		},
 	}

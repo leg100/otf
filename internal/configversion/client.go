@@ -6,12 +6,12 @@ import (
 	"fmt"
 	"net/url"
 
-	otfapi "github.com/leg100/otf/internal/api"
+	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/resource"
 )
 
 type Client struct {
-	*otfapi.Client
+	*otfhttp.Client
 
 	// Client does not implement all of service yet
 	Service

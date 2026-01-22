@@ -19,11 +19,11 @@ import (
 	"github.com/cenkalti/backoff"
 	"github.com/fatih/color"
 	"github.com/leg100/otf/internal"
-	apipkg "github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/dynamiccreds"
 	"github.com/leg100/otf/internal/engine"
+	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/resource"
 	runpkg "github.com/leg100/otf/internal/run"
@@ -71,23 +71,12 @@ type (
 		client OperationClient
 	}
 
-	OperationClient struct {
-		Runs       runClient
-		Workspaces workspaceClient
-		Variables  variablesClient
-		State      stateClient
-		Configs    configClient
-		Server     hostnameClient
-		Jobs       operationJobsClient
-	}
-
 	OperationConfig struct {
 		Debug          bool   // toggle debug mode
 		PluginCache    bool   // toggle use of engine's shared plugin cache
 		PluginCacheDir string // directory for shared plugin cache.
 		EngineBinDir   string // destination directory for engine binaries
-
-		isAgent bool // set to true if operation is running on an agent
+		IsAgent        bool   // set to true if operation is running on an agent
 	}
 
 	OperationOptions struct {
@@ -161,7 +150,7 @@ func RegisterOperationFlags(flags *pflag.FlagSet, cfg *OperationConfig) {
 
 // NewRemoteOperationClient constructs a remote API client for an operation.
 func NewRemoteOperationClient(jobToken []byte, url string, logger logr.Logger) (OperationClient, error) {
-	client, err := apipkg.NewClient(apipkg.Config{
+	client, err := otfhttp.NewClient(otfhttp.ClientConfig{
 		URL:           url,
 		Token:         string(jobToken),
 		Logger:        logger,
@@ -328,7 +317,7 @@ func (o *operation) do() error {
 		fmt.Fprintln(o.out, "Debug mode enabled")
 		fmt.Fprintln(o.out, "------------------")
 		fmt.Fprintf(o.out, "Hostname: %s\n", hostname)
-		fmt.Fprintf(o.out, "External agent: %t\n", o.cfg.isAgent)
+		fmt.Fprintf(o.out, "External agent: %t\n", o.cfg.IsAgent)
 		fmt.Fprintln(o.out, "------------------")
 		fmt.Fprintln(o.out)
 	}

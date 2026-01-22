@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/leg100/otf/internal"
-	otfapi "github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 
@@ -22,7 +21,7 @@ type cliClient interface {
 	Delete(ctx context.Context, teamID resource.TfeID) error
 }
 
-func NewTeamCommand(apiClient *otfapi.Client) *cobra.Command {
+func NewTeamCommand(client cliClient) *cobra.Command {
 	cli := &teamCLI{}
 	cmd := &cobra.Command{
 		Use:   "teams",
@@ -31,7 +30,7 @@ func NewTeamCommand(apiClient *otfapi.Client) *cobra.Command {
 			if err := cmd.Parent().PersistentPreRunE(cmd.Parent(), args); err != nil {
 				return err
 			}
-			cli.client = &Client{Client: apiClient}
+			cli.client = client
 			return nil
 		},
 	}

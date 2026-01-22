@@ -8,7 +8,8 @@ import (
 
 	cmdutil "github.com/leg100/otf/cmd"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/api"
+	"github.com/leg100/otf/internal/client"
+	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runner"
@@ -50,12 +51,17 @@ func run(ctx context.Context, args []string) error {
 			if err != nil {
 				return err
 			}
-			client, err := runner.NewRemoteOperationClient([]byte(jobToken), url, logger)
+			client, err := client.New(otfhttp.ClientConfig{
+				URL:           url,
+				Token:         string(jobToken),
+				Logger:        logger,
+				RetryRequests: true,
+			})
 			if err != nil {
 				return err
 			}
 			// Retrieve job
-			job, err := client.Jobs.GetJob(ctx, jobID)
+			job, err := client.Runners.GetJob(ctx, jobID)
 			if err != nil {
 				return err
 			}
@@ -65,7 +71,15 @@ func run(ctx context.Context, args []string) error {
 				OperationConfig: operationConfig,
 				Job:             job,
 				JobToken:        []byte(jobToken),
-				Client:          client,
+				Client: runner.OperationClient{
+					Runs:       client.Runs,
+					Workspaces: client.Workspaces,
+					Variables:  client.Variables,
+					State:      client.States,
+					Configs:    client.Configs,
+					Server:     client,
+					Jobs:       client.Runners,
+				},
 			})
 			return nil
 		},
@@ -76,7 +90,7 @@ func run(ctx context.Context, args []string) error {
 
 	cmd.Flags().StringVar(&jobToken, "job-token", "", "Job token for authentication")
 	cmd.Flags().Var(&jobID, "job-id", "ID of job to execute")
-	cmd.Flags().StringVar(&url, "url", api.DefaultURL, "URL of OTF server")
+	cmd.Flags().StringVar(&url, "url", otfhttp.DefaultURL, "URL of OTF server")
 
 	cmd.SetArgs(args)
 

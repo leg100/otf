@@ -56,6 +56,8 @@ func TestDynamicCredentialsGCP(t *testing.T) {
 	if !ok {
 		t.Skip("OTF_INTEGRATION_GCP_PROJECT needed for dynamic credentials integration test")
 	}
+	// OTF_INTEGRATION_HOSTNAME should be set to something other than
+	// "localhost" because GCP doesn't like localhost as an issuer
 	issuer, ok := os.LookupEnv("OTF_INTEGRATION_HOSTNAME")
 	if !ok {
 		t.Skip("OTF_INTEGRATION_HOSTNAME needed for dynamic credentials integration test")
@@ -143,9 +145,6 @@ data "google_project" "my-project" {}
 			org.Name,
 			&pool1.ID,
 			"",
-			// override the URL because otherwise it'll default to the system
-			// hostname which set above to a non-localhost hostname.
-			withAgentURL(fmt.Sprintf("https://localhost:%d", daemon.ListenAddress.Port)),
 		)
 		defer shutdown()
 

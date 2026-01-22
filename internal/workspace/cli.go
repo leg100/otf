@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	otfapi "github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/organization"
 
 	"github.com/leg100/otf/internal/resource"
@@ -24,7 +23,7 @@ type cliClient interface {
 	Unlock(ctx context.Context, workspaceID resource.TfeID, runID *resource.TfeID, force bool) (*Workspace, error)
 }
 
-func NewCommand(apiClient *otfapi.Client) *cobra.Command {
+func NewCommand(client cliClient) *cobra.Command {
 	cli := &CLI{}
 	cmd := &cobra.Command{
 		Use:   "workspaces",
@@ -33,7 +32,7 @@ func NewCommand(apiClient *otfapi.Client) *cobra.Command {
 			if err := cmd.Parent().PersistentPreRunE(cmd.Parent(), args); err != nil {
 				return err
 			}
-			cli.client = &Client{Client: apiClient}
+			cli.client = client
 			return nil
 		},
 	}

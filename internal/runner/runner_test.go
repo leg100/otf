@@ -17,9 +17,7 @@ func TestRunner(t *testing.T) {
 	r, err := New(
 		logr.Discard(),
 		&fakeRunnerClient{registeredID: wantID, updates: updates},
-		func(jobToken []byte) (OperationClient, error) {
-			return OperationClient{}, nil
-		},
+		OperationClient{},
 		NewDefaultConfig(),
 	)
 	require.NoError(t, err)
@@ -43,7 +41,7 @@ func TestRunner(t *testing.T) {
 }
 
 type fakeRunnerClient struct {
-	client
+	RunnerClient
 
 	registeredID resource.TfeID
 	updates      chan RunnerStatus

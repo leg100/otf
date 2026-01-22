@@ -151,23 +151,16 @@ func withSSLDisabled() configOption {
 	}
 }
 
-type agentConfigOption func(*runner.AgentOptions)
+type runnerConfigOption func(*runner.Config)
 
-func withEngineBinDir(dir string) agentConfigOption {
-	return func(opts *runner.AgentOptions) {
+func withEngineBinDir(dir string) runnerConfigOption {
+	return func(opts *runner.Config) {
 		opts.EngineBinDir = dir
 	}
 }
 
-func withRunnerDebug() agentConfigOption {
-	return func(opts *runner.AgentOptions) {
+func withRunnerDebug() runnerConfigOption {
+	return func(opts *runner.Config) {
 		opts.Debug = true
-	}
-}
-
-// withAgentURL sets the URL of the server that the agent talks to.
-func withAgentURL(url string) agentConfigOption {
-	return func(opts *runner.AgentOptions) {
-		opts.ServerURL = url
 	}
 }

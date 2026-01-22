@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	"github.com/gorilla/mux"
-	otfapi "github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/authz"
+	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/logr"
@@ -30,7 +30,7 @@ const (
 var AuthenticatedPrefixes = []string{
 	tfeapi.APIPrefixV2,
 	tfeapi.ModuleV1Prefix,
-	otfapi.DefaultBasePath,
+	otfhttp.APIBasePath,
 	paths.UIPrefix,
 }
 

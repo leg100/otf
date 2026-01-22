@@ -3,7 +3,7 @@ package variable
 import (
 	"net/http"
 
-	otfapi "github.com/leg100/otf/internal/api"
+	otfhttp "github.com/leg100/otf/internal/http"
 
 	"github.com/leg100/otf/internal/tfeapi"
 
@@ -17,7 +17,7 @@ type api struct {
 }
 
 func (a *api) addHandlers(r *mux.Router) {
-	r = r.PathPrefix(otfapi.DefaultBasePath).Subrouter()
+	r = r.PathPrefix(otfhttp.APIBasePath).Subrouter()
 	r.HandleFunc("/vars/effective/{run_id}", a.listEffectiveVariables).Methods("GET")
 }
 

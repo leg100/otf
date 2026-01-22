@@ -25,6 +25,7 @@ import (
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/runner"
+	"github.com/leg100/otf/internal/runner/agent"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/state"
@@ -431,7 +432,7 @@ func (s *testDaemon) createNotificationConfig(t *testing.T, ctx context.Context,
 // startAgent starts a pool agent, configuring it with the given organization
 // and configuring it to connect to the daemon. The corresponding agent type is
 // returned once registered, along with a function to shutdown the agent down.
-func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, org organization.Name, poolID *resource.TfeID, token string, opts ...agentConfigOption) (*runner.RunnerMeta, func()) {
+func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, org organization.Name, poolID *resource.TfeID, token string, opts ...runnerConfigOption) (*runner.RunnerMeta, func()) {
 	t.Helper()
 
 	// Configure logger; discard logs by default
@@ -460,21 +461,28 @@ func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, org organizat
 		token = string(tokenBytes)
 	}
 
-	agentOpts := runner.AgentOptions{
-		Config:    runner.NewDefaultConfig(),
-		Token:     token,
-		ServerURL: s.System.URL("/"),
-	}
+	cfg := runner.Config{}
 	for _, fn := range opts {
-		fn(&agentOpts)
+		fn(&cfg)
 	}
-	agent, err := runner.NewAgent(logger, agentOpts)
+	// Use the system URL as the URL the agent uses to talk to the system. But
+	// sometimes tests override the URL with a non-routable hostname, e.g. the
+	// dynamic provider credential test which sets a non-localhost hostname. So,
+	// replace the hostname with "localhost", but keep the port.
+	u, err := url.Parse(s.System.URL("/"))
+	require.NoError(t, err)
+	routeableURL := url.URL{
+		Scheme: u.Scheme,
+		Host:   fmt.Sprintf("localhost:%s", u.Port()),
+	}
+
+	runner, err := agent.New(logger, routeableURL.String(), token, &cfg)
 	require.NoError(t, err)
 
 	ctx, cancel := context.WithCancel(ctx)
 	done := make(chan struct{})
 	go func() {
-		err := agent.Start(ctx)
+		err := runner.Start(ctx)
 		close(done)
 		require.NoError(t, err)
 	}()
@@ -484,8 +492,8 @@ func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, org organizat
 		<-done   // don't exit test until agent fully terminated
 	})
 	// Wait for agent to register itself
-	<-agent.Started()
-	return agent.RunnerMeta, cancel
+	<-runner.Started()
+	return runner.RunnerMeta, cancel
 }
 
 func (s *testDaemon) engineCLI(t *testing.T, ctx context.Context, engine string, command, configPath string, args ...string) string {
