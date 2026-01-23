@@ -15,4 +15,4 @@ roleRef:
   kind: Role
   name: {{ include "otfd.fullname" . }}
 {{- end }}
-{{- end }}
+{{- end -}}

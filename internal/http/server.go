@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	APIBasePath     = "/otfhttp"
+	APIBasePath     = "/otfapi"
 	APIPingEndpoint = "ping"
 	DefaultURL      = "https://localhost:8080"
 
@@ -87,7 +87,7 @@ func NewServer(logger logr.Logger, cfg ServerConfig) (*Server, error) {
 	}
 
 	// basic no-op ping handler for API
-	r.HandleFunc(path.Join(APIBasePath, "ping"), func(w http.ResponseWriter, r *http.Request) {
+	r.HandleFunc(path.Join(APIBasePath, APIPingEndpoint), func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 	})
 

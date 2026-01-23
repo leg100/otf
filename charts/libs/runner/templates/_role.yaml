@@ -20,4 +20,4 @@ rules:
   verbs:
     - create
 {{- end }}
-{{- end }}
+{{- end -}}

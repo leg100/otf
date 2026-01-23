@@ -40,7 +40,6 @@ spec:
             - name: postgres
               containerPort: 5432
               protocol: TCP
-          {{- with .Values.readinessProbe }}
           readinessProbe:
             exec:
               command:

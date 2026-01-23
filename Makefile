@@ -85,7 +85,7 @@ vet:
 # Build docker image
 .PHONY: image
 image:
-	docker build -f Dockerfile -t $(IMAGE_NAME):$(IMAGE_TAG) -t $(IMAGE_NAME):latest --target otfd .
+	docker build -t $(IMAGE_NAME):$(IMAGE_TAG) -t $(IMAGE_NAME):latest --target otfd .
 
 # Build and load image into k8s kind
 .PHONY: load
@@ -111,6 +111,10 @@ load-agent: image-agent
 .PHONY: load-job
 load-job: image-job
 	kind load docker-image $(IMAGE_NAME_JOB):$(IMAGE_TAG)
+
+# Build and load all images into k8s kind
+.PHONY: load-all
+load-all: image image-agent image-job load load-agent load-job
 
 # watch for changes to go files, and when a change occurs, re-build the otf-job
 # image and load it into the kind cluster
