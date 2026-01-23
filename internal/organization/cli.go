@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	otfhttp "github.com/leg100/otf/internal/http"
+
 	"github.com/leg100/otf/internal"
 	"github.com/spf13/cobra"
 )
@@ -20,7 +22,7 @@ type (
 	}
 )
 
-func NewCommand(service cliService) *cobra.Command {
+func NewCommand(client *otfhttp.Client) *cobra.Command {
 	cli := &CLI{}
 	cmd := &cobra.Command{
 		Use:   "organizations",
@@ -29,7 +31,7 @@ func NewCommand(service cliService) *cobra.Command {
 			if err := cmd.Parent().PersistentPreRunE(cmd.Parent(), args); err != nil {
 				return err
 			}
-			cli.cliService = service
+			cli.cliService = &Client{Client: client}
 			return nil
 		},
 	}

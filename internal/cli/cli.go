@@ -8,7 +8,6 @@ import (
 
 	cmdutil "github.com/leg100/otf/cmd"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/client"
 	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/run"
@@ -23,13 +22,13 @@ import (
 
 // CLI is the `otf` cli application
 type CLI struct {
-	client *client.Client
+	client *otfhttp.Client
 	creds  CredentialsStore
 }
 
 func NewCLI() *CLI {
 	return &CLI{
-		client: &client.Client{},
+		client: &otfhttp.Client{},
 	}
 }
 
@@ -55,14 +54,14 @@ func (a *CLI) Run(ctx context.Context, args []string, out io.Writer) error {
 	cmd.SetArgs(args)
 	cmd.SetOut(out)
 
-	cmd.AddCommand(organization.NewCommand(a.client.Organizations))
-	cmd.AddCommand(user.NewUserCommand(a.client.Users))
-	cmd.AddCommand(user.NewTeamMembershipCommand(a.client.Teams, a.client.Users))
-	cmd.AddCommand(team.NewTeamCommand(a.client.Teams))
-	cmd.AddCommand(workspace.NewCommand(a.client.Workspaces))
-	cmd.AddCommand(run.NewCommand(a.client.Runs, a.client.Configs))
-	cmd.AddCommand(state.NewCommand(a.client.States, a.client.Workspaces))
-	cmd.AddCommand(runner.NewAgentsCommand(a.client.Runners))
+	cmd.AddCommand(organization.NewCommand(a.client))
+	cmd.AddCommand(user.NewUserCommand(a.client))
+	cmd.AddCommand(user.NewTeamMembershipCommand(a.client))
+	cmd.AddCommand(team.NewTeamCommand(a.client))
+	cmd.AddCommand(workspace.NewCommand(a.client))
+	cmd.AddCommand(run.NewCommand(a.client))
+	cmd.AddCommand(state.NewCommand(a.client))
+	cmd.AddCommand(runner.NewAgentsCommand(a.client))
 
 	if err := cmdutil.SetFlagsFromEnvVariables(cmd.Flags()); err != nil {
 		return errors.Wrap(err, "failed to populate config from environment vars")
@@ -88,12 +87,11 @@ func (a *CLI) newClient(cfg *otfhttp.ClientConfig) func(*cobra.Command, []string
 			cfg.Token = token
 		}
 
-		client, err := client.New(*cfg)
+		httpClient, err := otfhttp.NewClient(*cfg)
 		if err != nil {
 			return err
 		}
-		// TODO: is it necessary to de-ref?
-		*a.client = *client
+		*a.client = *httpClient
 		return nil
 	}
 }

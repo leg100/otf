@@ -7,6 +7,7 @@ import (
 	"net"
 	"time"
 
+	"github.com/allegro/bigcache"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authenticator"
@@ -68,13 +69,14 @@ type (
 		Connections   *connections.Service
 		System        *internal.HostnameService
 
-		// ListenAddress is thelistening address of the daemon's http server,
+		// ListenAddress is the listening address of the daemon's http server,
 		// e.g. localhost:8080
 		ListenAddress *net.TCPAddr
 
 		handlers []internal.Handlers
 		listener *sql.Listener
 		runner   *runner.Runner
+		cache    *bigcache.BigCache
 	}
 )
 
@@ -447,6 +449,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		DB:            db,
 		runner:        serverRunner,
 		listener:      listener,
+		cache:         cache,
 	}, nil
 }
 
@@ -458,6 +461,13 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 
 	// close all db connections upon exit
 	defer d.DB.Close()
+
+	// garbage collect cache upon exit
+	defer func() {
+		if err := d.cache.Close(); err != nil {
+			d.Error(err, "closing cache")
+		}
+	}()
 
 	// Construct web server and start listening on port
 	server, err := http.NewServer(d.Logger, http.ServerConfig{

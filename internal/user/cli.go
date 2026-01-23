@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/team"
@@ -19,7 +20,7 @@ type userCLIClient interface {
 	Delete(ctx context.Context, username Username) error
 }
 
-func NewUserCommand(client userCLIClient) *cobra.Command {
+func NewUserCommand(apiClient *otfhttp.Client) *cobra.Command {
 	cli := &userCLI{}
 	cmd := &cobra.Command{
 		Use:   "users",
@@ -28,7 +29,7 @@ func NewUserCommand(client userCLIClient) *cobra.Command {
 			if err := cmd.Parent().PersistentPreRunE(cmd.Parent(), args); err != nil {
 				return err
 			}
-			cli.client = client
+			cli.client = &Client{Client: apiClient}
 			return nil
 		},
 	}
@@ -88,7 +89,7 @@ type teamsCLIClient interface {
 	Get(ctx context.Context, org organization.Name, name string) (*team.Team, error)
 }
 
-func NewTeamMembershipCommand(teamsClient teamsCLIClient, membershipClient membershipCLIClient) *cobra.Command {
+func NewTeamMembershipCommand(apiclient *otfhttp.Client) *cobra.Command {
 	cli := &membershipCLI{}
 	cmd := &cobra.Command{
 		Use:   "team-membership",
@@ -97,8 +98,8 @@ func NewTeamMembershipCommand(teamsClient teamsCLIClient, membershipClient membe
 			if err := cmd.Parent().PersistentPreRunE(cmd.Parent(), args); err != nil {
 				return err
 			}
-			cli.client = membershipClient
-			cli.teams = teamsClient
+			cli.client = &Client{Client: apiclient}
+			cli.teams = &team.Client{Client: apiclient}
 			return nil
 		},
 	}

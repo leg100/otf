@@ -465,15 +465,14 @@ func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, org organizat
 	for _, fn := range opts {
 		fn(cfg)
 	}
-	// Use the system URL as the URL the agent uses to talk to the system. But
-	// sometimes tests override the URL with a non-routable hostname, e.g. the
-	// dynamic provider credential test which sets a non-localhost hostname. So,
-	// replace the hostname with "localhost", but keep the port.
-	u, err := url.Parse(s.System.URL("/"))
-	require.NoError(t, err)
+
+	// Set a routeable URL for the agent to locate the server. We can't reliably use the
+	// server hostname because in some tests that can be set to something
+	// unrouteable, e.g. the dynamic provider credential test sets it to
+	// something arbitrary.
 	routeableURL := url.URL{
-		Scheme: u.Scheme,
-		Host:   fmt.Sprintf("localhost:%s", u.Port()),
+		Scheme: "https",
+		Host:   fmt.Sprintf("localhost:%d", s.ListenAddress.Port),
 	}
 
 	runner, err := agent.New(logger, routeableURL.String(), token, cfg)

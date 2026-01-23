@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	otfhttp "github.com/leg100/otf/internal/http"
+
 	"github.com/leg100/otf/internal/organization"
 
 	"github.com/leg100/otf/internal/resource"
@@ -23,7 +25,7 @@ type cliClient interface {
 	Unlock(ctx context.Context, workspaceID resource.TfeID, runID *resource.TfeID, force bool) (*Workspace, error)
 }
 
-func NewCommand(client cliClient) *cobra.Command {
+func NewCommand(apiClient *otfhttp.Client) *cobra.Command {
 	cli := &CLI{}
 	cmd := &cobra.Command{
 		Use:   "workspaces",
@@ -32,7 +34,7 @@ func NewCommand(client cliClient) *cobra.Command {
 			if err := cmd.Parent().PersistentPreRunE(cmd.Parent(), args); err != nil {
 				return err
 			}
-			cli.client = client
+			cli.client = &Client{Client: apiClient}
 			return nil
 		},
 	}

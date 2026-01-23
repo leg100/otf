@@ -6,6 +6,9 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/leg100/otf/internal/configversion"
+	otfhttp "github.com/leg100/otf/internal/http"
+
 	"github.com/leg100/otf/internal/resource"
 
 	"github.com/leg100/otf/internal"
@@ -26,7 +29,7 @@ type cliConfigsClient interface {
 	DownloadConfig(ctx context.Context, id resource.TfeID) ([]byte, error)
 }
 
-func NewCommand(client cliClient, configsClient cliConfigsClient) *cobra.Command {
+func NewCommand(client *otfhttp.Client) *cobra.Command {
 	cli := &CLI{}
 	cmd := &cobra.Command{
 		Use:   "runs",
@@ -35,8 +38,8 @@ func NewCommand(client cliClient, configsClient cliConfigsClient) *cobra.Command
 			if err := cmd.Parent().PersistentPreRunE(cmd.Parent(), args); err != nil {
 				return err
 			}
-			cli.client = client
-			cli.configs = configsClient
+			cli.client = &Client{Client: client}
+			cli.configs = &configversion.Client{Client: client}
 			return nil
 		},
 	}

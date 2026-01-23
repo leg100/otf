@@ -7,6 +7,8 @@ import (
 	"errors"
 	"fmt"
 
+	otfhttp "github.com/leg100/otf/internal/http"
+
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
@@ -31,7 +33,7 @@ type cliWorkspaceService interface {
 	GetByName(ctx context.Context, organization organization.Name, workspace string) (*workspace.Workspace, error)
 }
 
-func NewCommand(client cliStateService, workspaceClient cliWorkspaceService) *cobra.Command {
+func NewCommand(client *otfhttp.Client) *cobra.Command {
 	cli := &CLI{}
 	cmd := &cobra.Command{
 		Use:   "state",
@@ -40,8 +42,8 @@ func NewCommand(client cliStateService, workspaceClient cliWorkspaceService) *co
 			if err := cmd.Parent().PersistentPreRunE(cmd.Parent(), args); err != nil {
 				return err
 			}
-			cli.state = client
-			cli.workspaces = workspaceClient
+			cli.state = &Client{Client: client}
+			cli.workspaces = &workspace.Client{Client: client}
 			return nil
 		},
 	}
