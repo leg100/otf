@@ -24,14 +24,18 @@ func New(logger logr.Logger, serverURL string, token string, config *runner.Conf
 	return runner.New(
 		logger,
 		client.Runners,
-		runner.OperationClient{
-			Workspaces: client.Workspaces,
-			Variables:  client.Variables,
-			State:      client.States,
-			Configs:    client.Configs,
-			Runs:       client.Runs,
-			Jobs:       client.Runners,
-			Server:     client,
+		// Callback to create a client for a job to interact with otfd.
+		func(jobToken string) runner.OperationClient {
+			client := client.UseToken(jobToken)
+			return runner.OperationClient{
+				Workspaces: client.Workspaces,
+				Variables:  client.Variables,
+				State:      client.States,
+				Configs:    client.Configs,
+				Runs:       client.Runs,
+				Jobs:       client.Runners,
+				Server:     client,
+			}
 		},
 		config,
 	)

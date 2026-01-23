@@ -1,8 +1,11 @@
 package runner
 
-type OperationClient struct {
-	OperationClientUseToken
+// OperationClientCreator creates an OperationClient using the given job token.
+type OperationClientCreator func(jobToken string) OperationClient
 
+// OperationClient is a client for an operation to interact with services on
+// behalf of its job.
+type OperationClient struct {
 	Runs       runClient
 	Workspaces workspaceClient
 	Variables  variablesClient
@@ -10,8 +13,4 @@ type OperationClient struct {
 	Configs    configClient
 	Server     hostnameClient
 	Jobs       operationJobsClient
-}
-
-type OperationClientUseToken interface {
-	UseToken(string)
 }

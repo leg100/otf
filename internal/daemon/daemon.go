@@ -344,14 +344,16 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	serverRunner, err := runner.New(
 		logger,
 		runnerService,
-		runner.OperationClient{
-			Workspaces: workspaceService,
-			Variables:  variableService,
-			State:      stateService,
-			Configs:    configService,
-			Runs:       runService,
-			Jobs:       runnerService,
-			Server:     hostnameService,
+		func(_ string) runner.OperationClient {
+			return runner.OperationClient{
+				Workspaces: workspaceService,
+				Variables:  variableService,
+				State:      stateService,
+				Configs:    configService,
+				Runs:       runService,
+				Jobs:       runnerService,
+				Server:     hostnameService,
+			}
 		},
 		cfg.RunnerConfig,
 	)

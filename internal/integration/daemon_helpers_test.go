@@ -461,9 +461,9 @@ func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, org organizat
 		token = string(tokenBytes)
 	}
 
-	cfg := runner.Config{}
+	cfg := runner.NewDefaultConfig()
 	for _, fn := range opts {
-		fn(&cfg)
+		fn(cfg)
 	}
 	// Use the system URL as the URL the agent uses to talk to the system. But
 	// sometimes tests override the URL with a non-routable hostname, e.g. the
@@ -476,7 +476,7 @@ func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, org organizat
 		Host:   fmt.Sprintf("localhost:%s", u.Port()),
 	}
 
-	runner, err := agent.New(logger, routeableURL.String(), token, &cfg)
+	runner, err := agent.New(logger, routeableURL.String(), token, cfg)
 	require.NoError(t, err)
 
 	ctx, cancel := context.WithCancel(ctx)

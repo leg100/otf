@@ -35,7 +35,18 @@ func New(config otfhttp.ClientConfig) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	client := &Client{
+	return (&Client{}).new(httpClient), nil
+}
+
+// UseToken returns a shallow copy of the client with a different auth token.
+func (c *Client) UseToken(token string) *Client {
+	c2 := *c.Client
+	c2.Token = token
+	return c.new(&c2)
+}
+
+func (c *Client) new(httpClient *otfhttp.Client) *Client {
+	return &Client{
 		Client:        httpClient,
 		Organizations: &organization.Client{Client: httpClient},
 		Workspaces:    &workspace.Client{Client: httpClient},
@@ -47,9 +58,4 @@ func New(config otfhttp.ClientConfig) (*Client, error) {
 		Variables:     &variable.Client{Client: httpClient},
 		Runners:       &runner.Client{Client: httpClient},
 	}
-	return client, nil
-}
-
-func (c *Client) UseToken(token string) {
-	c.Token = token
 }

@@ -7,7 +7,6 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/leg100/otf/internal/http"
 	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/resource"
 )
@@ -42,7 +41,7 @@ func (c *Client) UploadPlanFile(ctx context.Context, runID resource.TfeID, plan 
 	// set query here.
 	opts := &PlanFileOptions{Format: format}
 	q := url.Values{}
-	if err := http.Encoder.Encode(opts, q); err != nil {
+	if err := otfhttp.Encoder.Encode(opts, q); err != nil {
 		return err
 	}
 	req.URL.RawQuery = q.Encode()

@@ -49,7 +49,7 @@ type RegisterRunnerOptions struct {
 	// handler is responsible for determining client's IP address.
 	IPAddress *netip.Addr `json:"-"`
 	// ExecutorKind is the runner's execution kind.
-	ExecutorKind ExecutorKind `jsonapi:"attribute" json:"executor_kind" db:"executor_kind"`
+	ExecutorKind ExecutorKind `json:"executor_kind" db:"executor_kind"`
 	// ID of agent's pool. Only set if runner is an agent.
 	AgentPoolID *string `json:"-"`
 	// CurrentJobs are those jobs the agent has discovered leftover from a

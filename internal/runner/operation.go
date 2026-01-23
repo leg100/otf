@@ -130,8 +130,6 @@ type (
 	hostnameClient interface {
 		Hostname() string
 	}
-
-	operationClientConstructor func(jobToken []byte) (OperationClient, error)
 )
 
 func defaultOperationConfig() OperationConfig {

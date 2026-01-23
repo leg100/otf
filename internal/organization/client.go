@@ -10,8 +10,6 @@ import (
 
 type Client struct {
 	*otfhttp.Client
-
-	Service
 }
 
 // CreateOrganization creates a new organization with the given options.

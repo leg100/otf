@@ -27,10 +27,9 @@ type Runner struct {
 	PluginCache     bool   // toggle use of terraform's shared plugin cache
 	TerraformBinDir string // destination directory for terraform binaries
 
-	runners         RunnerClient
-	operationClient OperationClient
-	executor        executor
-	registered      chan struct{}
+	runners    RunnerClient
+	executor   executor
+	registered chan struct{}
 
 	logger logr.Logger // logger that logs messages regardless of whether runner is a server or agent runner.
 	v      int         // logger verbosity
@@ -47,7 +46,7 @@ type RunnerClient interface {
 func New(
 	logger logr.Logger,
 	runnerClient RunnerClient,
-	operationClient OperationClient,
+	operationClientCreator OperationClientCreator,
 	cfg *Config,
 ) (*Runner, error) {
 	r := &Runner{
@@ -56,10 +55,9 @@ func New(
 			MaxJobs:      cfg.MaxJobs,
 			ExecutorKind: cfg.ExecutorKind,
 		},
-		runners:         runnerClient,
-		operationClient: operationClient,
-		registered:      make(chan struct{}),
-		logger:          logger,
+		runners:    runnerClient,
+		registered: make(chan struct{}),
+		logger:     logger,
 	}
 	if !cfg.IsAgent {
 		// Set a higher threshold for logging on server runner where the runner is
@@ -77,9 +75,9 @@ func New(
 	switch cfg.ExecutorKind {
 	case ForkExecutorKind:
 		r.executor = &forkExecutor{
-			config:          cfg.OperationConfig,
-			logger:          logger,
-			operationClient: operationClient,
+			config:                 cfg.OperationConfig,
+			logger:                 logger,
+			operationClientCreator: operationClientCreator,
 		}
 	case KubeExecutorKind:
 		executor, err := newKubeExecutor(logger, cfg.OperationConfig, *cfg.KubeConfig)

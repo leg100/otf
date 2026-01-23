@@ -42,8 +42,7 @@ func (c *Client) Register(ctx context.Context, opts RegisterRunnerOptions) (*Run
 		return nil, err
 	}
 	// add agent ID to future requests
-	agentID := m.ID
-	c.agentID = &agentID
+	c.agentID = &m.ID
 	return &m, nil
 }
 
