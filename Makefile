@@ -219,5 +219,5 @@ bump-chart-version:
 
 .PHONY: helm-docs
 helm-docs:
-	helm-docs
+	go tool helm-docs -c ./charts -u
 
