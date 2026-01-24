@@ -16,8 +16,10 @@ import (
 	"github.com/goccy/go-yaml"
 	tfe "github.com/hashicorp/go-tfe"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/mitchellh/iochan"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -162,7 +164,7 @@ func TestHelm(t *testing.T) {
 	err = client.ConfigurationVersions.UploadTarGzip(t.Context(), cv.UploadURL, tarball)
 	require.NoError(t, err)
 
-	_, err = client.Runs.Create(t.Context(), tfe.RunCreateOptions{
+	run, err := client.Runs.Create(t.Context(), tfe.RunCreateOptions{
 		Workspace:            ws,
 		ConfigurationVersion: cv,
 	})
@@ -208,6 +210,7 @@ func TestHelm(t *testing.T) {
 		return len(jobs.Items) == 0, nil
 	})
 	require.NoError(t, err)
-	//run = daemon.getRun(t, ctx, run.ID)
-	//assert.Equal(t, runstatus.Planned, run.Status)
+
+	run, err = client.Runs.Read(t.Context(), run.ID)
+	assert.Equal(t, runstatus.Planned, runstatus.Status(run.Status))
 }
