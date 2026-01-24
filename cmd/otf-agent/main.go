@@ -33,7 +33,7 @@ func main() {
 
 func run(ctx context.Context, args []string) error {
 	var (
-		config       runner.Config
+		config       = runner.NewDefaultConfig()
 		loggerConfig logr.Config
 		url          string
 		token        string
@@ -59,7 +59,7 @@ func run(ctx context.Context, args []string) error {
 				config.KubeConfig.ServerURL = flag
 			}
 			// Construct runner.
-			runner, err := agent.New(logger, url, token, &config)
+			runner, err := agent.New(logger, url, token, config)
 			if err != nil {
 				return err
 			}
@@ -69,7 +69,7 @@ func run(ctx context.Context, args []string) error {
 	}
 
 	logr.RegisterFlags(cmd.Flags(), &loggerConfig)
-	runner.RegisterFlags(cmd.Flags(), &config)
+	runner.RegisterFlags(cmd.Flags(), config)
 
 	cmd.Flags().StringVar(&config.Name, "name", "", "Give agent a descriptive name. Optional.")
 	cmd.Flags().StringVar(&url, "url", otfhttp.DefaultURL, "URL of OTF server")

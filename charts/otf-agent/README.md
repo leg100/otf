@@ -1,6 +1,6 @@
 # Helm Chart for `otf-agent`
 
-![Version: 0.1.17](https://img.shields.io/badge/Version-0.1.17-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 0.3.22](https://img.shields.io/badge/AppVersion-0.3.22-informational?style=flat-square)
+![Version: 0.1.18](https://img.shields.io/badge/Version-0.1.18-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 0.3.22](https://img.shields.io/badge/AppVersion-0.3.22-informational?style=flat-square)
 
 Installs the [otf agent](https://docs.otf.ninja/runners/).
 
@@ -83,4 +83,12 @@ address=10.244.0.18 agent.pool_id=apool-5b90443ed82ef769
 | url | string | `nil` | URL of the OTF server to connect to. Must begin with `https://` or `http://`. Required. |
 | volumeMounts | list | `[]` | Additional volume mounts for the main otf-agent container |
 | volumes | list | `[]` | Additional volumes to make available to the pod |
+| runner.cacheVolume.accessModes | list | `["ReadWriteMany"]` | Persistent volume access modes. |
+| runner.cacheVolume.enabled | bool | `false` | Enable persistent volume for cache. |
+| runner.cacheVolume.size | string | `"100Gi"` | Persistent volume size. |
+| runner.cacheVolume.storageClass | string | `nil` | Persistent volume storage class. # If defined, storageClassName: <storageClass> # If set to "-", storageClassName: "", which disables dynamic provisioning # If undefined (the default) or set to null, no storageClassName spec is # set, choosing the default provisioner. |
+| runner.concurrency | int | `nil` | Set the number of runs that can be processed concurrently. See [docs](https://docs.otf.ninja/config/flags/#-concurrency). |
+| runner.executor | string | `""` | The executor to use. See [docs](https://docs.otf.ninja/config/flags/#-executor) |
+| runner.kubernetesTTLAfterFinish | string | `nil` | Delete finished kubernetes jobs after this duration. |
+| runner.pluginCache | bool | `nil` | Enable shared provider plugin cache for terraform providers. Note this is only concurrency safe in opentofu 1.10.0 and greater. |
 
