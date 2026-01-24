@@ -221,3 +221,14 @@ bump-chart-version:
 helm-docs:
 	go tool helm-docs -c ./charts -u
 
+
+.PHONY: helm-dependency-update
+helm-dependency-update: helm-dependency-update-otfd helm-dependency-update-otf-agent
+
+.PHONY: helm-dependency-update-otfd
+helm-dependency-update-otfd:
+	helm dependency update ./charts/otfd
+
+.PHONY: helm-dependency-update-otf-agent
+helm-dependency-update-otf-agent:
+	helm dependency update ./charts/otf-agent

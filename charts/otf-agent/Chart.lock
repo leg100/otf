@@ -1,0 +1,6 @@
+dependencies:
+- name: runner
+  repository: file://../libs/runner
+  version: 0.1.0
+digest: sha256:ead9e5bac01de8fa26cabe44c708b27dc8fd498bc3ede12f946e37a8eb4fdaed
+generated: "2026-01-24T17:36:17.834597132Z"

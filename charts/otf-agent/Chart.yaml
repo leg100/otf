@@ -7,3 +7,7 @@ appVersion: 0.3.22
 maintainers:
   - name: Louis Garman
     email: louisgarman@gmail.com
+dependencies:
+  - name: runner
+    repository: "file://../libs/runner"
+    version: 0.1.0
