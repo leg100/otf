@@ -4,9 +4,13 @@
 - name: OTF_CONCURRENCY
   value: "{{ . }}"
 {{- end }}
-{{ if .executor }}
+{{ with .executor }}
 - name: OTF_EXECUTOR
-  value: "{{ .executor }}"
+  value: "{{ . }}"
+{{ end }}
+{{ with .kubernetesTTLAfterFinish }}
+- name: OTF_KUBERNETES_TTL_AFTER_FINISH
+  value: "{{ . }}"
 {{ end }}
 - name: OTF_ENGINE_BINS_DIR
   value: "/cache/engines"

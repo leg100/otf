@@ -19,5 +19,6 @@ rules:
     - secrets
   verbs:
     - create
+    - update
 {{- end }}
 {{- end -}}

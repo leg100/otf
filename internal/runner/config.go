@@ -26,4 +26,5 @@ func RegisterFlags(flags *pflag.FlagSet, cfg *Config) {
 	flags.IntVar(&cfg.MaxJobs, "concurrency", cfg.MaxJobs, "Number of runs that can be processed concurrently. Only applicable to the fork executor.")
 	flags.Var(&cfg.ExecutorKind, "executor", "Executor for executing jobs: 'fork' or 'kubernetes'")
 	RegisterOperationFlags(flags, &cfg.OperationConfig)
+	registerKubeFlags(flags, cfg.KubeConfig)
 }

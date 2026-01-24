@@ -2,22 +2,28 @@ package integration
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
 	"regexp"
 	"strings"
 	"testing"
+	"time"
 
 	petname "github.com/dustinkirkland/golang-petname"
 	"github.com/goccy/go-yaml"
+	tfe "github.com/hashicorp/go-tfe"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/client"
-	otfhttp "github.com/leg100/otf/internal/http"
-	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/mitchellh/iochan"
 	"github.com/stretchr/testify/require"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	k8swait "k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 func TestHelm(t *testing.T) {
@@ -59,10 +65,10 @@ func TestHelm(t *testing.T) {
 	kubeconfigPath := testutils.TempFile(t, buf.Bytes())
 
 	// Build k8s client
-	//restcfg, err := clientcmd.BuildConfigFromFlags("", kubeconfigPath)
-	//require.NoError(t, err)
-	//clientset, err := kubernetes.NewForConfig(restcfg)
-	//require.NoError(t, err)
+	restcfg, err := clientcmd.BuildConfigFromFlags("", kubeconfigPath)
+	require.NoError(t, err)
+	clientset, err := kubernetes.NewForConfig(restcfg)
+	require.NoError(t, err)
 
 	ns := petname.Generate(2, "-")
 	release := "otfd"
@@ -79,6 +85,10 @@ func TestHelm(t *testing.T) {
 		"--namespace", ns,
 		"--values", testValuesPath,
 		"--set", "image.tag="+imageTag,
+		"--set", "logging.http=true",
+		"--set", "logging.verbosity=9",
+		"--set", "runner.executor=kubernetes",
+		"--set", "runner.kubernetesTTLAfterFinish=1s",
 		"--wait",
 	)
 	out, err = cmd.CombinedOutput()
@@ -86,8 +96,8 @@ func TestHelm(t *testing.T) {
 
 	// Delete namespace at finish
 	t.Cleanup(func() {
-		//err := clientset.CoreV1().Namespaces().Delete(context.Background(), ns, metav1.DeleteOptions{})
-		//require.NoError(t, err)
+		err := clientset.CoreV1().Namespaces().Delete(context.Background(), ns, metav1.DeleteOptions{})
+		require.NoError(t, err)
 	})
 
 	// Create tunnel to otfd service so that we can communicate with it.
@@ -125,14 +135,79 @@ func TestHelm(t *testing.T) {
 	err = yaml.Unmarshal(rawTestValues, &testValues)
 	require.NoError(t, err)
 
-	client, err := client.New(otfhttp.ClientConfig{
-		URL:   fmt.Sprintf("http://localhost:%s", localPort),
-		Token: testValues.SiteToken,
-	})
-
-	org, err := client.Organizations.CreateOrganization(t.Context(), organization.CreateOptions{
-		Name: internal.Ptr("acme"),
+	// Create TFE Client to talk to the remote otfd. We would use the OTF client
+	// but not all endpoints are implemented.
+	client, err := tfe.NewClient(&tfe.Config{
+		Address: fmt.Sprintf("http://localhost:%s", localPort),
+		Token:   testValues.SiteToken,
 	})
 	require.NoError(t, err)
-	t.Logf("created organization: %s", org.Name)
+
+	org, err := client.Organizations.Create(t.Context(), tfe.OrganizationCreateOptions{
+		Name:  internal.Ptr("acme"),
+		Email: internal.Ptr("bollocks@morebollocks.bollocks"),
+	})
+	require.NoError(t, err)
+
+	ws, err := client.Workspaces.Create(t.Context(), org.Name, tfe.WorkspaceCreateOptions{
+		Name: internal.Ptr("dev"),
+	})
+	require.NoError(t, err)
+
+	cv, err := client.ConfigurationVersions.Create(t.Context(), ws.ID, tfe.ConfigurationVersionCreateOptions{})
+	require.NoError(t, err)
+
+	tarball, err := os.Open("./testdata/root.tar.gz")
+	require.NoError(t, err)
+	err = client.ConfigurationVersions.UploadTarGzip(t.Context(), cv.UploadURL, tarball)
+	require.NoError(t, err)
+
+	_, err = client.Runs.Create(t.Context(), tfe.RunCreateOptions{
+		Workspace:            ws,
+		ConfigurationVersion: cv,
+	})
+	require.NoError(t, err)
+
+	// Pod should succeed and run should reach planned status
+	opts := metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("otf.ninja/workspace-id=%s", ws.ID),
+	}
+	k8swait.PollUntilContextTimeout(t.Context(), time.Second, time.Second*30, true, func(ctx context.Context) (bool, error) {
+		pods, err := clientset.CoreV1().Pods(ns).List(t.Context(), opts)
+		if err != nil {
+			return false, err
+		}
+		if len(pods.Items) == 0 {
+			return false, nil
+		}
+		switch pod := pods.Items[0]; pod.Status.Phase {
+		case corev1.PodFailed:
+			dumpPodLogs(t, &pod, clientset)
+			t.FailNow()
+		case corev1.PodSucceeded:
+			return true, nil
+		}
+		return false, nil
+	})
+
+	// Ensure k8s garbage collection works as configured with both job and
+	// secret resources deleted.
+	err = k8swait.PollUntilContextTimeout(t.Context(), time.Second, time.Second*30, true, func(ctx context.Context) (bool, error) {
+		secrets, err := clientset.CoreV1().Secrets(ns).List(t.Context(), opts)
+		if err != nil {
+			return false, err
+		}
+		return len(secrets.Items) == 0, nil
+	})
+	require.NoError(t, err)
+	err = k8swait.PollUntilContextTimeout(t.Context(), time.Second, time.Second*30, true, func(ctx context.Context) (bool, error) {
+		jobs, err := clientset.BatchV1().Jobs(ns).List(t.Context(), opts)
+		if err != nil {
+			return false, err
+		}
+		return len(jobs.Items) == 0, nil
+	})
+	require.NoError(t, err)
+	//run = daemon.getRun(t, ctx, run.ID)
+	//assert.Equal(t, runstatus.Planned, run.Status)
 }

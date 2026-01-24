@@ -12,6 +12,7 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/logr"
+	"github.com/spf13/pflag"
 	"golang.org/x/sync/errgroup"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -78,6 +79,10 @@ type kubeConfig struct {
 
 type KubeConfigServerURL interface {
 	String() string
+}
+
+func registerKubeFlags(flags *pflag.FlagSet, cfg *kubeConfig) {
+	flags.DurationVar(&cfg.TTLAfterFinish, "kubernetes-ttl-after-finish", cfg.TTLAfterFinish, "Delete finished kubernetes jobs after this duration.")
 }
 
 type kubeExecutor struct {

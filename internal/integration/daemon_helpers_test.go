@@ -30,6 +30,7 @@ import (
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/state"
 	"github.com/leg100/otf/internal/team"
+	"github.com/leg100/otf/internal/testutils"
 	otfuser "github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/variable"
 	"github.com/leg100/otf/internal/vcs"
@@ -323,9 +324,8 @@ func (s *testDaemon) createConfigurationVersion(t *testing.T, ctx context.Contex
 
 func (s *testDaemon) createAndUploadConfigurationVersion(t *testing.T, ctx context.Context, ws *workspace.Workspace, opts *configversion.CreateOptions) *configversion.ConfigurationVersion {
 	cv := s.createConfigurationVersion(t, ctx, ws, opts)
-	tarball, err := os.ReadFile("./testdata/root.tar.gz")
-	require.NoError(t, err)
-	err = s.Configs.UploadConfig(ctx, cv.ID, tarball)
+	tarball := testutils.ReadFile(t, "./testdata/root.tar.gz")
+	err := s.Configs.UploadConfig(ctx, cv.ID, tarball)
 	require.NoError(t, err)
 	return cv
 }

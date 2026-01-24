@@ -1,7 +1,9 @@
-# -- The executor to use. Specify either 'process' or 'kubernetes'. See [docs](https://docs.otf.ninja/config/flags/#-executor)
+# -- The executor to use. See [docs](https://docs.otf.ninja/config/flags/#-executor)
 executor: ""
 # -- (int) Set the number of runs that can be processed concurrently. See [docs](https://docs.otf.ninja/config/flags/#-concurrency).
 concurrency:
+# -- Delete finished kubernetes jobs after this duration.
+kubernetesTTLAfterFinish:
 # -- (bool) Enable shared provider plugin cache for terraform providers. Note this is only concurrency safe in opentofu 1.10.0 and greater.
 pluginCache:
 ## Persistent volume for cache, e.g. for downloaded engine binaries (terraform, tofu), and caching provider plugins.
