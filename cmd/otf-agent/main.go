@@ -52,11 +52,7 @@ func run(ctx context.Context, args []string) error {
 			// if using the kubernetes executor then the server url should be
 			// set to the value of the --url flag
 			if config.ExecutorKind == runner.KubeExecutorKind {
-				flag := &runner.KubeServerURLFlag{}
-				if err := flag.Set(url); err != nil {
-					return err
-				}
-				config.KubeConfig.ServerURL = flag
+				config.KubeConfig.ServerURL = url
 			}
 			// Construct runner.
 			runner, err := agent.New(logger, url, token, config)

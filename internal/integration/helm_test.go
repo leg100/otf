@@ -91,6 +91,7 @@ func TestHelm(t *testing.T) {
 		"--set", "logging.verbosity=9",
 		"--set", "runner.executor=kubernetes",
 		"--set", "runner.kubernetesTTLAfterFinish=1s",
+		"--set", "runner.cacheVolume.enabled=true",
 		"--wait",
 	)
 	out, err = cmd.CombinedOutput()
@@ -224,13 +225,14 @@ func TestHelm(t *testing.T) {
 			"--set", "logging.verbosity=9",
 			"--set", "runner.executor=kubernetes",
 			"--set", "runner.kubernetesTTLAfterFinish=1s",
+			"--set", "runner.cacheVolume.enabled=true",
 			"--wait",
 		)
 		out, err = cmd.CombinedOutput()
 		require.NoError(t, err, string(out))
 
 		ws, err := client.Workspaces.Create(t.Context(), org.Name, tfe.WorkspaceCreateOptions{
-			Name:          internal.Ptr("dev"),
+			Name:          internal.Ptr("dev-agent"),
 			ExecutionMode: internal.Ptr("agent"),
 			AgentPoolID:   internal.Ptr(pool.ID),
 		})

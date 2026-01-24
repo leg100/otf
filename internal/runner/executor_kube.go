@@ -50,13 +50,11 @@ func init() {
 		// OTF_KUBERNETES_CACHE_PVC is set in the otfd helm chart to the name of
 		// the optional persistent volume claim for caching.
 		CachePVC: os.Getenv("OTF_KUBERNETES_CACHE_PVC"),
-		ServerURL: &KubeServerURLFlag{
-			url: fmt.Sprintf("http://%s.%s:%s/",
-				os.Getenv("OTF_KUBERNETES_SERVICE_NAME"),
-				os.Getenv("OTF_KUBERNETES_NAMESPACE"),
-				os.Getenv("OTF_KUBERNETES_SERVICE_PORT"),
-			),
-		},
+		ServerURL: fmt.Sprintf("http://%s.%s:%s/",
+			os.Getenv("OTF_KUBERNETES_SERVICE_NAME"),
+			os.Getenv("OTF_KUBERNETES_NAMESPACE"),
+			os.Getenv("OTF_KUBERNETES_SERVICE_PORT"),
+		),
 		// Delete job by default 1 hour after it has finished
 		TTLAfterFinish: time.Hour,
 	}
@@ -71,7 +69,7 @@ type kubeConfig struct {
 	Namespace      string
 	Image          string
 	ConfigPath     string
-	ServerURL      KubeConfigServerURL
+	ServerURL      string
 	ServiceAccount string
 	CachePVC       string
 	TTLAfterFinish time.Duration
@@ -189,7 +187,7 @@ func (s *kubeExecutor) SpawnOperation(ctx context.Context, _ *errgroup.Group, jo
 							Env: []corev1.EnvVar{
 								{
 									Name:  "OTF_URL",
-									Value: s.Config.ServerURL.String(),
+									Value: s.Config.ServerURL,
 								},
 								{
 									Name:  "OTF_JOB_ID",

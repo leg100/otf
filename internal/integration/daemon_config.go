@@ -104,17 +104,6 @@ func withDeleteConfigsAfter(deleteConfigsAfter, checkInterval time.Duration) con
 	}
 }
 
-func withKubernetesExecutor(configPath, image, namespace string, serverURL runner.KubeConfigServerURL, ttl time.Duration) configOption {
-	return func(cfg *config) {
-		cfg.RunnerConfig.ExecutorKind = runner.KubeExecutorKind
-		cfg.RunnerConfig.KubeConfig.ConfigPath = configPath
-		cfg.RunnerConfig.KubeConfig.Image = image
-		cfg.RunnerConfig.KubeConfig.Namespace = namespace
-		cfg.RunnerConfig.KubeConfig.ServerURL = serverURL
-		cfg.RunnerConfig.KubeConfig.TTLAfterFinish = ttl
-	}
-}
-
 func disableRunner() configOption {
 	return func(cfg *config) {
 		cfg.DisableRunner = true
@@ -142,12 +131,6 @@ func withKeyPairPaths(private, public string) configOption {
 func withHostname(hostname string) configOption {
 	return func(cfg *config) {
 		cfg.Host = hostname
-	}
-}
-
-func withSSLDisabled() configOption {
-	return func(cfg *config) {
-		cfg.SSL = false
 	}
 }
 

@@ -6,7 +6,7 @@ kind: PersistentVolumeClaim
 metadata:
   name: {{ include "cacheVolumeName" $ }}
   labels:
-    {{- include "otfd.labels" $ | nindent 4 }}
+    {{- include "labels" $ | nindent 4 }}
 spec:
   accessModes:
   {{- range .accessModes }}
