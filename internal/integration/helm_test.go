@@ -212,5 +212,6 @@ func TestHelm(t *testing.T) {
 	require.NoError(t, err)
 
 	run, err = client.Runs.Read(t.Context(), run.ID)
+	require.NoError(t, err)
 	assert.Equal(t, runstatus.Planned, runstatus.Status(run.Status))
 }
