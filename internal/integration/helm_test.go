@@ -1,19 +1,16 @@
 package integration
 
 import (
-	"bytes"
-	"io"
 	"os"
 	"os/exec"
 	"testing"
+	"time"
 
 	tfe "github.com/hashicorp/go-tfe"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/client-go/kubernetes"
 )
 
 func TestHelm(t *testing.T) {
@@ -23,7 +20,11 @@ func TestHelm(t *testing.T) {
 		t.Skip("kubernetes kind not installed")
 	}
 
-	deploy, err := NewKubeDeploy(t.Context(), "", "otfd", "../..")
+	deploy, err := NewKubeDeploy(t.Context(), KubeDeployConfig{
+		RepoDir: "../..",
+		// Delete job and its secret 1 second after job finishes.
+		JobTTL: 1,
+	})
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
@@ -60,7 +61,7 @@ func TestHelm(t *testing.T) {
 		require.NoError(t, err)
 
 		// Pod should succeed and run should reach planned status
-		err = deploy.WaitPodSucceed(t.Context(), run.ID)
+		err = deploy.WaitPodSucceed(t.Context(), run.ID, time.Minute)
 		require.NoError(t, err)
 
 		// Ensure k8s garbage collection works as configured with both job and
@@ -113,28 +114,11 @@ func TestHelm(t *testing.T) {
 		require.NoError(t, err)
 
 		// Pod should succeed and run should reach planned status
-		err = deploy.WaitPodSucceed(t.Context(), run.ID)
+		err = deploy.WaitPodSucceed(t.Context(), run.ID, time.Minute)
 		require.NoError(t, err)
 		// Ensure k8s garbage collection works as configured with both job and
 		// secret resources deleted.
 		err = deploy.WaitJobAndSecretDeleted(t.Context(), run.ID)
 		require.NoError(t, err)
 	})
-}
-
-func dumpPodLogs(t *testing.T, pod *corev1.Pod, clientset *kubernetes.Clientset) {
-	t.Helper()
-
-	req := clientset.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, &corev1.PodLogOptions{})
-	podLogs, err := req.Stream(t.Context())
-	require.NoError(t, err)
-	t.Cleanup(func() {
-		podLogs.Close()
-	})
-
-	buf := new(bytes.Buffer)
-	_, err = io.Copy(buf, podLogs)
-	require.NoError(t, err)
-
-	t.Logf("---- pod logs -----\n%s", buf.String())
 }

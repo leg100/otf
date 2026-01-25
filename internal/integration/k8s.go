@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -36,21 +37,35 @@ type KubeDeploy struct {
 	clientset  *kubernetes.Clientset
 	cancel     context.CancelFunc
 	tunnel     *exec.Cmd
+	browser    *exec.Cmd
 	namespace  string
 	imageTag   string
 	siteToken  string
+	jobTTL     time.Duration
+	repoDir    string
 }
 
-func NewKubeDeploy(ctx context.Context, namespace, release, repoDir string) (*KubeDeploy, error) {
+type KubeDeployConfig struct {
+	Namespace   string
+	RepoDir     string
+	Release     string
+	JobTTL      time.Duration
+	OpenBrowser bool
+}
+
+func NewKubeDeploy(ctx context.Context, cfg KubeDeployConfig) (*KubeDeploy, error) {
 	ctx, cancel := context.WithCancel(ctx)
 
-	if namespace == "" {
-		namespace = petname.Generate(2, "-")
+	if cfg.Namespace == "" {
+		cfg.Namespace = petname.Generate(2, "-")
+	}
+	if cfg.Release == "" {
+		cfg.Release = "otfd"
 	}
 
 	// Build and load all images into kind
 	cmd := exec.CommandContext(ctx, "make", "load-all")
-	cmd.Dir = repoDir
+	cmd.Dir = cfg.RepoDir
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return nil, fmt.Errorf("building and loading images: %w: %s", err, string(out))
@@ -81,23 +96,28 @@ func NewKubeDeploy(ctx context.Context, namespace, release, repoDir string) (*Ku
 	}
 
 	// Install otfd helm chart
-	cmd = exec.CommandContext(ctx,
-		"helm",
-		"install",
-		release,
-		filepath.Join(repoDir, "charts/otfd"),
+	args := []string{
+		"upgrade",
+		cfg.Release,
+		filepath.Join(cfg.RepoDir, "charts/otfd"),
+		"--install",
 		"--kubeconfig", config.Name(),
 		"--create-namespace",
-		"--namespace", namespace,
-		"--values", filepath.Join(repoDir, helmTestValuesPath),
-		"--set", "image.tag="+imageTag,
+		"--namespace", cfg.Namespace,
+		"--values", filepath.Join(cfg.RepoDir, helmTestValuesPath),
+		"--set", "image.tag=" + imageTag,
 		"--set", "logging.http=true",
 		"--set", "logging.verbosity=9",
 		"--set", "runner.executor=kubernetes",
-		"--set", "runner.kubernetesTTLAfterFinish=1s",
 		"--set", "runner.cacheVolume.enabled=true",
+		"--set", "runner.pluginCache=true",
+		"--set", "defaultEngine=tofu",
 		"--wait",
-	)
+	}
+	if cfg.JobTTL != 0 {
+		args = append(args, "--set", fmt.Sprintf("runner.kubernetesTTLAfterFinish=%ds", cfg.JobTTL))
+	}
+	cmd = exec.CommandContext(ctx, "helm", args...)
 	out, err = cmd.CombinedOutput()
 	if err != nil {
 		return nil, fmt.Errorf("install otfd helm chart: %w: %s", err, string(out))
@@ -107,7 +127,7 @@ func NewKubeDeploy(ctx context.Context, namespace, release, repoDir string) (*Ku
 	r, w := io.Pipe()
 	tunnel := exec.CommandContext(ctx,
 		"kubectl",
-		"-n", namespace,
+		"-n", cfg.Namespace,
 		"--kubeconfig", config.Name(),
 		"port-forward",
 		"services/otfd",
@@ -130,8 +150,20 @@ func NewKubeDeploy(ctx context.Context, namespace, release, repoDir string) (*Ku
 	}
 	localPort := matches[1]
 
+	var browser *exec.Cmd
+	if cfg.OpenBrowser {
+		u := url.URL{Scheme: "http", Host: "localhost:" + localPort, Path: "/app/organizations"}
+		browser = exec.CommandContext(ctx, "xdg-open", u.String())
+		if err := browser.Start(); err != nil {
+			return nil, fmt.Errorf("opening browser to connect to local tunneled endpoint: %w", err)
+		}
+	}
+
 	// Extract site token from helm test values file
 	rawTestValues, err := os.ReadFile(helmTestValuesPath)
+	if err != nil {
+		return nil, err
+	}
 	var testValues struct {
 		SiteToken string `json:"siteToken"`
 	}
@@ -161,19 +193,31 @@ func NewKubeDeploy(ctx context.Context, namespace, release, repoDir string) (*Ku
 	}
 
 	return &KubeDeploy{
-		namespace:  namespace,
+		namespace:  cfg.Namespace,
 		configPath: config.Name(),
 		clientset:  clientset,
 		cancel:     cancel,
 		tunnel:     tunnel,
+		browser:    browser,
 		Client:     client,
 		imageTag:   imageTag,
 		siteToken:  testValues.SiteToken,
+		jobTTL:     cfg.JobTTL,
+		repoDir:    cfg.RepoDir,
 	}, nil
+}
+
+func (k *KubeDeploy) Wait() error {
+	return k.tunnel.Wait()
 }
 
 func (k *KubeDeploy) Close(deleteNamespace bool) error {
 	k.cancel()
+	if k.browser != nil {
+		if err := k.browser.Process.Kill(); err != nil {
+			return err
+		}
+	}
 	if err := k.tunnel.Process.Kill(); err != nil {
 		return err
 	}
@@ -186,11 +230,14 @@ func (k *KubeDeploy) Close(deleteNamespace bool) error {
 	return nil
 }
 
-func (k *KubeDeploy) WaitPodSucceed(ctx context.Context, runID string) error {
+func (k *KubeDeploy) WaitPodSucceed(ctx context.Context, runID string, timeout time.Duration) error {
+	if timeout == 0 {
+		timeout = time.Second * 30
+	}
 	opts := metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("otf.ninja/run-id=%s", runID),
 	}
-	return k8swait.PollUntilContextTimeout(ctx, time.Second, time.Second*30, true, func(ctx context.Context) (bool, error) {
+	return k8swait.PollUntilContextTimeout(ctx, time.Second, timeout, true, func(ctx context.Context) (bool, error) {
 		pods, err := k.clientset.CoreV1().Pods(k.namespace).List(ctx, opts)
 		if err != nil {
 			return false, err
@@ -248,23 +295,25 @@ func (k *KubeDeploy) InstallAgentChart(ctx context.Context, token string) error 
 		return err
 	}
 	// Install otf-agent helm chart
-	cmd := exec.CommandContext(ctx,
-		"helm",
+	args := []string{
 		"install",
 		"otf-agent",
-		"../../charts/otf-agent",
+		filepath.Join(k.repoDir, "charts/otf-agent"),
 		"--kubeconfig", k.configPath,
 		"--namespace", k.namespace,
-		"--set", "image.tag="+k.imageTag,
+		"--set", "image.tag=" + k.imageTag,
 		// agent talks to otfd via its service ip
-		"--set", "url=http://"+svc.Spec.ClusterIP,
-		"--set", "token="+token,
+		"--set", "url=http://" + svc.Spec.ClusterIP,
+		"--set", "token=" + token,
 		"--set", "logging.http=true",
 		"--set", "logging.verbosity=9",
 		"--set", "runner.executor=kubernetes",
-		"--set", "runner.kubernetesTTLAfterFinish=1s",
 		"--set", "runner.cacheVolume.enabled=true",
 		"--wait",
-	)
+	}
+	if k.jobTTL != 0 {
+		args = append(args, "--set", "runner.kubernetesTTLAfterFinish=1s")
+	}
+	cmd := exec.CommandContext(ctx, "helm", args...)
 	return cmd.Run()
 }

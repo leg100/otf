@@ -14,7 +14,7 @@
 {{ end }}
 - name: OTF_ENGINE_BINS_DIR
   value: "/cache/engines"
-{{- with .enableProviderCache }}
+{{- with .pluginCache }}
 - name: OTF_PLUGIN_CACHE
   value: "true"
 - name: OTF_PLUGIN_CACHE_DIR

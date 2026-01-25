@@ -16,6 +16,7 @@ import (
 	"golang.org/x/sync/errgroup"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -57,6 +58,8 @@ func init() {
 		),
 		// Delete job by default 1 hour after it has finished
 		TTLAfterFinish: time.Hour,
+		RequestCPU:     "500m",
+		RequestMemory:  "128Mi",
 	}
 }
 
@@ -73,6 +76,8 @@ type kubeConfig struct {
 	ServiceAccount string
 	CachePVC       string
 	TTLAfterFinish time.Duration
+	RequestCPU     string
+	RequestMemory  string
 }
 
 type KubeConfigServerURL interface {
@@ -80,7 +85,9 @@ type KubeConfigServerURL interface {
 }
 
 func registerKubeFlags(flags *pflag.FlagSet, cfg *kubeConfig) {
-	flags.DurationVar(&cfg.TTLAfterFinish, "kubernetes-ttl-after-finish", cfg.TTLAfterFinish, "Delete finished kubernetes jobs after this duration.")
+	flags.DurationVar(&cfg.TTLAfterFinish, "kubernetes-ttl-after-finish", cfg.TTLAfterFinish, "Delete finished kubernetes job after this duration.")
+	flags.StringVar(&cfg.RequestCPU, "kubernetes-request-cpu", cfg.RequestCPU, "Requested CPU for kubernetes job.")
+	flags.StringVar(&cfg.RequestMemory, "kubernetes-request-memory", cfg.RequestMemory, "Requested memory for kubernetes job.")
 }
 
 type kubeExecutor struct {
@@ -96,6 +103,13 @@ func newKubeExecutor(
 	operationConfig OperationConfig,
 	kubeConfig kubeConfig,
 ) (*kubeExecutor, error) {
+	// validate resource request strings
+	if _, err := resource.ParseQuantity(kubeConfig.RequestCPU); err != nil {
+		return nil, fmt.Errorf("invalid cpu quantity: %s: %w", kubeConfig.RequestCPU, err)
+	}
+	if _, err := resource.ParseQuantity(kubeConfig.RequestMemory); err != nil {
+		return nil, fmt.Errorf("invalid memory quantity: %s: %w", kubeConfig.RequestMemory, err)
+	}
 	// assume running in-cluster; otherwise use config path
 	config, err := rest.InClusterConfig()
 	if errors.Is(err, rest.ErrNotInCluster) {
@@ -180,6 +194,12 @@ func (s *kubeExecutor) SpawnOperation(ctx context.Context, _ *errgroup.Group, jo
 				Spec: corev1.PodSpec{
 					ServiceAccountName: s.Config.ServiceAccount,
 					RestartPolicy:      corev1.RestartPolicyNever,
+					Resources: &corev1.ResourceRequirements{
+						Requests: corev1.ResourceList{
+							corev1.ResourceCPU:    resource.MustParse(s.Config.RequestCPU),
+							corev1.ResourceMemory: resource.MustParse(s.Config.RequestMemory),
+						},
+					},
 					Containers: []corev1.Container{
 						{
 							Name:  "otf-job",
