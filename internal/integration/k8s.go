@@ -157,9 +157,9 @@ func NewKubeDeploy(ctx context.Context, cfg KubeDeployConfig) (*KubeDeploy, erro
 	}
 
 	// Extract site token from helm test values file
-	rawTestValues, err := os.ReadFile(helmTestValuesPath)
+	rawTestValues, err := os.ReadFile(filepath.Join(cfg.RepoDir, helmTestValuesPath))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("reading test values file: %w", err)
 	}
 	var testValues struct {
 		SiteToken string `json:"siteToken"`

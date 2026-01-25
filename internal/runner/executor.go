@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/leg100/otf/internal/resource"
 	"github.com/spf13/pflag"
 	"golang.org/x/sync/errgroup"
 )
@@ -30,5 +31,5 @@ type executor interface {
 	// SpawnOperation spawns an operation to carry out a job.
 	SpawnOperation(ctx context.Context, g *errgroup.Group, job *Job, jobToken []byte) error
 	// currentJobs returns the number of current jobs.
-	currentJobs() int
+	currentJobs(ctx context.Context, runnerID resource.TfeID) int
 }

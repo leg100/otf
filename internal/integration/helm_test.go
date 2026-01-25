@@ -13,14 +13,26 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const enableKubeTestsEnvVar = "OTF_TEST_KUBE"
+
 func TestHelm(t *testing.T) {
-	integrationTest(t)
+	if testing.Short() {
+		t.Skip()
+	}
+
+	// This test is deliberately not run in parallel with other tests. The test
+	// can trigger a ERR_NETWORK_CHANGED error in chrome, disrupting the other
+	// tests.
+
+	if _, ok := os.LookupEnv(enableKubeTestsEnvVar); !ok {
+		t.Skip("OTF_TEST_HELM not set")
+	}
 
 	if _, err := exec.LookPath("kind"); err != nil {
 		t.Skip("kubernetes kind not installed")
 	}
 
-	deploy, err := NewKubeDeploy(t.Context(), KubeDeployConfig{
+	kdeploy, err := NewKubeDeploy(t.Context(), KubeDeployConfig{
 		RepoDir: "../..",
 		// Delete job and its secret 1 second after job finishes.
 		JobTTL: 1,
@@ -29,10 +41,10 @@ func TestHelm(t *testing.T) {
 
 	t.Cleanup(func() {
 		// Don't delete namespace if test failed, to allow debugging.
-		deploy.Close(!t.Failed())
+		kdeploy.Close(!t.Failed())
 	})
 
-	org, err := deploy.Organizations.Create(t.Context(), tfe.OrganizationCreateOptions{
+	org, err := kdeploy.Organizations.Create(t.Context(), tfe.OrganizationCreateOptions{
 		Name:  internal.Ptr("acme"),
 		Email: internal.Ptr("bollocks@morebollocks.bollocks"),
 	})
@@ -41,35 +53,35 @@ func TestHelm(t *testing.T) {
 	t.Run("create run", func(t *testing.T) {
 		t.Parallel()
 
-		ws, err := deploy.Workspaces.Create(t.Context(), org.Name, tfe.WorkspaceCreateOptions{
+		ws, err := kdeploy.Workspaces.Create(t.Context(), org.Name, tfe.WorkspaceCreateOptions{
 			Name: internal.Ptr("dev"),
 		})
 		require.NoError(t, err)
 
-		cv, err := deploy.ConfigurationVersions.Create(t.Context(), ws.ID, tfe.ConfigurationVersionCreateOptions{})
+		cv, err := kdeploy.ConfigurationVersions.Create(t.Context(), ws.ID, tfe.ConfigurationVersionCreateOptions{})
 		require.NoError(t, err)
 
 		tarball, err := os.Open("./testdata/root.tar.gz")
 		require.NoError(t, err)
-		err = deploy.ConfigurationVersions.UploadTarGzip(t.Context(), cv.UploadURL, tarball)
+		err = kdeploy.ConfigurationVersions.UploadTarGzip(t.Context(), cv.UploadURL, tarball)
 		require.NoError(t, err)
 
-		run, err := deploy.Runs.Create(t.Context(), tfe.RunCreateOptions{
+		run, err := kdeploy.Runs.Create(t.Context(), tfe.RunCreateOptions{
 			Workspace:            ws,
 			ConfigurationVersion: cv,
 		})
 		require.NoError(t, err)
 
 		// Pod should succeed and run should reach planned status
-		err = deploy.WaitPodSucceed(t.Context(), run.ID, time.Minute)
+		err = kdeploy.WaitPodSucceed(t.Context(), run.ID, time.Minute)
 		require.NoError(t, err)
 
 		// Ensure k8s garbage collection works as configured with both job and
 		// secret resources deleted.
-		err = deploy.WaitJobAndSecretDeleted(t.Context(), run.ID)
+		err = kdeploy.WaitJobAndSecretDeleted(t.Context(), run.ID)
 		require.NoError(t, err)
 
-		run, err = deploy.Runs.Read(t.Context(), run.ID)
+		run, err = kdeploy.Runs.Read(t.Context(), run.ID)
 		require.NoError(t, err)
 		assert.Equal(t, runstatus.Planned, runstatus.Status(run.Status))
 	})
@@ -78,47 +90,47 @@ func TestHelm(t *testing.T) {
 		t.Parallel()
 
 		// Create agent pool and agent token
-		pool, err := deploy.AgentPools.Create(t.Context(), org.Name, tfe.AgentPoolCreateOptions{
+		pool, err := kdeploy.AgentPools.Create(t.Context(), org.Name, tfe.AgentPoolCreateOptions{
 			Name:               internal.Ptr("test-pool"),
 			OrganizationScoped: internal.Ptr(true),
 		})
 		require.NoError(t, err)
 
-		token, err := deploy.AgentTokens.Create(t.Context(), pool.ID, tfe.AgentTokenCreateOptions{
+		token, err := kdeploy.AgentTokens.Create(t.Context(), pool.ID, tfe.AgentTokenCreateOptions{
 			Description: internal.Ptr("my fancy token"),
 		})
 		require.NoError(t, err)
 
-		err = deploy.InstallAgentChart(t.Context(), token.Token)
+		err = kdeploy.InstallAgentChart(t.Context(), token.Token)
 		require.NoError(t, err)
 
-		ws, err := deploy.Workspaces.Create(t.Context(), org.Name, tfe.WorkspaceCreateOptions{
+		ws, err := kdeploy.Workspaces.Create(t.Context(), org.Name, tfe.WorkspaceCreateOptions{
 			Name:          internal.Ptr("dev-agent"),
 			ExecutionMode: internal.Ptr("agent"),
 			AgentPoolID:   internal.Ptr(pool.ID),
 		})
 		require.NoError(t, err)
 
-		cv, err := deploy.ConfigurationVersions.Create(t.Context(), ws.ID, tfe.ConfigurationVersionCreateOptions{})
+		cv, err := kdeploy.ConfigurationVersions.Create(t.Context(), ws.ID, tfe.ConfigurationVersionCreateOptions{})
 		require.NoError(t, err)
 
 		tarball, err := os.Open("./testdata/root.tar.gz")
 		require.NoError(t, err)
-		err = deploy.ConfigurationVersions.UploadTarGzip(t.Context(), cv.UploadURL, tarball)
+		err = kdeploy.ConfigurationVersions.UploadTarGzip(t.Context(), cv.UploadURL, tarball)
 		require.NoError(t, err)
 
-		run, err := deploy.Runs.Create(t.Context(), tfe.RunCreateOptions{
+		run, err := kdeploy.Runs.Create(t.Context(), tfe.RunCreateOptions{
 			Workspace:            ws,
 			ConfigurationVersion: cv,
 		})
 		require.NoError(t, err)
 
 		// Pod should succeed and run should reach planned status
-		err = deploy.WaitPodSucceed(t.Context(), run.ID, time.Minute)
+		err = kdeploy.WaitPodSucceed(t.Context(), run.ID, time.Minute)
 		require.NoError(t, err)
 		// Ensure k8s garbage collection works as configured with both job and
 		// secret resources deleted.
-		err = deploy.WaitJobAndSecretDeleted(t.Context(), run.ID)
+		err = kdeploy.WaitJobAndSecretDeleted(t.Context(), run.ID)
 		require.NoError(t, err)
 	})
 }

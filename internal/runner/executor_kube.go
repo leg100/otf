@@ -12,11 +12,12 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/logr"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/spf13/pflag"
 	"golang.org/x/sync/errgroup"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
+	k8sresource "k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -104,10 +105,10 @@ func newKubeExecutor(
 	kubeConfig kubeConfig,
 ) (*kubeExecutor, error) {
 	// validate resource request strings
-	if _, err := resource.ParseQuantity(kubeConfig.RequestCPU); err != nil {
+	if _, err := k8sresource.ParseQuantity(kubeConfig.RequestCPU); err != nil {
 		return nil, fmt.Errorf("invalid cpu quantity: %s: %w", kubeConfig.RequestCPU, err)
 	}
-	if _, err := resource.ParseQuantity(kubeConfig.RequestMemory); err != nil {
+	if _, err := k8sresource.ParseQuantity(kubeConfig.RequestMemory); err != nil {
 		return nil, fmt.Errorf("invalid memory quantity: %s: %w", kubeConfig.RequestMemory, err)
 	}
 	// assume running in-cluster; otherwise use config path
@@ -196,8 +197,8 @@ func (s *kubeExecutor) SpawnOperation(ctx context.Context, _ *errgroup.Group, jo
 					RestartPolicy:      corev1.RestartPolicyNever,
 					Resources: &corev1.ResourceRequirements{
 						Requests: corev1.ResourceList{
-							corev1.ResourceCPU:    resource.MustParse(s.Config.RequestCPU),
-							corev1.ResourceMemory: resource.MustParse(s.Config.RequestMemory),
+							corev1.ResourceCPU:    k8sresource.MustParse(s.Config.RequestCPU),
+							corev1.ResourceMemory: k8sresource.MustParse(s.Config.RequestMemory),
 						},
 					},
 					Containers: []corev1.Container{
@@ -308,7 +309,12 @@ func (s *kubeExecutor) SpawnOperation(ctx context.Context, _ *errgroup.Group, jo
 	return nil
 }
 
-func (s *kubeExecutor) currentJobs() int {
-	// TODO: list k8s jobs match runner
-	return 0
+func (s *kubeExecutor) currentJobs(ctx context.Context, runnerID resource.TfeID) int {
+	jobs, err := s.kube.BatchV1().Jobs(s.Config.Namespace).List(ctx, metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("otf.ninja/runner-id=%s", runnerID),
+	})
+	if err != nil {
+		s.Logger.Error(err, "listing current number of kubernetes jobs")
+	}
+	return len(jobs.Items)
 }

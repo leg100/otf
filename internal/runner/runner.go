@@ -147,7 +147,7 @@ func (r *Runner) Start(ctx context.Context) error {
 			case <-ticker.C:
 				// send runner status update
 				status := RunnerIdle
-				if r.executor.currentJobs() > 0 {
+				if r.executor.currentJobs(ctx, r.ID) > 0 {
 					status = RunnerBusy
 				}
 				if err := r.runners.updateStatus(ctx, registrationMetadata.ID, status); err != nil {

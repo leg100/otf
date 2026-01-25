@@ -86,6 +86,17 @@ Note that the only valid time units are `s`, `m`, and `h`. To specify longer per
 
 Sets the directory in which engine binaries are downloaded.
 
+## `--executor`
+
+* System: `otfd`, `otf-agent`
+* Default: `fork`
+
+Specifies how runs should be executed.
+
+By default it is set to `fork`, which means executables such as `terraform` are forked as child processes of `otfd` (or `otf-agent` if the workspace is set to use an agent).
+
+If set to `kubernetes` then for each plan and apply a Kubernetes job is created. Executables such as `terraform` are then forked as child processes in the job pod.
+
 ## `--github-client-id`
 
 * System: `otfd`
@@ -133,38 +144,6 @@ Sets the hostname advertised to external clients, for example:
 * The hostname to which to send webhook events to trigger runs when a workspace is connected to a GitHub repository (see `--webhook-hostname` below.
 
 It is advisable to set this flag in a production deployment. Otherwise it defaults to the listening address set with `--address` which is unlikely to be accessible to external clients.
-
-## `--webhook-hostname`
-
-* System: `otfd`
-* Default: the value of `--hostname`
-
-Overrides `--hostname` specifically for webhooks. This is useful if you want to set a separate firewalled inbound route for VCS providers (such as GitHub) via which to send their webhook events.
-
-## `--executor`
-
-* System: `otfd`, `otf-agent`
-* Default: `fork`
-
-Specifies how runs should be executed.
-
-By default it is set to `fork`, which means executables such as `terraform` are forked as child processes of `otfd` (or `otf-agent` if the workspace is set to use an agent).
-
-If set to `kubernetes` then for each plan and apply a Kubernetes job is created. Executables such as `terraform` are then forked as child processes in the job pod.
-
-## `--plugin-cache`
-
-* System: `otfd`, `otf-agent`
-* Default: `false`
-
-Enable the shared provider plugin cache. Note that it is only concurrency safe in OpenTofu v1.10.0 and greater.
-
-## `--plugin-cache-dir`
-
-* System: `otfd`, `otf-agent`
-* Default: `<random directory in system temp directory>`
-
-Directory for the [shared provider plugin cache](#-plugin-cache).
 
 ## `--kubernetes-ttl-after-finish`
 
@@ -254,6 +233,20 @@ OIDC claim for mapping to an OTF username. Must be one of `name`, `email`, or `s
 
 Sets the amount of time a run is permitted to be in the `planning` state before it is canceled.
 
+## `--plugin-cache`
+
+* System: `otfd`, `otf-agent`
+* Default: `false`
+
+Enable the shared provider plugin cache. Note that it is only concurrency safe in OpenTofu v1.10.0 and greater.
+
+## `--plugin-cache-dir`
+
+* System: `otfd`, `otf-agent`
+* Default: `<random directory in system temp directory>`
+
+Directory for the [shared provider plugin cache](#-plugin-cache).
+
 ## `--restrict-org-creation`
 
 * System: `otfd`
@@ -325,3 +318,11 @@ Set logging verbosity. The higher the number the more verbose the logs. Each num
 |2|DEBUG-1|
 |3|DEBUG-2|
 |n|DEBUG-(n+1)|
+
+## `--webhook-hostname`
+
+* System: `otfd`
+* Default: the value of `--hostname`
+
+Overrides `--hostname` specifically for webhooks. This is useful if you want to set a separate firewalled inbound route for VCS providers (such as GitHub) via which to send their webhook events.
+
