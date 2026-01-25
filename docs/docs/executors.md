@@ -5,7 +5,8 @@ An *executor* is responsible for executing jobs, i.e. plans and applies. There a
 * `fork`
 * `kubernetes`
 
-The executor is set with the [`--executor`](config/flags.md#-executor) flag.
+The executor is set with the [`--executor`](config/flags.md#-executor) flag. The flag is applicable to both `otfd` and `otf-agent`, which determines how jobs scheduled to that process are executed. For example, you could set `otfd` to use `fork` but if a job is scheduled to run on an `otf-agent` then the job will use whatever executor it has set.
+
 
 ## Fork
 
