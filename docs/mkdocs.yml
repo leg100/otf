@@ -59,6 +59,7 @@ nav:
     - tfe_api.md
     - engines.md
     - executors.md
+    - caching.md
     - dynamic_credentials.md
     - rbac.md
     - VCS Providers:

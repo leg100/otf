@@ -145,13 +145,6 @@ Sets the hostname advertised to external clients, for example:
 
 It is advisable to set this flag in a production deployment. Otherwise it defaults to the listening address set with `--address` which is unlikely to be accessible to external clients.
 
-## `--kubernetes-ttl-after-finish`
-
-* System: `otfd`, `otf-agent`
-* Default: `1h`
-
-Set the TTL for how long before a kubernetes job is deleted after it has finished.
-
 ## `--kubernetes-request-cpu`
 
 * System: `otfd`, `otf-agent`
@@ -165,6 +158,13 @@ Set the requested CPU resources for a kubernetes job.
 * Default: `128Mi`
 
 Set the requested memory resources for a kubernetes job.
+
+## `--kubernetes-ttl-after-finish`
+
+* System: `otfd`, `otf-agent`
+* Default: `1h`
+
+Set the TTL for how long before a kubernetes job is deleted after it has finished.
 
 ## `--log-format`
 
