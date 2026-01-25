@@ -45,7 +45,7 @@ deployment, taking into consideration the [cache expiry](#-cache-expiry).
 * System: `otfd`, `otf-agent`
 * Default: 5
 
-Sets the number of workers that can process runs concurrently.
+Sets the number of workers that can process runs concurrently. Only applies to the [fork](#-executor) executor.
 
 ## `--default-engine`
 
@@ -151,6 +151,41 @@ Specifies how runs should be executed.
 By default it is set to `fork`, which means executables such as `terraform` are forked as child processes of `otfd` (or `otf-agent` if the workspace is set to use an agent).
 
 If set to `kubernetes` then for each plan and apply a Kubernetes job is created. Executables such as `terraform` are then forked as child processes in the job pod.
+
+## `--plugin-cache`
+
+* System: `otfd`, `otf-agent`
+* Default: `false`
+
+Enable the shared provider plugin cache. Note that it is only concurrency safe in OpenTofu v1.10.0 and greater.
+
+## `--plugin-cache-dir`
+
+* System: `otfd`, `otf-agent`
+* Default: `<random directory in system temp directory>`
+
+Directory for the [shared provider plugin cache](#-plugin-cache).
+
+## `--kubernetes-ttl-after-finish`
+
+* System: `otfd`, `otf-agent`
+* Default: `1h`
+
+Set the TTL for how long before a kubernetes job is deleted after it has finished.
+
+## `--kubernetes-request-cpu`
+
+* System: `otfd`, `otf-agent`
+* Default: `500m`
+
+Set the requested CPU resources for a kubernetes job.
+
+## `--kubernetes-request-memory`
+
+* System: `otfd`, `otf-agent`
+* Default: `128Mi`
+
+Set the requested memory resources for a kubernetes job.
 
 ## `--log-format`
 

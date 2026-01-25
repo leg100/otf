@@ -35,7 +35,6 @@ type KubeDeploy struct {
 
 	configPath string
 	clientset  *kubernetes.Clientset
-	cancel     context.CancelFunc
 	tunnel     *exec.Cmd
 	browser    *exec.Cmd
 	namespace  string
@@ -54,8 +53,6 @@ type KubeDeployConfig struct {
 }
 
 func NewKubeDeploy(ctx context.Context, cfg KubeDeployConfig) (*KubeDeploy, error) {
-	ctx, cancel := context.WithCancel(ctx)
-
 	if cfg.Namespace == "" {
 		cfg.Namespace = petname.Generate(2, "-")
 	}
@@ -196,7 +193,6 @@ func NewKubeDeploy(ctx context.Context, cfg KubeDeployConfig) (*KubeDeploy, erro
 		namespace:  cfg.Namespace,
 		configPath: config.Name(),
 		clientset:  clientset,
-		cancel:     cancel,
 		tunnel:     tunnel,
 		browser:    browser,
 		Client:     client,
@@ -212,7 +208,6 @@ func (k *KubeDeploy) Wait() error {
 }
 
 func (k *KubeDeploy) Close(deleteNamespace bool) error {
-	k.cancel()
 	if k.browser != nil {
 		if err := k.browser.Process.Kill(); err != nil {
 			return err
