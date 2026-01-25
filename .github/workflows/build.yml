@@ -62,6 +62,7 @@ jobs:
       - name: Tests
         env:
           GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+          OTF_TEST_KUBE: true
         run: make test
       - name: Archive browser traces
         if: always()
