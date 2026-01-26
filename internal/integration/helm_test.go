@@ -25,7 +25,7 @@ func TestHelm(t *testing.T) {
 	// tests.
 
 	if _, ok := os.LookupEnv(enableKubeTestsEnvVar); !ok {
-		t.Skip("OTF_TEST_HELM not set")
+		t.Skip(enableKubeTestsEnvVar, "not set")
 	}
 
 	if _, err := exec.LookPath("kind"); err != nil {
@@ -36,8 +36,10 @@ func TestHelm(t *testing.T) {
 		RepoDir: "../..",
 		// Delete job and its secret 1 second after job finishes.
 		JobTTL: 1,
+		Test:   t,
 	})
 	require.NoError(t, err)
+	t.Log()
 
 	t.Cleanup(func() {
 		// Don't delete namespace if test failed, to allow debugging.

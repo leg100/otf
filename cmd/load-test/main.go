@@ -38,8 +38,9 @@ func main() {
 
 func run(ctx context.Context) error {
 	deploy, err := integration.NewKubeDeploy(ctx, integration.KubeDeployConfig{
-		Namespace:   namespace,
-		OpenBrowser: true,
+		Namespace:          namespace,
+		OpenBrowser:        true,
+		CacheVolumeEnabled: true,
 	})
 	if err != nil {
 		return fmt.Errorf("deploying to kind: %w", err)

@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"testing"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -32,24 +33,24 @@ const helmTestValuesPath = "./charts/otfd/test-values.yaml"
 // testing purposes only.
 type KubeDeploy struct {
 	*tfe.Client
+	KubeDeployConfig
 
 	configPath string
 	clientset  *kubernetes.Clientset
 	tunnel     *exec.Cmd
 	browser    *exec.Cmd
-	namespace  string
 	imageTag   string
 	siteToken  string
-	jobTTL     time.Duration
-	repoDir    string
 }
 
 type KubeDeployConfig struct {
-	Namespace   string
-	RepoDir     string
-	Release     string
-	JobTTL      time.Duration
-	OpenBrowser bool
+	Namespace          string
+	RepoDir            string
+	Release            string
+	JobTTL             time.Duration
+	OpenBrowser        bool
+	Test               *testing.T
+	CacheVolumeEnabled bool
 }
 
 func NewKubeDeploy(ctx context.Context, cfg KubeDeployConfig) (*KubeDeploy, error) {
@@ -92,6 +93,41 @@ func NewKubeDeploy(ctx context.Context, cfg KubeDeployConfig) (*KubeDeploy, erro
 		return nil, fmt.Errorf("retrieving kind config: %w: %s", err, buf.String())
 	}
 
+	// Dump a load of info if run as part of test and test failed.
+	defer func() {
+		if cfg.Test == nil {
+			return
+		}
+		if !cfg.Test.Failed() {
+			return
+		}
+		cmd = exec.CommandContext(ctx,
+			"kubectl",
+			"-n", cfg.Namespace,
+			"--kubeconfig", config.Name(),
+			"describe",
+			"pod",
+		)
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			cfg.Test.Logf("running kubectl describe pod: %s", err.Error())
+		}
+		cfg.Test.Log(string(out))
+
+		cmd = exec.CommandContext(ctx,
+			"kubectl",
+			"-n", cfg.Namespace,
+			"--kubeconfig", config.Name(),
+			"logs",
+			"-l", "app.kubernetes.io/name=otfd",
+		)
+		out, err = cmd.CombinedOutput()
+		if err != nil {
+			cfg.Test.Logf("running kubectl logs: %s", err.Error())
+		}
+		cfg.Test.Log(string(out))
+	}()
+
 	// Install otfd helm chart
 	args := []string{
 		"upgrade",
@@ -106,7 +142,6 @@ func NewKubeDeploy(ctx context.Context, cfg KubeDeployConfig) (*KubeDeploy, erro
 		"--set", "logging.http=true",
 		"--set", "logging.verbosity=9",
 		"--set", "runner.executor=kubernetes",
-		"--set", "runner.cacheVolume.enabled=true",
 		"--set", "runner.pluginCache=true",
 		"--set", "defaultEngine=tofu",
 		"--wait",
@@ -115,6 +150,9 @@ func NewKubeDeploy(ctx context.Context, cfg KubeDeployConfig) (*KubeDeploy, erro
 	}
 	if cfg.JobTTL != 0 {
 		args = append(args, "--set", fmt.Sprintf("runner.kubernetesTTLAfterFinish=%ds", cfg.JobTTL))
+	}
+	if cfg.CacheVolumeEnabled {
+		args = append(args, "--set", "runner.cacheVolume.enabled=true")
 	}
 	cmd = exec.CommandContext(ctx, "helm", args...)
 	out, err = cmd.CombinedOutput()
@@ -192,16 +230,14 @@ func NewKubeDeploy(ctx context.Context, cfg KubeDeployConfig) (*KubeDeploy, erro
 	}
 
 	return &KubeDeploy{
-		namespace:  cfg.Namespace,
-		configPath: config.Name(),
-		clientset:  clientset,
-		tunnel:     tunnel,
-		browser:    browser,
-		Client:     client,
-		imageTag:   imageTag,
-		siteToken:  testValues.SiteToken,
-		jobTTL:     cfg.JobTTL,
-		repoDir:    cfg.RepoDir,
+		KubeDeployConfig: cfg,
+		configPath:       config.Name(),
+		clientset:        clientset,
+		tunnel:           tunnel,
+		browser:          browser,
+		Client:           client,
+		imageTag:         imageTag,
+		siteToken:        testValues.SiteToken,
 	}, nil
 }
 
@@ -219,7 +255,7 @@ func (k *KubeDeploy) Close(deleteNamespace bool) error {
 		return err
 	}
 	if deleteNamespace {
-		err := k.clientset.CoreV1().Namespaces().Delete(context.Background(), k.namespace, metav1.DeleteOptions{})
+		err := k.clientset.CoreV1().Namespaces().Delete(context.Background(), k.Namespace, metav1.DeleteOptions{})
 		if err != nil {
 			return err
 		}
@@ -235,7 +271,7 @@ func (k *KubeDeploy) WaitPodSucceed(ctx context.Context, runID string, timeout t
 		LabelSelector: fmt.Sprintf("otf.ninja/run-id=%s", runID),
 	}
 	return k8swait.PollUntilContextTimeout(ctx, time.Second, timeout, true, func(ctx context.Context) (bool, error) {
-		pods, err := k.clientset.CoreV1().Pods(k.namespace).List(ctx, opts)
+		pods, err := k.clientset.CoreV1().Pods(k.Namespace).List(ctx, opts)
 		if err != nil {
 			return false, err
 		}
@@ -262,7 +298,7 @@ func (k *KubeDeploy) WaitJobAndSecretDeleted(ctx context.Context, runID string) 
 		time.Second*30,
 		true,
 		func(ctx context.Context) (bool, error) {
-			secrets, err := k.clientset.CoreV1().Secrets(k.namespace).List(ctx, opts)
+			secrets, err := k.clientset.CoreV1().Secrets(k.Namespace).List(ctx, opts)
 			if err != nil {
 				return false, err
 			}
@@ -277,7 +313,7 @@ func (k *KubeDeploy) WaitJobAndSecretDeleted(ctx context.Context, runID string) 
 		time.Second*30,
 		true,
 		func(ctx context.Context) (bool, error) {
-			jobs, err := k.clientset.BatchV1().Jobs(k.namespace).List(ctx, opts)
+			jobs, err := k.clientset.BatchV1().Jobs(k.Namespace).List(ctx, opts)
 			if err != nil {
 				return false, err
 			}
@@ -287,7 +323,7 @@ func (k *KubeDeploy) WaitJobAndSecretDeleted(ctx context.Context, runID string) 
 }
 
 func (k *KubeDeploy) InstallAgentChart(ctx context.Context, token string) error {
-	svc, err := k.clientset.CoreV1().Services(k.namespace).Get(ctx, "otfd", metav1.GetOptions{})
+	svc, err := k.clientset.CoreV1().Services(k.Namespace).Get(ctx, "otfd", metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -295,9 +331,9 @@ func (k *KubeDeploy) InstallAgentChart(ctx context.Context, token string) error 
 	args := []string{
 		"install",
 		"otf-agent",
-		filepath.Join(k.repoDir, "charts/otf-agent"),
+		filepath.Join(k.RepoDir, "charts/otf-agent"),
 		"--kubeconfig", k.configPath,
-		"--namespace", k.namespace,
+		"--namespace", k.Namespace,
 		"--set", "image.tag=" + k.imageTag,
 		// agent talks to otfd via its service ip
 		"--set", "url=http://" + svc.Spec.ClusterIP,
@@ -307,9 +343,14 @@ func (k *KubeDeploy) InstallAgentChart(ctx context.Context, token string) error 
 		"--set", "runner.executor=kubernetes",
 		"--set", "runner.cacheVolume.enabled=true",
 		"--wait",
+		"--timeout", "60s",
+		"--debug",
 	}
-	if k.jobTTL != 0 {
+	if k.JobTTL != 0 {
 		args = append(args, "--set", "runner.kubernetesTTLAfterFinish=1s")
+	}
+	if k.CacheVolumeEnabled {
+		args = append(args, "--set", "runner.cacheVolume.enabled=true")
 	}
 	cmd := exec.CommandContext(ctx, "helm", args...)
 	return cmd.Run()
