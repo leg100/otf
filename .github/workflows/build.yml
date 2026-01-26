@@ -36,6 +36,14 @@ jobs:
         uses: helm/kind-action@v1.13.0
         with:
           cluster_name: kind
+      - name: Install e2e dependencies
+        run: make install-playwright-ubuntu
+      - name: Install tofu for provider mirror setup
+        uses: opentofu/setup-opentofu@v1
+      - name: Install terraform for provider mirror setup
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
       - name: Tests
         env:
           GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
@@ -54,14 +62,6 @@ jobs:
           # to create a webhook on a github repo
           OAUTH_CLIENT_GITHUB_TOKEN: ${{ secrets.GO_TFE_OAUTH_CLIENT_GITHUB_TOKEN }}
           GITHUB_POLICY_SET_IDENTIFIER: leg100/go-tfe-webhooks
-      - name: Install e2e dependencies
-        run: make install-playwright-ubuntu
-      - name: Install tofu for provider mirror setup
-        uses: opentofu/setup-opentofu@v1
-      - name: Install terraform for provider mirror setup
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_wrapper: false
       - name: Setup provider mirror for integration tests
         run: ./hack/setup_mirror.sh
       - name: Archive browser traces
