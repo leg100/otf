@@ -15,8 +15,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Build job image
-        run: git describe --tags --dirty --always
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
@@ -32,10 +30,6 @@ jobs:
           helm template ./charts/otf-agent --set token=my_agent_token --set url=https://otf.ninja > /dev/null
       - name: Vet check
         run: make vet
-      - name: Create kind cluster for integration tests
-        uses: helm/kind-action@v1.13.0
-        with:
-          cluster_name: kind
       - name: Install e2e dependencies
         run: make install-playwright-ubuntu
       - name: Install tofu for provider mirror setup
@@ -44,14 +38,6 @@ jobs:
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_wrapper: false
-      - name: Tests
-        env:
-          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
-          OTF_TEST_KUBE: true
-        run: |
-          git describe --tags --dirty --always
-          git diff
-          go test ./internal/integration/ -v -run TestHelm
       - name: Add hosts to /etc/hosts
         run: |
           # API tests create webhooks on github.com, and github.com mandates
@@ -67,6 +53,16 @@ jobs:
           GITHUB_POLICY_SET_IDENTIFIER: leg100/go-tfe-webhooks
       - name: Setup provider mirror for integration tests
         run: ./hack/setup_mirror.sh
+      - name: Create kind cluster for integration tests
+        uses: helm/kind-action@v1.13.0
+        with:
+          cluster_name: kind
+      - name: Tests
+        env:
+          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+          OTF_TEST_KUBE: true
+        run: |
+          go test ./internal/integration/ -v -run TestHelm
       - name: Archive browser traces
         if: always()
         uses: actions/upload-artifact@v4
