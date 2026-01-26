@@ -121,7 +121,7 @@ jobs:
           # re-generate README.md to reflect updated version
           eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
           brew install norwoodj/tap/helm-docs
-          helm-docs
+          make helm-docs
       - name: Lint check
         run: |
           helm lint ./charts/otfd
