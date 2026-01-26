@@ -61,8 +61,7 @@ jobs:
         env:
           GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
           OTF_TEST_KUBE: true
-        run: |
-          go test ./internal/integration/ -v -run TestHelm
+        run: make test
       - name: Archive browser traces
         if: always()
         uses: actions/upload-artifact@v4
