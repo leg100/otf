@@ -48,7 +48,10 @@ jobs:
         env:
           GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
           OTF_TEST_KUBE: true
-        run: go test ./internal/integration/ -v -run TestHelm
+        run: |
+          git describe --tags --dirty --always
+          git diff
+          go test ./internal/integration/ -v -run TestHelm
       - name: Add hosts to /etc/hosts
         run: |
           # API tests create webhooks on github.com, and github.com mandates
