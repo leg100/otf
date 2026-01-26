@@ -23,10 +23,16 @@ RUN --mount=type=cache,target=/etc/apk/cache \
 # Unused files/folders are filtered out with the .dockerignore file.
 COPY . .
 
+RUN git describe --tags --dirty --always
+RUN git diff
+
 # Compile the binaries
 RUN --mount=type=cache,target=/go/pkg/mod \
   --mount=type=cache,target=/root/.cache/go-build \
   make build
+
+RUN git describe --tags --dirty --always
+RUN git diff
 
 # STAGE: base
 # This stage contains the files/packages that are used by the final images.
@@ -41,14 +47,12 @@ RUN adduser -D -H -u 4096 otf
 RUN --mount=type=cache,target=/etc/apk/cache \
   apk add git
 
-
 # STAGE: otfd
 # Final stage that takes the `base` stage and the `otfd` binary
 FROM base AS otfd
 COPY --from=builder /app/_build/otfd /usr/local/bin/
 USER otf
 ENTRYPOINT ["/usr/local/bin/otfd"]
-
 
 # STAGE: otf-agent
 # Final stage that takes the `base` stage and the `otf-agent` binary

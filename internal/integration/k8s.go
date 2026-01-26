@@ -329,6 +329,7 @@ func (k *KubeDeploy) InstallAgentChart(ctx context.Context, token string) error 
 func (k *KubeDeploy) Debug(ctx context.Context, component string) string {
 	var sb strings.Builder
 
+	sb.WriteString("--- describe pods output ---\n")
 	cmd := exec.CommandContext(ctx,
 		"kubectl",
 		"-n", k.Namespace,
@@ -338,12 +339,13 @@ func (k *KubeDeploy) Debug(ctx context.Context, component string) string {
 	)
 	describeOutput, err := cmd.CombinedOutput()
 	if err != nil {
-		return "error running kubectl describe pod: " + err.Error()
+		sb.WriteString("error running kubectl describe pod: " + err.Error())
+	} else {
+		sb.Write(describeOutput)
 	}
-	sb.WriteString("--- describe pods output ---\n")
-	sb.Write(describeOutput)
 	sb.WriteString("\n\n")
 
+	sb.WriteString("--- pod logs output ---\n")
 	cmd = exec.CommandContext(ctx,
 		"kubectl",
 		"-n", k.Namespace,
@@ -353,10 +355,10 @@ func (k *KubeDeploy) Debug(ctx context.Context, component string) string {
 	)
 	logsOutput, err := cmd.CombinedOutput()
 	if err != nil {
-		return "error running kubectl logs: " + err.Error()
+		sb.WriteString("error running kubectl logs: " + err.Error())
+	} else {
+		sb.Write(logsOutput)
 	}
-	sb.WriteString("--- pod logs output ---\n")
-	sb.Write(logsOutput)
 	sb.WriteString("\n\n")
 
 	return sb.String()
