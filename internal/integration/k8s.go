@@ -11,7 +11,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
-	"testing"
+	"strings"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -49,8 +49,8 @@ type KubeDeployConfig struct {
 	Release            string
 	JobTTL             time.Duration
 	OpenBrowser        bool
-	Test               *testing.T
 	CacheVolumeEnabled bool
+	Logger             func(args ...any)
 }
 
 func NewKubeDeploy(ctx context.Context, cfg KubeDeployConfig) (*KubeDeploy, error) {
@@ -85,6 +85,7 @@ func NewKubeDeploy(ctx context.Context, cfg KubeDeployConfig) (*KubeDeploy, erro
 	if err != nil {
 		return nil, err
 	}
+
 	cmd = exec.CommandContext(ctx, "kind", "get", "kubeconfig")
 	var buf bytes.Buffer
 	cmd.Stdout = config
@@ -92,41 +93,6 @@ func NewKubeDeploy(ctx context.Context, cfg KubeDeployConfig) (*KubeDeploy, erro
 	if err := cmd.Run(); err != nil {
 		return nil, fmt.Errorf("retrieving kind config: %w: %s", err, buf.String())
 	}
-
-	// Dump a load of info if run as part of test and test failed.
-	defer func() {
-		if cfg.Test == nil {
-			return
-		}
-		if !cfg.Test.Failed() {
-			return
-		}
-		cmd = exec.CommandContext(ctx,
-			"kubectl",
-			"-n", cfg.Namespace,
-			"--kubeconfig", config.Name(),
-			"describe",
-			"pod",
-		)
-		out, err := cmd.CombinedOutput()
-		if err != nil {
-			cfg.Test.Logf("running kubectl describe pod: %s", err.Error())
-		}
-		cfg.Test.Log(string(out))
-
-		cmd = exec.CommandContext(ctx,
-			"kubectl",
-			"-n", cfg.Namespace,
-			"--kubeconfig", config.Name(),
-			"logs",
-			"-l", "app.kubernetes.io/name=otfd",
-		)
-		out, err = cmd.CombinedOutput()
-		if err != nil {
-			cfg.Test.Logf("running kubectl logs: %s", err.Error())
-		}
-		cfg.Test.Log(string(out))
-	}()
 
 	// Install otfd helm chart
 	args := []string{
@@ -229,7 +195,7 @@ func NewKubeDeploy(ctx context.Context, cfg KubeDeployConfig) (*KubeDeploy, erro
 		return nil, err
 	}
 
-	return &KubeDeploy{
+	deploy := &KubeDeploy{
 		KubeDeployConfig: cfg,
 		configPath:       config.Name(),
 		clientset:        clientset,
@@ -238,7 +204,8 @@ func NewKubeDeploy(ctx context.Context, cfg KubeDeployConfig) (*KubeDeploy, erro
 		Client:           client,
 		imageTag:         imageTag,
 		siteToken:        testValues.SiteToken,
-	}, nil
+	}
+	return deploy, nil
 }
 
 func (k *KubeDeploy) Wait() error {
@@ -259,6 +226,9 @@ func (k *KubeDeploy) Close(deleteNamespace bool) error {
 		if err != nil {
 			return err
 		}
+	}
+	if err := os.Remove(k.configPath); err != nil {
+		return err
 	}
 	return nil
 }
@@ -354,4 +324,40 @@ func (k *KubeDeploy) InstallAgentChart(ctx context.Context, token string) error 
 	}
 	cmd := exec.CommandContext(ctx, "helm", args...)
 	return cmd.Run()
+}
+
+func (k *KubeDeploy) Debug(ctx context.Context, component string) string {
+	var sb strings.Builder
+
+	cmd := exec.CommandContext(ctx,
+		"kubectl",
+		"-n", k.Namespace,
+		"--kubeconfig", k.configPath,
+		"describe",
+		"pod",
+	)
+	describeOutput, err := cmd.CombinedOutput()
+	if err != nil {
+		return "error running kubectl describe pod: " + err.Error()
+	}
+	sb.WriteString("--- describe pods output ---\n")
+	sb.Write(describeOutput)
+	sb.WriteString("\n\n")
+
+	cmd = exec.CommandContext(ctx,
+		"kubectl",
+		"-n", k.Namespace,
+		"--kubeconfig", k.configPath,
+		"logs",
+		"-l", "app.kubernetes.io/name="+component,
+	)
+	logsOutput, err := cmd.CombinedOutput()
+	if err != nil {
+		return "error running kubectl logs: " + err.Error()
+	}
+	sb.WriteString("--- pod logs output ---\n")
+	sb.Write(logsOutput)
+	sb.WriteString("\n\n")
+
+	return sb.String()
 }

@@ -133,11 +133,15 @@ func newKubeExecutor(
 
 func (s *kubeExecutor) SpawnOperation(ctx context.Context, _ *errgroup.Group, job *Job, jobToken []byte) error {
 	labels := map[string]string{
-		"otf.ninja/job-id":       job.ID.String(),
-		"otf.ninja/run-id":       job.RunID.String(),
-		"otf.ninja/runner-id":    job.RunnerID.String(),
-		"otf.ninja/workspace-id": job.WorkspaceID.String(),
-		"otf.ninja/organization": job.Organization.String(),
+		"app.kubernetes.io/name":     "otf-job",
+		"app.kubernetes.io/instance": job.ID.String(),
+		"app.kubernetes.io/version":  internal.Version,
+		"app.kubernetes.io/part-of":  "otf",
+		"otf.ninja/job-id":           job.ID.String(),
+		"otf.ninja/run-id":           job.RunID.String(),
+		"otf.ninja/runner-id":        job.RunnerID.String(),
+		"otf.ninja/workspace-id":     job.WorkspaceID.String(),
+		"otf.ninja/organization":     job.Organization.String(),
 	}
 
 	const (
