@@ -311,7 +311,6 @@ func (k *KubeDeploy) InstallAgentChart(ctx context.Context, token string) error 
 		"--set", "logging.http=true",
 		"--set", "logging.verbosity=9",
 		"--set", "runner.executor=kubernetes",
-		"--set", "runner.cacheVolume.enabled=true",
 		"--wait",
 		"--timeout", "60s",
 		"--debug",

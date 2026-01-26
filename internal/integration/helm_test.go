@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"testing"
@@ -103,7 +104,7 @@ func TestHelm(t *testing.T) {
 		require.NoError(t, err)
 
 		err = kdeploy.InstallAgentChart(t.Context(), token.Token)
-		require.NoError(t, err, kdeploy.Debug(t.Context(), "otf-agent"))
+		require.NoError(t, fmt.Errorf("installing agent helm chart: %w", err), kdeploy.Debug(t.Context(), "otf-agent"))
 
 		ws, err := kdeploy.Workspaces.Create(t.Context(), org.Name, tfe.WorkspaceCreateOptions{
 			Name:          internal.Ptr("dev-agent"),
