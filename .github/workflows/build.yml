@@ -32,6 +32,15 @@ jobs:
           helm template ./charts/otf-agent --set token=my_agent_token --set url=https://otf.ninja > /dev/null
       - name: Vet check
         run: make vet
+      - name: Create kind cluster for integration tests
+        uses: helm/kind-action@v1.13.0
+        with:
+          cluster_name: kind
+      - name: Tests
+        env:
+          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+          OTF_TEST_KUBE: true
+        run: go test ./internal/integration/ -v -run TestHelm
       - name: Add hosts to /etc/hosts
         run: |
           # API tests create webhooks on github.com, and github.com mandates
@@ -55,15 +64,6 @@ jobs:
           terraform_wrapper: false
       - name: Setup provider mirror for integration tests
         run: ./hack/setup_mirror.sh
-      - name: Create kind cluster for integration tests
-        uses: helm/kind-action@v1.13.0
-        with:
-          cluster_name: kind
-      - name: Tests
-        env:
-          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
-          OTF_TEST_KUBE: true
-        run: make test
       - name: Archive browser traces
         if: always()
         uses: actions/upload-artifact@v4

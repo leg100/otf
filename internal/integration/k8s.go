@@ -110,6 +110,8 @@ func NewKubeDeploy(ctx context.Context, cfg KubeDeployConfig) (*KubeDeploy, erro
 		"--set", "runner.pluginCache=true",
 		"--set", "defaultEngine=tofu",
 		"--wait",
+		"--timeout", "60s",
+		"--debug",
 	}
 	if cfg.JobTTL != 0 {
 		args = append(args, "--set", fmt.Sprintf("runner.kubernetesTTLAfterFinish=%ds", cfg.JobTTL))
@@ -117,7 +119,7 @@ func NewKubeDeploy(ctx context.Context, cfg KubeDeployConfig) (*KubeDeploy, erro
 	cmd = exec.CommandContext(ctx, "helm", args...)
 	out, err = cmd.CombinedOutput()
 	if err != nil {
-		return nil, fmt.Errorf("install otfd helm chart: %w: %s", err, string(out))
+		return nil, fmt.Errorf("installing otfd helm chart: %w: %s", err, string(out))
 	}
 
 	// Create tunnel to otfd service so that we can communicate with it.
