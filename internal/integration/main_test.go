@@ -6,13 +6,16 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"os/signal"
 	"path"
 	"path/filepath"
 	"runtime"
+	"syscall"
 	"testing"
 
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/engine"
+	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/testbrowser"
 	"github.com/leg100/otf/internal/testcompose"
 	"github.com/leg100/otf/internal/user"
@@ -57,6 +60,14 @@ func TestMain(m *testing.M) {
 }
 
 func doMain(m *testing.M) (int, error) {
+	// Configure ^C to terminate program
+	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
+	go func() {
+		<-ctx.Done()
+		// Stop handling ^C; another ^C will exit the program.
+		cancel()
+	}()
+
 	// Start external services
 	if err := testcompose.Up(); err != nil {
 		return 0, fmt.Errorf("starting external services: %w", err)
@@ -201,15 +212,21 @@ func doMain(m *testing.M) (int, error) {
 	// Download engines now rather than in individual tests because it would
 	// otherwise make the latter flaky.
 	{
-		downloader := engine.NewDownloader(engine.Default, "")
-		terraformPath, err = downloader.Download(context.Background(), engine.Default.DefaultVersion(), os.Stdout)
+		downloader, err := engine.NewDownloader(logr.Discard(), engine.Default, "")
+		if err != nil {
+			return 0, fmt.Errorf("creating downloader: %w", err)
+		}
+		terraformPath, err = downloader.Download(ctx, engine.Default.DefaultVersion(), os.Stdout)
 		if err != nil {
 			return 0, fmt.Errorf("downloading terraform: %w", err)
 		}
 	}
 	{
-		downloader := engine.NewDownloader(engine.Tofu, "")
-		tofuPath, err = downloader.Download(context.Background(), engine.Tofu.DefaultVersion(), os.Stdout)
+		downloader, err := engine.NewDownloader(logr.Discard(), engine.Tofu, "")
+		if err != nil {
+			return 0, fmt.Errorf("creating downloader: %w", err)
+		}
+		tofuPath, err = downloader.Download(ctx, engine.Tofu.DefaultVersion(), os.Stdout)
 		if err != nil {
 			return 0, fmt.Errorf("downloading tofu: %w", err)
 		}

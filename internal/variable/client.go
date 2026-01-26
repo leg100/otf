@@ -4,12 +4,12 @@ import (
 	"context"
 	"fmt"
 
-	otfapi "github.com/leg100/otf/internal/api"
+	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/resource"
 )
 
 type Client struct {
-	*otfapi.Client
+	*otfhttp.Client
 }
 
 func (c *Client) ListEffectiveVariables(ctx context.Context, runID resource.TfeID) ([]*Variable, error) {

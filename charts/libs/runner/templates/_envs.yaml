@@ -1,0 +1,28 @@
+{{- define "runner.envs" -}}
+{{- with .Values.runner }}
+{{- with .concurrency }}
+- name: OTF_CONCURRENCY
+  value: "{{ . }}"
+{{- end }}
+{{ with .executor }}
+- name: OTF_EXECUTOR
+  value: "{{ . }}"
+{{ end }}
+{{ with .kubernetesTTLAfterFinish }}
+- name: OTF_KUBERNETES_TTL_AFTER_FINISH
+  value: "{{ . }}"
+{{ end }}
+- name: OTF_ENGINE_BINS_DIR
+  value: "/cache/engines"
+{{- with .pluginCache }}
+- name: OTF_PLUGIN_CACHE
+  value: "true"
+- name: OTF_PLUGIN_CACHE_DIR
+  value: /cache/providers
+{{- end }}
+{{- if .cacheVolume.enabled }}
+- name: OTF_KUBERNETES_CACHE_PVC
+  value: {{ include "cacheVolumeName" $ }}
+{{- end }}
+{{- end }}
+{{- end -}}

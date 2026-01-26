@@ -2,5 +2,8 @@ dependencies:
 - name: postgres
   repository: file://charts/postgres
   version: 0.1.0
-digest: sha256:653e88144b17948e6f5de812ecc6402759357ffc924f53f38b7f8917b5463c0e
-generated: "2025-09-30T21:07:22.927405948+01:00"
+- name: runner
+  repository: file://../libs/runner
+  version: 0.1.0
+digest: sha256:8424403c37406c83d418905adae7c68f5de2355ed19ccb1b88c5b035c9bc3ab4
+generated: "2026-01-18T21:24:34.40792782Z"

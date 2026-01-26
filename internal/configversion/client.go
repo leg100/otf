@@ -6,15 +6,12 @@ import (
 	"fmt"
 	"net/url"
 
-	otfapi "github.com/leg100/otf/internal/api"
+	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/resource"
 )
 
 type Client struct {
-	*otfapi.Client
-
-	// Client does not implement all of service yet
-	Service
+	*otfhttp.Client
 }
 
 // DownloadConfig downloads a configuration version tarball.  Only configuration versions in the uploaded state may be downloaded.

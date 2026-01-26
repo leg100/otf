@@ -1,4 +1,4 @@
-package api
+package http
 
 import (
 	"context"
@@ -16,20 +16,20 @@ import (
 	"github.com/DataDog/jsonapi"
 	retryablehttp "github.com/hashicorp/go-retryablehttp"
 	"github.com/leg100/otf/internal"
-	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/logr"
 )
 
 type (
 	Client struct {
+		Token string
+
 		baseURL *url.URL
-		token   string
 		headers http.Header
 		http    *retryablehttp.Client
 	}
 
-	// Config provides configuration details to the API client.
-	Config struct {
+	// ClientConfig provides configuration details to the API client.
+	ClientConfig struct {
 		// The URL of the otf API.
 		URL string
 		// The base path on which the API is served.
@@ -47,13 +47,13 @@ type (
 	}
 )
 
-func NewClient(config Config) (*Client, error) {
+func NewClient(config ClientConfig) (*Client, error) {
 	// set defaults
 	if config.URL == "" {
 		config.URL = DefaultURL
 	}
 	if config.BasePath == "" {
-		config.BasePath = DefaultBasePath
+		config.BasePath = APIBasePath
 	}
 	if config.Headers == nil {
 		config.Headers = make(http.Header)
@@ -63,7 +63,7 @@ func NewClient(config Config) (*Client, error) {
 	}
 	config.Headers.Set("User-Agent", "otf-agent")
 
-	baseURL, err := otfhttp.ParseURL(config.URL)
+	baseURL, err := ParseURL(config.URL)
 	if err != nil {
 		return nil, fmt.Errorf("invalid server url: %v", err)
 	}
@@ -80,7 +80,7 @@ func NewClient(config Config) (*Client, error) {
 	// Create the client.
 	client := &Client{
 		baseURL: baseURL,
-		token:   config.Token,
+		Token:   config.Token,
 		headers: config.Headers,
 	}
 	client.http = &retryablehttp.Client{
@@ -143,7 +143,7 @@ func (c *Client) NewRequest(method, path string, v interface{}) (*retryablehttp.
 
 	// Create a request specific headers map.
 	reqHeaders := make(http.Header)
-	reqHeaders.Set("Authorization", "Bearer "+c.token)
+	reqHeaders.Set("Authorization", "Bearer "+c.Token)
 
 	var body interface{}
 	switch method {
@@ -152,7 +152,7 @@ func (c *Client) NewRequest(method, path string, v interface{}) (*retryablehttp.
 
 		if v != nil {
 			q := url.Values{}
-			if err := otfhttp.Encoder.Encode(v, q); err != nil {
+			if err := Encoder.Encode(v, q); err != nil {
 				return nil, err
 			}
 			u.RawQuery = q.Encode()

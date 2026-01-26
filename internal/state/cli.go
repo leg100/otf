@@ -7,8 +7,9 @@ import (
 	"errors"
 	"fmt"
 
+	otfhttp "github.com/leg100/otf/internal/http"
+
 	"github.com/leg100/otf/internal"
-	otfapi "github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/workspace"
@@ -32,7 +33,7 @@ type cliWorkspaceService interface {
 	GetByName(ctx context.Context, organization organization.Name, workspace string) (*workspace.Workspace, error)
 }
 
-func NewCommand(client *otfapi.Client) *cobra.Command {
+func NewCommand(client *otfhttp.Client) *cobra.Command {
 	cli := &CLI{}
 	cmd := &cobra.Command{
 		Use:   "state",

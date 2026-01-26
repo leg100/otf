@@ -23,6 +23,10 @@ If release name contains chart name it will be used as a full name.
 {{- end }}
 {{- end }}
 
+{{- define "fullname" -}}
+{{ include "otfd.fullname" . }}
+{{- end }}
+
 {{/*
 Create chart name and version as used by the chart label.
 */}}
@@ -40,6 +44,11 @@ helm.sh/chart: {{ include "otfd.chart" . }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
+app.kubernetes.io/part-of: otf
+{{- end }}
+
+{{- define "labels" -}}
+{{ include "otfd.labels" . }}
 {{- end }}
 
 {{/*
@@ -59,4 +68,8 @@ Create the name of the service account to use
 {{- else }}
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
+{{- end }}
+
+{{- define "serviceAccountName" -}}
+{{ include "otfd.serviceAccountName" . }}
 {{- end }}

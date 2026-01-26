@@ -54,7 +54,8 @@ type runnersTable struct{}
 templ (t runnersTable) Header() {
 	<th>Name</th>
 	<th>Status</th>
-	<th>Capacity</th>
+	<th>Executor</th>
+	<th>Jobs</th>
 	<th>Version</th>
 	<th>Process</th>
 	<th>IP Address</th>
@@ -87,7 +88,16 @@ templ (t runnersTable) Row(runner *runnerpkg.RunnerMeta) {
 			</div>
 		</td>
 		<td>
-			<div class="text-sm" title={ fmt.Sprintf("%d jobs are currently allocated out of a maximum of %d jobs", runner.CurrentJobs, runner.MaxJobs) }>({ fmt.Sprintf("%d/%d", runner.CurrentJobs, runner.MaxJobs) })</div>
+			<span class="text-sm">
+				{ runner.ExecutorKind }
+			</span>
+		</td>
+		<td>
+			if runner.ExecutorKind == runnerpkg.ForkExecutorKind {
+				{ fmt.Sprintf("(%d/%d)", runner.CurrentJobs, runner.MaxJobs) }
+			} else {
+				{ runner.CurrentJobs }
+			}
 		</td>
 		<td>
 			<span class="">{ runner.Version }</span>

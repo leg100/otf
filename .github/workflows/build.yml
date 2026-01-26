@@ -30,6 +30,14 @@ jobs:
           helm template ./charts/otf-agent --set token=my_agent_token --set url=https://otf.ninja > /dev/null
       - name: Vet check
         run: make vet
+      - name: Install e2e dependencies
+        run: make install-playwright-ubuntu
+      - name: Install tofu for provider mirror setup
+        uses: opentofu/setup-opentofu@v1
+      - name: Install terraform for provider mirror setup
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
       - name: Add hosts to /etc/hosts
         run: |
           # API tests create webhooks on github.com, and github.com mandates
@@ -43,19 +51,16 @@ jobs:
           # to create a webhook on a github repo
           OAUTH_CLIENT_GITHUB_TOKEN: ${{ secrets.GO_TFE_OAUTH_CLIENT_GITHUB_TOKEN }}
           GITHUB_POLICY_SET_IDENTIFIER: leg100/go-tfe-webhooks
-      - name: Install e2e dependencies
-        run: make install-playwright-ubuntu
-      - name: Install tofu for provider mirror setup
-        uses: opentofu/setup-opentofu@v1
-      - name: Install terraform for provider mirror setup
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_wrapper: false
-      - name: Setup provider mirror for e2e tests
+      - name: Setup provider mirror for integration tests
         run: ./hack/setup_mirror.sh
+      - name: Create kind cluster for integration tests
+        uses: helm/kind-action@v1.13.0
+        with:
+          cluster_name: kind
       - name: Tests
         env:
           GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+          OTF_TEST_KUBE: true
         run: make test
       - name: Archive browser traces
         if: always()
@@ -123,8 +128,6 @@ jobs:
           helm lint ./charts/otf-agent
           helm template ./charts/otfd > /dev/null
           helm template ./charts/otf-agent --set token=my_agent_token --set url=https://otf.ninja > /dev/null
-      - name: Create kind cluster
-        uses: helm/kind-action@v1.12.0
       - name: Test
         run: |
           make test-otfd

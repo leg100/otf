@@ -1,0 +1,27 @@
+{{- define "runner.pvc" -}}
+{{- with .Values.runner.cacheVolume }}
+{{- if .enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "cacheVolumeName" $ }}
+  labels:
+    {{- include "labels" $ | nindent 4 }}
+spec:
+  accessModes:
+  {{- range .accessModes }}
+  - {{ . | quote }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .size | quote }}
+  {{- with .storageClass }}
+    {{- if (eq "-" .) }}
+      storageClassName: ""
+    {{- else }}
+      storageClassName: "{{ . }}"
+    {{- end }}
+  {{- end }}
+{{- end }}
+{{- end }}
+{{- end -}}

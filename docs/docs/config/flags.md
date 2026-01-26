@@ -45,7 +45,7 @@ deployment, taking into consideration the [cache expiry](#-cache-expiry).
 * System: `otfd`, `otf-agent`
 * Default: 5
 
-Sets the number of workers that can process runs concurrently.
+Sets the number of workers that can process runs concurrently. Only applies to the [fork](#-executor) executor.
 
 ## `--default-engine`
 
@@ -86,6 +86,17 @@ Note that the only valid time units are `s`, `m`, and `h`. To specify longer per
 
 Sets the directory in which engine binaries are downloaded.
 
+## `--executor`
+
+* System: `otfd`, `otf-agent`
+* Default: `fork`
+
+Specifies how runs should be executed.
+
+By default it is set to `fork`, which means executables such as `terraform` are forked as child processes of `otfd` (or `otf-agent` if the workspace is set to use an agent).
+
+If set to `kubernetes` then for each plan and apply a Kubernetes job is created. Executables such as `terraform` are then forked as child processes in the job pod.
+
 ## `--github-client-id`
 
 * System: `otfd`
@@ -125,23 +136,35 @@ claim is not validated. See the [Google IAP](../auth/providers/iap.md#verificati
 ## `--hostname`
 
 * System: `otfd`
-* Default: `localhost:8080` or `--address` if specified.
+* Default: the value of `--address`
 
-Sets the hostname that clients can use to access the OTF cluster. This value is
-used within links sent to various clients, including:
+Sets the hostname advertised to external clients, for example:
 
-* The `terraform` CLI when it is streaming logs for a remote `plan` or `apply`.
-* Pull requests on VCS providers, e.g. the link beside the status check on a
-Github pull request.
+* The hostname within the link beside the status check on a GitHub pull request.
+* The hostname to which to send webhook events to trigger runs when a workspace is connected to a GitHub repository (see `--webhook-hostname` below.
 
-It is highly advisable to set this flag in a production deployment.
+It is advisable to set this flag in a production deployment. Otherwise it defaults to the listening address set with `--address` which is unlikely to be accessible to external clients.
 
-## `--webhook-hostname`
+## `--kubernetes-request-cpu`
 
-* System: `otfd`
-* Default: `localhost:8080` or `--address` if specified.
+* System: `otfd`, `otf-agent`
+* Default: `500m`
 
-Sets the hostname that VCS providers can use to access the OTF webhooks.
+Set the requested CPU resources for a kubernetes job.
+
+## `--kubernetes-request-memory`
+
+* System: `otfd`, `otf-agent`
+* Default: `128Mi`
+
+Set the requested memory resources for a kubernetes job.
+
+## `--kubernetes-ttl-after-finish`
+
+* System: `otfd`, `otf-agent`
+* Default: `1h`
+
+Set the TTL for how long before a kubernetes job is deleted after it has finished.
 
 ## `--log-format`
 
@@ -209,6 +232,20 @@ OIDC claim for mapping to an OTF username. Must be one of `name`, `email`, or `s
 * Default: `2h`
 
 Sets the amount of time a run is permitted to be in the `planning` state before it is canceled.
+
+## `--plugin-cache`
+
+* System: `otfd`, `otf-agent`
+* Default: `false`
+
+Enable the shared provider plugin cache. Note that it is only concurrency safe in OpenTofu v1.10.0 and greater.
+
+## `--plugin-cache-dir`
+
+* System: `otfd`, `otf-agent`
+* Default: `<random directory in system temp directory>`
+
+Directory for the [shared provider plugin cache](#-plugin-cache).
 
 ## `--restrict-org-creation`
 
@@ -281,3 +318,11 @@ Set logging verbosity. The higher the number the more verbose the logs. Each num
 |2|DEBUG-1|
 |3|DEBUG-2|
 |n|DEBUG-(n+1)|
+
+## `--webhook-hostname`
+
+* System: `otfd`
+* Default: the value of `--hostname`
+
+Overrides `--hostname` specifically for webhooks. This is useful if you want to set a separate firewalled inbound route for VCS providers (such as GitHub) via which to send their webhook events.
+

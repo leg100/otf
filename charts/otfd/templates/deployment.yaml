@@ -51,7 +51,7 @@ spec:
               value: "{{ .http }}"
             {{- end }}
             - name: OTF_DATABASE
-              value: {{ .Values.database }}
+              value: {{ .Values.database | quote }}
             {{ with .Values.databaseUsernameFromSecret }}
             - name: PGUSER
               valueFrom:
@@ -81,10 +81,10 @@ spec:
             - name: OTF_MAX_CONFIG_SIZE
               value: "{{ .Values.maxConfigSize }}"
             {{ end }}
-            {{ if .Values.defaultEngine }}
+            {{- if .Values.defaultEngine }}
             - name: OTF_DEFAULT_ENGINE
               value: "{{ .Values.defaultEngine }}"
-            {{ end }}
+            {{- end }}
             - name: OTF_GITHUB_CLIENT_ID
               value: {{ .Values.github.clientID }}
             - name: OTF_GITHUB_CLIENT_SECRET
@@ -128,7 +128,7 @@ spec:
             - name: SSL_CERT_DIR
               value: /certs
             {{- end }}
-            {{ with .Values.proxy -}}
+            {{- with .Values.proxy }}
             - name: HTTPS_PROXY
               value: "{{ . }}"
             - name: HTTP_PROXY
@@ -138,7 +138,7 @@ spec:
             - name: http_proxy
               value: "{{ . }}"
             {{- end }}
-            {{ with .Values.no_proxy -}}
+            {{- with .Values.no_proxy }}
             - name: NO_PROXY
               value: "{{ . }}"
             - name: no_proxy
@@ -152,6 +152,19 @@ spec:
             - name: OTF_SITE_ADMINS
               value: "{{ . | join ","}}"
             {{- end }}
+            - name: OTF_KUBERNETES_SERVICE_NAME
+              value: {{ include "otfd.fullname" . }}
+            - name: OTF_KUBERNETES_SERVICE_PORT
+              value: {{ .Values.service.port | quote }}
+            - name: OTF_KUBERNETES_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: OTF_KUBERNETES_SERVICE_ACCOUNT
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.serviceAccountName
+            {{- include "runner.envs" . | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
@@ -171,16 +184,18 @@ spec:
           volumeMounts:
           - name: tmp
             mountPath: /tmp
+          {{- include "runner.volume_mounts" . | nindent 10 }}
           {{- with .Values.volumeMounts }}
-            {{- toYaml . | nindent 10 }}
+            {{- toYaml . | nindent 12 }}
           {{- end }}
-          {{ if .Values.caCerts.enabled -}}
+          {{- if .Values.caCerts.enabled }}
           - name: certs
             mountPath: /certs
-          {{ end }}
+          {{- end }}
       volumes:
         - name: tmp
-          emptyDir:
+          emptyDir: {}
+        {{- include "runner.volume" . | nindent 8 }}
         {{ if .Values.caCerts.enabled -}}
         - name: certs
           secret:
@@ -191,7 +206,7 @@ spec:
             {{- end }}
         {{- end }}
         {{- with .Values.volumes }}
-          {{- toYaml . | nindent 8 }}
+          {{- toYaml . | nindent 10 }}
         {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:

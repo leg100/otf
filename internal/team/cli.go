@@ -4,8 +4,9 @@ import (
 	"context"
 	"fmt"
 
+	otfhttp "github.com/leg100/otf/internal/http"
+
 	"github.com/leg100/otf/internal"
-	otfapi "github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 
@@ -22,7 +23,7 @@ type cliClient interface {
 	Delete(ctx context.Context, teamID resource.TfeID) error
 }
 
-func NewTeamCommand(apiClient *otfapi.Client) *cobra.Command {
+func NewTeamCommand(apiClient *otfhttp.Client) *cobra.Command {
 	cli := &teamCLI{}
 	cmd := &cobra.Command{
 		Use:   "teams",

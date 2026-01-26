@@ -1,0 +1,11 @@
+{{- define "runner.volume" -}}
+{{- with .Values.runner }}
+- name: cache
+{{- if .cacheVolume.enabled }}
+  persistentVolumeClaim:
+    claimName: {{ include "cacheVolumeName" $ }}
+{{- else }}
+  emptyDir:
+{{- end }}
+{{- end }}
+{{- end -}}

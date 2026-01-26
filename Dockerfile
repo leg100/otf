@@ -4,10 +4,11 @@
 # Use --target to choose which image to build:
 # docker build --tag otfd --target otfd .
 # docker build --tag otf-agent --target otf-agent .
+# docker build --tag otf-job --target otf-job .
 
-# STAGE: builder Used for building the `otfd` and `otf-agent` binaries. This
-# stage/layer will not be included in the final images, as only the compiled
-# binaries are copied from it.
+# STAGE: builder Used for building the binaries. This stage/layer will not be
+# included in the final images, as only the compiled binaries are copied from
+# it.
 FROM golang:alpine3.23 AS builder
 
 WORKDIR /app
@@ -23,10 +24,9 @@ RUN --mount=type=cache,target=/etc/apk/cache \
 COPY . .
 
 # Compile the binaries
-# Chmod 0555 ensures that the binaries don't have potentially dangerous
-# permissions, like setuid and world writable.
 RUN --mount=type=cache,target=/go/pkg/mod \
-  make build && chmod 0555 _build/*
+  --mount=type=cache,target=/root/.cache/go-build \
+  make build
 
 # STAGE: base
 # This stage contains the files/packages that are used by the final images.
@@ -41,7 +41,6 @@ RUN adduser -D -H -u 4096 otf
 RUN --mount=type=cache,target=/etc/apk/cache \
   apk add git
 
-
 # STAGE: otfd
 # Final stage that takes the `base` stage and the `otfd` binary
 FROM base AS otfd
@@ -49,10 +48,15 @@ COPY --from=builder /app/_build/otfd /usr/local/bin/
 USER otf
 ENTRYPOINT ["/usr/local/bin/otfd"]
 
-
 # STAGE: otf-agent
 # Final stage that takes the `base` stage and the `otf-agent` binary
 FROM base AS otf-agent
 COPY --from=builder /app/_build/otf-agent /usr/local/bin/
 USER otf
 ENTRYPOINT ["/usr/local/bin/otf-agent"]
+
+# STAGE: otf-job
+# Final stage that takes the `base` stage and the `otf-job` binary
+FROM base AS otf-job
+COPY --from=builder /app/_build/otf-job /usr/local/bin/
+ENTRYPOINT ["/usr/local/bin/otf-job"]

@@ -29,10 +29,13 @@ spec:
       serviceAccountName: {{ include "otf-agent.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
-      {{- with .Values.volumes }}
       volumes:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
+        - name: tmp
+          emptyDir: {}
+        {{- include "runner.volume" . | nindent 8 }}
+        {{- with .Values.volumes }}
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
       containers:
         {{- with .Values.sidecars }}
           {{- toYaml . | nindent 8 }}
@@ -64,20 +67,22 @@ spec:
               value: "{{ . }}"
             {{- end }}
             {{- end }}
-            {{- with .Values.pluginCache }}
-            - name: OTF_PLUGIN_CACHE
-              value: "{{ . }}"
-            {{- end }}
-            {{- with .Values.concurrency }}
-            - name: OTF_CONCURRENCY
-              value: "{{ . }}"
-            {{- end }}
-{{- range $key, $value := .Values.extraEnvs }}
+            - name: OTF_KUBERNETES_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: OTF_KUBERNETES_SERVICE_ACCOUNT
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.serviceAccountName
+            {{- include "runner.envs" . | nindent 12 }}
+            {{- range $key, $value := .Values.extraEnvs }}
             - name: {{ $key }}
               value: {{ $value }}
-{{- end }}
-          {{- with .Values.volumeMounts }}
+            {{- end }}
           volumeMounts:
+          {{- include "runner.volume_mounts" . | nindent 10 }}
+          {{- with .Values.volumeMounts }}
             {{- toYaml . | nindent 12 }}
           {{- end }}
           resources:

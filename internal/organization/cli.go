@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
+	otfhttp "github.com/leg100/otf/internal/http"
+
 	"github.com/leg100/otf/internal"
-	otfapi "github.com/leg100/otf/internal/api"
-	"github.com/leg100/otf/internal/resource"
 	"github.com/spf13/cobra"
 )
 
@@ -18,25 +18,11 @@ type (
 	// cliService provides the cli with access to organizations
 	cliService interface {
 		CreateOrganization(ctx context.Context, opts CreateOptions) (*Organization, error)
-		Update(ctx context.Context, name Name, opts UpdateOptions) (*Organization, error)
-		Get(ctx context.Context, name Name) (*Organization, error)
-		List(ctx context.Context, opts ListOptions) (*resource.Page[*Organization], error)
 		DeleteOrganization(ctx context.Context, name Name) error
-		GetEntitlements(ctx context.Context, organization Name) (Entitlements, error)
-		AfterCreateOrganization(hook func(context.Context, *Organization) error)
-		BeforeDeleteOrganization(hook func(context.Context, *Organization) error)
-
-		// organization tokens
-		CreateToken(ctx context.Context, opts CreateOrganizationTokenOptions) (*OrganizationToken, []byte, error)
-		// GetOrganizationToken gets the organization token. If a token does not
-		// exist, then nil is returned without an error.
-		GetOrganizationToken(ctx context.Context, organization Name) (*OrganizationToken, error)
-		DeleteToken(ctx context.Context, organization Name) error
-		getOrganizationTokenByID(ctx context.Context, tokenID resource.TfeID) (*OrganizationToken, error)
 	}
 )
 
-func NewCommand(client *otfapi.Client) *cobra.Command {
+func NewCommand(client *otfhttp.Client) *cobra.Command {
 	cli := &CLI{}
 	cmd := &cobra.Command{
 		Use:   "organizations",

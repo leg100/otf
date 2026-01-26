@@ -5,7 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	otfapi "github.com/leg100/otf/internal/api"
+	otfhttp "github.com/leg100/otf/internal/http"
+
 	"github.com/leg100/otf/internal/organization"
 
 	"github.com/leg100/otf/internal/resource"
@@ -24,7 +25,7 @@ type cliClient interface {
 	Unlock(ctx context.Context, workspaceID resource.TfeID, runID *resource.TfeID, force bool) (*Workspace, error)
 }
 
-func NewCommand(apiClient *otfapi.Client) *cobra.Command {
+func NewCommand(apiClient *otfhttp.Client) *cobra.Command {
 	cli := &CLI{}
 	cmd := &cobra.Command{
 		Use:   "workspaces",

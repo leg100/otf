@@ -9,12 +9,12 @@ import (
 	"net/url"
 
 	"github.com/leg100/otf/internal"
-	otfapi "github.com/leg100/otf/internal/api"
+	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/resource"
 )
 
 type Client struct {
-	*otfapi.Client
+	*otfhttp.Client
 }
 
 func (c *Client) Create(ctx context.Context, opts CreateStateVersionOptions) (*Version, error) {

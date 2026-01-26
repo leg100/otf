@@ -29,6 +29,7 @@ func (db *db) create(ctx context.Context, meta *RunnerMeta) error {
 		"last_ping_at":   meta.LastPingAt,
 		"last_status_at": meta.LastStatusAt,
 		"status":         meta.Status,
+		"executor":       meta.ExecutorKind,
 	}
 	if meta.AgentPool != nil {
 		args["agent_pool_id"] = meta.AgentPool.ID
@@ -43,6 +44,7 @@ INSERT INTO runners (
     last_ping_at,
     last_status_at,
     status,
+    executor,
     agent_pool_id
 ) VALUES (
 	@runner_id,
@@ -53,6 +55,7 @@ INSERT INTO runners (
 	@last_ping_at,
 	@last_status_at,
 	@status,
+	@executor,
 	@agent_pool_id
 )`, args)
 	return err
@@ -66,6 +69,7 @@ func (db *db) update(ctx context.Context, runnerID resource.TfeID, fn func(conte
 			rows := db.Query(ctx, `
 SELECT
     a.runner_id, a.name, a.version, a.max_jobs, a.ip_address, a.last_ping_at, a.last_status_at, a.status,
+	a.executor,
     ap::"agent_pools" AS agent_pool,
     ( SELECT count(*)
       FROM jobs j
@@ -104,6 +108,7 @@ func (db *db) get(ctx context.Context, runnerID resource.TfeID) (*RunnerMeta, er
 	rows := db.Query(ctx, `
 SELECT
     a.runner_id, a.name, a.version, a.max_jobs, a.ip_address, a.last_ping_at, a.last_status_at, a.status,
+	a.executor,
     ap::"agent_pools" AS agent_pool,
     ( SELECT count(*)
       FROM jobs j
@@ -121,6 +126,7 @@ func (db *db) list(ctx context.Context, opts ListOptions) ([]*RunnerMeta, error)
 	rows := db.Query(ctx, `
 SELECT
     a.runner_id, a.name, a.version, a.max_jobs, a.ip_address, a.last_ping_at, a.last_status_at, a.status,
+	a.executor,
     ap::"agent_pools" AS agent_pool,
     ( SELECT count(*)
       FROM jobs j
@@ -160,6 +166,7 @@ func scanRunner(row pgx.CollectableRow) (*RunnerMeta, error) {
 		LastPingAt   time.Time      `db:"last_ping_at"`
 		LastStatusAt time.Time      `db:"last_status_at"`
 		IPAddress    netip.Addr     `db:"ip_address"`
+		ExecutorKind ExecutorKind   `db:"executor"`
 		PoolModel    *Pool          `db:"agent_pool"`
 		Name         string
 		Version      string
@@ -179,6 +186,7 @@ func scanRunner(row pgx.CollectableRow) (*RunnerMeta, error) {
 		Name:         m.Name,
 		Version:      m.Version,
 		Status:       m.Status,
+		ExecutorKind: m.ExecutorKind,
 	}
 	if m.PoolModel != nil {
 		meta.AgentPool = m.PoolModel

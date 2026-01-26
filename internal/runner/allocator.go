@@ -29,10 +29,10 @@ type allocatorClient interface {
 	WatchRunners(context.Context) (<-chan pubsub.Event[*RunnerEvent], func())
 	WatchJobs(context.Context) (<-chan pubsub.Event[*JobEvent], func())
 	ListRunners(ctx context.Context, opts ListOptions) ([]*RunnerMeta, error)
+	GetJob(ctx context.Context, jobID resource.TfeID) (*Job, error)
 
 	getRunner(ctx context.Context, runnerID resource.TfeID) (*RunnerMeta, error)
 	listJobs(ctx context.Context) ([]*Job, error)
-	getJob(ctx context.Context, jobID resource.TfeID) (*Job, error)
 
 	allocateJob(ctx context.Context, jobID, runnerID resource.TfeID) (*Job, error)
 	reallocateJob(ctx context.Context, jobID, runnerID resource.TfeID) (*Job, error)
@@ -107,7 +107,7 @@ func (a *allocator) Start(ctx context.Context) error {
 				}
 				delete(a.jobs, event.Payload.ID)
 			case pubsub.CreatedEvent:
-				job, err := a.client.getJob(ctx, event.Payload.ID)
+				job, err := a.client.GetJob(ctx, event.Payload.ID)
 				if err != nil {
 					return err
 				}
@@ -209,8 +209,11 @@ func (a *allocator) allocate(ctx context.Context, job *Job) error {
 		if runner.AgentPool != nil && job.AgentPoolID != nil && runner.AgentPool.ID != *job.AgentPoolID {
 			continue
 		}
-		// skip runners with insufficient capacity
-		if runner.MaxJobs == a.currentJobs[runner.ID] {
+		// skip runners with insufficient capacity (only applicable to runners
+		// with a 'fork' executor kind - an infinite number of jobs can be
+		// allocated to the 'kubernetes' executor kind, where kubernetes itself
+		// is then responsible for allocation of resources.
+		if runner.ExecutorKind == ForkExecutorKind && runner.MaxJobs == a.currentJobs[runner.ID] {
 			insufficientCapacity = true
 			continue
 		}

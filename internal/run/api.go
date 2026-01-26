@@ -7,7 +7,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
-	otfapi "github.com/leg100/otf/internal/api"
+	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/tfeapi"
@@ -26,7 +26,7 @@ func (a *api) addHandlers(r *mux.Router) {
 	signed.Use(internal.VerifySignedURL(a.Verifier))
 	signed.HandleFunc("/runs/{run_id}/logs/{phase}", a.getLogs).Methods("GET")
 
-	r = r.PathPrefix(otfapi.DefaultBasePath).Subrouter()
+	r = r.PathPrefix(otfhttp.APIBasePath).Subrouter()
 	r.HandleFunc("/runs", a.list).Methods("GET")
 	r.HandleFunc("/runs/{id}", a.get).Methods("GET")
 	r.HandleFunc("/runs/{id}/planfile", a.getPlanFile).Methods("GET")

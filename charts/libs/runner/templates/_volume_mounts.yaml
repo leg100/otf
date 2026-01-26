@@ -1,0 +1,8 @@
+{{- define "runner.volume_mounts" -}}
+- name: cache
+  mountPath: /cache/engines
+  subPath: engines
+- name: cache
+  mountPath: /cache/providers
+  subPath: providers
+{{- end -}}

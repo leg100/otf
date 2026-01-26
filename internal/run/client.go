@@ -7,13 +7,12 @@ import (
 	"net/url"
 	"strconv"
 
-	otfapi "github.com/leg100/otf/internal/api"
-	"github.com/leg100/otf/internal/http"
+	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/resource"
 )
 
 type Client struct {
-	*otfapi.Client
+	*otfhttp.Client
 }
 
 func (c *Client) GetPlanFile(ctx context.Context, runID resource.TfeID, format PlanFormat) ([]byte, error) {
@@ -42,7 +41,7 @@ func (c *Client) UploadPlanFile(ctx context.Context, runID resource.TfeID, plan 
 	// set query here.
 	opts := &PlanFileOptions{Format: format}
 	q := url.Values{}
-	if err := http.Encoder.Encode(opts, q); err != nil {
+	if err := otfhttp.Encoder.Encode(opts, q); err != nil {
 		return err
 	}
 	req.URL.RawQuery = q.Encode()

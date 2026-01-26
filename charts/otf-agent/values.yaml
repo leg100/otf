@@ -26,17 +26,11 @@ tokenFromSecret:
 # -- (string) URL of the OTF server to connect to. Must begin with `https://` or `http://`. Required.
 url:
 
-# -- (int) Set the number of runs that can be processed concurrently. See [docs](https://docs.otf.ninja/config/flags/#-concurrency).
-concurrency:
-
 logging:
   # -- (int) Logging verbosity, the higher the number the more verbose the logs. See [docs](https://docs.otf.ninja/config/flags/#-v).
   verbosity:
   # -- (string) Logging format: default, text, or json. See [docs](https://docs.otf.ninja/config/flags/#-log-format)
   format:
-
-# -- (bool) Enable shared plugin cache for terraform providers.
-pluginCache:
 
 # -- Extra environment variables to be passed to the deployment.
 extraEnvs: []

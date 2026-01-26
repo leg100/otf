@@ -3,7 +3,8 @@ GIT_COMMIT = $(shell git rev-parse HEAD)
 RANDOM_SUFFIX := $(shell cat /dev/urandom | tr -dc 'a-z0-9' | head -c5)
 IMAGE_NAME = leg100/otfd
 IMAGE_NAME_AGENT = leg100/otf-agent
-IMAGE_TAG ?= $(VERSION)-$(RANDOM_SUFFIX)
+IMAGE_NAME_JOB = leg100/otf-job
+IMAGE_TAG ?= $(VERSION)
 DBSTRING=postgres:///otf
 LD_FLAGS = " \
     -s -w \
@@ -30,7 +31,6 @@ test:
 .PHONY: build
 build:
 	CGO_ENABLED=0 go build -o _build/ -ldflags $(LD_FLAGS) ./...
-	chmod -R +x _build/*
 
 .PHONY: install
 install:
@@ -85,7 +85,7 @@ vet:
 # Build docker image
 .PHONY: image
 image:
-	docker build -f Dockerfile -t $(IMAGE_NAME):$(IMAGE_TAG) -t $(IMAGE_NAME):latest --target otfd .
+	docker build -t $(IMAGE_NAME):$(IMAGE_TAG) -t $(IMAGE_NAME):latest --target otfd .
 
 # Build and load image into k8s kind
 .PHONY: load
@@ -97,10 +97,29 @@ load: image
 image-agent:
 	docker build -f Dockerfile -t $(IMAGE_NAME_AGENT):$(IMAGE_TAG) -t $(IMAGE_NAME_AGENT):latest --target otf-agent .
 
+# Build docker image for otf-job
+.PHONY: image-job
+image-job:
+	docker build -f Dockerfile -t $(IMAGE_NAME_JOB):$(IMAGE_TAG) --target otf-job .
+
 # Build and load otf-agent image into k8s kind
 .PHONY: load-agent
 load-agent: image-agent
 	kind load docker-image $(IMAGE_NAME_AGENT):$(IMAGE_TAG)
+
+# Build and load otf-job image into k8s kind
+.PHONY: load-job
+load-job: image-job
+	kind load docker-image $(IMAGE_NAME_JOB):$(IMAGE_TAG)
+
+# Build and load all images into k8s kind
+.PHONY: load-all
+load-all: image image-agent image-job load load-agent load-job
+
+# watch for changes to go files, and when a change occurs, re-build the otf-job
+# image and load it into the kind cluster
+watch-job:
+	go tool wgo make load-job
 
 # Install pre-commit
 .PHONY: install-pre-commit
@@ -155,7 +174,10 @@ install-playwright-arch:
 # re-create _templ.txt files on change, then send reload event to browser.
 # Default url: https://localhost:7331
 live/templ:
-	go tool templ generate --watch --proxy="https://localhost:8080" --open-browser=false --cmd="go run ./cmd/otfd/main.go"
+	go tool templ generate --watch --proxybind 0.0.0.0 --proxy="https://localhost:8080" --open-browser=false --cmd="make live/run"
+
+live/run:
+	go run -ldflags $(LD_FLAGS) ./cmd/otfd/main.go
 
 # run tailwindcss to generate the styles.css bundle in watch mode.
 live/tailwind:
@@ -180,7 +202,7 @@ live:
 generate-templates:
 	go tool templ generate
 
-check-no-diff: paths actions generate-templates
+check-no-diff: paths actions generate-templates helm-docs
 	git diff --exit-code
 
 .PHONY: deploy-otfd
@@ -194,3 +216,19 @@ test-otfd: deploy-otfd
 .PHONY: bump-chart-version
 bump-chart-version:
 	yq -i '.version |= (split(".") | .[-1] |= ((. tag = "!!int") + 1) | join("."))' ./charts/${CHART}/Chart.yaml
+
+.PHONY: helm-docs
+helm-docs:
+	go tool helm-docs -c ./charts -u
+
+
+.PHONY: helm-dependency-update
+helm-dependency-update: helm-dependency-update-otfd helm-dependency-update-otf-agent
+
+.PHONY: helm-dependency-update-otfd
+helm-dependency-update-otfd:
+	helm dependency update ./charts/otfd
+
+.PHONY: helm-dependency-update-otf-agent
+helm-dependency-update-otf-agent:
+	helm dependency update ./charts/otf-agent

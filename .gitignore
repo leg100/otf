@@ -32,7 +32,6 @@ prometheus.yml
 /.terraformignore
 .terraform
 .terraform.lock.hcl
-main.tf
 # direnv
 .envrc
 # docker compose env

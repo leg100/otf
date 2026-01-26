@@ -6,8 +6,9 @@ import (
 	"fmt"
 	"os"
 
-	otfapi "github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/configversion"
+	otfhttp "github.com/leg100/otf/internal/http"
+
 	"github.com/leg100/otf/internal/resource"
 
 	"github.com/leg100/otf/internal"
@@ -28,7 +29,7 @@ type cliConfigsClient interface {
 	DownloadConfig(ctx context.Context, id resource.TfeID) ([]byte, error)
 }
 
-func NewCommand(client *otfapi.Client) *cobra.Command {
+func NewCommand(client *otfhttp.Client) *cobra.Command {
 	cli := &CLI{}
 	cmd := &cobra.Command{
 		Use:   "runs",

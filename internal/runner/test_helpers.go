@@ -72,7 +72,7 @@ func (f *fakeService) reallocateJob(ctx context.Context, jobID resource.TfeID, a
 	return f.job, nil
 }
 
-func (f *fakeService) getJob(ctx context.Context, jobID resource.TfeID) (*Job, error) {
+func (f *fakeService) GetJob(ctx context.Context, jobID resource.TfeID) (*Job, error) {
 	return f.job, nil
 }
 
