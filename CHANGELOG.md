@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.3](https://github.com/leg100/otf/compare/v0.5.2...v0.5.3) (2026-01-27)
+
+
+### Bug Fixes
+
+* **ci:** downgrade broken release please action ([f886124](https://github.com/leg100/otf/commit/f886124ea6f560f1b5be94afd1f6d33c203d8b4b))
+
 ## [0.5.2](https://github.com/leg100/otf/compare/v0.5.1...v0.5.2) (2026-01-27)
 
 
