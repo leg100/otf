@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.2](https://github.com/leg100/otf/compare/v0.5.1...v0.5.2) (2026-01-27)
+
+
+### Bug Fixes
+
+* **ci:** broke release process ([64716f9](https://github.com/leg100/otf/commit/64716f9bf7ce4edfb26d038fae518cb8e0cd24c8))
+
 ## [0.5.1](https://github.com/leg100/otf/compare/v0.5.0...v0.5.1) (2026-01-26)
 
 
