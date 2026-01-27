@@ -37,7 +37,7 @@ func main() {
 }
 
 func run(ctx context.Context) error {
-	deploy, err := integration.NewKubeDeploy(ctx, integration.KubeDeployConfig{
+	deploy, _, err := integration.NewKubeDeploy(ctx, integration.KubeDeployConfig{
 		Namespace:          namespace,
 		OpenBrowser:        true,
 		CacheVolumeEnabled: true,
@@ -87,7 +87,7 @@ func run(ctx context.Context) error {
 	}
 	log.Printf("creating first run: %s\n", run.ID)
 	// Pod should succeed and run should reach planned status
-	err = deploy.WaitPodSucceed(ctx, run.ID, 10*time.Minute)
+	_, err = deploy.WaitPodSucceed(ctx, run.ID, 10*time.Minute)
 	if err != nil {
 		return fmt.Errorf("waiting for pod to succeed: %w", err)
 	}

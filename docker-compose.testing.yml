@@ -48,7 +48,7 @@ services:
     stop_signal: SIGINT
     command: gcloud beta emulators pubsub start --project=abc123 --host-port=0.0.0.0:8085
   otfd:
-    image: leg100/otfd:latest
+    image: leg100/otfd:edge
     depends_on:
       postgres:
         condition: service_healthy

@@ -32,13 +32,12 @@ func TestHelm(t *testing.T) {
 		t.Skip("kubernetes kind not installed")
 	}
 
-	kdeploy, err := NewKubeDeploy(t.Context(), KubeDeployConfig{
-		RepoDir: "../..",
+	kdeploy, debug, err := NewKubeDeploy(t.Context(), KubeDeployConfig{
+		RepoDir: "../../",
 		// Delete job and its secret 1 second after job finishes.
 		JobTTL: 1,
-		Logger: t.Log,
 	})
-	require.NoError(t, err, kdeploy.Debug(t.Context(), "otfd"))
+	require.NoError(t, err, debug(t.Context()))
 
 	t.Cleanup(func() {
 		// Don't delete namespace if test failed, to allow debugging.
@@ -74,8 +73,8 @@ func TestHelm(t *testing.T) {
 		require.NoError(t, err)
 
 		// Pod should succeed and run should reach planned status
-		err = kdeploy.WaitPodSucceed(t.Context(), run.ID, time.Minute)
-		require.NoError(t, err, kdeploy.Debug(t.Context(), "otf-job"))
+		debug, err = kdeploy.WaitPodSucceed(t.Context(), run.ID, time.Minute)
+		require.NoError(t, err, debug(t.Context()))
 
 		// Ensure k8s garbage collection works as configured with both job and
 		// secret resources deleted.
@@ -102,8 +101,8 @@ func TestHelm(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		err = kdeploy.InstallAgentChart(t.Context(), token.Token)
-		require.NoError(t, err, kdeploy.Debug(t.Context(), "otf-agent"))
+		debug, err = kdeploy.InstallAgentChart(t.Context(), token.Token)
+		require.NoError(t, err, debug(t.Context()))
 
 		ws, err := kdeploy.Workspaces.Create(t.Context(), org.Name, tfe.WorkspaceCreateOptions{
 			Name:          internal.Ptr("dev-agent"),
@@ -127,8 +126,8 @@ func TestHelm(t *testing.T) {
 		require.NoError(t, err)
 
 		// Pod should succeed and run should reach planned status
-		err = kdeploy.WaitPodSucceed(t.Context(), run.ID, time.Minute)
-		require.NoError(t, err, kdeploy.Debug(t.Context(), "otf-job"))
+		debug, err = kdeploy.WaitPodSucceed(t.Context(), run.ID, time.Minute)
+		require.NoError(t, err, debug(t.Context()))
 
 		// Ensure k8s garbage collection works as configured with both job and
 		// secret resources deleted.

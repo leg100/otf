@@ -14,9 +14,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version-file: 'go.mod'
       - name: Check no diff
@@ -76,25 +76,21 @@ jobs:
       tag_name: ${{ steps.release-please.outputs.tag_name }} # e.g. v1.0.0
       version: ${{ steps.release-please.outputs.version }} # e.g. 1.0.0
     steps:
-      - uses: google-github-actions/release-please-action@v3
-        id: release-please
-        with:
-          release-type: go
-          command: manifest
+      - uses: googleapis/release-please-action@v4
   release:
     runs-on: ubuntu-latest
     needs: [build, release-please]
     if: needs.release-please.outputs.release_created
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - run: git fetch --force --tags
-      - uses: docker/login-action@v2
+      - uses: docker/login-action@v3
         with:
           username: leg100
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v6
         with:
           go-version-file: 'go.mod'
       - uses: docker/setup-qemu-action@v2
@@ -109,7 +105,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Bump version
         run: |
           # set app version on all charts
@@ -139,7 +135,7 @@ jobs:
           kubectl -n otfd-test logs -l app.kubernetes.io/name=postgres
           kubectl -n otfd-test logs -l app.kubernetes.io/name=otfd
       - name: Checkout charts repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           path: otf-charts
           token: ${{ secrets.OTF_CHARTS_TOKEN }}

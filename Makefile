@@ -1,18 +1,3 @@
-VERSION = $(shell git describe --tags --dirty --always)
-GIT_COMMIT = $(shell git rev-parse HEAD)
-RANDOM_SUFFIX := $(shell cat /dev/urandom | tr -dc 'a-z0-9' | head -c5)
-IMAGE_NAME = leg100/otfd
-IMAGE_NAME_AGENT = leg100/otf-agent
-IMAGE_NAME_JOB = leg100/otf-job
-IMAGE_TAG ?= $(VERSION)
-DBSTRING=postgres:///otf
-LD_FLAGS = " \
-    -s -w \
-	-X 'github.com/leg100/otf/internal.Version=$(VERSION)' \
-	-X 'github.com/leg100/otf/internal.Commit=$(GIT_COMMIT)'	\
-	-X 'github.com/leg100/otf/internal.Built=$(shell date +%s)'	\
-	" \
-
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
 GOBIN=$(shell go env GOPATH)/bin
@@ -21,7 +6,7 @@ GOBIN=$(shell go env GOBIN)
 endif
 
 .PHONY: go-tfe-tests
-go-tfe-tests: image compose-up
+go-tfe-tests: image-otfd compose-up
 	./hack/go-tfe-tests.bash
 
 .PHONY: test
@@ -30,11 +15,14 @@ test:
 
 .PHONY: build
 build:
-	CGO_ENABLED=0 go build -o _build/ -ldflags $(LD_FLAGS) ./...
+	go build \
+		-ldflags '-s -w -X github.com/leg100/otf/internal.Version=edge' \
+		-o ./_build/linux/amd64/ \
+		./cmd/otfd ./cmd/otf-job ./cmd/otf-agent
 
 .PHONY: install
 install:
-	go install -ldflags $(LD_FLAGS) ./...
+	go install ./...
 
 .PHONY: install-latest-release
 install-latest-release:
@@ -49,7 +37,7 @@ install-latest-release:
 
 # Run docker compose stack
 .PHONY: compose-up
-compose-up: image
+compose-up: image-otfd
 	docker compose -f docker-compose.testing.yml up -d --wait --wait-timeout 60
 
 # Remove docker compose stack
@@ -82,44 +70,39 @@ fmt:
 vet:
 	go vet ./...
 
-# Build docker image
-.PHONY: image
-image:
-	docker build -t $(IMAGE_NAME):$(IMAGE_TAG) -t $(IMAGE_NAME):latest --target otfd .
+# Build docker images
+.PHONY: images
+images: build
+	make -j image-otfd image-agent image-job
 
-# Build and load image into k8s kind
-.PHONY: load
-load: image
-	kind load docker-image $(IMAGE_NAME):$(IMAGE_TAG)
+.PHONY: image-otfd
+image-otfd: build
+	docker build -f Dockerfile -t leg100/otfd:edge --target otfd _build/
 
-# Build docker image for otf-agent
 .PHONY: image-agent
-image-agent:
-	docker build -f Dockerfile -t $(IMAGE_NAME_AGENT):$(IMAGE_TAG) -t $(IMAGE_NAME_AGENT):latest --target otf-agent .
+image-agent: build
+	docker build -f Dockerfile -t leg100/otf-agent:edge --target otf-agent _build/
 
-# Build docker image for otf-job
 .PHONY: image-job
-image-job:
-	docker build -f Dockerfile -t $(IMAGE_NAME_JOB):$(IMAGE_TAG) --target otf-job .
+image-job: build
+	docker build -f Dockerfile -t leg100/otf-job:edge --target otf-job _build/
 
-# Build and load otf-agent image into k8s kind
+# Build and load edge images into kubernetes kind
+.PHONY: load
+load: images
+	make -j load-otfd load-agent load-job
+
+.PHONY: load-otfd
+load-otfd:
+	kind load docker-image leg100/otfd:edge
+
 .PHONY: load-agent
-load-agent: image-agent
-	kind load docker-image $(IMAGE_NAME_AGENT):$(IMAGE_TAG)
+load-agent:
+	kind load docker-image leg100/otf-agent:edge
 
-# Build and load otf-job image into k8s kind
 .PHONY: load-job
-load-job: image-job
-	kind load docker-image $(IMAGE_NAME_JOB):$(IMAGE_TAG)
-
-# Build and load all images into k8s kind
-.PHONY: load-all
-load-all: image image-agent image-job load load-agent load-job
-
-# watch for changes to go files, and when a change occurs, re-build the otf-job
-# image and load it into the kind cluster
-watch-job:
-	go tool wgo make load-job
+load-job:
+	kind load docker-image leg100/otf-job:edge
 
 # Install pre-commit
 .PHONY: install-pre-commit
@@ -195,7 +178,7 @@ live/sync_assets:
 # start watch processes in parallel.
 #
 # NOTE: for some reason, if live/templ is placed first in the list it blocks
-# the remaining processes, so it's important it is placed first.
+# the remaining processes, so it's important it is placed last.
 live:
 	make -j live/tailwind live/sync_assets live/templ
 

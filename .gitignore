@@ -27,7 +27,7 @@ prometheus.yml
 *-wal
 *-shm
 # bins
-/_build
+/_build/*
 # terraform
 /.terraformignore
 .terraform

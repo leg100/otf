@@ -34,12 +34,12 @@ const helmTestValuesPath = "./charts/otfd/test-values.yaml"
 type KubeDeploy struct {
 	*tfe.Client
 	KubeDeployConfig
+	*debugger
 
 	configPath string
 	clientset  *kubernetes.Clientset
 	tunnel     *exec.Cmd
 	browser    *exec.Cmd
-	imageTag   string
 	siteToken  string
 }
 
@@ -50,10 +50,9 @@ type KubeDeployConfig struct {
 	JobTTL             time.Duration
 	OpenBrowser        bool
 	CacheVolumeEnabled bool
-	Logger             func(args ...any)
 }
 
-func NewKubeDeploy(ctx context.Context, cfg KubeDeployConfig) (*KubeDeploy, error) {
+func NewKubeDeploy(ctx context.Context, cfg KubeDeployConfig) (*KubeDeploy, debugFunc, error) {
 	if cfg.Namespace == "" {
 		cfg.Namespace = petname.Generate(2, "-")
 	}
@@ -61,29 +60,18 @@ func NewKubeDeploy(ctx context.Context, cfg KubeDeployConfig) (*KubeDeploy, erro
 		cfg.Release = "otfd"
 	}
 
-	// Build and load all images into kind
-	cmd := exec.CommandContext(ctx, "make", "load-all")
+	// Build and load docker images into kind
+	cmd := exec.CommandContext(ctx, "make", "load")
 	cmd.Dir = cfg.RepoDir
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return nil, fmt.Errorf("building and loading images: %w: %s", err, string(out))
+		return nil, nodebug, fmt.Errorf("building and loading images: %w: %s", err, string(out))
 	}
-
-	// otfd image load logs something like:
-	// Image: "leg100/otfd:v0.5.0-77-g2d796a09f-dirty" with ID "sha256:a74a9ffe92d774bc7dba20d1f70d232f22da2b7a7123a6a3494377d
-
-	// Extract image tag loaded into k8s
-	imageRe := regexp.MustCompile(`"leg100/otfd:([^ ]+)"`)
-	matches := imageRe.FindStringSubmatch(string(out))
-	if matches == nil {
-		return nil, fmt.Errorf("no tag found in image load output: %s", string(out))
-	}
-	imageTag := matches[1]
 
 	// Write kind's kubeconfig to a temp file
 	config, err := os.CreateTemp("", "otf-k8s-deploy-*")
 	if err != nil {
-		return nil, err
+		return nil, nodebug, err
 	}
 
 	cmd = exec.CommandContext(ctx, "kind", "get", "kubeconfig")
@@ -91,7 +79,12 @@ func NewKubeDeploy(ctx context.Context, cfg KubeDeployConfig) (*KubeDeploy, erro
 	cmd.Stdout = config
 	cmd.Stderr = &buf
 	if err := cmd.Run(); err != nil {
-		return nil, fmt.Errorf("retrieving kind config: %w: %s", err, buf.String())
+		return nil, nodebug, fmt.Errorf("retrieving kind config: %w: %s", err, buf.String())
+	}
+
+	debugger := debugger{
+		configPath: config.Name(),
+		namespace:  cfg.Namespace,
 	}
 
 	// Install otfd helm chart
@@ -104,7 +97,7 @@ func NewKubeDeploy(ctx context.Context, cfg KubeDeployConfig) (*KubeDeploy, erro
 		"--create-namespace",
 		"--namespace", cfg.Namespace,
 		"--values", filepath.Join(cfg.RepoDir, helmTestValuesPath),
-		"--set", "image.tag=" + imageTag,
+		"--set", "image.tag=edge",
 		"--set", "logging.http=true",
 		"--set", "logging.verbosity=9",
 		"--set", "runner.executor=kubernetes",
@@ -123,7 +116,8 @@ func NewKubeDeploy(ctx context.Context, cfg KubeDeployConfig) (*KubeDeploy, erro
 	cmd = exec.CommandContext(ctx, "helm", args...)
 	out, err = cmd.CombinedOutput()
 	if err != nil {
-		return nil, fmt.Errorf("installing otfd helm chart: %w: %s", err, string(out))
+
+		return nil, debugger.debug("otfd"), fmt.Errorf("installing otfd helm chart: %w: %s", err, string(out))
 	}
 
 	// Create tunnel to otfd service so that we can communicate with it.
@@ -139,7 +133,7 @@ func NewKubeDeploy(ctx context.Context, cfg KubeDeployConfig) (*KubeDeploy, erro
 	tunnel.Stderr = &buf
 	tunnel.Stdout = w
 	if err := tunnel.Start(); err != nil {
-		return nil, fmt.Errorf("creating tunnel to cluster: %w: %s", err, buf.String())
+		return nil, debugger.debug("otfd"), fmt.Errorf("creating tunnel to cluster: %w: %s", err, buf.String())
 	}
 	// Outputs something like:
 	//Forwarding from 127.0.0.1:40009 -> 8080
@@ -147,9 +141,9 @@ func NewKubeDeploy(ctx context.Context, cfg KubeDeployConfig) (*KubeDeploy, erro
 	//
 	// Grab random local listening port
 	localPortRe := regexp.MustCompile(`Forwarding from 127.0.0.1:(\d+) -> 8080`)
-	matches = localPortRe.FindStringSubmatch(<-iochan.DelimReader(r, '\n'))
+	matches := localPortRe.FindStringSubmatch(<-iochan.DelimReader(r, '\n'))
 	if matches == nil {
-		return nil, fmt.Errorf("listening port not found in tunnel output: %s", buf.String())
+		return nil, debugger.debug("otfd"), fmt.Errorf("listening port not found in tunnel output: %s", buf.String())
 	}
 	localPort := matches[1]
 
@@ -158,21 +152,21 @@ func NewKubeDeploy(ctx context.Context, cfg KubeDeployConfig) (*KubeDeploy, erro
 		u := url.URL{Scheme: "http", Host: "localhost:" + localPort, Path: "/app/organizations"}
 		browser = exec.CommandContext(ctx, "xdg-open", u.String())
 		if err := browser.Start(); err != nil {
-			return nil, fmt.Errorf("opening browser to connect to local tunneled endpoint: %w", err)
+			return nil, nodebug, fmt.Errorf("opening browser to connect to local tunneled endpoint: %w", err)
 		}
 	}
 
 	// Extract site token from helm test values file
 	rawTestValues, err := os.ReadFile(filepath.Join(cfg.RepoDir, helmTestValuesPath))
 	if err != nil {
-		return nil, fmt.Errorf("reading test values file: %w", err)
+		return nil, nodebug, fmt.Errorf("reading test values file: %w", err)
 	}
 	var testValues struct {
 		SiteToken string `json:"siteToken"`
 	}
 	err = yaml.Unmarshal(rawTestValues, &testValues)
 	if err != nil {
-		return nil, err
+		return nil, nodebug, err
 	}
 
 	// Create TFE Client to talk to the remote otfd. We would use the OTF client
@@ -182,17 +176,17 @@ func NewKubeDeploy(ctx context.Context, cfg KubeDeployConfig) (*KubeDeploy, erro
 		Token:   testValues.SiteToken,
 	})
 	if err != nil {
-		return nil, err
+		return nil, nodebug, err
 	}
 
 	// Build k8s client
 	restcfg, err := clientcmd.BuildConfigFromFlags("", config.Name())
 	if err != nil {
-		return nil, err
+		return nil, debugger.debug("otfd"), err
 	}
 	clientset, err := kubernetes.NewForConfig(restcfg)
 	if err != nil {
-		return nil, err
+		return nil, nodebug, err
 	}
 
 	deploy := &KubeDeploy{
@@ -202,10 +196,10 @@ func NewKubeDeploy(ctx context.Context, cfg KubeDeployConfig) (*KubeDeploy, erro
 		tunnel:           tunnel,
 		browser:          browser,
 		Client:           client,
-		imageTag:         imageTag,
 		siteToken:        testValues.SiteToken,
+		debugger:         &debugger,
 	}
-	return deploy, nil
+	return deploy, nodebug, nil
 }
 
 func (k *KubeDeploy) Wait() error {
@@ -233,14 +227,14 @@ func (k *KubeDeploy) Close(deleteNamespace bool) error {
 	return nil
 }
 
-func (k *KubeDeploy) WaitPodSucceed(ctx context.Context, runID string, timeout time.Duration) error {
+func (k *KubeDeploy) WaitPodSucceed(ctx context.Context, runID string, timeout time.Duration) (debugFunc, error) {
 	if timeout == 0 {
 		timeout = time.Second * 30
 	}
 	opts := metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("otf.ninja/run-id=%s", runID),
 	}
-	return k8swait.PollUntilContextTimeout(ctx, time.Second, timeout, true, func(ctx context.Context) (bool, error) {
+	err := k8swait.PollUntilContextTimeout(ctx, time.Second, timeout, true, func(ctx context.Context) (bool, error) {
 		pods, err := k.clientset.CoreV1().Pods(k.Namespace).List(ctx, opts)
 		if err != nil {
 			return false, err
@@ -256,6 +250,7 @@ func (k *KubeDeploy) WaitPodSucceed(ctx context.Context, runID string, timeout t
 		}
 		return false, nil
 	})
+	return k.debug("otf-job"), err
 }
 
 func (k *KubeDeploy) WaitJobAndSecretDeleted(ctx context.Context, runID string) error {
@@ -292,10 +287,10 @@ func (k *KubeDeploy) WaitJobAndSecretDeleted(ctx context.Context, runID string) 
 	return err
 }
 
-func (k *KubeDeploy) InstallAgentChart(ctx context.Context, token string) error {
+func (k *KubeDeploy) InstallAgentChart(ctx context.Context, token string) (debugFunc, error) {
 	svc, err := k.clientset.CoreV1().Services(k.Namespace).Get(ctx, "otfd", metav1.GetOptions{})
 	if err != nil {
-		return err
+		return k.debug("otfd"), err
 	}
 	// Install otf-agent helm chart
 	args := []string{
@@ -304,7 +299,7 @@ func (k *KubeDeploy) InstallAgentChart(ctx context.Context, token string) error 
 		filepath.Join(k.RepoDir, "charts/otf-agent"),
 		"--kubeconfig", k.configPath,
 		"--namespace", k.Namespace,
-		"--set", "image.tag=" + k.imageTag,
+		"--set", "image.tag=edge",
 		// agent talks to otfd via its service ip
 		"--set", "url=http://" + svc.Spec.ClusterIP,
 		"--set", "token=" + token,
@@ -322,43 +317,54 @@ func (k *KubeDeploy) InstallAgentChart(ctx context.Context, token string) error 
 		args = append(args, "--set", "runner.cacheVolume.enabled=true")
 	}
 	cmd := exec.CommandContext(ctx, "helm", args...)
-	return cmd.Run()
+	return k.debug("otf-agent"), cmd.Run()
 }
 
-func (k *KubeDeploy) Debug(ctx context.Context, component string) string {
-	var sb strings.Builder
-
-	sb.WriteString("--- describe pods output ---\n")
-	cmd := exec.CommandContext(ctx,
-		"kubectl",
-		"-n", k.Namespace,
-		"--kubeconfig", k.configPath,
-		"describe",
-		"pod",
-	)
-	describeOutput, err := cmd.CombinedOutput()
-	if err != nil {
-		sb.WriteString("error running kubectl describe pod: " + err.Error())
-	} else {
-		sb.Write(describeOutput)
-	}
-	sb.WriteString("\n\n")
-
-	sb.WriteString("--- pod logs output ---\n")
-	cmd = exec.CommandContext(ctx,
-		"kubectl",
-		"-n", k.Namespace,
-		"--kubeconfig", k.configPath,
-		"logs",
-		"-l", "app.kubernetes.io/name="+component,
-	)
-	logsOutput, err := cmd.CombinedOutput()
-	if err != nil {
-		sb.WriteString("error running kubectl logs: " + err.Error())
-	} else {
-		sb.Write(logsOutput)
-	}
-	sb.WriteString("\n\n")
-
-	return sb.String()
+type debugger struct {
+	configPath string
+	namespace  string
 }
+
+type debugFunc func(context.Context) string
+
+func (d *debugger) debug(component string) debugFunc {
+	return func(ctx context.Context) string {
+		var sb strings.Builder
+
+		sb.WriteString("--- describe pods output ---\n")
+		cmd := exec.CommandContext(ctx,
+			"kubectl",
+			"-n", d.namespace,
+			"--kubeconfig", d.configPath,
+			"describe",
+			"pod",
+		)
+		describeOutput, err := cmd.CombinedOutput()
+		if err != nil {
+			sb.WriteString("error running kubectl describe pod: " + err.Error())
+		} else {
+			sb.Write(describeOutput)
+		}
+		sb.WriteString("\n\n")
+
+		sb.WriteString("--- pod logs output ---\n")
+		cmd = exec.CommandContext(ctx,
+			"kubectl",
+			"-n", d.namespace,
+			"--kubeconfig", d.configPath,
+			"logs",
+			"-l", "app.kubernetes.io/name="+component,
+		)
+		logsOutput, err := cmd.CombinedOutput()
+		if err != nil {
+			sb.WriteString("error running kubectl logs: " + err.Error())
+		} else {
+			sb.Write(logsOutput)
+		}
+		sb.WriteString("\n\n")
+
+		return sb.String()
+	}
+}
+
+func nodebug(ctx context.Context) string { return "" }
