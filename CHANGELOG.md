@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.4](https://github.com/leg100/otf/compare/v0.5.3...v0.5.4) (2026-01-28)
+
+
+### Bug Fixes
+
+* **ci:** disable sbom for docker images ([7d56ea8](https://github.com/leg100/otf/commit/7d56ea8555c5484046919fbbc940b5c90cd990b0))
+
 ## [0.5.3](https://github.com/leg100/otf/compare/v0.5.2...v0.5.3) (2026-01-27)
 
 
