@@ -260,7 +260,7 @@ func (f *factory) NewWorkspace(ctx context.Context, opts CreateOptions) (*Worksp
 	if opts.TriggerPrefixes != nil {
 		ws.TriggerPrefixes = opts.TriggerPrefixes
 	}
-	// Enforce three-way mutually exclusivity between:
+	// Enforce three-way mutual exclusivity between:
 	// (a) tags-regex
 	// (b) trigger-patterns
 	// (c) always-trigger=true
@@ -422,7 +422,7 @@ func (ws *Workspace) Update(opts UpdateOptions) (*bool, error) {
 		ws.TriggerPrefixes = opts.TriggerPrefixes
 		updated = true
 	}
-	// Enforce three-way mutually exclusivity between:
+	// Enforce three-way mutual exclusivity between:
 	// (a) tags-regex
 	// (b) trigger-patterns
 	// (c) always-trigger=true
@@ -474,7 +474,7 @@ func (ws *Workspace) Update(opts UpdateOptions) (*bool, error) {
 			updated = true
 		} else {
 			// modify existing connection
-			if (opts.TagsRegex != nil && *opts.ConnectOptions.TagsRegex != "") {
+			if opts.TagsRegex != nil && *opts.ConnectOptions.TagsRegex != "" {
 				if err := ws.setTagsRegex(*opts.TagsRegex); err != nil {
 					return nil, fmt.Errorf("invalid tags-regex: %w", err)
 				}
