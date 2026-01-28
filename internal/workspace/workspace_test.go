@@ -75,10 +75,26 @@ func TestNewWorkspace(t *testing.T) {
 				Organization:    &org1,
 				TriggerPatterns: []string{"/foo/**/*.tf"},
 				ConnectOptions: &ConnectOptions{
-					TagsRegex: internal.Ptr("\\d+"),
+					RepoPath:      internal.Ptr(vcs.NewMustRepo("leg100", "otf")),
+					VCSProviderID: &vcsProviderID,
+					TagsRegex:     internal.Ptr("\\d+"),
 				},
 			},
 			wantError: ErrTagsRegexAndTriggerPatterns,
+		},
+		{
+			name: "specifying trigger patterns but empty string for tags regex is ok",
+			opts: CreateOptions{
+				Name:            internal.Ptr("my-workspace"),
+				Organization:    &org1,
+				TriggerPatterns: []string{"/foo/**/*.tf"},
+				ConnectOptions: &ConnectOptions{
+					RepoPath:      internal.Ptr(vcs.NewMustRepo("leg100", "otf")),
+					VCSProviderID: &vcsProviderID,
+					TagsRegex:     internal.Ptr(""),
+				},
+			},
+			wantError: nil,
 		},
 		{
 			name: "specifying both tags regex and always trigger",
@@ -200,10 +216,26 @@ func TestWorkspace_UpdateError(t *testing.T) {
 				Name:            internal.Ptr("my-workspace"),
 				TriggerPatterns: []string{"/foo/**/*.tf"},
 				ConnectOptions: &ConnectOptions{
-					TagsRegex: internal.Ptr("\\d+"),
+					RepoPath:      internal.Ptr(vcs.NewMustRepo("leg100", "otf")),
+					VCSProviderID: &vcsProviderID,
+					TagsRegex:     internal.Ptr("\\d+"),
 				},
 			},
 			want: ErrTagsRegexAndTriggerPatterns,
+		},
+		{
+			name: "specifying trigger patterns but empty string for tags regex is ok",
+			ws:   &Workspace{Name: "dev", Organization: org1},
+			opts: UpdateOptions{
+				Name:            internal.Ptr("my-workspace"),
+				TriggerPatterns: []string{"/foo/**/*.tf"},
+				ConnectOptions: &ConnectOptions{
+					RepoPath:      internal.Ptr(vcs.NewMustRepo("leg100", "otf")),
+					VCSProviderID: &vcsProviderID,
+					TagsRegex:     internal.Ptr(""),
+				},
+			},
+			want: nil,
 		},
 		{
 			name: "specifying both tags regex and always trigger",
