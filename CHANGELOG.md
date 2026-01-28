@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.6](https://github.com/leg100/otf/compare/v0.5.5...v0.5.6) (2026-01-28)
+
+
+### Bug Fixes
+
+* **ci:** skip redundant helm chart test ([8f90e9e](https://github.com/leg100/otf/commit/8f90e9e826d7827915d6d7f1c3a429572918aaf8))
+
 ## [0.5.5](https://github.com/leg100/otf/compare/v0.5.4...v0.5.5) (2026-01-28)
 
 
