@@ -72,6 +72,7 @@ dockers_v2:
     - linux/amd64
     - linux/arm64
   flags: ["--target", "otfd"]
+  sbom: false
 - id: otf-agent
   ids: [otf-agent]
   images:
@@ -84,6 +85,7 @@ dockers_v2:
     - linux/amd64
     - linux/arm64
   flags: ["--target", "otf-agent"]
+  sbom: false
 - id: otf-job
   ids: [otf-job]
   images:
@@ -96,6 +98,7 @@ dockers_v2:
     - linux/amd64
     - linux/arm64
   flags: ["--target", "otf-job"]
+  sbom: false
 checksum:
   name_template: 'checksums.txt'
 changelog:

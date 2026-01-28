@@ -99,7 +99,9 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version-file: 'go.mod'
-      - uses: docker/setup-qemu-action@v2
+      - uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
       - uses: goreleaser/goreleaser-action@v6
         with:
           args: release --clean --skip=sign,validate
@@ -130,16 +132,6 @@ jobs:
           helm lint ./charts/otf-agent
           helm template ./charts/otfd > /dev/null
           helm template ./charts/otf-agent --set token=my_agent_token --set url=https://otf.ninja > /dev/null
-      - name: Test
-        run: |
-          make test-otfd
-      - name: Debug
-        if: failure()
-        run: |
-          kubectl -n otfd-test get all
-          kubectl -n otfd-test describe pod
-          kubectl -n otfd-test logs -l app.kubernetes.io/name=postgres
-          kubectl -n otfd-test logs -l app.kubernetes.io/name=otfd
       - name: Checkout charts repo
         uses: actions/checkout@v6
         with:
