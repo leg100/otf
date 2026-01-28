@@ -50,14 +50,9 @@ compose-rm:
 postgres:
 	docker compose -f docker-compose.testing.yml up -d postgres
 
-# Install staticcheck linter
-.PHONY: install-linter
-install-linter:
-	go get -tool honnef.co/go/tools/cmd/staticcheck@2025.1.1
-
 # Run staticcheck metalinter recursively against code
 .PHONY: lint
-lint: install-linter
+lint:
 	go tool staticcheck ./...
 
 # Run go fmt against code
