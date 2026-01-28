@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.5](https://github.com/leg100/otf/compare/v0.5.4...v0.5.5) (2026-01-28)
+
+
+### Bug Fixes
+
+* **ci:** support multi platform docker builds ([6af386f](https://github.com/leg100/otf/commit/6af386f9a580465133d6a5cbc6ffdfb01c557e73))
+
 ## [0.5.4](https://github.com/leg100/otf/compare/v0.5.3...v0.5.4) (2026-01-28)
 
 
