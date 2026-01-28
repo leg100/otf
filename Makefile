@@ -1,3 +1,5 @@
+LD_FLAGS = '-s -w -X github.com/leg100/otf/internal.Version=edge'
+
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
 GOBIN=$(shell go env GOPATH)/bin
@@ -16,7 +18,7 @@ test:
 .PHONY: build
 build:
 	go build \
-		-ldflags '-s -w -X github.com/leg100/otf/internal.Version=edge' \
+		-ldflags $(LD_FLAGS) \
 		-o ./_build/linux/amd64/ \
 		./cmd/otfd ./cmd/otf-job ./cmd/otf-agent
 
