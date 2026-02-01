@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.5.7](https://github.com/leg100/otf/compare/v0.5.6...v0.5.7) (2026-02-01)
+
+
+### Bug Fixes
+
+* **dockerfile:** helm provider requires home dir ([86bf7b7](https://github.com/leg100/otf/commit/86bf7b7269843e11cc1454e350298c8d8afecbcf))
+* tags regex empty string and non-zero trigger patterns should not throw error ([#874](https://github.com/leg100/otf/issues/874)) ([741fc3b](https://github.com/leg100/otf/commit/741fc3bffbdebdd5bab4e9d649f9a48cd398811f))
+* **ui:** auto show force cancel button after cool off period ([72b74ca](https://github.com/leg100/otf/commit/72b74caa3a636e7069ebf86dc1773d7c726238a3))
+
+
+### Miscellaneous
+
+* parameterize ld flags in makefile ([92fd5a4](https://github.com/leg100/otf/commit/92fd5a456eb817e11d6537772e5938b9a497661a))
+* remove unnecessary install-linter make task ([dc36aac](https://github.com/leg100/otf/commit/dc36aaca47a3c4595fd626806de02a2e9a031704))
+
 ## [0.5.6](https://github.com/leg100/otf/compare/v0.5.5...v0.5.6) (2026-01-28)
 
 
