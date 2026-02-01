@@ -270,8 +270,7 @@ WHERE run_id = $2
 			if run.CancelSignaledAt != cancelSignaledAt && run.CancelSignaledAt != nil {
 				_, err := db.Exec(ctx, `
 UPDATE runs
-SET
-    cancel_signaled_at = $1
+SET cancel_signaled_at = $1
 WHERE run_id = $2
 `,
 					*run.CancelSignaledAt,
@@ -285,6 +284,21 @@ WHERE run_id = $2
 			return nil
 		},
 	)
+}
+
+// triggerEvent triggers a database event for a run, by executing an no-op
+// update.
+func (db *pgdb) triggerEvent(ctx context.Context, runID resource.TfeID) error {
+	return db.Tx(ctx, func(ctx context.Context) error {
+		_, err := db.Exec(ctx, `
+UPDATE runs
+SET run_id = run_id
+WHERE run_id = $1
+`,
+			runID,
+		)
+		return err
+	})
 }
 
 func (db *pgdb) CreatePlanReport(ctx context.Context, runID resource.TfeID, resource, output Report) error {

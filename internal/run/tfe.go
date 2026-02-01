@@ -460,12 +460,12 @@ func (a *tfe) toRun(from *Run, ctx context.Context) (*TFERun, error) {
 		to.CostEstimate = &types.CostEstimate{ID: resource.ConvertTfeID(from.ID, "ce")}
 	}
 	//
-	// go-tfe integration tests expect this parameter to be set even if a run
-	// has already been successfully canceled gracefully and its status has been
-	// set to RunCanceled; whereas OTF only permits a run to be force canceled
-	// if the run has not been successfully canceled and the run is yet to reach
-	// RunCanceled status. As a compromise, it is set in either of these
-	// circumstances.
+	// go-tfe integration tests expect the ForceCancelAvailableAt parameter to
+	// be set even if a run has already been successfully canceled gracefully
+	// and its status has been set to RunCanceled; whereas OTF only permits a
+	// run to be force canceled if the run has not been successfully canceled
+	// and the run is yet to reach RunCanceled status. As a compromise, it is
+	// set in either of these circumstances.
 	if timestamps.CanceledAt != nil {
 		// run successfully canceled
 		cooledOff := timestamps.CanceledAt.Add(forceCancelCoolOff)

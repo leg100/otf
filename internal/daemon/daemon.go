@@ -245,6 +245,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		EngineService:        engineService,
 		TokensService:        tokensService,
 		UsersService:         userService,
+		DaemonCtx:            ctx,
 	})
 	moduleService := module.NewService(module.Options{
 		Logger:             logger,

@@ -46,6 +46,7 @@ type (
 		afterEnqueueApplyHooks []func(context.Context, *Run) error
 		broker                 pubsub.SubscriptionService[*Event]
 		tailer                 *tailer
+		daemonCtx              context.Context
 
 		*factory
 	}
@@ -53,6 +54,7 @@ type (
 	Options struct {
 		Authorizer         *authz.Authorizer
 		VCSEventSubscriber vcs.Subscriber
+		DaemonCtx          context.Context
 
 		WorkspaceService     *workspace.Service
 		OrganizationService  *organization.Service
@@ -79,6 +81,7 @@ func NewService(opts Options) *Service {
 		db:         db,
 		cache:      opts.Cache,
 		Interface:  opts.Authorizer,
+		daemonCtx:  opts.DaemonCtx,
 	}
 	svc.MetricsCollector = &MetricsCollector{
 		service: &svc,
@@ -440,6 +443,19 @@ func (s *Service) Cancel(ctx context.Context, runID resource.TfeID) error {
 	}
 	if run.Status != runstatus.Canceled && run.CancelSignaledAt != nil {
 		s.V(0).Info("signaled cancelation", "id", runID, "subject", subject)
+
+		// After the cool off period, send an event, which'll refresh the UI to
+		// inform the user the run can be force canceled.
+		go func() {
+			select {
+			case <-s.daemonCtx.Done():
+				return
+			case <-time.After(forceCancelCoolOff):
+			}
+			if err := s.db.triggerEvent(s.daemonCtx, run.ID); err != nil {
+				s.Error(err, "updating run after for cancel cool off period", "run", run)
+			}
+		}()
 	} else {
 		s.V(0).Info("canceled run", "id", runID, "subject", subject)
 	}
