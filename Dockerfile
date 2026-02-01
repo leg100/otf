@@ -19,7 +19,7 @@ RUN --mount=type=cache,target=/etc/apk/cache \
 # Create non-root user and group, which will be used in the final image. We
 # can't switch to it now, because the change only lasts until the end of the
 # stage.
-RUN adduser -D -H -u 4096 otf
+RUN adduser -D -u 4096 otf
 
 ARG TARGETPLATFORM
 
