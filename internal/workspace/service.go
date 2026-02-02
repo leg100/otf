@@ -210,6 +210,15 @@ func (s *Service) GetByName(ctx context.Context, organization organization.Name,
 	return ws, nil
 }
 
+// GetWorkspaceName retrieves a workspace's name given its ID.
+func (s *Service) GetWorkspaceName(ctx context.Context, workspaceID resource.TfeID) (string, error) {
+	ws, err := s.Get(ctx, workspaceID)
+	if err != nil {
+		return "", err
+	}
+	return ws.Name, nil
+}
+
 func (s *Service) List(ctx context.Context, opts ListOptions) (*resource.Page[*Workspace], error) {
 	if opts.Organization == nil {
 		// subject needs perms on site to list workspaces across site

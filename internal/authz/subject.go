@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-// unexported key types prevents collisions
+ unexported key types prevents collisions
 type (
 	subjectCtxKeyType string
 )

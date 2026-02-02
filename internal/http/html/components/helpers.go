@@ -109,3 +109,16 @@ func Cookie(ctx context.Context, name string) string {
 	}
 	return ""
 }
+
+//func Organization(ctx context.Context) string {
+//	request := html.RequestFromContext(ctx)
+//	if request == nil {
+//		return ""
+//	}
+//	// Make a copy of URL to avoid mutating the original.
+//	u := new(url.URL)
+//	*u = *request.URL
+//
+//	u.RawQuery = ""
+//	return u.String()
+//}
