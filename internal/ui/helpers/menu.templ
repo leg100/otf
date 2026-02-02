@@ -1,4 +1,4 @@
-package components
+package helpers
 
 import (
 	"context"
@@ -14,6 +14,15 @@ templ menu(organization resource.ID) {
 		@siteMenu()
 	}
 	// don't show menu if user unauthenticated
+}
+
+templ workspaceMenu(workspaceID resource.ID) {
+	<ul id="workspace-menu" class="menu w-full">
+		@MenuItem("Overview", paths.Workspace(workspaceID))
+		@MenuItem("Runs", paths.Runs(workspaceID), "/app/runs")
+		@MenuItem("Variables", paths.Variables(workspaceID), "/app/variables")
+		@MenuItem("Settings", paths.EditWorkspace(workspaceID))
+	</ul>
 }
 
 templ organizationMenu(organization resource.ID) {

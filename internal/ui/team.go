@@ -10,12 +10,12 @@ import (
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
-	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/tokens"
+	"github.com/leg100/otf/internal/ui/helpers"
 	"github.com/leg100/otf/internal/user"
 )
 
@@ -168,13 +168,13 @@ func (h *teamHandlers) getTeam(w http.ResponseWriter, r *http.Request) {
 		canDeleteTeam:   h.authorizer.CanAccess(r.Context(), authz.DeleteTeamAction, team.Organization),
 		canAddMember:    h.authorizer.CanAccess(r.Context(), authz.AddTeamMembershipAction, team.Organization),
 		canRemoveMember: h.authorizer.CanAccess(r.Context(), authz.RemoveTeamMembershipAction, team.Organization),
-		dropdown: components.SearchDropdownProps{
+		dropdown: helpers.SearchDropdownProps{
 			Name:        "username",
 			Available:   internal.ConvertSliceToString(nonMemberUsernames),
 			Existing:    internal.ConvertSliceToString(usernames),
 			Action:      templ.SafeURL(paths.AddMemberTeam(team.ID)),
 			Placeholder: "Add user",
-			Width:       components.WideDropDown,
+			Width:       helpers.WideDropDown,
 		},
 	}
 	html.Render(getTeam(props), w, r)

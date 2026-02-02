@@ -1,5 +1,5 @@
-// Package components provides shared components for templ templates.
-package components
+// Package helpers provides shared components for templ templates.
+package helpers
 
 import (
 	"bytes"

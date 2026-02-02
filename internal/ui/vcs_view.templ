@@ -3,10 +3,10 @@ package ui
 import (
 	"errors"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/components/paths"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/ui/helpers"
 	"github.com/leg100/otf/internal/vcs"
 	"time"
 )
@@ -18,10 +18,10 @@ type listProps struct {
 }
 
 templ list(props listProps) {
-	@components.Layout(components.LayoutProps{
+	@helpers.Layout(helpers.LayoutProps{
 		Title:        "vcs providers",
 		Organization: props.organization,
-		Breadcrumbs: []components.Breadcrumb{
+		Breadcrumbs: []helpers.Breadcrumb{
 			{Name: "VCS Providers"},
 		},
 	}) {
@@ -40,7 +40,7 @@ templ list(props listProps) {
 			}
 		</div>
 		<div id="content-list">
-			@components.Table(
+			@helpers.Table(
 				&vcsTable{Actions: tableAction},
 				props.providers,
 			)
@@ -70,7 +70,7 @@ templ (t vcsTable) Row(provider *vcs.Provider) {
 			</div>
 		</td>
 		<td>
-			@components.Identifier(provider.ID)
+			@helpers.Identifier(provider.ID)
 		</td>
 		<td>
 			{ internal.Ago(time.Now(), provider.CreatedAt) }
@@ -83,16 +83,16 @@ templ (t vcsTable) Row(provider *vcs.Provider) {
 
 templ tableAction(vcsProviderID resource.TfeID) {
 	<form id="edit-vcs-provider" action={ paths.EditVCSProvider(vcsProviderID) }>
-		@components.EditButton()
+		@helpers.EditButton()
 		<input type="hidden" name="id" value={ vcsProviderID.String() }/>
 	</form>
 }
 
 templ edit(provider *vcs.Provider) {
-	@components.Layout(components.LayoutProps{
+	@helpers.Layout(helpers.LayoutProps{
 		Title:        "edit vcs provider",
 		Organization: provider.Organization,
-		Breadcrumbs: []components.Breadcrumb{
+		Breadcrumbs: []helpers.Breadcrumb{
 			{Name: "VCS Providers", Link: paths.VCSProviders(provider.Organization)},
 			{Name: provider.String()},
 			{Name: "settings"},
@@ -119,10 +119,10 @@ type newProviderProps struct {
 }
 
 templ newProvider(props newProviderProps) {
-	@components.Layout(components.LayoutProps{
+	@helpers.Layout(helpers.LayoutProps{
 		Title:        "new vcs provider",
 		Organization: props.organization,
-		Breadcrumbs: []components.Breadcrumb{
+		Breadcrumbs: []helpers.Breadcrumb{
 			{Name: "New VCS Provider"},
 		},
 	}) {

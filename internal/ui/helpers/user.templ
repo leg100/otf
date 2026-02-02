@@ -1,17 +1,17 @@
-package components
+package helpers
 
 import "github.com/leg100/otf/internal/authz"
 
 templ CurrentUserAvatar() {
 	{{
-	subject, err := authz.SubjectFromContext(ctx)
-	if err != nil {
-		return err
-	}
-	// If the subject has a picture, great, otherwise just render a generic user avatar.
-	user, hasPicture := subject.(interface {
-		PictureURL() *string
-	})
+		subject, err := authz.SubjectFromContext(ctx)
+		if err != nil {
+			return err
+		}
+		// If the subject has a picture, great, otherwise just render a generic user avatar.
+		user, hasPicture := subject.(interface {
+			PictureURL() *string
+		})
 	}}
 	if hasPicture {
 		@Avatar(user.PictureURL())

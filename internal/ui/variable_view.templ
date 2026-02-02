@@ -1,19 +1,20 @@
 package ui
 
 import (
-	"github.com/leg100/otf/internal/http/html/components"
+	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/html/components/paths"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/ui/helpers"
 	"github.com/leg100/otf/internal/variable"
 	"github.com/leg100/otf/internal/workspace"
 )
 
 templ newWorkspaceVariable(ws *workspace.Workspace) {
-	@components.Layout(components.LayoutProps{
+	@helpers.Layout(helpers.LayoutProps{
 		Title:        "new variable",
 		Organization: ws.Organization,
-		Breadcrumbs: []components.Breadcrumb{
+		Breadcrumbs: []helpers.Breadcrumb{
 			{Name: "Workspaces", Link: paths.Workspaces(ws.Organization)},
 			{Name: ws.Name, Link: paths.Workspace(ws.ID)},
 			{Name: "new"},
@@ -29,14 +30,14 @@ templ newWorkspaceVariable(ws *workspace.Workspace) {
 
 type newVariableSetProps struct {
 	organization        organization.Name
-	availableWorkspaces []workspaceInfo
+	availableWorkspaces []resource.Info
 }
 
 templ newVariableSet(props newVariableSetProps) {
-	@components.Layout(components.LayoutProps{
+	@helpers.Layout(helpers.LayoutProps{
 		Title:        "new variable set",
 		Organization: props.organization,
-		Breadcrumbs: []components.Breadcrumb{
+		Breadcrumbs: []helpers.Breadcrumb{
 			{Name: "Variable Sets", Link: paths.VariableSets(props.organization)},
 			{Name: "new"},
 		},
@@ -46,16 +47,16 @@ templ newVariableSet(props newVariableSetProps) {
 			set:                 &variable.VariableSet{Global: true}, // set global as default
 			action:              paths.CreateVariableSet(props.organization),
 			availableWorkspaces: props.availableWorkspaces,
-			existingWorkspaces:  []workspaceInfo{},
+			existingWorkspaces:  []resource.Info{},
 		})
 	}
 }
 
 templ newVSV(vs *variable.VariableSet) {
-	@components.Layout(components.LayoutProps{
+	@helpers.Layout(helpers.LayoutProps{
 		Title:        "new variable | variable sets",
 		Organization: vs.Organization,
-		Breadcrumbs: []components.Breadcrumb{
+		Breadcrumbs: []helpers.Breadcrumb{
 			{Name: "Variable Sets", Link: paths.VariableSets(vs.Organization)},
 			{Name: vs.Name, Link: paths.VariableSet(vs.ID)},
 			{Name: "new variable"},
@@ -85,18 +86,19 @@ type variableRow struct {
 }
 
 templ listWorkspaceVariables(props listWorkspaceVariablesProps) {
-	@components.Layout(components.LayoutProps{
+	@helpers.Layout(helpers.LayoutProps{
 		Title:        "variables",
 		Organization: props.ws.Organization,
+		Workspace:    internal.Ptr(props.ws.Info()),
 		ContentLinks: WorkspaceHeaderLinks(props.ws.ID, props.canUpdateWorkspace),
-		Breadcrumbs: []components.Breadcrumb{
+		Breadcrumbs: []helpers.Breadcrumb{
 			{Name: "Workspaces", Link: paths.Workspaces(props.ws.Organization)},
 			{Name: props.ws.Name, Link: paths.Workspace(props.ws.ID)},
 			{Name: "variables", Link: paths.Variables(props.ws.ID)},
 		},
 	}) {
 		<div id="variables-table">
-			@components.UnpaginatedTable(
+			@helpers.UnpaginatedTable(
 				&variablesTable{
 					canDeleteVariable:       props.canCreateVariable,
 					workspaceVariablesTable: true,
@@ -119,16 +121,16 @@ type listVariableSetsProps struct {
 }
 
 templ listVariableSets(props listVariableSetsProps) {
-	@components.Layout(components.LayoutProps{
+	@helpers.Layout(helpers.LayoutProps{
 		Title:          "variable sets",
 		Organization:   props.organization,
 		ContentActions: listVariableSetsActions(props),
-		Breadcrumbs: []components.Breadcrumb{
+		Breadcrumbs: []helpers.Breadcrumb{
 			{Name: "Variable Sets"},
 		},
 	}) {
 		<div id="content-list">
-			@components.Table(&listVariableSetsTable{}, props.sets)
+			@helpers.Table(&listVariableSetsTable{}, props.sets)
 		</div>
 	}
 }
@@ -159,7 +161,7 @@ templ (t listVariableSetsTable) Row(vs *variable.VariableSet) {
 			</a>
 		</td>
 		<td>
-			@components.Identifier(vs.ID)
+			@helpers.Identifier(vs.ID)
 		</td>
 		<td>
 			if vs.Global {
@@ -177,10 +179,10 @@ type editWorkspaceVariableProps struct {
 }
 
 templ editWorkspaceVariable(props editWorkspaceVariableProps) {
-	@components.Layout(components.LayoutProps{
+	@helpers.Layout(helpers.LayoutProps{
 		Title:        "edit | " + props.variable.ID.String(),
 		Organization: props.ws.Organization,
-		Breadcrumbs: []components.Breadcrumb{
+		Breadcrumbs: []helpers.Breadcrumb{
 			{Name: "Workspaces", Link: paths.Workspaces(props.ws.Organization)},
 			{Name: props.ws.Name, Link: paths.Workspace(props.ws.ID)},
 			{Name: "Variables", Link: paths.Variables(props.ws.ID)},
@@ -199,16 +201,16 @@ templ editWorkspaceVariable(props editWorkspaceVariableProps) {
 type editVariableSetProps struct {
 	set                 *variable.VariableSet
 	rows                []variableRow
-	availableWorkspaces []workspaceInfo
-	existingWorkspaces  []workspaceInfo
+	availableWorkspaces []resource.Info
+	existingWorkspaces  []resource.Info
 	canDeleteVariable   bool
 }
 
 templ editVariableSet(props editVariableSetProps) {
-	@components.Layout(components.LayoutProps{
+	@helpers.Layout(helpers.LayoutProps{
 		Title:        "edit variable set",
 		Organization: props.set.Organization,
-		Breadcrumbs: []components.Breadcrumb{
+		Breadcrumbs: []helpers.Breadcrumb{
 			{Name: "Variable Sets", Link: paths.VariableSets(props.set.Organization)},
 			{Name: props.set.Name},
 			{Name: "edit"},
@@ -224,7 +226,7 @@ templ editVariableSet(props editVariableSetProps) {
 		})
 		<hr class="my-4"/>
 		<h3 class="text-xl">Variables</h3>
-		@components.UnpaginatedTable(
+		@helpers.UnpaginatedTable(
 			&variablesTable{
 				canDeleteVariable: props.canDeleteVariable,
 			},
@@ -242,10 +244,10 @@ type editVSVProps struct {
 }
 
 templ editVSV(props editVSVProps) {
-	@components.Layout(components.LayoutProps{
+	@helpers.Layout(helpers.LayoutProps{
 		Title:        "edit variable set variable",
 		Organization: props.set.Organization,
-		Breadcrumbs: []components.Breadcrumb{
+		Breadcrumbs: []helpers.Breadcrumb{
 			{Name: "Variable Sets", Link: paths.VariableSets(props.set.Organization)},
 			{Name: props.set.Name, Link: paths.EditVariableSet(props.set.ID)},
 			{Name: "Variables"},
@@ -335,8 +337,8 @@ type variableSetFormProps struct {
 	set                 *variable.VariableSet
 	edit                bool
 	action              templ.SafeURL
-	availableWorkspaces []workspaceInfo
-	existingWorkspaces  []workspaceInfo
+	availableWorkspaces []resource.Info
+	existingWorkspaces  []resource.Info
 }
 
 templ variableSetForm(props variableSetFormProps) {
@@ -361,7 +363,7 @@ templ variableSetForm(props variableSetFormProps) {
 					<input class="peer" type="radio" name="global" value="false" id="workspace-scoped" checked?={ !props.set.Global } required/>
 					<label for="workspace-scoped">Apply to specific workspaces</label>
 					<span class="col-start-2 description">Only the selected workspaces will access this variable set.</span>
-					<script src={ components.AssetPath(ctx, "/static/js/dropdown.js") }></script>
+					<script src={ helpers.AssetPath(ctx, "/static/js/dropdown.js") }></script>
 					<div
 						class="hidden relative col-start-2 mt-2 w-full peer-checked:block"
 						x-data={ "dropdown(" + toJSON(props.existingWorkspaces) + ", " + toJSON(props.availableWorkspaces) + ")" }
@@ -454,7 +456,7 @@ templ (t variablesTable) Row(v variableRow) {
 			if v.overwritten {
 				<span title="Variable has been overwritten by a workspace variable with higher precedence" class="badge badge-warning badge-sm">overwritten</span>
 			}
-			@components.Strikethrough(v.overwritten) {
+			@helpers.Strikethrough(v.overwritten) {
 				{ v.Key }
 			}
 		</td>
@@ -468,14 +470,14 @@ templ (t variablesTable) Row(v variableRow) {
 		<td>{ string(v.Category) }</td>
 		<td class="flex gap-2 text-right">
 			<form title="Edit variable" action={ t.editPath(v) } method="GET">
-				@components.EditButton()
+				@helpers.EditButton()
 			</form>
 			// Hide the delete button when this is a workspace variables table
 			// and this is a variable set variable - users must instead go the
 			// variable set's page to delete the variable.
 			if !(t.workspaceVariablesTable && v.set != nil) && t.canDeleteVariable {
 				<form title="Delete variable" action={ t.deletePath(v) } method="POST">
-					@components.DeleteButton()
+					@helpers.DeleteButton()
 				</form>
 			}
 		</td>

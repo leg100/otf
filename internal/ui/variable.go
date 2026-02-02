@@ -35,11 +35,6 @@ type (
 		CanAccess(context.Context, authz.Action, resource.ID) bool
 	}
 
-	workspaceInfo struct {
-		ID   resource.TfeID `json:"id"`
-		Name string         `json:"name"`
-	}
-
 	createVariableParams struct {
 		Key         *string `schema:"key,required"`
 		Value       *string
@@ -330,7 +325,7 @@ func (h *variableHandlers) createVariableSet(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	var workspaces []workspaceInfo
+	var workspaces []resource.Info
 	if err := json.Unmarshal([]byte(params.WorkspacesJSON), &workspaces); err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -376,12 +371,12 @@ func (h *variableHandlers) editVariableSet(w http.ResponseWriter, r *http.Reques
 	}
 	// create list of existing workspaces and remove them from available
 	// workspaces
-	existingWorkspaces := make([]workspaceInfo, len(set.Workspaces))
+	existingWorkspaces := make([]resource.Info, len(set.Workspaces))
 	for i, existing := range set.Workspaces {
 		for j, avail := range availableWorkspaces {
 			if avail.ID == existing {
 				// add to existing
-				existingWorkspaces[i] = workspaceInfo{Name: avail.Name, ID: avail.ID}
+				existingWorkspaces[i] = resource.Info{Name: avail.Name, ID: avail.ID}
 				// remove from available
 				availableWorkspaces = append(availableWorkspaces[:j], availableWorkspaces[j+1:]...)
 				break
@@ -419,7 +414,7 @@ func (h *variableHandlers) updateVariableSet(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	var workspaces []workspaceInfo
+	var workspaces []resource.Info
 	if err := json.Unmarshal([]byte(params.WorkspacesJSON), &workspaces); err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -564,7 +559,7 @@ func (h *variableHandlers) deleteVariableSetVariable(w http.ResponseWriter, r *h
 	http.Redirect(w, r, paths.EditVariableSet(set.ID), http.StatusFound)
 }
 
-func (h *variableHandlers) getAvailableWorkspaces(ctx context.Context, org organization.Name) ([]workspaceInfo, error) {
+func (h *variableHandlers) getAvailableWorkspaces(ctx context.Context, org organization.Name) ([]resource.Info, error) {
 	// retrieve names of all workspaces in org to show in dropdown widget
 	workspaces, err := resource.ListAll(func(opts resource.PageOptions) (*resource.Page[*workspace.Workspace], error) {
 		return h.workspaces.List(ctx, workspace.ListOptions{
@@ -576,9 +571,9 @@ func (h *variableHandlers) getAvailableWorkspaces(ctx context.Context, org organ
 		return nil, err
 	}
 
-	availableWorkspaces := make([]workspaceInfo, len(workspaces))
+	availableWorkspaces := make([]resource.Info, len(workspaces))
 	for i, ws := range workspaces {
-		availableWorkspaces[i] = workspaceInfo{
+		availableWorkspaces[i] = resource.Info{
 			ID:   ws.ID,
 			Name: ws.Name,
 		}

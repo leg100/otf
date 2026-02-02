@@ -3,8 +3,8 @@ package ui
 import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/github"
-	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/components/paths"
+	"github.com/leg100/otf/internal/ui/helpers"
 	"github.com/leg100/otf/internal/vcs"
 	"strconv"
 )
@@ -15,13 +15,13 @@ type newAppViewProps struct {
 }
 
 templ newAppView(props newAppViewProps) {
-	@components.Layout(components.LayoutProps{
+	@helpers.Layout(helpers.LayoutProps{
 		Title: "select app owner",
-		Breadcrumbs: []components.Breadcrumb{
+		Breadcrumbs: []helpers.Breadcrumb{
 			{Name: "Create GitHub app"},
 		},
 	}) {
-		<script src={ components.AssetPath(ctx, "/static/js/github_apps_new.js") }></script>
+		<script src={ helpers.AssetPath(ctx, "/static/js/github_apps_new.js") }></script>
 		<div x-data={ "action('" + props.githubHostname + "', '" + props.manifest + "')" }>
 			<form class="flex flex-col gap-4" :action="action" method="post">
 				<div class="field">
@@ -52,14 +52,14 @@ type getAppsProps struct {
 }
 
 templ getApps(props getAppsProps) {
-	@components.Layout(components.LayoutProps{
+	@helpers.Layout(helpers.LayoutProps{
 		Title: "github app",
-		Breadcrumbs: []components.Breadcrumb{
+		Breadcrumbs: []helpers.Breadcrumb{
 			{Name: "GitHub app"},
 		},
 	}) {
 		if props.app != nil {
-			@components.UnpaginatedTable(
+			@helpers.UnpaginatedTable(
 				&appTable{githubHostname: props.githubHostname, canDeleteApp: props.canDeleteApp},
 				[]*github.App{props.app},
 			)
@@ -70,11 +70,11 @@ templ getApps(props getAppsProps) {
 					<span>
 						Install
 					</span>
-					@components.ExternalIcon()
+					@helpers.ExternalIcon()
 				</button>
 			</form>
 			<div id="installations">
-				@components.UnpaginatedTable(
+				@helpers.UnpaginatedTable(
 					&installsTable{},
 					props.installations,
 				)
@@ -108,12 +108,12 @@ templ (t appTable) Row(app *github.App) {
 		<td>
 			<a class="flex underline gap-1 items-center" href={ templ.SafeURL(app.URL(t.githubHostname)) } target="GithubTab">
 				<span>{ app.String() }</span>
-				@components.ExternalIcon()
+				@helpers.ExternalIcon()
 			</a>
 		</td>
 		<td>
 			<span class="identifier">
-				@components.CopyableContent() {
+				@helpers.CopyableContent() {
 					{ int(app.ID) }
 				}
 			</span>
@@ -121,7 +121,7 @@ templ (t appTable) Row(app *github.App) {
 		<td>
 			if t.canDeleteApp {
 				<form action={ paths.DeleteGithubApp(app.ID) } method="POST">
-					@components.DeleteButton()
+					@helpers.DeleteButton()
 					<input type="hidden" name="id" value={ int(app.ID) }/>
 				</form>
 			}
@@ -149,20 +149,20 @@ templ (t installsTable) Row(install vcs.Installation) {
 					<span>
 						{ install.String() }
 					</span>
-					@components.ExternalIcon()
+					@helpers.ExternalIcon()
 				</a>
 			</span>
 		</td>
 		<td>
 			<span class="identifier">
-				@components.CopyableContent() {
+				@helpers.CopyableContent() {
 					{ install.ID }
 				}
 			</span>
 		</td>
 		<td>
 			<form action={ paths.DeleteInstallGithubApp(internal.ToStringer(strconv.Itoa(int(install.ID)))) } method="POST">
-				@components.DeleteButton()
+				@helpers.DeleteButton()
 				<input type="hidden" name="install_id" value={ install.ID }/>
 			</form>
 		</td>

@@ -2,17 +2,17 @@ package ui
 
 import (
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/components/paths"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/team"
+	"github.com/leg100/otf/internal/ui/helpers"
 	"github.com/leg100/otf/internal/user"
 	"time"
 )
 
 templ adminLogin() {
-	@components.BareLayout(components.BareLayoutProps{
+	@helpers.BareLayout(helpers.BareLayoutProps{
 		Title: "site admin login",
 	}) {
 		<div class="h-full flex items-center justify-center">
@@ -30,17 +30,17 @@ templ adminLogin() {
 }
 
 templ profile() {
-	@components.Layout(components.LayoutProps{
+	@helpers.Layout(helpers.LayoutProps{
 		Title: "profile",
-		Breadcrumbs: []components.Breadcrumb{
+		Breadcrumbs: []helpers.Breadcrumb{
 			{Name: "Profile"},
 		},
 		ContentActions: profileActions(),
 	}) {
 		<div class="flex flex-col gap-4 mt-2">
-			<p id="logged-in-msg">You are logged in as <span class="badge badge-primary badge-soft">{ components.CurrentUsername(ctx) }</span></p>
+			<p id="logged-in-msg">You are logged in as <span class="badge badge-primary badge-soft">{ helpers.CurrentUsername(ctx) }</span></p>
 			<div class="size-16">
-				@components.CurrentUserAvatar()
+				@helpers.CurrentUserAvatar()
 			</div>
 		</div>
 	}
@@ -58,14 +58,14 @@ type userListProps struct {
 }
 
 templ userList(props userListProps) {
-	@components.Layout(components.LayoutProps{
+	@helpers.Layout(helpers.LayoutProps{
 		Title:        "users",
 		Organization: props.organization,
-		Breadcrumbs: []components.Breadcrumb{
+		Breadcrumbs: []helpers.Breadcrumb{
 			{Name: "Users"},
 		},
 	}) {
-		@components.Table(&userTable{}, props.users)
+		@helpers.Table(&userTable{}, props.users)
 	}
 }
 
@@ -89,7 +89,7 @@ templ (t userTable) Row(user *user.User) {
 			{ user.Username.String() }
 		</td>
 		<td>
-			@components.Identifier(user.ID)
+			@helpers.Identifier(user.ID)
 		</td>
 		<td>
 			if user.IsSiteAdmin() {
@@ -120,14 +120,14 @@ type getTeamProps struct {
 	canDeleteTeam   bool
 	canAddMember    bool
 	canRemoveMember bool
-	dropdown        components.SearchDropdownProps
+	dropdown        helpers.SearchDropdownProps
 }
 
 templ getTeam(props getTeamProps) {
-	@components.Layout(components.LayoutProps{
+	@helpers.Layout(helpers.LayoutProps{
 		Title:        props.team.ID.String(),
 		Organization: props.team.Organization,
-		Breadcrumbs: []components.Breadcrumb{
+		Breadcrumbs: []helpers.Breadcrumb{
 			{Name: "Teams", Link: paths.Teams(props.team.Organization)},
 			{Name: props.team.Name},
 		},
@@ -190,14 +190,14 @@ templ getTeam(props getTeamProps) {
 		}
 		<h3 class="font-semibold my-2 text-lg">Members</h3>
 		<div id="content-list">
-			@components.UnpaginatedTable(
+			@helpers.UnpaginatedTable(
 				&userTable{teamID: &props.team.ID, canRemoveMember: props.canRemoveMember},
 				props.members,
 			)
 		</div>
 		if props.canAddMember {
 			<div>
-				@components.SearchDropdown(props.dropdown)
+				@helpers.SearchDropdown(props.dropdown)
 			</div>
 		}
 		if !props.team.IsOwners() && props.canDeleteTeam {
@@ -214,9 +214,9 @@ templ getTeam(props getTeamProps) {
 }
 
 templ newToken() {
-	@components.Layout(components.LayoutProps{
+	@helpers.Layout(helpers.LayoutProps{
 		Title: "new user token",
-		Breadcrumbs: []components.Breadcrumb{
+		Breadcrumbs: []helpers.Breadcrumb{
 			{Name: "user tokens", Link: paths.Tokens()},
 			{Name: "new"},
 		},
@@ -234,14 +234,14 @@ templ newToken() {
 }
 
 templ tokenList(tokens []*user.UserToken) {
-	@components.Layout(components.LayoutProps{
+	@helpers.Layout(helpers.LayoutProps{
 		Title: "user tokens",
-		Breadcrumbs: []components.Breadcrumb{
+		Breadcrumbs: []helpers.Breadcrumb{
 			{Name: "user tokens"},
 		},
 		ContentActions: tokenListActions(),
 	}) {
-		@components.UnpaginatedTable(
+		@helpers.UnpaginatedTable(
 			&tokensTable{},
 			tokens,
 		)
@@ -269,14 +269,14 @@ templ (t tokensTable) Row(token *user.UserToken) {
 			<span>{ token.Description }</span>
 		</td>
 		<td>
-			@components.Identifier(token.ID)
+			@helpers.Identifier(token.ID)
 		</td>
 		<td>
 			<span>{ internal.Ago(time.Now(), token.CreatedAt) }</span>
 		</td>
 		<td>
 			<form id="delete-user-token" action={ paths.DeleteToken() } method="POST">
-				@components.DeleteButton()
+				@helpers.DeleteButton()
 				<input type="hidden" name="id" value={ token.ID.String() }/>
 			</form>
 		</td>

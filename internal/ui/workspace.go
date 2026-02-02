@@ -14,7 +14,6 @@ import (
 	"github.com/leg100/otf/internal/engine"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
-	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/organization"
@@ -22,6 +21,7 @@ import (
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/team"
+	"github.com/leg100/otf/internal/ui/helpers"
 	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/workspace"
@@ -323,13 +323,13 @@ func (h *workspaceHandlers) getWorkspace(w http.ResponseWriter, r *http.Request)
 		canLockWorkspace:   h.authorizer.CanAccess(r.Context(), authz.LockWorkspaceAction, ws.ID),
 		canUnlockWorkspace: h.authorizer.CanAccess(r.Context(), authz.UnlockWorkspaceAction, ws.ID),
 		canUpdateWorkspace: h.authorizer.CanAccess(r.Context(), authz.UpdateWorkspaceAction, ws.ID),
-		tagsDropdown: components.SearchDropdownProps{
+		tagsDropdown: helpers.SearchDropdownProps{
 			Name:        "tag_name",
 			Available:   availableTags,
 			Existing:    ws.Tags,
 			Action:      templ.SafeURL(paths.CreateTagWorkspace(ws.ID)),
 			Placeholder: "Add tags",
-			Width:       components.NarrowDropDown,
+			Width:       helpers.NarrowDropDown,
 		},
 		latestRunTable: latestRunTable,
 	}

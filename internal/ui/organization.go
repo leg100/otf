@@ -8,10 +8,10 @@ import (
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
-	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/ui/helpers"
 )
 
 type (
@@ -192,7 +192,7 @@ func (a *organizationHandlers) createOrganizationToken(w http.ResponseWriter, r 
 		return
 	}
 
-	if err := components.TokenFlashMessage(w, token); err != nil {
+	if err := helpers.TokenFlashMessage(w, token); err != nil {
 		html.Error(r, w, err.Error())
 		return
 	}

@@ -1,4 +1,4 @@
-package components
+package helpers
 
 import (
 	"errors"
@@ -38,18 +38,18 @@ templ errorIcon() {
 
 templ Flashes() {
 	{{
-	request := html.RequestFromContext(ctx)
-	if request == nil {
-		return errors.New("request not found in context")
-	}
-	response := html.ResponseFromContext(ctx)
-	if response == nil {
-		return errors.New("response not found in context")
-	}
-	flashes, err := html.PopFlashes(request, response)
-	if err != nil {
-		return fmt.Errorf("unable to pop flash messages: %w", err)
-	}
+		request := html.RequestFromContext(ctx)
+		if request == nil {
+			return errors.New("request not found in context")
+		}
+		response := html.ResponseFromContext(ctx)
+		if response == nil {
+			return errors.New("response not found in context")
+		}
+		flashes, err := html.PopFlashes(request, response)
+		if err != nil {
+			return fmt.Errorf("unable to pop flash messages: %w", err)
+		}
 	}}
 	if len(flashes) > 0 {
 		<div class="m-2">

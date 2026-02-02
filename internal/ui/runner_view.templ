@@ -2,11 +2,11 @@ package ui
 
 import (
 	"fmt"
-	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/components/paths"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	runnerpkg "github.com/leg100/otf/internal/runner"
+	"github.com/leg100/otf/internal/ui/helpers"
 )
 
 type listRunnersProps struct {
@@ -16,10 +16,10 @@ type listRunnersProps struct {
 }
 
 templ listRunners(props listRunnersProps) {
-	@components.Layout(components.LayoutProps{
+	@helpers.Layout(helpers.LayoutProps{
 		Title:        "runners",
 		Organization: props.organization,
-		Breadcrumbs: []components.Breadcrumb{
+		Breadcrumbs: []helpers.Breadcrumb{
 			{Name: "Runners"},
 		},
 	}) {
@@ -36,7 +36,7 @@ templ listRunners(props listRunnersProps) {
 			</fieldset>
 		</form>
 		<div>
-			@components.PollingTable(runnersTable{}, props.page)
+			@helpers.PollingTable(runnersTable{}, props.page)
 		</div>
 	}
 }
@@ -73,7 +73,7 @@ templ (t runnersTable) Row(runner *runnerpkg.RunnerMeta) {
 						-
 					}
 				</span>
-				@components.Identifier(runner.ID)
+				@helpers.Identifier(runner.ID)
 			</div>
 		</td>
 		<td>
@@ -116,7 +116,7 @@ templ (t runnersTable) Row(runner *runnerpkg.RunnerMeta) {
 		</td>
 		<td>
 			<span title={ runner.LastPingAt.String() }>
-				@components.Ago(runner.LastPingAt)
+				@helpers.Ago(runner.LastPingAt)
 			</span>
 		</td>
 	</tr>
@@ -128,10 +128,10 @@ type listAgentPoolProps struct {
 }
 
 templ listAgentPools(props listAgentPoolProps) {
-	@components.Layout(components.LayoutProps{
+	@helpers.Layout(helpers.LayoutProps{
 		Title:        "agent pools",
 		Organization: props.organization,
-		Breadcrumbs: []components.Breadcrumb{
+		Breadcrumbs: []helpers.Breadcrumb{
 			{Name: "Agent Pools"},
 		},
 	}) {
@@ -154,7 +154,7 @@ templ listAgentPools(props listAgentPoolProps) {
 			</form>
 			<hr class="my-4"/>
 		</details>
-		@components.Table(&agentPoolsTable{}, props.pools)
+		@helpers.Table(&agentPoolsTable{}, props.pools)
 	}
 }
 
@@ -174,10 +174,10 @@ templ (t agentPoolsTable) Row(pool *runnerpkg.Pool) {
 			</a>
 		</td>
 		<td>
-			@components.Identifier(pool.ID)
+			@helpers.Identifier(pool.ID)
 		</td>
 		<td>
-			@components.Ago(pool.CreatedAt)
+			@helpers.Ago(pool.CreatedAt)
 		</td>
 	</tr>
 }
@@ -206,16 +206,16 @@ type getAgentPoolProps struct {
 }
 
 templ getAgentPool(props getAgentPoolProps) {
-	@components.Layout(components.LayoutProps{
+	@helpers.Layout(helpers.LayoutProps{
 		Title:        props.pool.Name,
 		Organization: props.pool.Organization,
-		Breadcrumbs: []components.Breadcrumb{
+		Breadcrumbs: []helpers.Breadcrumb{
 			{Name: "Agent Pools", Link: paths.AgentPools(props.pool.Organization)},
 			{Name: props.pool.Name},
 		},
 	}) {
 		<div>
-			@components.Identifier(props.pool.ID)
+			@helpers.Identifier(props.pool.ID)
 		</div>
 		<form class="" action={ paths.UpdateAgentPool(props.pool.ID) } method="POST">
 			<div class="field mb-4">
@@ -232,7 +232,7 @@ templ getAgentPool(props getAgentPoolProps) {
 				<div class="mt-4 form-checkbox">
 					<input class="peer" type="radio" id="workspaces-specific" name="organization_scoped" value="false" checked?={ !props.pool.OrganizationScoped }/>
 					<label for="workspaces-specific">Grant access to specific workspaces</label>
-					<script src={ components.AssetPath(ctx, "/static/js/dropdown.js") }></script>
+					<script src={ helpers.AssetPath(ctx, "/static/js/dropdown.js") }></script>
 					<div
 						class="hidden relative col-start-2 mt-2 w-full peer-checked:block"
 						x-data={ "dropdown(" + toJSON(props.allowedButUnassignedWorkspaces) + ", " + toJSON(props.availableWorkspaces) + ")" }
@@ -307,10 +307,10 @@ templ getAgentPool(props getAgentPoolProps) {
 				</div>
 			</form>
 		</details>
-		@components.UnpaginatedTable(agentTokensTable{}, props.tokens)
+		@helpers.UnpaginatedTable(agentTokensTable{}, props.tokens)
 		<hr class="my-4"/>
 		<h3 class="font-semibold text-lg mb-2">Agents</h3>
-		@components.PollingTable(runnersTable{}, props.agents)
+		@helpers.PollingTable(runnersTable{}, props.agents)
 		if props.canDeleteAgentPool {
 			<hr class="my-4"/>
 			<h3 class="font-semibold text-lg mb-2">Advanced</h3>
@@ -344,14 +344,14 @@ templ (t agentTokensTable) Row(token *runnerpkg.AgentToken) {
 	<tr>
 		<td>{ token.Description }</td>
 		<td>
-			@components.Identifier(token.ID)
+			@helpers.Identifier(token.ID)
 		</td>
 		<td>
-			@components.Ago(token.CreatedAt)
+			@helpers.Ago(token.CreatedAt)
 		</td>
 		<td>
 			<form id="delete-agent-token" action={ paths.DeleteAgentToken(token.ID) } method="POST">
-				@components.DeleteButton()
+				@helpers.DeleteButton()
 			</form>
 		</td>
 	</tr>

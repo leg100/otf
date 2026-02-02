@@ -2,17 +2,17 @@ package ui
 
 import (
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/components/paths"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/ui/helpers"
 	"time"
 )
 
 templ organizationNew() {
-	@components.Layout(components.LayoutProps{
+	@helpers.Layout(helpers.LayoutProps{
 		Title: "new organization",
-		Breadcrumbs: []components.Breadcrumb{
+		Breadcrumbs: []helpers.Breadcrumb{
 			{Name: "organizations", Link: paths.Organizations()},
 			{Name: "new"},
 		},
@@ -36,16 +36,16 @@ type organizationListProps struct {
 
 templ organizationList(props organizationListProps) {
 	{{
-		layoutProps := components.LayoutProps{
+		layoutProps := helpers.LayoutProps{
 			Title: "organizations",
-			Breadcrumbs: []components.Breadcrumb{
+			Breadcrumbs: []helpers.Breadcrumb{
 				{Name: "organizations"},
 			},
 			ContentActions: organizationListActions(props.CanCreate),
 		}
 	}}
-	@components.Layout(layoutProps) {
-		@components.Table(&organizationTable{}, props.Page)
+	@helpers.Layout(layoutProps) {
+		@helpers.Table(&organizationTable{}, props.Page)
 	}
 }
 
@@ -64,7 +64,7 @@ templ (t organizationTable) Row(org *organization.Organization) {
 			</a>
 		</td>
 		<td>
-			@components.Identifier(org.ID)
+			@helpers.Identifier(org.ID)
 		</td>
 	</tr>
 }
@@ -87,10 +87,10 @@ templ organizationListActions(canCreate bool) {
 }
 
 templ organizationEdit(org *organization.Organization) {
-	@components.Layout(components.LayoutProps{
+	@helpers.Layout(helpers.LayoutProps{
 		Title:        org.Name.String(),
 		Organization: org.Name,
-		Breadcrumbs: []components.Breadcrumb{
+		Breadcrumbs: []helpers.Breadcrumb{
 			{Name: "Settings"},
 		},
 	}) {
@@ -115,10 +115,10 @@ templ organizationEdit(org *organization.Organization) {
 }
 
 templ getToken(org organization.Name, token *organization.OrganizationToken) {
-	@components.Layout(components.LayoutProps{
+	@helpers.Layout(helpers.LayoutProps{
 		Title:        org.String(),
 		Organization: org,
-		Breadcrumbs: []components.Breadcrumb{
+		Breadcrumbs: []helpers.Breadcrumb{
 			{Name: "Organization Token"},
 		},
 	}) {
@@ -126,7 +126,7 @@ templ getToken(org organization.Name, token *organization.OrganizationToken) {
 			The organization API token is used to manage teams, team membership and workspaces. This token does not have permission to perform plans and applies in workspaces.
 		</span>
 		if token != nil {
-			@components.UnpaginatedTable(
+			@helpers.UnpaginatedTable(
 				&organizationTokenTable{},
 				[]*organization.OrganizationToken{token},
 			)
@@ -149,7 +149,7 @@ templ (t organizationTokenTable) Header() {
 templ (t organizationTokenTable) Row(token *organization.OrganizationToken) {
 	<tr id="item-token">
 		<td>
-			@components.Identifier(token.ID)
+			@helpers.Identifier(token.ID)
 		</td>
 		<td>
 			<span>{ internal.Ago(time.Now(), token.CreatedAt) }</span>
@@ -160,7 +160,7 @@ templ (t organizationTokenTable) Row(token *organization.OrganizationToken) {
 					<button class="btn">Regenerate</button>
 				</form>
 				<form action={ paths.DeleteOrganizationToken(token.Organization) } method="POST">
-					@components.DeleteButton()
+					@helpers.DeleteButton()
 				</form>
 			</div>
 		</td>

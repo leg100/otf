@@ -3,12 +3,12 @@ package ui
 import (
 	"context"
 	"fmt"
-	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/components/paths"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/runstatus"
+	"github.com/leg100/otf/internal/ui/helpers"
 	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/workspace"
 	"strings"
@@ -28,24 +28,24 @@ type runListProps struct {
 
 templ runList(props runListProps) {
 	{{
-		layoutProps := components.LayoutProps{
+		layoutProps := helpers.LayoutProps{
 			Title:        "runs",
 			Organization: props.organization,
 		}
 		if props.ws != nil {
-			layoutProps.Breadcrumbs = []components.Breadcrumb{
+			layoutProps.Breadcrumbs = []helpers.Breadcrumb{
 				{Name: "Workspaces", Link: paths.Workspaces(props.organization)},
 				{Name: props.ws.Name, Link: paths.Workspace(props.ws.ID)},
 			}
 			layoutProps.ContentLinks = WorkspaceHeaderLinks(props.ws.ID, props.canUpdateWorkspace)
 		}
-		layoutProps.Breadcrumbs = append(layoutProps.Breadcrumbs, components.Breadcrumb{Name: "Runs"})
+		layoutProps.Breadcrumbs = append(layoutProps.Breadcrumbs, helpers.Breadcrumb{Name: "Runs"})
 	}}
-	@components.Layout(layoutProps) {
+	@helpers.Layout(layoutProps) {
 		<form action="" hx-include="this">
 			<div class="flex flex-col gap-2">
 				@runstatus.Filter(props.status, props.statusFilterVisible)
-				@components.PollingTable(props.table, props.page)
+				@helpers.PollingTable(props.table, props.page)
 			</div>
 		</form>
 	}
@@ -149,7 +149,7 @@ templ (t runsTable) Row(run *run.Run) {
 			</div>
 		</td>
 		<td class="align-top hidden xl:block">
-			@components.Ago(run.CreatedAt)
+			@helpers.Ago(run.CreatedAt)
 		</td>
 		<td class="align-top">
 			<div class="flex gap-2">
@@ -213,7 +213,7 @@ templ (t runsTable) avatar(run *run.Run) {
 						return err
 					}
 				}}
-				@components.Avatar(user.AvatarURL)
+				@helpers.Avatar(user.AvatarURL)
 			} else if run.IngressAttributes != nil {
 				<img src={ templ.SafeURL(run.IngressAttributes.SenderAvatarURL) }/>
 			}
@@ -232,12 +232,12 @@ type getRunProps struct {
 
 templ getRun(props getRunProps) {
 	{{
-		layoutProps := components.LayoutProps{
+		layoutProps := helpers.LayoutProps{
 			Title:        props.run.ID.String(),
 			Organization: props.ws.Organization,
 			PreContent:   getPreContent(),
 			PostContent:  getPostContent(props),
-			Breadcrumbs: []components.Breadcrumb{
+			Breadcrumbs: []helpers.Breadcrumb{
 				{Name: "Workspaces", Link: paths.Workspaces(props.ws.Organization)},
 				{Name: props.ws.Name, Link: paths.Workspace(props.ws.ID)},
 				{Name: "Runs", Link: paths.Runs(props.ws.ID)},
@@ -245,7 +245,7 @@ templ getRun(props getRunProps) {
 			},
 		}
 	}}
-	@components.Layout(layoutProps) {
+	@helpers.Layout(layoutProps) {
 		<div
 			hx-ext="sse"
 			sse-connect={ string(paths.WatchRun(props.run.ID)) }
@@ -274,7 +274,7 @@ templ getRun(props getRunProps) {
 					</span>
 				</div>
 				<div class="flex gap-1 items-center z-20" id="run-identifier">
-					@components.Identifier(props.run.ID)
+					@helpers.Identifier(props.run.ID)
 				</div>
 			</div>
 			<div
@@ -330,9 +330,9 @@ templ getRun(props getRunProps) {
 }
 
 templ getPreContent() {
-	<link rel="stylesheet" href={ components.AssetPath(ctx, "/static/css/terminal.css") }/>
-	<script src={ components.AssetPath(ctx, "/static/js/tail.js") }></script>
-	<script src={ components.AssetPath(ctx, "/static/js/running_time.js") }></script>
+	<link rel="stylesheet" href={ helpers.AssetPath(ctx, "/static/css/terminal.css") }/>
+	<script src={ helpers.AssetPath(ctx, "/static/js/tail.js") }></script>
+	<script src={ helpers.AssetPath(ctx, "/static/js/running_time.js") }></script>
 }
 
 templ getPostContent(props getRunProps) {

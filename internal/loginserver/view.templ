@@ -1,16 +1,16 @@
 package loginserver
 
-import "github.com/leg100/otf/internal/http/html/components"
+import "github.com/leg100/otf/internal/ui/helpers"
 
 templ consent() {
-	@components.BareLayout(components.BareLayoutProps{
+	@helpers.BareLayout(helpers.BareLayoutProps{
 		Title: "consent",
 	}) {
-		@components.Flashes()
+		@helpers.Flashes()
 		<div class="m-auto">
 			<div class="flex flex-col justify-center items-center gap-2">
 				<h2 class="font-semibold text-lg">Authorize App</h2>
-				Hi { components.CurrentUsername(ctx) },
+				Hi { helpers.CurrentUsername(ctx) },
 				<span>
 					<span class="bg-base-300">terraform</span> is requesting access to your OTF user account.
 				</span>

@@ -1,4 +1,4 @@
-package components
+package helpers
 
 import (
 	"github.com/leg100/otf/internal"
@@ -14,6 +14,7 @@ type Breadcrumb struct {
 type LayoutProps struct {
 	Title          string
 	Organization   resource.ID
+	Workspace      *resource.Info
 	Breadcrumbs    []Breadcrumb
 	ContentActions templ.Component
 	ContentLinks   templ.Component
@@ -27,6 +28,7 @@ templ Layout(props LayoutProps) {
 	@BareLayout(BareLayoutProps{
 		Title:        props.Title,
 		Organization: props.Organization,
+		Workspace:    props.Workspace,
 		PreContent:   props.PreContent,
 		PostContent:  props.PostContent,
 	}) {
@@ -74,6 +76,7 @@ templ Layout(props LayoutProps) {
 type BareLayoutProps struct {
 	Title        string
 	Organization resource.ID
+	Workspace    *resource.Info
 	Menu         templ.Component
 	PreContent   templ.Component
 	PostContent  templ.Component
@@ -82,7 +85,9 @@ type BareLayoutProps struct {
 templ BareLayout(props BareLayoutProps) {
 	{{
 		var menu templ.Component
-		if props.Organization != nil {
+		if props.Workspace != nil {
+			menu = workspaceMenu(props.Workspace.ID)
+		} else if props.Organization != nil {
 			menu = organizationMenu(props.Organization)
 		} else if Authenticated(ctx) {
 			menu = siteMenu()
@@ -116,7 +121,7 @@ templ BareLayout(props BareLayoutProps) {
 		</head>
 		<body hx-ext="morph" class="min-h-screen grid grid-rows-[auto_1fr_auto] grid-cols-[200px_3fr]">
 			<header class="col-span-2 border-b-1 border-base-content/30">
-				@navbar(props.Organization)
+				@navbar(props.Organization, props.Workspace)
 			</header>
 			if menu != nil {
 				<div class="border-r-1 border-base-content/30">
@@ -142,18 +147,29 @@ templ BareLayout(props BareLayoutProps) {
 	</html>
 }
 
-templ navbar(organization resource.ID) {
+templ navbar(organization resource.ID, workspace *resource.Info) {
 	<div class="navbar bg-base-100 min-h-1">
 		<div class="flex-1 flex gap-10">
 			<img src={ AssetPath(ctx, "/static/images/logo.svg") } alt="logo"/>
-			if organization != nil {
-				<div class="flex gap-2 items-center">
-					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
-						<path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Z"></path>
-					</svg>
-					<span>{ organization.String() }</span>
-				</div>
-			}
+			<div class="flex gap-4 items-center">
+				if organization != nil {
+					<div class="flex gap-2 items-center">
+						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+							<path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Z"></path>
+						</svg>
+						<span>{ organization.String() }</span>
+					</div>
+				}
+				if workspace != nil {
+					/
+					<div class="flex gap-2 items-center">
+						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+							<path stroke-linecap="round" stroke-linejoin="round" d="m21 7.5-2.25-1.313M21 7.5v2.25m0-2.25-2.25 1.313M3 7.5l2.25-1.313M3 7.5l2.25 1.313M3 7.5v2.25m9 3 2.25-1.313M12 12.75l-2.25-1.313M12 12.75V15m0 6.75 2.25-1.313M12 21.75V19.5m0 2.25-2.25-1.313m0-16.875L12 2.25l2.25 1.313M21 14.25v2.25l-2.25 1.313m-13.5 0L3 16.5v-2.25"></path>
+						</svg>
+						<span class="font-bold">{ workspace.Name }</span>
+					</div>
+				}
+			</div>
 		</div>
 		<div class="flex items-center">
 			if Authenticated(ctx) {

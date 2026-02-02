@@ -1,4 +1,4 @@
-package components
+package helpers
 
 import (
 	"context"

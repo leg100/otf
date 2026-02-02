@@ -5,21 +5,21 @@ import (
 	"fmt"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
-	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/components/paths"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/team"
+	"github.com/leg100/otf/internal/ui/helpers"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/workspace"
 )
 
 templ workspaceNew(organization organization.Name) {
-	@components.Layout(components.LayoutProps{
+	@helpers.Layout(helpers.LayoutProps{
 		Title:        "new workspace",
 		Organization: organization,
-		Breadcrumbs: []components.Breadcrumb{
+		Breadcrumbs: []helpers.Breadcrumb{
 			{Name: "workspaces", Link: paths.Workspaces(organization)},
 			{Name: "new"},
 		},
@@ -51,16 +51,16 @@ type workspaceListProps struct {
 
 templ workspaceList(props workspaceListProps) {
 	{{
-		layoutProps := components.LayoutProps{
+		layoutProps := helpers.LayoutProps{
 			Title:        "workspaces",
 			Organization: props.organization,
 			ContentLinks: workspaceListActions(props.organization, props.canCreate),
-			Breadcrumbs: []components.Breadcrumb{
+			Breadcrumbs: []helpers.Breadcrumb{
 				{Name: "Workspaces"},
 			},
 		}
 	}}
-	@components.Layout(layoutProps) {
+	@helpers.Layout(layoutProps) {
 		<form action={ paths.Workspaces(props.organization) } hx-include="this" class="flex flex-col gap-2">
 			<div class="flex flex-col gap-2">
 				<input
@@ -71,13 +71,13 @@ templ workspaceList(props workspaceListProps) {
 					style={ magnifyingGlassStyle(ctx) }
 					placeholder="Search workspaces"
 					hx-trigger="keyup changed delay:500ms, keyup[key=='Enter']"
-					hx-get={ components.CurrentPath(ctx) }
+					hx-get={ helpers.CurrentPath(ctx) }
 					hx-target="#polling-table"
 					id="workspace-search"
 					onblur="if (this.defaultValue != this.value) { this.form.submit() }"
 				/>
 				@runstatus.Filter(props.status, props.statusFilterVisible)
-				@components.Filter(components.FilterProps[string]{
+				@helpers.Filter(helpers.FilterProps[string]{
 					Title:            "Filter by tag",
 					All:              props.allTags,
 					Selected:         props.selectedTags,
@@ -90,7 +90,7 @@ templ workspaceList(props workspaceListProps) {
 					},
 				})
 			</div>
-			@components.PollingTable(workspacesTable{}, props.page)
+			@helpers.PollingTable(workspacesTable{}, props.page)
 		</form>
 	}
 }
@@ -160,23 +160,24 @@ type workspaceGetProps struct {
 	canUnlockWorkspace bool
 	canUpdateWorkspace bool
 	unassignedTags     []string
-	tagsDropdown       components.SearchDropdownProps
+	tagsDropdown       helpers.SearchDropdownProps
 	latestRunTable     templ.Component
 }
 
 templ workspaceGet(props workspaceGetProps) {
 	{{
-		layoutProps := components.LayoutProps{
+		layoutProps := helpers.LayoutProps{
 			Title:        "workspaces",
 			Organization: props.ws.Organization,
+			Workspace:    internal.Ptr(props.ws.Info()),
 			ContentLinks: workspaceHeaderLinksAndStartRunSelector(props),
-			Breadcrumbs: []components.Breadcrumb{
+			Breadcrumbs: []helpers.Breadcrumb{
 				{Name: "Workspaces"},
 				{Name: props.ws.Name},
 			},
 		}
 	}}
-	@components.Layout(layoutProps) {
+	@helpers.Layout(layoutProps) {
 		<div
 			hx-ext="sse"
 			sse-connect={ paths.WatchLatestRun(props.ws.ID) }
@@ -211,7 +212,7 @@ templ workspaceGet(props workspaceGetProps) {
 			<div class="border-l-1 border-base-content/30 h-full p-2 flex flex-col gap-2">
 				<h3 class="font-bold">About</h3>
 				<div>
-					@components.Identifier(props.ws.ID)
+					@helpers.Identifier(props.ws.ID)
 				</div>
 				<div class="divider my-0"></div>
 				<div class="flex flex-col gap-2">
@@ -250,7 +251,7 @@ templ workspaceGet(props workspaceGetProps) {
 							>
 								{ props.ws.Connection.Repo.String() }
 							</a>
-							@components.ExternalIcon()
+							@helpers.ExternalIcon()
 						</div>
 					</div>
 				}
@@ -284,7 +285,7 @@ templ workspaceGet(props workspaceGetProps) {
 						</div>
 					</form>
 					if props.canAddTags {
-						@components.SearchDropdown(props.tagsDropdown)
+						@helpers.SearchDropdown(props.tagsDropdown)
 					}
 				</div>
 			</div>
@@ -398,18 +399,18 @@ type workspacePerm struct {
 
 templ workspaceEdit(props workspaceEditProps) {
 	{{
-		layoutProps := components.LayoutProps{
+		layoutProps := helpers.LayoutProps{
 			Title:        "edit | " + props.ws.ID.String(),
 			Organization: props.ws.Organization,
 			ContentLinks: WorkspaceHeaderLinks(props.ws.ID, props.canUpdateWorkspace),
-			Breadcrumbs: []components.Breadcrumb{
+			Breadcrumbs: []helpers.Breadcrumb{
 				{Name: "Workspaces", Link: paths.Workspaces(props.ws.Organization)},
 				{Name: props.ws.Name, Link: paths.Workspace(props.ws.ID)},
 				{Name: "settings"},
 			},
 		}
 	}}
-	@components.Layout(layoutProps) {
+	@helpers.Layout(layoutProps) {
 		<div class="mt-3">
 			if props.ws.Connection != nil {
 				<form action={ paths.DisconnectWorkspace(props.ws.ID) } method="POST">
@@ -600,7 +601,7 @@ templ editConnection(props workspaceEditProps) {
 			<input class="peer" type="radio" id="vcs-triggers-patterns" name="vcs_trigger" value={ props.vcsTriggerPatterns } checked?={ len(props.ws.TriggerPatterns) > 0 }/>
 			<label for="vcs-triggers-patterns">Only trigger runs when files in specified paths change</label>
 			<span class="description">Supports glob patterns.</span>
-			<script src={ components.AssetPath(ctx, "/static/js/workspace_trigger_patterns.js") }></script>
+			<script src={ helpers.AssetPath(ctx, "/static/js/workspace_trigger_patterns.js") }></script>
 			<div class="hidden bg-base-200 p-2 col-start-2 mt-2 w-full peer-checked:block" x-data={ "workspace_trigger_patterns(" + toJSON(props.ws.TriggerPatterns) + ")" }>
 				<input type="hidden" id="paths" name="trigger_patterns" :value="JSON.stringify(paths)"/>
 				<div class="flex flex-col gap-2">
@@ -702,7 +703,7 @@ templ editPermissions(props workspaceEditProps) {
 							<button class="btn" form="update-permissions">Update</button>
 							<form class="" action={ paths.UnsetPermissionWorkspace(props.ws.ID) } method="POST">
 								<input name="team_id" value={ workspacePerm.team.ID.String() } type="hidden"/>
-								@components.DeleteButton()
+								@helpers.DeleteButton()
 							</form>
 						</td>
 					</tr>
@@ -738,20 +739,20 @@ templ editPermissions(props workspaceEditProps) {
 
 templ listVCSProviders(ws *workspace.Workspace, providers []*vcs.Provider) {
 	{{
-		layoutProps := components.LayoutProps{
+		layoutProps := helpers.LayoutProps{
 			Title:        "list vcs providers | " + ws.ID.String(),
 			Organization: ws.Organization,
-			Breadcrumbs: []components.Breadcrumb{
+			Breadcrumbs: []helpers.Breadcrumb{
 				{Name: "workspaces", Link: paths.Workspaces(ws.Organization)},
 				{Name: ws.Name, Link: paths.Workspace(ws.ID)},
 				{Name: "vcs providers"},
 			},
 		}
 	}}
-	@components.Layout(layoutProps) {
+	@helpers.Layout(layoutProps) {
 		@ConnectionSteps(ConnectStep)
 		<div>Select a <a class="underline" href={ paths.VCSProviders(ws.Organization) }>VCS provider</a> to connect this workspace to a repository.</div>
-		@components.UnpaginatedTable(
+		@helpers.UnpaginatedTable(
 			&vcsTable{
 				Actions: vcsProviderSelector{workspaceID: ws.ID}.action,
 			},
@@ -778,17 +779,17 @@ templ (s vcsProviderSelector) action(vcsProviderID resource.TfeID) {
 
 templ listVCSRepos(ws *workspace.Workspace, vcsProviderID resource.TfeID, repos []vcs.Repo) {
 	{{
-		layoutProps := components.LayoutProps{
+		layoutProps := helpers.LayoutProps{
 			Title:        "list vcs repos | " + ws.ID.String(),
 			Organization: ws.Organization,
-			Breadcrumbs: []components.Breadcrumb{
+			Breadcrumbs: []helpers.Breadcrumb{
 				{Name: "workspaces", Link: paths.Workspaces(ws.Organization)},
 				{Name: ws.Name, Link: paths.Workspace(ws.ID)},
 				{Name: "vcs repositories"},
 			},
 		}
 	}}
-	@components.Layout(layoutProps) {
+	@helpers.Layout(layoutProps) {
 		@ConnectionSteps(SelectRepoStep)
 		<div>
 			Select a VCS repository to connect this workspace to. Either select a repository from the list or enter the name of a repository below.
@@ -798,7 +799,7 @@ templ listVCSRepos(ws *workspace.Workspace, vcsProviderID resource.TfeID, repos 
 			<input class="input" type="text" name="identifier" id="identifier" value="" placeholder="{owner}/{repository}" required/>
 			<button class="btn">Connect</button>
 		</form>
-		@components.UnpaginatedTable(
+		@helpers.UnpaginatedTable(
 			&ReposTable{
 				Actions: workspaceRepoSelector{
 					workspaceID:   ws.ID,
@@ -825,11 +826,11 @@ templ (s workspaceRepoSelector) action(repo vcs.Repo) {
 
 templ WorkspaceHeaderLinks(workspaceID resource.TfeID, canUpdate bool) {
 	<ul id="workspace-submenu" class="menu menu-horizontal bg-base-200 rounded-box [&>li>a]:py-0">
-		@components.MenuItem("Overview", paths.Workspace(workspaceID))
-		@components.MenuItem("Runs", paths.Runs(workspaceID))
-		@components.MenuItem("Variables", paths.Variables(workspaceID))
+		@helpers.MenuItem("Overview", paths.Workspace(workspaceID))
+		@helpers.MenuItem("Runs", paths.Runs(workspaceID))
+		@helpers.MenuItem("Variables", paths.Variables(workspaceID))
 		if canUpdate {
-			@components.MenuItem("Settings", paths.EditWorkspace(workspaceID))
+			@helpers.MenuItem("Settings", paths.EditWorkspace(workspaceID))
 		}
 	</ul>
 }
@@ -848,11 +849,10 @@ templ workspaceHeaderLinksAndStartRunSelector(props workspaceGetProps) {
 			</form>
 		</div>
 	}
-	@WorkspaceHeaderLinks(props.ws.ID, props.canUpdateWorkspace)
 }
 
 func magnifyingGlassStyle(ctx context.Context) (string, error) {
-	path, err := components.AssetPath(ctx, "/static/images/magnifying_glass.svg")
+	path, err := helpers.AssetPath(ctx, "/static/images/magnifying_glass.svg")
 	if err != nil {
 		return "", err
 	}
