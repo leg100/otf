@@ -17,25 +17,16 @@ type newViewProps struct {
 	providers    []*vcs.Provider
 }
 
-templ newView(props newViewProps) {
-	@helpers.Layout(helpers.LayoutProps{
-		Title:        "new module",
-		Organization: props.organization,
-		Breadcrumbs: []helpers.Breadcrumb{
-			{Name: "Modules", Link: paths.Modules(props.organization)},
-			{Name: "new"},
-		},
-	}) {
-		@ConnectionSteps(ConnectStep)
-		<h3 class="font-semibold">Connect to a version control provider</h3>
-		<div>
-			Choose a VCS provider that hosts your module source code.
-		</div>
-		@helpers.UnpaginatedTable(
-			&vcsTable{Actions: selectVCSProviderAction},
-			props.providers,
-		)
-	}
+templ (t *templates) newView(props newViewProps) {
+	@ConnectionSteps(ConnectStep)
+	<h3 class="font-semibold">Connect to a version control provider</h3>
+	<div>
+		Choose a VCS provider that hosts your module source code.
+	</div>
+	@helpers.UnpaginatedTable(
+		&vcsTable{Actions: selectVCSProviderAction},
+		props.providers,
+	)
 }
 
 templ selectVCSProviderAction(vcsProviderID resource.TfeID) {
@@ -50,34 +41,25 @@ type connectProps struct {
 	provider *vcs.Provider
 }
 
-templ connect(props connectProps) {
-	@helpers.Layout(helpers.LayoutProps{
-		Title:        "new module",
-		Organization: props.provider.Organization,
-		Breadcrumbs: []helpers.Breadcrumb{
-			{Name: "Modules", Link: paths.Modules(props.provider.Organization)},
-			{Name: "new"},
+templ (t *templates) connect(props connectProps) {
+	@ConnectionSteps(SelectRepoStep)
+	<h3 class="font-semibold">Choose a repository</h3>
+	<div>
+		Choose the repository that hosts your module source code. We'll watch this for commits and tags. The format of your repository name should be `{ "terraform-<PROVIDER>-<NAME>" }`.
+	</div>
+	<form action={ paths.CreateModule(props.provider.Organization) } method="POST">
+		<input type="hidden" name="vcs_provider_id" id="vcs_provider_id" value={ props.provider.ID.String() }/>
+		<input class="input" type="text" name="identifier" id="identifier" value="" placeholder="{owner}/{repository}" required/>
+		<button class="btn">Connect</button>
+	</form>
+	@helpers.UnpaginatedTable(
+		&ReposTable{
+			Actions: moduleRepoSelector{
+				provider: props.provider,
+			}.action,
 		},
-	}) {
-		@ConnectionSteps(SelectRepoStep)
-		<h3 class="font-semibold">Choose a repository</h3>
-		<div>
-			Choose the repository that hosts your module source code. We'll watch this for commits and tags. The format of your repository name should be `{ "terraform-<PROVIDER>-<NAME>" }`.
-		</div>
-		<form action={ paths.CreateModule(props.provider.Organization) } method="POST">
-			<input type="hidden" name="vcs_provider_id" id="vcs_provider_id" value={ props.provider.ID.String() }/>
-			<input class="input" type="text" name="identifier" id="identifier" value="" placeholder="{owner}/{repository}" required/>
-			<button class="btn">Connect</button>
-		</form>
-		@helpers.UnpaginatedTable(
-			&ReposTable{
-				Actions: moduleRepoSelector{
-					provider: props.provider,
-				}.action,
-			},
-			props.repos,
-		)
-	}
+		props.repos,
+	)
 }
 
 type moduleRepoSelector struct {
@@ -101,31 +83,22 @@ type moduleListProps struct {
 	selectedProviders     []string
 }
 
-templ moduleList(props moduleListProps) {
-	@helpers.Layout(helpers.LayoutProps{
-		Title:          "Modules",
-		Organization:   props.organization,
-		ContentActions: moduleListActions(props),
-		Breadcrumbs: []helpers.Breadcrumb{
-			{Name: "Modules"},
-		},
-	}) {
-		<form action={ templ.SafeURL(helpers.CurrentURL(ctx)) }>
-			@helpers.Filter(helpers.FilterProps[string]{
-				Title:            "Filter by provider",
-				All:              props.allProviders,
-				Selected:         props.selectedProviders,
-				ParamName:        "search[providers]",
-				Visible:          props.providerFilterVisible,
-				VisibleParamName: "provider_filter_visible",
-				Label:            providerFilterLabel,
-				CheckboxClass: func(_ string) string {
-					return "checkbox-accent"
-				},
-			})
-		</form>
-		@helpers.Table(&moduleTable{}, props.page)
-	}
+templ (t *templates) moduleList(props moduleListProps) {
+	<form action={ templ.SafeURL(helpers.CurrentURL(ctx)) }>
+		@helpers.Filter(helpers.FilterProps[string]{
+			Title:            "Filter by provider",
+			All:              props.allProviders,
+			Selected:         props.selectedProviders,
+			ParamName:        "search[providers]",
+			Visible:          props.providerFilterVisible,
+			VisibleParamName: "provider_filter_visible",
+			Label:            providerFilterLabel,
+			CheckboxClass: func(_ string) string {
+				return "checkbox-accent"
+			},
+		})
+	</form>
+	@helpers.Table(&moduleTable{}, props.page)
 }
 
 templ providerFilterLabel(provider string) {
@@ -175,87 +148,78 @@ type moduleGetProps struct {
 	hostname         string
 }
 
-templ moduleGet(props moduleGetProps) {
-	@helpers.Layout(helpers.LayoutProps{
-		Title:        "modules",
-		Organization: props.module.Organization,
-		Breadcrumbs: []helpers.Breadcrumb{
-			{Name: "Modules", Link: paths.Modules(props.module.Organization)},
-			{Name: props.module.Name},
-		},
-	}) {
-		<div class="flex flex-col gap-4">
-			switch props.module.Status {
-				case module.ModuleStatusPending:
-					Module status is still pending.
-				case module.ModuleStatusNoVersionTags:
-					Module source repository has no tags.
-				case module.ModuleStatusSetupFailed:
-					Module setup failed.
-				case module.ModuleStatusSetupComplete:
-					<div class="flex gap-4 items-center">
-						<form class="flex gap-2 items-center" action={ paths.Module(props.module.ID) } method="GET">
-							<label>Version</label>
-							<select class="select w-32" name="version" id="version" onchange="this.form.submit()">
-								{{ slices.Reverse(props.module.AvailableVersions()) }}
-								for _, mv := range props.module.AvailableVersions() {
-									if mv.Status == module.ModuleVersionStatusOK {
-										<option value={ mv.Version } selected?={ mv.Version == props.currentVersion.Version }>{ mv.Version }</option>
-									}
+templ (t *templates) moduleGet(props moduleGetProps) {
+	<div class="flex flex-col gap-4">
+		switch props.module.Status {
+			case module.ModuleStatusPending:
+				Module status is still pending.
+			case module.ModuleStatusNoVersionTags:
+				Module source repository has no tags.
+			case module.ModuleStatusSetupFailed:
+				Module setup failed.
+			case module.ModuleStatusSetupComplete:
+				<div class="flex gap-4 items-center">
+					<form class="flex gap-2 items-center" action={ paths.Module(props.module.ID) } method="GET">
+						<label>Version</label>
+						<select class="select w-32" name="version" id="version" onchange="this.form.submit()">
+							{{ slices.Reverse(props.module.AvailableVersions()) }}
+							for _, mv := range props.module.AvailableVersions() {
+								if mv.Status == module.ModuleVersionStatusOK {
+									<option value={ mv.Version } selected?={ mv.Version == props.currentVersion.Version }>{ mv.Version }</option>
 								}
-							</select>
-						</form>
-						if props.module.Connection != nil {
-							<div>
-								Source <span class="bg-base-300" id="vcs-repo">{ props.module.Connection.Repo.String() }</span>
-							</div>
-						}
-					</div>
-					<div>
-						<h3 class="font-semibold"></h3>
-						<div class="flex flex-col gap-2">
-							<label for="usage">Usage</label>
-							<div>
-								<div class="whitespace-pre overflow-auto border-1 p-1 font-mono" id="usage">
-									{ `module "` + props.module.Name + `" {
+							}
+						</select>
+					</form>
+					if props.module.Connection != nil {
+						<div>
+							Source <span class="bg-base-300" id="vcs-repo">{ props.module.Connection.Repo.String() }</span>
+						</div>
+					}
+				</div>
+				<div>
+					<h3 class="font-semibold"></h3>
+					<div class="flex flex-col gap-2">
+						<label for="usage">Usage</label>
+						<div>
+							<div class="whitespace-pre overflow-auto border-1 p-1 font-mono" id="usage">
+								{ `module "` + props.module.Name + `" {
 	source = "` + props.hostname + `/` + props.module.Organization.String() + `/` + props.module.Name + `/` + props.module.Provider + `"
 	version = "` + props.currentVersion.Version + `"
 }` }
-								</div>
 							</div>
 						</div>
 					</div>
-					<div class="prose">
-						@templ.Raw(strings.TrimSpace(string(props.readme)))
-					</div>
-					<div>
-						<h3 class="font-semibold">Resources</h3>
-						for resource := range props.terraformModule.ManagedResources {
-							<div>
-								<span class="bg-base-300">{ resource }</span>
-							</div>
-						}
-					</div>
-					<div>
-						<h3 class="font-semibold">Variables</h3>
-						for v := range props.terraformModule.Variables {
-							<div>
-								<span class="bg-base-300">{ v }</span>
-							</div>
-						}
-					</div>
-					<div>
-						<h3 class="font-semibold">Outputs</h3>
-						for output := range props.terraformModule.Outputs {
-							<div>
-								<span class="bg-base-300">{ output }</span>
-							</div>
-						}
-					</div>
-			}
-			<form id="module-delete-button" action={ paths.DeleteModule(props.module.ID) } method="POST">
-				<button class="btn btn-error btn-outline" onclick="return confirm('Are you sure you want to delete?')">Delete module</button>
-			</form>
-		</div>
-	}
+				</div>
+				<div class="prose">
+					@templ.Raw(strings.TrimSpace(string(props.readme)))
+				</div>
+				<div>
+					<h3 class="font-semibold">Resources</h3>
+					for resource := range props.terraformModule.ManagedResources {
+						<div>
+							<span class="bg-base-300">{ resource }</span>
+						</div>
+					}
+				</div>
+				<div>
+					<h3 class="font-semibold">Variables</h3>
+					for v := range props.terraformModule.Variables {
+						<div>
+							<span class="bg-base-300">{ v }</span>
+						</div>
+					}
+				</div>
+				<div>
+					<h3 class="font-semibold">Outputs</h3>
+					for output := range props.terraformModule.Outputs {
+						<div>
+							<span class="bg-base-300">{ output }</span>
+						</div>
+					}
+				</div>
+		}
+		<form id="module-delete-button" action={ paths.DeleteModule(props.module.ID) } method="POST">
+			<button class="btn btn-error btn-outline" onclick="return confirm('Are you sure you want to delete?')">Delete module</button>
+		</form>
+	</div>
 }

@@ -40,12 +40,7 @@ type usersClient interface {
 }
 
 // addUserHandlers registers user UI handlers with the router
-func addUserHandlers(r *mux.Router, users usersClient, authorizer authz.Interface) {
-	h := &userHandlers{
-		authorizer: authorizer,
-		users:      users,
-	}
-
+func addUserHandlers(r *mux.Router, h *Handlers) {
 	r.HandleFunc("/logout", h.logout).Methods("POST")
 	r.HandleFunc("/organizations/{name}/users", h.listOrganizationUsers).Methods("GET")
 	r.HandleFunc("/profile", h.profileHandler).Methods("GET")
@@ -65,18 +60,18 @@ func addUserHandlers(r *mux.Router, users usersClient, authorizer authz.Interfac
 	r.HandleFunc("/settings/tokens", h.userTokens).Methods("GET")
 }
 
-func (h *userHandlers) logout(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) logout(w http.ResponseWriter, r *http.Request) {
 	html.SetCookie(w, tokens.SessionCookie, "", &time.Time{})
 	http.Redirect(w, r, "/login", http.StatusFound)
 }
 
-func (h *userHandlers) listOrganizationUsers(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) listOrganizationUsers(w http.ResponseWriter, r *http.Request) {
 	var params user.ListOptions
 	if err := decode.All(&params, r); err != nil {
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
-	users, err := h.users.ListOrganizationUsers(r.Context(), params.Organization)
+	users, err := h.Users.ListOrganizationUsers(r.Context(), params.Organization)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -86,20 +81,34 @@ func (h *userHandlers) listOrganizationUsers(w http.ResponseWriter, r *http.Requ
 		organization: params.Organization,
 		users:        resource.NewPage(users, params.PageOptions, nil),
 	}
-	html.Render(userList(props), w, r)
+	h.renderPage(
+		userList(props),
+		"users",
+		w,
+		r,
+		withOrganization(params.Organization),
+		withBreadcrumbs(helpers.Breadcrumb{Name: "Users"}),
+	)
 }
 
-func (h *userHandlers) profileHandler(w http.ResponseWriter, r *http.Request) {
-	html.Render(profile(), w, r)
+func (h *Handlers) profileHandler(w http.ResponseWriter, r *http.Request) {
+	h.renderPage(
+		h.templates.profile(),
+		"profile",
+		w,
+		r,
+		withBreadcrumbs(helpers.Breadcrumb{Name: "Profile"}),
+		withContentActions(profileActions()),
+	)
 }
 
-func (h *userHandlers) site(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) site(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, paths.Organizations(), http.StatusFound)
 }
 
 // team membership handlers
 
-func (h *userHandlers) addTeamMember(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) addTeamMember(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		TeamID   resource.TfeID `schema:"team_id,required"`
 		Username *user.Username `schema:"username,required"`
@@ -109,7 +118,7 @@ func (h *userHandlers) addTeamMember(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := h.users.AddTeamMembership(r.Context(), params.TeamID, []user.Username{*params.Username})
+	err := h.Users.AddTeamMembership(r.Context(), params.TeamID, []user.Username{*params.Username})
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -119,7 +128,7 @@ func (h *userHandlers) addTeamMember(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, paths.Team(params.TeamID), http.StatusFound)
 }
 
-func (h *userHandlers) removeTeamMember(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) removeTeamMember(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		TeamID   resource.TfeID `schema:"team_id,required"`
 		Username user.Username  `schema:"username,required"`
@@ -129,7 +138,7 @@ func (h *userHandlers) removeTeamMember(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	err := h.users.RemoveTeamMembership(r.Context(), params.TeamID, []user.Username{params.Username})
+	err := h.Users.RemoveTeamMembership(r.Context(), params.TeamID, []user.Username{params.Username})
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -143,17 +152,26 @@ func (h *userHandlers) removeTeamMember(w http.ResponseWriter, r *http.Request) 
 // User tokens
 //
 
-func (h *userHandlers) newUserToken(w http.ResponseWriter, r *http.Request) {
-	html.Render(newToken(), w, r)
+func (h *Handlers) newUserToken(w http.ResponseWriter, r *http.Request) {
+	h.renderPage(
+		h.templates.newToken(),
+		"new user token",
+		w,
+		r,
+		withBreadcrumbs(
+			helpers.Breadcrumb{Name: "user tokens", Link: paths.Tokens()},
+			helpers.Breadcrumb{Name: "new"},
+		),
+	)
 }
 
-func (h *userHandlers) createUserToken(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) createUserToken(w http.ResponseWriter, r *http.Request) {
 	var opts user.CreateUserTokenOptions
 	if err := decode.Form(&opts, r); err != nil {
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
-	_, token, err := h.users.CreateToken(r.Context(), opts)
+	_, token, err := h.Users.CreateToken(r.Context(), opts)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -166,8 +184,8 @@ func (h *userHandlers) createUserToken(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, paths.Tokens(), http.StatusFound)
 }
 
-func (h *userHandlers) userTokens(w http.ResponseWriter, r *http.Request) {
-	tokens, err := h.users.ListTokens(r.Context())
+func (h *Handlers) userTokens(w http.ResponseWriter, r *http.Request) {
+	tokens, err := h.Users.ListTokens(r.Context())
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -178,16 +196,23 @@ func (h *userHandlers) userTokens(w http.ResponseWriter, r *http.Request) {
 		return tokens[i].CreatedAt.After(tokens[j].CreatedAt)
 	})
 
-	html.Render(tokenList(tokens), w, r)
+	h.renderPage(
+		h.templates.tokenList(tokens),
+		"user tokens",
+		w,
+		r,
+		withBreadcrumbs(helpers.Breadcrumb{Name: "user tokens"}),
+		withContentActions(tokenListActions()),
+	)
 }
 
-func (h *userHandlers) deleteUserToken(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) deleteUserToken(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.ID("id", r)
 	if err != nil {
 		html.Error(r, w, "missing id", html.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
-	if err := h.users.DeleteToken(r.Context(), id); err != nil {
+	if err := h.Users.DeleteToken(r.Context(), id); err != nil {
 		html.Error(r, w, err.Error())
 		return
 	}

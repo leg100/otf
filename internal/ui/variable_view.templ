@@ -1,7 +1,6 @@
 package ui
 
 import (
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/html/components/paths"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
@@ -10,22 +9,12 @@ import (
 	"github.com/leg100/otf/internal/workspace"
 )
 
-templ newWorkspaceVariable(ws *workspace.Workspace) {
-	@helpers.Layout(helpers.LayoutProps{
-		Title:        "new variable",
-		Organization: ws.Organization,
-		Breadcrumbs: []helpers.Breadcrumb{
-			{Name: "Workspaces", Link: paths.Workspaces(ws.Organization)},
-			{Name: ws.Name, Link: paths.Workspace(ws.ID)},
-			{Name: "new"},
-		},
-	}) {
-		<span class="text-xl">Add a new workspace variable</span>
-		@variableForm(variableFormProps{
-			variable: &variable.Variable{},
-			action:   paths.CreateVariable(ws.ID),
-		})
-	}
+templ (t *templates) newWorkspaceVariable(ws *workspace.Workspace) {
+	<span class="text-xl">Add a new workspace variable</span>
+	@variableForm(variableFormProps{
+		variable: &variable.Variable{},
+		action:   paths.CreateVariable(ws.ID),
+	})
 }
 
 type newVariableSetProps struct {
@@ -33,41 +22,22 @@ type newVariableSetProps struct {
 	availableWorkspaces []resource.Info
 }
 
-templ newVariableSet(props newVariableSetProps) {
-	@helpers.Layout(helpers.LayoutProps{
-		Title:        "new variable set",
-		Organization: props.organization,
-		Breadcrumbs: []helpers.Breadcrumb{
-			{Name: "Variable Sets", Link: paths.VariableSets(props.organization)},
-			{Name: "new"},
-		},
-	}) {
-		<span class="text-xl">Add a new variable set</span>
-		@variableSetForm(variableSetFormProps{
-			set:                 &variable.VariableSet{Global: true}, // set global as default
-			action:              paths.CreateVariableSet(props.organization),
-			availableWorkspaces: props.availableWorkspaces,
-			existingWorkspaces:  []resource.Info{},
-		})
-	}
+templ (t *templates) newVariableSet(props newVariableSetProps) {
+	<span class="text-xl">Add a new variable set</span>
+	@variableSetForm(variableSetFormProps{
+		set:                 &variable.VariableSet{Global: true}, // set global as default
+		action:              paths.CreateVariableSet(props.organization),
+		availableWorkspaces: props.availableWorkspaces,
+		existingWorkspaces:  []resource.Info{},
+	})
 }
 
-templ newVSV(vs *variable.VariableSet) {
-	@helpers.Layout(helpers.LayoutProps{
-		Title:        "new variable | variable sets",
-		Organization: vs.Organization,
-		Breadcrumbs: []helpers.Breadcrumb{
-			{Name: "Variable Sets", Link: paths.VariableSets(vs.Organization)},
-			{Name: vs.Name, Link: paths.VariableSet(vs.ID)},
-			{Name: "new variable"},
-		},
-	}) {
-		<span class="text-xl">Add new variable to variable set</span>
-		@variableForm(variableFormProps{
-			variable: &variable.Variable{},
-			action:   paths.CreateVariableSetVariable(vs.ID),
-		})
-	}
+templ (t *templates) newVSV(vs *variable.VariableSet) {
+	<span class="text-xl">Add new variable to variable set</span>
+	@variableForm(variableFormProps{
+		variable: &variable.Variable{},
+		action:   paths.CreateVariableSetVariable(vs.ID),
+	})
 }
 
 type listWorkspaceVariablesProps struct {
@@ -85,33 +55,21 @@ type variableRow struct {
 	overwritten bool
 }
 
-templ listWorkspaceVariables(props listWorkspaceVariablesProps) {
-	@helpers.Layout(helpers.LayoutProps{
-		Title:        "variables",
-		Organization: props.ws.Organization,
-		Workspace:    internal.Ptr(props.ws.Info()),
-		ContentLinks: WorkspaceHeaderLinks(props.ws.ID, props.canUpdateWorkspace),
-		Breadcrumbs: []helpers.Breadcrumb{
-			{Name: "Workspaces", Link: paths.Workspaces(props.ws.Organization)},
-			{Name: props.ws.Name, Link: paths.Workspace(props.ws.ID)},
-			{Name: "variables", Link: paths.Variables(props.ws.ID)},
-		},
-	}) {
-		<div id="variables-table">
-			@helpers.UnpaginatedTable(
-				&variablesTable{
-					canDeleteVariable:       props.canCreateVariable,
-					workspaceVariablesTable: true,
-				},
-				props.rows,
-			)
-			if props.canCreateVariable {
-				<form class="mt-2" action={ paths.NewVariable(props.ws.ID) } method="GET">
-					<button class="btn">Add variable</button>
-				</form>
-			}
-		</div>
-	}
+templ (t *templates) listWorkspaceVariables(props listWorkspaceVariablesProps) {
+	<div id="variables-table">
+		@helpers.UnpaginatedTable(
+			&variablesTable{
+				canDeleteVariable:       props.canCreateVariable,
+				workspaceVariablesTable: true,
+			},
+			props.rows,
+		)
+		if props.canCreateVariable {
+			<form class="mt-2" action={ paths.NewVariable(props.ws.ID) } method="GET">
+				<button class="btn">Add variable</button>
+			</form>
+		}
+	</div>
 }
 
 type listVariableSetsProps struct {
@@ -120,19 +78,10 @@ type listVariableSetsProps struct {
 	canCreateVariableSet bool
 }
 
-templ listVariableSets(props listVariableSetsProps) {
-	@helpers.Layout(helpers.LayoutProps{
-		Title:          "variable sets",
-		Organization:   props.organization,
-		ContentActions: listVariableSetsActions(props),
-		Breadcrumbs: []helpers.Breadcrumb{
-			{Name: "Variable Sets"},
-		},
-	}) {
-		<div id="content-list">
-			@helpers.Table(&listVariableSetsTable{}, props.sets)
-		</div>
-	}
+templ (t *templates) listVariableSets(props listVariableSetsProps) {
+	<div id="content-list">
+		@helpers.Table(&listVariableSetsTable{}, props.sets)
+	</div>
 }
 
 templ listVariableSetsActions(props listVariableSetsProps) {
@@ -178,24 +127,13 @@ type editWorkspaceVariableProps struct {
 	variable *variable.Variable
 }
 
-templ editWorkspaceVariable(props editWorkspaceVariableProps) {
-	@helpers.Layout(helpers.LayoutProps{
-		Title:        "edit | " + props.variable.ID.String(),
-		Organization: props.ws.Organization,
-		Breadcrumbs: []helpers.Breadcrumb{
-			{Name: "Workspaces", Link: paths.Workspaces(props.ws.Organization)},
-			{Name: props.ws.Name, Link: paths.Workspace(props.ws.ID)},
-			{Name: "Variables", Link: paths.Variables(props.ws.ID)},
-			{Name: "edit"},
-		},
-	}) {
-		<span class="text-xl">Edit workspace variable</span>
-		@variableForm(variableFormProps{
-			variable: props.variable,
-			edit:     true,
-			action:   paths.UpdateVariable(props.variable.ID),
-		})
-	}
+templ (t *templates) editWorkspaceVariable(props editWorkspaceVariableProps) {
+	<span class="text-xl">Edit workspace variable</span>
+	@variableForm(variableFormProps{
+		variable: props.variable,
+		edit:     true,
+		action:   paths.UpdateVariable(props.variable.ID),
+	})
 }
 
 type editVariableSetProps struct {
@@ -206,36 +144,26 @@ type editVariableSetProps struct {
 	canDeleteVariable   bool
 }
 
-templ editVariableSet(props editVariableSetProps) {
-	@helpers.Layout(helpers.LayoutProps{
-		Title:        "edit variable set",
-		Organization: props.set.Organization,
-		Breadcrumbs: []helpers.Breadcrumb{
-			{Name: "Variable Sets", Link: paths.VariableSets(props.set.Organization)},
-			{Name: props.set.Name},
-			{Name: "edit"},
+templ (t *templates) editVariableSet(props editVariableSetProps) {
+	<span class="text-xl">Edit variable set</span>
+	@variableSetForm(variableSetFormProps{
+		set:                 props.set,
+		edit:                true,
+		action:              paths.UpdateVariableSet(props.set.ID),
+		availableWorkspaces: props.availableWorkspaces,
+		existingWorkspaces:  props.existingWorkspaces,
+	})
+	<hr class="my-4"/>
+	<h3 class="text-xl">Variables</h3>
+	@helpers.UnpaginatedTable(
+		&variablesTable{
+			canDeleteVariable: props.canDeleteVariable,
 		},
-	}) {
-		<span class="text-xl">Edit variable set</span>
-		@variableSetForm(variableSetFormProps{
-			set:                 props.set,
-			edit:                true,
-			action:              paths.UpdateVariableSet(props.set.ID),
-			availableWorkspaces: props.availableWorkspaces,
-			existingWorkspaces:  props.existingWorkspaces,
-		})
-		<hr class="my-4"/>
-		<h3 class="text-xl">Variables</h3>
-		@helpers.UnpaginatedTable(
-			&variablesTable{
-				canDeleteVariable: props.canDeleteVariable,
-			},
-			props.rows,
-		)
-		<form class="mt-2" action={ paths.NewVariableSetVariable(props.set.ID) } method="GET">
-			<button class="btn" id="add-variable-button">Add variable</button>
-		</form>
-	}
+		props.rows,
+	)
+	<form class="mt-2" action={ paths.NewVariableSetVariable(props.set.ID) } method="GET">
+		<button class="btn" id="add-variable-button">Add variable</button>
+	</form>
 }
 
 type editVSVProps struct {
@@ -243,25 +171,13 @@ type editVSVProps struct {
 	variable *variable.Variable
 }
 
-templ editVSV(props editVSVProps) {
-	@helpers.Layout(helpers.LayoutProps{
-		Title:        "edit variable set variable",
-		Organization: props.set.Organization,
-		Breadcrumbs: []helpers.Breadcrumb{
-			{Name: "Variable Sets", Link: paths.VariableSets(props.set.Organization)},
-			{Name: props.set.Name, Link: paths.EditVariableSet(props.set.ID)},
-			{Name: "Variables"},
-			{Name: props.variable.ID.String()},
-			{Name: "edit"},
-		},
-	}) {
-		<span class="text-xl">Edit variable</span>
-		@variableForm(variableFormProps{
-			variable: props.variable,
-			edit:     true,
-			action:   paths.UpdateVariableSetVariable(props.variable.ID),
-		})
-	}
+templ (t *templates) editVSV(props editVSVProps) {
+	<span class="text-xl">Edit variable</span>
+	@variableForm(variableFormProps{
+		variable: props.variable,
+		edit:     true,
+		action:   paths.UpdateVariableSetVariable(props.variable.ID),
+	})
 }
 
 type variableFormProps struct {

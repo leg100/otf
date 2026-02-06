@@ -14,33 +14,26 @@ type newAppViewProps struct {
 	githubHostname string
 }
 
-templ newAppView(props newAppViewProps) {
-	@helpers.Layout(helpers.LayoutProps{
-		Title: "select app owner",
-		Breadcrumbs: []helpers.Breadcrumb{
-			{Name: "Create GitHub app"},
-		},
-	}) {
-		<script src={ helpers.AssetPath(ctx, "/static/js/github_apps_new.js") }></script>
-		<div x-data={ "action('" + props.githubHostname + "', '" + props.manifest + "')" }>
-			<form class="flex flex-col gap-4" :action="action" method="post">
-				<div class="field">
-					<label for="organization">Organization</label>
-					<span class="description">
-						If assigning ownership to a GitHub organization, enter its name here. Otherwise ownership is assigned to your personal GitHub account.
-					</span>
-					<input class="input w-48" id="organization" x-model="organization"/>
-				</div>
-				<div class="form-checkbox">
-					<input type="checkbox" id="public" x-model="public" x-init="$watch('public', value => manifest.public = public)"/>
-					<label for="public">Public</label>
-					<span class="description">By default an app is private and can only be installed on the owner's account. If you intend to install the app in more than one organization or user account then it is necessary to make the app public.</span>
-				</div>
-				<input type="hidden" name="manifest" :value="JSON.stringify(manifest)"/>
-				<button class="btn w-40">Create</button>
-			</form>
-		</div>
-	}
+templ (t *templates) newAppView(props newAppViewProps) {
+	<script src={ helpers.AssetPath(ctx, "/static/js/github_apps_new.js") }></script>
+	<div x-data={ "action('" + props.githubHostname + "', '" + props.manifest + "')" }>
+		<form class="flex flex-col gap-4" :action="action" method="post">
+			<div class="field">
+				<label for="organization">Organization</label>
+				<span class="description">
+					If assigning ownership to a GitHub organization, enter its name here. Otherwise ownership is assigned to your personal GitHub account.
+				</span>
+				<input class="input w-48" id="organization" x-model="organization"/>
+			</div>
+			<div class="form-checkbox">
+				<input type="checkbox" id="public" x-model="public" x-init="$watch('public', value => manifest.public = public)"/>
+				<label for="public">Public</label>
+				<span class="description">By default an app is private and can only be installed on the owner's account. If you intend to install the app in more than one organization or user account then it is necessary to make the app public.</span>
+			</div>
+			<input type="hidden" name="manifest" :value="JSON.stringify(manifest)"/>
+			<button class="btn w-40">Create</button>
+		</form>
+	</div>
 }
 
 type getAppsProps struct {
@@ -51,44 +44,37 @@ type getAppsProps struct {
 	canDeleteApp   bool
 }
 
-templ getApps(props getAppsProps) {
-	@helpers.Layout(helpers.LayoutProps{
-		Title: "github app",
-		Breadcrumbs: []helpers.Breadcrumb{
-			{Name: "GitHub app"},
-		},
-	}) {
-		if props.app != nil {
+templ (t *templates) getApps(props getAppsProps) {
+	if props.app != nil {
+		@helpers.UnpaginatedTable(
+			&appTable{githubHostname: props.githubHostname, canDeleteApp: props.canDeleteApp},
+			[]*github.App{props.app},
+		)
+		<div class="divider"></div>
+		<h3 class="font-semibold text-lg">Installations</h3>
+		<form action={ templ.SafeURL(props.app.NewInstallURL(props.githubHostname)) } method="GET" target="GithubTab">
+			<button class="btn w-32 flex gap-1 items-center justify-center">
+				<span>
+					Install
+				</span>
+				@helpers.ExternalIcon()
+			</button>
+		</form>
+		<div id="installations">
 			@helpers.UnpaginatedTable(
-				&appTable{githubHostname: props.githubHostname, canDeleteApp: props.canDeleteApp},
-				[]*github.App{props.app},
+				&installsTable{},
+				props.installations,
 			)
-			<div class="divider"></div>
-			<h3 class="font-semibold text-lg">Installations</h3>
-			<form action={ templ.SafeURL(props.app.NewInstallURL(props.githubHostname)) } method="GET" target="GithubTab">
-				<button class="btn w-32 flex gap-1 items-center justify-center">
-					<span>
-						Install
-					</span>
-					@helpers.ExternalIcon()
-				</button>
-			</form>
-			<div id="installations">
-				@helpers.UnpaginatedTable(
-					&installsTable{},
-					props.installations,
-				)
-			</div>
-		} else {
-			<span>
-				No GitHub app found.
-				if props.canCreateApp {
-					Create an app <a id="new-github-app-link" class="underline" href={ paths.NewGithubApp() }>here</a>.
-				} else {
-					To create an app you need to possess the <a class="underline" href="https://docs.otf.ninja/auth/site_admins/">site admin</a> role.
-				}
-			</span>
-		}
+		</div>
+	} else {
+		<span>
+			No GitHub app found.
+			if props.canCreateApp {
+				Create an app <a id="new-github-app-link" class="underline" href={ paths.NewGithubApp() }>here</a>.
+			} else {
+				To create an app you need to possess the <a class="underline" href="https://docs.otf.ninja/auth/site_admins/">site admin</a> role.
+			}
+		</span>
 	}
 }
 

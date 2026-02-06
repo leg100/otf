@@ -9,24 +9,16 @@ import (
 	"time"
 )
 
-templ organizationNew() {
-	@helpers.Layout(helpers.LayoutProps{
-		Title: "new organization",
-		Breadcrumbs: []helpers.Breadcrumb{
-			{Name: "organizations", Link: paths.Organizations()},
-			{Name: "new"},
-		},
-	}) {
-		<form class="flex flex-col gap-2" action={ paths.CreateOrganization() } method="POST">
-			<div class="field">
-				<label for="name">Name</label>
-				<input class="input w-80" type="text" name="name" id="name" required/>
-			</div>
-			<div>
-				<button class="btn" id="create-organization-button">Create organization</button>
-			</div>
-		</form>
-	}
+templ (t *templates) organizationNew() {
+	<form class="flex flex-col gap-2" action={ paths.CreateOrganization() } method="POST">
+		<div class="field">
+			<label for="name">Name</label>
+			<input class="input w-80" type="text" name="name" id="name" required/>
+		</div>
+		<div>
+			<button class="btn" id="create-organization-button">Create organization</button>
+		</div>
+	</form>
 }
 
 type organizationListProps struct {
@@ -34,19 +26,8 @@ type organizationListProps struct {
 	CanCreate bool
 }
 
-templ organizationList(props organizationListProps) {
-	{{
-		layoutProps := helpers.LayoutProps{
-			Title: "organizations",
-			Breadcrumbs: []helpers.Breadcrumb{
-				{Name: "organizations"},
-			},
-			ContentActions: organizationListActions(props.CanCreate),
-		}
-	}}
-	@helpers.Layout(layoutProps) {
-		@helpers.Table(&organizationTable{}, props.Page)
-	}
+templ (t *templates) organizationList(props organizationListProps) {
+	@helpers.Table(&organizationTable{}, props.Page)
 }
 
 type organizationTable struct{}
@@ -86,55 +67,39 @@ templ organizationListActions(canCreate bool) {
 	</form>
 }
 
-templ organizationEdit(org *organization.Organization) {
-	@helpers.Layout(helpers.LayoutProps{
-		Title:        org.Name.String(),
-		Organization: org.Name,
-		Breadcrumbs: []helpers.Breadcrumb{
-			{Name: "Settings"},
-		},
-	}) {
-		<form class="flex flex-col gap-5" action={ paths.UpdateOrganization(org.Name) } method="POST">
-			<div class="field">
-				<label for="name">Name</label>
-				<input class="input w-80" type="text" name="new_name" id="name" value={ org.Name.String() } required/>
-			</div>
-			<div class="field">
-				<button class="btn w-72">Update organization name</button>
-			</div>
-		</form>
-		<hr class="my-4"/>
-		<h3 class="font-semibold text-lg mb-2">Advanced</h3>
-		<form action={ paths.DeleteOrganization(org.Name) } method="POST">
-			<button id="delete-organization-button" class="btn btn-error btn-outline" onclick="return confirm('Are you sure you want to delete?')">
-				Delete organization
-			</button>
-			<input type="hidden" name="id" value={ org.ID.String() }/>
-		</form>
-	}
+templ (t *templates) organizationEdit(org *organization.Organization) {
+	<form class="flex flex-col gap-5" action={ paths.UpdateOrganization(org.Name) } method="POST">
+		<div class="field">
+			<label for="name">Name</label>
+			<input class="input w-80" type="text" name="new_name" id="name" value={ org.Name.String() } required/>
+		</div>
+		<div class="field">
+			<button class="btn w-72">Update organization name</button>
+		</div>
+	</form>
+	<hr class="my-4"/>
+	<h3 class="font-semibold text-lg mb-2">Advanced</h3>
+	<form action={ paths.DeleteOrganization(org.Name) } method="POST">
+		<button id="delete-organization-button" class="btn btn-error btn-outline" onclick="return confirm('Are you sure you want to delete?')">
+			Delete organization
+		</button>
+		<input type="hidden" name="id" value={ org.ID.String() }/>
+	</form>
 }
 
-templ getToken(org organization.Name, token *organization.OrganizationToken) {
-	@helpers.Layout(helpers.LayoutProps{
-		Title:        org.String(),
-		Organization: org,
-		Breadcrumbs: []helpers.Breadcrumb{
-			{Name: "Organization Token"},
-		},
-	}) {
-		<span class="text-base-content/60 text-sm">
-			The organization API token is used to manage teams, team membership and workspaces. This token does not have permission to perform plans and applies in workspaces.
-		</span>
-		if token != nil {
-			@helpers.UnpaginatedTable(
-				&organizationTokenTable{},
-				[]*organization.OrganizationToken{token},
-			)
-		} else {
-			<form class="mt-2" action={ paths.CreateOrganizationToken(org) } method="POST">
-				<button class="btn w-72">Create organization token</button>
-			</form>
-		}
+templ (t *templates) getToken(org organization.Name, token *organization.OrganizationToken) {
+	<span class="text-base-content/60 text-sm">
+		The organization API token is used to manage teams, team membership and workspaces. This token does not have permission to perform plans and applies in workspaces.
+	</span>
+	if token != nil {
+		@helpers.UnpaginatedTable(
+			&organizationTokenTable{},
+			[]*organization.OrganizationToken{token},
+		)
+	} else {
+		<form class="mt-2" action={ paths.CreateOrganizationToken(org) } method="POST">
+			<button class="btn w-72">Create organization token</button>
+		</form>
 	}
 }
 

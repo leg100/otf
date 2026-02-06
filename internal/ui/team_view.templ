@@ -8,25 +8,16 @@ import (
 	"github.com/leg100/otf/internal/ui/helpers"
 )
 
-templ newTeamView(organization organization.Name) {
-	@helpers.Layout(helpers.LayoutProps{
-		Title:        "new team",
-		Organization: organization,
-		Breadcrumbs: []helpers.Breadcrumb{
-			{Name: "Teams", Link: paths.Teams(organization)},
-			{Name: "new"},
-		},
-	}) {
-		<form class="flex flex-col gap-2" action={ paths.CreateTeam(organization) } method="POST">
-			<div class="field">
-				<label for="name">Name</label>
-				<input class="input w-80" type="text" name="name" id="name" required/>
-			</div>
-			<div>
-				<button class="btn" id="create-team-button">Create team</button>
-			</div>
-		</form>
-	}
+templ (t *templates) newTeamView(organization organization.Name) {
+	<form class="flex flex-col gap-2" action={ paths.CreateTeam(organization) } method="POST">
+		<div class="field">
+			<label for="name">Name</label>
+			<input class="input w-80" type="text" name="name" id="name" required/>
+		</div>
+		<div>
+			<button class="btn" id="create-team-button">Create team</button>
+		</div>
+	</form>
 }
 
 type listTeamsProps struct {
@@ -37,19 +28,10 @@ type listTeamsProps struct {
 
 type listOptions struct{}
 
-templ listTeams(props listTeamsProps) {
-	@helpers.Layout(helpers.LayoutProps{
-		Title:        "teams",
-		Organization: props.organization,
-		Breadcrumbs: []helpers.Breadcrumb{
-			{Name: "Teams"},
-		},
-		ContentActions: listTeamsActions(props),
-	}) {
-		<div id="content-list">
-			@helpers.Table(&teamTable{}, props.teams)
-		</div>
-	}
+templ (t *templates) listTeams(props listTeamsProps) {
+	<div id="content-list">
+		@helpers.Table(&teamTable{}, props.teams)
+	</div>
 }
 
 type teamTable struct{}

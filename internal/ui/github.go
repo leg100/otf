@@ -2,7 +2,6 @@ package ui
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -16,38 +15,19 @@ import (
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/ui/helpers"
 	"github.com/leg100/otf/internal/vcs"
 )
 
-type githubHandlers struct {
-	*internal.HostnameService
-
-	svc        githubClient
-	authorizer *authz.Authorizer
-
-	githubAPIURL        *internal.WebURL
-	skipTLSVerification bool
+func addGithubAppHandlers(r *mux.Router, h *Handlers) {
+	r.HandleFunc("/github-apps", h.getGithubApp).Methods("GET")
+	r.HandleFunc("/github-apps/new", h.newGithubApp).Methods("GET")
+	r.HandleFunc("/github-apps/exchange-code", h.exchangeCodeGithubApp).Methods("GET")
+	r.HandleFunc("/github-apps/{github_app_id}/delete", h.deleteGithubApp).Methods("POST")
+	r.HandleFunc("/github-apps/{github_app_id}/delete-install", h.deleteGithubAppInstall).Methods("POST")
 }
 
-// githubClient provides web handlers with access to github app service endpoints
-type githubClient interface {
-	CreateApp(ctx context.Context, opts github.CreateAppOptions) (*github.App, error)
-	GetApp(ctx context.Context) (*github.App, error)
-	DeleteApp(ctx context.Context) error
-
-	ListInstallations(ctx context.Context) ([]vcs.Installation, error)
-	DeleteInstallation(ctx context.Context, installID int64) error
-}
-
-func (h *githubHandlers) addHandlers(r *mux.Router) {
-	r.HandleFunc("/github-apps", h.get).Methods("GET")
-	r.HandleFunc("/github-apps/new", h.new).Methods("GET")
-	r.HandleFunc("/github-apps/exchange-code", h.exchangeCode).Methods("GET")
-	r.HandleFunc("/github-apps/{github_app_id}/delete", h.delete).Methods("POST")
-	r.HandleFunc("/github-apps/{github_app_id}/delete-install", h.deleteInstall).Methods("POST")
-}
-
-func (h *githubHandlers) new(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) newGithubApp(w http.ResponseWriter, r *http.Request) {
 	// Github manifest documented here:
 	// https://docs.github.com/en/apps/sharing-github-apps/registering-a-github-app-from-a-manifest#implementing-the-github-app-manifest-flow
 	type (
@@ -68,10 +48,10 @@ func (h *githubHandlers) new(w http.ResponseWriter, r *http.Request) {
 	)
 	m := manifest{
 		Name:        "otf-" + internal.GenerateRandomString(4),
-		URL:         h.URL(""),
-		SetupURL:    h.URL(paths.GithubApps()),
-		HookAttrs:   hookAttrs{URL: h.WebhookURL(github.AppEventsPath)},
-		Redirect:    h.URL(paths.ExchangeCodeGithubApp()),
+		URL:         h.HostnameService.URL(""),
+		SetupURL:    h.HostnameService.URL(paths.GithubApps()),
+		HookAttrs:   hookAttrs{URL: h.HostnameService.WebhookURL(github.AppEventsPath)},
+		Redirect:    h.HostnameService.URL(paths.ExchangeCodeGithubApp()),
 		Description: "Trigger terraform runs in OTF from GitHub",
 		Events:      []string{"push", "pull_request"},
 		Public:      false,
@@ -91,14 +71,20 @@ func (h *githubHandlers) new(w http.ResponseWriter, r *http.Request) {
 
 	props := newAppViewProps{
 		manifest:       string(marshaled),
-		githubHostname: h.githubAPIURL.Host,
+		githubHostname: h.GithubHostname.Host,
 	}
-	html.Render(newAppView(props), w, r)
+	h.renderPage(
+		h.templates.newAppView(props),
+		"select app owner",
+		w,
+		r,
+		withBreadcrumbs(helpers.Breadcrumb{Name: "Create GitHub app"}),
+	)
 }
 
-func (h *githubHandlers) get(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) getGithubApp(w http.ResponseWriter, r *http.Request) {
 	var installs []vcs.Installation
-	app, err := h.svc.GetApp(r.Context())
+	app, err := h.GithubApp.GetApp(r.Context())
 	if errors.Is(err, internal.ErrResourceNotFound) {
 		// app not found, which is ok.
 	} else if err != nil {
@@ -106,7 +92,7 @@ func (h *githubHandlers) get(w http.ResponseWriter, r *http.Request) {
 		return
 	} else {
 		// App found, now get installs
-		installs, err = h.svc.ListInstallations(r.Context())
+		installs, err = h.GithubApp.ListInstallations(r.Context())
 		if err != nil {
 			html.Error(r, w, err.Error())
 			return
@@ -116,14 +102,20 @@ func (h *githubHandlers) get(w http.ResponseWriter, r *http.Request) {
 	props := getAppsProps{
 		app:            app,
 		installations:  installs,
-		githubHostname: h.githubAPIURL.Host,
-		canCreateApp:   h.authorizer.CanAccess(r.Context(), authz.CreateGithubAppAction, resource.SiteID),
-		canDeleteApp:   h.authorizer.CanAccess(r.Context(), authz.DeleteGithubAppAction, resource.SiteID),
+		githubHostname: h.GithubHostname.Host,
+		canCreateApp:   h.Authorizer.CanAccess(r.Context(), authz.CreateGithubAppAction, resource.SiteID),
+		canDeleteApp:   h.Authorizer.CanAccess(r.Context(), authz.DeleteGithubAppAction, resource.SiteID),
 	}
-	html.Render(getApps(props), w, r)
+	h.renderPage(
+		h.templates.getApps(props),
+		"github app",
+		w,
+		r,
+		withBreadcrumbs(helpers.Breadcrumb{Name: "GitHub app"}),
+	)
 }
 
-func (h *githubHandlers) exchangeCode(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) exchangeCodeGithubApp(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		Code string `schema:"code,required"`
 	}
@@ -134,8 +126,8 @@ func (h *githubHandlers) exchangeCode(w http.ResponseWriter, r *http.Request) {
 
 	// exchange code for credentials using an anonymous client
 	client, err := github.NewClient(github.ClientOptions{
-		BaseURL:             h.githubAPIURL,
-		SkipTLSVerification: h.skipTLSVerification,
+		BaseURL:             h.GithubHostname,
+		SkipTLSVerification: h.SkipTLSVerification,
 	})
 	if err != nil {
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
@@ -152,12 +144,12 @@ func (h *githubHandlers) exchangeCode(w http.ResponseWriter, r *http.Request) {
 		Slug:          cfg.GetSlug(),
 		WebhookSecret: cfg.GetWebhookSecret(),
 		PrivateKey:    cfg.GetPEM(),
-		BaseURL:       h.githubAPIURL,
+		BaseURL:       h.GithubHostname,
 	}
 	if cfg.GetOwner().GetType() == "Organization" {
 		opts.Organization = cfg.GetOwner().Login
 	}
-	_, err = h.svc.CreateApp(r.Context(), opts)
+	_, err = h.GithubApp.CreateApp(r.Context(), opts)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -167,13 +159,13 @@ func (h *githubHandlers) exchangeCode(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, paths.GithubApps(), http.StatusFound)
 }
 
-func (h *githubHandlers) delete(w http.ResponseWriter, r *http.Request) {
-	app, err := h.svc.GetApp(r.Context())
+func (h *Handlers) deleteGithubApp(w http.ResponseWriter, r *http.Request) {
+	app, err := h.GithubApp.GetApp(r.Context())
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
 	}
-	if err := h.svc.DeleteApp(r.Context()); err != nil {
+	if err := h.GithubApp.DeleteApp(r.Context()); err != nil {
 		html.Error(r, w, err.Error())
 		return
 	}
@@ -188,7 +180,7 @@ func (h *githubHandlers) delete(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, paths.GithubApps(), http.StatusFound)
 }
 
-func (h *githubHandlers) deleteInstall(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) deleteGithubAppInstall(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		InstallID int64 `schema:"install_id,required"`
 	}
@@ -196,7 +188,7 @@ func (h *githubHandlers) deleteInstall(w http.ResponseWriter, r *http.Request) {
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
-	err := h.svc.DeleteInstallation(r.Context(), params.InstallID)
+	err := h.GithubApp.DeleteInstallation(r.Context(), params.InstallID)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return

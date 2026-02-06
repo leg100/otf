@@ -17,35 +17,27 @@ type listProps struct {
 	kinds        []vcs.Kind
 }
 
-templ list(props listProps) {
-	@helpers.Layout(helpers.LayoutProps{
-		Title:        "vcs providers",
-		Organization: props.organization,
-		Breadcrumbs: []helpers.Breadcrumb{
-			{Name: "VCS Providers"},
-		},
-	}) {
-		<div class="text-base-content/60 text-sm">
-			To connect workspaces and publish modules, OTF needs access to your version control system (VCS) provider. Use this page to create and list access to VCS providers.
-		</div>
-		<div class="flex flex-wrap gap-4 mt-4">
-			for _, kind := range props.kinds {
-				<form action={ paths.NewVCSProvider(props.organization) } method="GET">
-					<button class="btn">
-						@kind.Icon
-						New { internal.Title(string(kind.ID)) } Provider
-					</button>
-					<input type="hidden" name="kind" id="kind" value={ kind.ID }/>
-				</form>
-			}
-		</div>
-		<div id="content-list">
-			@helpers.Table(
-				&vcsTable{Actions: tableAction},
-				props.providers,
-			)
-		</div>
-	}
+templ (t *templates) list(props listProps) {
+	<div class="text-base-content/60 text-sm">
+		To connect workspaces and publish modules, OTF needs access to your version control system (VCS) provider. Use this page to create and list access to VCS providers.
+	</div>
+	<div class="flex flex-wrap gap-4 mt-4">
+		for _, kind := range props.kinds {
+			<form action={ paths.NewVCSProvider(props.organization) } method="GET">
+				<button class="btn">
+					@kind.Icon
+					New { internal.Title(string(kind.ID)) } Provider
+				</button>
+				<input type="hidden" name="kind" id="kind" value={ kind.ID }/>
+			</form>
+		}
+	</div>
+	<div id="content-list">
+		@helpers.Table(
+			&vcsTable{Actions: tableAction},
+			props.providers,
+		)
+	</div>
 }
 
 type vcsTable struct {
@@ -88,29 +80,19 @@ templ tableAction(vcsProviderID resource.TfeID) {
 	</form>
 }
 
-templ edit(provider *vcs.Provider) {
-	@helpers.Layout(helpers.LayoutProps{
-		Title:        "edit vcs provider",
-		Organization: provider.Organization,
-		Breadcrumbs: []helpers.Breadcrumb{
-			{Name: "VCS Providers", Link: paths.VCSProviders(provider.Organization)},
-			{Name: provider.String()},
-			{Name: "settings"},
-		},
-	}) {
-		@vcsForm(vcsFormProps{
-			provider: provider,
-			edit:     true,
-			action:   paths.UpdateVCSProvider(provider.ID),
-		})
-		<hr class="my-4"/>
-		<h3 class="font-semibold text-lg mb-2">Advanced</h3>
-		<form action={ paths.DeleteVCSProvider(provider.ID) } method="POST">
-			<button id="delete-vcs-provider-button" class="btn btn-outline btn-error" onclick="return confirm('Are you sure you want to delete?')">
-				Delete VCS provider
-			</button>
-		</form>
-	}
+templ (t *templates) edit(provider *vcs.Provider) {
+	@vcsForm(vcsFormProps{
+		provider: provider,
+		edit:     true,
+		action:   paths.UpdateVCSProvider(provider.ID),
+	})
+	<hr class="my-4"/>
+	<h3 class="font-semibold text-lg mb-2">Advanced</h3>
+	<form action={ paths.DeleteVCSProvider(provider.ID) } method="POST">
+		<button id="delete-vcs-provider-button" class="btn btn-outline btn-error" onclick="return confirm('Are you sure you want to delete?')">
+			Delete VCS provider
+		</button>
+	</form>
 }
 
 type newProviderProps struct {
@@ -118,20 +100,12 @@ type newProviderProps struct {
 	kind         vcs.Kind
 }
 
-templ newProvider(props newProviderProps) {
-	@helpers.Layout(helpers.LayoutProps{
-		Title:        "new vcs provider",
-		Organization: props.organization,
-		Breadcrumbs: []helpers.Breadcrumb{
-			{Name: "New VCS Provider"},
-		},
-	}) {
-		@vcsForm(vcsFormProps{
-			provider: &vcs.Provider{Kind: props.kind},
-			action:   paths.CreateVCSProvider(props.organization),
-			edit:     false,
-		})
-	}
+templ (t *templates) newProvider(props newProviderProps) {
+	@vcsForm(vcsFormProps{
+		provider: &vcs.Provider{Kind: props.kind},
+		action:   paths.CreateVCSProvider(props.organization),
+		edit:     false,
+	})
 }
 
 type vcsFormProps struct {

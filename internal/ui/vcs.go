@@ -13,6 +13,7 @@ import (
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/ui/helpers"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/templ-go/x/urlbuilder"
 )
@@ -33,20 +34,16 @@ type vcsClient interface {
 	GetKinds() []vcs.Kind
 }
 
-func addVCSHandlers(r *mux.Router, service *vcs.Service, hostnameService *internal.HostnameService) {
-	h := &vcsHandlers{
-		HostnameService: hostnameService,
-		client:          service,
-	}
-	r.HandleFunc("/organizations/{organization_name}/vcs-providers", h.list).Methods("GET")
-	r.HandleFunc("/organizations/{organization_name}/vcs-providers/new", h.new).Methods("GET")
-	r.HandleFunc("/organizations/{organization_name}/vcs-providers/create", h.create).Methods("POST")
-	r.HandleFunc("/vcs-providers/{vcs_provider_id}/edit", h.edit).Methods("GET")
-	r.HandleFunc("/vcs-providers/{vcs_provider_id}/update", h.update).Methods("POST")
-	r.HandleFunc("/vcs-providers/{vcs_provider_id}/delete", h.delete).Methods("POST")
+func addVCSHandlers(r *mux.Router, h *Handlers) {
+	r.HandleFunc("/organizations/{organization_name}/vcs-providers", h.listVCSProviders).Methods("GET")
+	r.HandleFunc("/organizations/{organization_name}/vcs-providers/new", h.newVCSProvider).Methods("GET")
+	r.HandleFunc("/organizations/{organization_name}/vcs-providers/create", h.createVCSProvider).Methods("POST")
+	r.HandleFunc("/vcs-providers/{vcs_provider_id}/edit", h.editVCSProvider).Methods("GET")
+	r.HandleFunc("/vcs-providers/{vcs_provider_id}/update", h.updateVCSProvider).Methods("POST")
+	r.HandleFunc("/vcs-providers/{vcs_provider_id}/delete", h.deleteVCSProvider).Methods("POST")
 }
 
-func (h *vcsHandlers) new(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) newVCSProvider(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		Organization organization.Name `schema:"organization_name,required"`
 		KindID       vcs.KindID        `schema:"kind,required"`
@@ -56,7 +53,7 @@ func (h *vcsHandlers) new(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	kind, err := h.client.GetKind(params.KindID)
+	kind, err := h.VCSProviders.GetKind(params.KindID)
 	if err != nil {
 		html.Error(r, w, "schema not found", html.WithStatus(http.StatusUnprocessableEntity))
 		return
@@ -66,16 +63,23 @@ func (h *vcsHandlers) new(w http.ResponseWriter, r *http.Request) {
 		organization: params.Organization,
 		kind:         kind,
 	}
-	html.Render(newProvider(props), w, r)
+	h.renderPage(
+		h.templates.newProvider(props),
+		"new vcs provider",
+		w,
+		r,
+		withOrganization(params.Organization),
+		withBreadcrumbs(helpers.Breadcrumb{Name: "New VCS Provider"}),
+	)
 }
 
-func (h *vcsHandlers) create(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) createVCSProvider(w http.ResponseWriter, r *http.Request) {
 	var params vcs.CreateOptions
 	if err := decode.All(&params, r); err != nil {
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
-	provider, err := h.client.Create(r.Context(), params)
+	provider, err := h.VCSProviders.Create(r.Context(), params)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -84,23 +88,34 @@ func (h *vcsHandlers) create(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, paths.VCSProviders(provider.Organization), http.StatusFound)
 }
 
-func (h *vcsHandlers) edit(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) editVCSProvider(w http.ResponseWriter, r *http.Request) {
 	providerID, err := decode.ID("vcs_provider_id", r)
 	if err != nil {
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
-	provider, err := h.client.Get(r.Context(), providerID)
+	provider, err := h.VCSProviders.Get(r.Context(), providerID)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
 	}
 
-	html.Render(edit(provider), w, r)
+	h.renderPage(
+		h.templates.edit(provider),
+		"edit vcs provider",
+		w,
+		r,
+		withOrganization(provider.Organization),
+		withBreadcrumbs(
+			helpers.Breadcrumb{Name: "VCS Providers", Link: paths.VCSProviders(provider.Organization)},
+			helpers.Breadcrumb{Name: provider.String()},
+			helpers.Breadcrumb{Name: "settings"},
+		),
+	)
 }
 
-func (h *vcsHandlers) update(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) updateVCSProvider(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		ID      resource.TfeID   `schema:"vcs_provider_id,required"`
 		Token   string           `schema:"token"`
@@ -122,7 +137,7 @@ func (h *vcsHandlers) update(w http.ResponseWriter, r *http.Request) {
 	if params.Token != "" {
 		opts.Token = &params.Token
 	}
-	provider, err := h.client.Update(r.Context(), params.ID, opts)
+	provider, err := h.VCSProviders.Update(r.Context(), params.ID, opts)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -131,13 +146,13 @@ func (h *vcsHandlers) update(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, paths.VCSProviders(provider.Organization), http.StatusFound)
 }
 
-func (h *vcsHandlers) list(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) listVCSProviders(w http.ResponseWriter, r *http.Request) {
 	var params vcs.ListOptions
 	if err := decode.All(&params, r); err != nil {
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
-	providers, err := h.client.List(r.Context(), params.Organization)
+	providers, err := h.VCSProviders.List(r.Context(), params.Organization)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -145,19 +160,26 @@ func (h *vcsHandlers) list(w http.ResponseWriter, r *http.Request) {
 	props := listProps{
 		organization: params.Organization,
 		providers:    resource.NewPage(providers, params.PageOptions, nil),
-		kinds:        h.client.GetKinds(),
+		kinds:        h.VCSProviders.GetKinds(),
 	}
-	html.Render(list(props), w, r)
+	h.renderPage(
+		h.templates.list(props),
+		"vcs providers",
+		w,
+		r,
+		withOrganization(params.Organization),
+		withBreadcrumbs(helpers.Breadcrumb{Name: "VCS Providers"}),
+	)
 }
 
-func (h *vcsHandlers) delete(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) deleteVCSProvider(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.ID("vcs_provider_id", r)
 	if err != nil {
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
-	provider, err := h.client.Delete(r.Context(), id)
+	provider, err := h.VCSProviders.Delete(r.Context(), id)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return

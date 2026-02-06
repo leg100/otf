@@ -7,26 +7,17 @@ import (
 	"strings"
 )
 
-templ menu(organization resource.ID) {
-	if organization != nil {
-		@organizationMenu(organization)
-	} else if Authenticated(ctx) {
-		@siteMenu()
-	}
-	// don't show menu if user unauthenticated
-}
-
-templ workspaceMenu(workspaceID resource.ID) {
-	<ul id="workspace-menu" class="menu w-full">
-		@MenuItem("Overview", paths.Workspace(workspaceID))
-		@MenuItem("Runs", paths.Runs(workspaceID), "/app/runs")
-		@MenuItem("Variables", paths.Variables(workspaceID), "/app/variables")
-		@MenuItem("Settings", paths.EditWorkspace(workspaceID))
+templ WorkspaceMenu(workspace resource.Info) {
+	<ul id="workspace-menu" class="menu menu-horizontal w-full">
+		@MenuItem("Overview", paths.Workspace(workspace.ID))
+		@MenuItem("Runs", paths.Runs(workspace.ID), "/app/runs")
+		@MenuItem("Variables", paths.Variables(workspace.ID), "/app/variables")
+		@MenuItem("Settings", paths.EditWorkspace(workspace.ID))
 	</ul>
 }
 
-templ organizationMenu(organization resource.ID) {
-	<ul id="organization-menu" class="menu w-full">
+templ OrganizationMenu(organization resource.ID) {
+	<ul id="organization-menu" class="menu menu-horizontal w-full">
 		@MenuItem("Workspaces", paths.Workspaces(organization), "/app/workspaces", "/app/variables")
 		if IsOwner(ctx, organization) || IsSiteAdmin(ctx) {
 			@MenuItem("Runs", paths.OrganizationRuns(organization), "/app/runs")
@@ -47,7 +38,7 @@ templ organizationMenu(organization resource.ID) {
 	</ul>
 }
 
-templ siteMenu() {
+templ SiteMenu() {
 	<ul class="menu w-full">
 		<li class="menu-title">
 			<div class="flex gap-2 items-center">

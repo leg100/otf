@@ -2,16 +2,18 @@ package helpers
 
 import (
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/html/components/paths"
 	"github.com/leg100/otf/internal/resource"
 )
 
 type Breadcrumb struct {
 	Name string
-	Link templ.SafeURL
+	Link string
 }
 
 type LayoutProps struct {
+	Authorizer     *authz.Authorizer
 	Title          string
 	Organization   resource.ID
 	Workspace      *resource.Info
@@ -21,36 +23,44 @@ type LayoutProps struct {
 	ContentMenu    templ.Component
 	PreContent     templ.Component
 	PostContent    templ.Component
-	Menu           templ.Component
 }
 
 templ Layout(props LayoutProps) {
+	{{
+		var menu templ.Component
+		if props.Workspace != nil {
+			menu = WorkspaceMenu(*props.Workspace)
+		} else if props.Organization != nil {
+			menu = OrganizationMenu(props.Organization)
+		} else if Authenticated(ctx) {
+			menu = SiteMenu()
+		}
+	}}
 	@BareLayout(BareLayoutProps{
 		Title:        props.Title,
 		Organization: props.Organization,
 		Workspace:    props.Workspace,
 		PreContent:   props.PreContent,
 		PostContent:  props.PostContent,
+		Menu:         menu,
 	}) {
 		<div class="my-2 mx-4">
 			<div class="flex flex-wrap items-center gap-4 pb-2 text-xl/9">
 				<div class="flex">
-					<span>
-						for i, crumb := range props.Breadcrumbs {
-							<span class={ templ.KV("font-bold", i == len(props.Breadcrumbs)-1) }>
-								if crumb.Link != "" {
-									<a
-										href={ crumb.Link }
-									>{ crumb.Name }</a>
-								} else {
-									{ crumb.Name }
-								}
-								if i < (len(props.Breadcrumbs) - 1) {
-									/&nbsp;
-								}
-							</span>
-						}
-					</span>
+					for i, crumb := range props.Breadcrumbs {
+						<h1 class="text-2xl font-bold">
+							if crumb.Link != "" {
+								<a
+									href={ crumb.Link }
+								>{ crumb.Name }</a>
+							} else {
+								{ crumb.Name }
+							}
+							if i < (len(props.Breadcrumbs) - 1) {
+								/&nbsp;
+							}
+						</h1>
+					}
 				</div>
 				<div>
 					if props.ContentActions != nil {
@@ -83,28 +93,10 @@ type BareLayoutProps struct {
 }
 
 templ BareLayout(props BareLayoutProps) {
-	{{
-		var menu templ.Component
-		if props.Workspace != nil {
-			menu = workspaceMenu(props.Workspace.ID)
-		} else if props.Organization != nil {
-			menu = organizationMenu(props.Organization)
-		} else if Authenticated(ctx) {
-			menu = siteMenu()
-		}
-	}}
 	<!DOCTYPE html>
 	<html lang="en">
 		<head>
 			<script src={ AssetPath(ctx, "/static/js/theme-change.2.0.2.js") }></script>
-			<script async crossorigin="anonymous">
-				// Prevents page flicker with non-default themes:
-				// https://github.com/saadeghi/theme-change/issues/28
-				var selectedTheme = localStorage.getItem("theme");
-				if(selectedTheme) {
-					document.documentElement.setAttribute("data-theme", selectedTheme);
-				}
-			</script>
 			<meta charset="utf-8"/>
 			<meta name="viewport" content="width=device-width, initial-scale=1"/>
 			if props.PreContent != nil {
@@ -119,25 +111,20 @@ templ BareLayout(props BareLayoutProps) {
 			<script defer src={ AssetPath(ctx, "/static/js/alpine.3.15.4.min.js") }></script>
 			<link rel="stylesheet" href={ AssetPath(ctx, "/static/css/output.css") }/>
 		</head>
-		<body hx-ext="morph" class="min-h-screen grid grid-rows-[auto_1fr_auto] grid-cols-[200px_3fr]">
-			<header class="col-span-2 border-b-1 border-base-content/30">
+		<body hx-ext="morph" class="min-h-screen grid grid-rows-[auto_1fr_auto]">
+			<header class="border-b-1 border-base-content/30">
 				@navbar(props.Organization, props.Workspace)
-			</header>
-			if menu != nil {
-				<div class="border-r-1 border-base-content/30">
-					@menu
-				</div>
-			}
-			<main
-				class={
-					templ.KV("col-span-2", menu == nil),
-					templ.KV("max-w-7xl", menu != nil),
+				if props.Menu != nil {
+					<div>
+						@props.Menu
+					</div>
 				}
-			>
+			</header>
+			<main class="max-w-7xl">
 				@Flashes()
 				{ children... }
 			</main>
-			<footer class="col-span-2 border-t-1 border-base-content/30">
+			<footer class="border-t-1 border-base-content/30">
 				@footer()
 			</footer>
 			if props.PostContent != nil {
@@ -150,15 +137,19 @@ templ BareLayout(props BareLayoutProps) {
 templ navbar(organization resource.ID, workspace *resource.Info) {
 	<div class="navbar bg-base-100 min-h-1">
 		<div class="flex-1 flex gap-10">
-			<img src={ AssetPath(ctx, "/static/images/logo.svg") } alt="logo"/>
+			<div class="pl-2">
+				<img src={ AssetPath(ctx, "/static/images/logo.svg") } alt="logo"/>
+			</div>
 			<div class="flex gap-4 items-center">
 				if organization != nil {
-					<div class="flex gap-2 items-center">
-						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
-							<path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Z"></path>
-						</svg>
-						<span>{ organization.String() }</span>
-					</div>
+					<a href={ paths.Organization(organization) }>
+						<span class="flex gap-2 items-center">
+							<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+								<path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Z"></path>
+							</svg>
+							<span>{ organization.String() }</span>
+						</span>
+					</a>
 				}
 				if workspace != nil {
 					/

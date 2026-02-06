@@ -72,7 +72,7 @@ func tokenDescription(hostname string) templ.Component {
 		var templ_7745c5c3_Var3 templ.SafeURL
 		templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(u.String()))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/uitlab_view.templ`, Line: 29, Col: 58}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/gitlab_view.templ`, Line: 29, Col: 58}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 		if templ_7745c5c3_Err != nil {

@@ -1,332 +1,123 @@
 package ui
 
 import (
-	"context"
 	"fmt"
 	"github.com/leg100/otf/internal/http/html/components/paths"
-	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
-	"github.com/leg100/otf/internal/run"
+	runpkg "github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/ui/helpers"
-	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/workspace"
 	"strings"
 	"time"
 )
 
 type runListProps struct {
-	organization        organization.Name
-	ws                  *workspace.Workspace
+	filterByWorkspace   bool
 	status              []runstatus.Status
 	statusFilterVisible bool
 	canUpdateWorkspace  bool
-	table               runsTable
 	pageOptions         resource.PageOptions
-	page                *resource.Page[*run.Run]
+	page                *resource.Page[*runpkg.Run]
 }
 
-templ runList(props runListProps) {
-	{{
-		layoutProps := helpers.LayoutProps{
-			Title:        "runs",
-			Organization: props.organization,
-		}
-		if props.ws != nil {
-			layoutProps.Breadcrumbs = []helpers.Breadcrumb{
-				{Name: "Workspaces", Link: paths.Workspaces(props.organization)},
-				{Name: props.ws.Name, Link: paths.Workspace(props.ws.ID)},
-			}
-			layoutProps.ContentLinks = WorkspaceHeaderLinks(props.ws.ID, props.canUpdateWorkspace)
-		}
-		layoutProps.Breadcrumbs = append(layoutProps.Breadcrumbs, helpers.Breadcrumb{Name: "Runs"})
-	}}
-	@helpers.Layout(layoutProps) {
-		<form action="" hx-include="this">
-			<div class="flex flex-col gap-2">
-				@runstatus.Filter(props.status, props.statusFilterVisible)
-				@helpers.PollingTable(props.table, props.page)
-			</div>
-		</form>
-	}
-}
-
-type runsTable struct {
-	workspaceGetClient runWorkspaceGetClient
-	users              runUsersClient
-	configs            runConfigsClient
-}
-
-templ (t runsTable) Header() {
-	<th>Run</th>
-	<!-- add workspace column if not filtered by workspace ID -->
-	if t.workspaceGetClient != nil {
-		<th>Workspace</th>
-	}
-	<th>Source</th>
-	<th>Status</th>
-	<th class="hidden xl:block">Created</th>
-	<th>Actions</th>
-}
-
-templ (t runsTable) Row(run *run.Run) {
-	<tr id={ "run-item-" + run.ID.String() }>
-		<td>
-			<a class="link" href={ paths.Run(run.ID) }>
-				{ run.ID.String() }
-			</a>
-		</td>
-		<!-- provide workspace name if not filtered by workspace ID -->
-		if t.workspaceGetClient != nil {
-			<td>
-				<a class="link" href={ paths.Workspace(run.WorkspaceID) }>
-					{ t.getWorkspaceName(ctx, run) }
-				</a>
-			</td>
-		}
-		<td>
-			<div class="flex flex gap-2">
-				@t.avatar(run)
-				<div class="flex flex-col gap-2">
-					if run.CreatedBy != nil {
-						<span class="inline-block max-w-[16rem] truncate" id="run-created-by">
-							{ run.CreatedBy.String() }
-						</span>
-					} else if run.IngressAttributes != nil {
-						<span class="inline-block max-w-[16rem] truncate">
-							<a id="vcs-username" href={ templ.SafeURL(run.IngressAttributes.SenderHTMLURL) }>{ run.IngressAttributes.SenderUsername }</a>
-						</span>
-					}
-					<div class="flex gap-2 items-center">
-						@t.configs.GetSourceIcon(run.Source)
-						if run.IngressAttributes != nil {
-							<div class="badge badge-secondary badge-soft badge-sm font-mono">
-								<svg
-									xmlns="http://www.w3.org/2000/svg"
-									xml:space="preserve"
-									viewBox="0 0 97 97"
-									class="size-4"
-								>
-									<path fill="#F05133" d="M92.71 44.408 52.591 4.291c-2.31-2.311-6.057-2.311-8.369 0l-8.33 8.332L46.459 23.19c2.456-.83 5.272-.273 7.229 1.685 1.969 1.97 2.521 4.81 1.67 7.275l10.186 10.185c2.465-.85 5.307-.3 7.275 1.671 2.75 2.75 2.75 7.206 0 9.958-2.752 2.751-7.208 2.751-9.961 0-2.068-2.07-2.58-5.11-1.531-7.658l-9.5-9.499v24.997c.67.332 1.303.774 1.861 1.332 2.75 2.75 2.75 7.206 0 9.959-2.75 2.749-7.209 2.749-9.957 0-2.75-2.754-2.75-7.21 0-9.959.68-.679 1.467-1.193 2.307-1.537v-25.23c-.84-.344-1.625-.853-2.307-1.537-2.083-2.082-2.584-5.14-1.516-7.698L31.798 16.715 4.288 44.222c-2.311 2.313-2.311 6.06 0 8.371l40.121 40.118c2.31 2.311 6.056 2.311 8.369 0L92.71 52.779c2.311-2.311 2.311-6.06 0-8.371z"></path>
-								</svg>
-								if run.IngressAttributes.IsPullRequest {
-									<a id="pull-request-link" href={ templ.SafeURL(run.IngressAttributes.PullRequestURL) } title={ run.IngressAttributes.PullRequestTitle }>#{ run.IngressAttributes.PullRequestNumber }</a>
-								} else if run.IngressAttributes.Branch != "" {
-									<a href={ templ.SafeURL(run.IngressAttributes.CommitURL) }>
-										<span class="max-w-[12rem] truncate" id="vcs-branch">{ run.IngressAttributes.Branch }</span>
-									</a>
-								} else if run.IngressAttributes.Tag != "" {
-									<a href={ templ.SafeURL(run.IngressAttributes.CommitURL) }>
-										<span class="max-w-[12rem] truncate" id="vcs-tag">{ run.IngressAttributes.Tag }</span>
-									</a>
-								}
-								<a id="commit-sha-abbrev" href={ templ.SafeURL(run.IngressAttributes.CommitURL) }>({ run.IngressAttributes.CommitSHA[:7] })</a>
-							</div>
-						}
-					</div>
-				</div>
-			</div>
-		</td>
-		<td>
-			<div class="flex flex-col gap-2">
-				<div>
-					@runstatus.Badge(run.ID, run.Status)
-				</div>
-				<div class="flex gap-2 items-center">
-					if run.Apply.ResourceReport != nil {
-						<span>
-							@resourceReport(run.Apply.ResourceReport)
-						</span>
-					} else if run.Plan.ResourceReport != nil {
-						<span>
-							@resourceReport(run.Plan.ResourceReport)
-						</span>
-					}
-					if run.PlanOnly {
-						<span class="badge badge-soft badge-accent badge-sm">plan only</span>
-					}
-				</div>
-			</div>
-		</td>
-		<td class="align-top hidden xl:block">
-			@helpers.Ago(run.CreatedAt)
-		</td>
-		<td class="align-top">
-			<div class="flex gap-2">
-				if run.Status == runstatus.Planned {
-					<form action={ paths.ApplyRun(run.ID) } method="POST">
-						<button id="apply-button" class="btn btn-sm">Apply</button>
-					</form>
-				}
-				if run.Cancelable() {
-					<button
-						class="btn btn-sm btn-error btn-outline"
-						hx-post={ paths.CancelRun(run.ID) }
-						hx-confirm="Are you sure you want to cancel?"
-					>
-						Cancel
-					</button>
-				} else if run.ForceCancelable() {
-					<button
-						class="btn btn-sm btn-error btn-outline"
-						hx-post={ paths.ForceCancelRun(run.ID) }
-						hx-confirm="Are you sure you want to force cancel?"
-					>
-						Force cancel
-					</button>
-				} else if run.Discardable() {
-					<button
-						id="run-discard-button"
-						class="btn btn-sm btn-error btn-outline"
-						hx-post={ paths.DiscardRun(run.ID) }
-						hx-confirm="Are you sure you want to discard?"
-					>
-						Discard
-					</button>
-				} else if run.Done() {
-					<form action={ paths.RetryRun(run.ID) } method="POST">
-						<button id="retry-button" class="btn btn-sm btn-soft btn-info">Retry</button>
-					</form>
-				} else if run.CancelSignaledAt != nil {
-					cancelling...
-				}
-			</div>
-		</td>
-	</tr>
-}
-
-func (t runsTable) getWorkspaceName(ctx context.Context, run *run.Run) (string, error) {
-	ws, err := t.workspaceGetClient.Get(ctx, run.WorkspaceID)
-	if err != nil {
-		return "", err
-	}
-	return ws.Name, nil
-}
-
-templ (t runsTable) avatar(run *run.Run) {
-	<div class="avatar">
-		<div class="size-14 rounded">
-			if run.CreatedBy != nil {
-				{{
-					user, err := t.users.GetUser(ctx, user.UserSpec{Username: run.CreatedBy})
-					if err != nil {
-						return err
-					}
-				}}
-				@helpers.Avatar(user.AvatarURL)
-			} else if run.IngressAttributes != nil {
-				<img src={ templ.SafeURL(run.IngressAttributes.SenderAvatarURL) }/>
-			}
+templ (t *templates) runList(props runListProps) {
+	<form action="" hx-include="this">
+		<div class="flex flex-col gap-2">
+			@runstatus.Filter(props.status, props.statusFilterVisible)
+			@helpers.PollingTable(t.newRunsTable(props.filterByWorkspace), props.page)
 		</div>
-	</div>
+	</form>
 }
 
 type getRunProps struct {
-	run            *run.Run
-	ws             *workspace.Workspace
-	planLogs       run.Chunk
-	applyLogs      run.Chunk
-	users          runUsersClient
-	singleRowTable templ.Component
+	run       *runpkg.Run
+	ws        *workspace.Workspace
+	planLogs  runpkg.Chunk
+	applyLogs runpkg.Chunk
 }
 
-templ getRun(props getRunProps) {
-	{{
-		layoutProps := helpers.LayoutProps{
-			Title:        props.run.ID.String(),
-			Organization: props.ws.Organization,
-			PreContent:   getPreContent(),
-			PostContent:  getPostContent(props),
-			Breadcrumbs: []helpers.Breadcrumb{
-				{Name: "Workspaces", Link: paths.Workspaces(props.ws.Organization)},
-				{Name: props.ws.Name, Link: paths.Workspace(props.ws.ID)},
-				{Name: "Runs", Link: paths.Runs(props.ws.ID)},
-				{Name: props.run.ID.String()},
-			},
-		}
-	}}
-	@helpers.Layout(layoutProps) {
-		<div
-			hx-ext="sse"
-			sse-connect={ string(paths.WatchRun(props.run.ID)) }
-		>
-			<div class="flex gap-4 text-sm">
-				<div class="flex gap-1 items-center">
-					<span>Engine</span>
-					<span class="badge badge-soft">
-						{ props.run.Engine.String() }
-					</span>
-				</div>
-				<div class="flex gap-1 items-center">
-					<span>Engine version</span>
-					<span class="badge badge-soft">
-						{ props.run.EngineVersion }
-					</span>
-				</div>
-				<div class="flex gap-1 items-center" id="elapsed-time">
-					Elapsed time
-					<span
-						class="badge badge-soft"
-						id={ "running-time-" + props.run.ID.String() }
-						sse-swap={ runTimeUpdate }
-					>
-						@runningTime(props.run)
-					</span>
-				</div>
-				<div class="flex gap-1 items-center z-20" id="run-identifier">
-					@helpers.Identifier(props.run.ID)
-				</div>
+templ (t *templates) getRun(props getRunProps) {
+	<div
+		hx-ext="sse"
+		sse-connect={ string(paths.WatchRun(props.run.ID)) }
+	>
+		<div class="flex gap-4 text-sm">
+			<div class="flex gap-1 items-center">
+				<span>Engine</span>
+				<span class="badge badge-soft">
+					{ props.run.Engine.String() }
+				</span>
 			</div>
-			<div
-				id="period-report"
-				sse-swap={ periodReportUpdate }
-			>
-				@periodReport(props.run)
+			<div class="flex gap-1 items-center">
+				<span>Engine version</span>
+				<span class="badge badge-soft">
+					{ props.run.EngineVersion }
+				</span>
 			</div>
-			<div class="flex flex-col gap-4">
-				<div
-					id={ "run-item-" + props.run.ID.String() }
-					sse-swap={ runWidgetUpdate }
+			<div class="flex gap-1 items-center" id="elapsed-time">
+				Elapsed time
+				<span
+					class="badge badge-soft"
+					id={ "running-time-" + props.run.ID.String() }
+					sse-swap={ runTimeUpdate }
 				>
-					@props.singleRowTable
-				</div>
-				<details class="collapse collapse-arrow border-base-content/20 border" id="plan" open>
-					<summary class="collapse-title">
-						<div class="flex gap-2 items-center">
-							<span class="font-semibold">Plan</span>
-							<div sse-swap={ planStatusUpdate }>
-								@phaseStatus(props.run.Plan)
-							</div>
-							<div sse-swap={ planTimeUpdate }>
-								@runningTime(&props.run.Plan)
-							</div>
-						</div>
-					</summary>
-					<div class="collapse-content bg-black text-white whitespace-pre-wrap break-words p-4 text-sm leading-snug font-mono">
-						@templ.Raw(strings.TrimSpace(props.planLogs.ToHTML()))
-						<div id="tailed-plan-logs"></div>
-					</div>
-				</details>
-				<details class="collapse collapse-arrow border-base-content/20 border" id="apply" open>
-					<summary class="collapse-title">
-						<div class="flex gap-2 items-center">
-							<span class="font-semibold">Apply</span>
-							<div sse-swap={ applyStatusUpdate }>
-								@phaseStatus(props.run.Apply)
-							</div>
-							<div sse-swap={ applyTimeUpdate }>
-								@runningTime(&props.run.Apply)
-							</div>
-						</div>
-					</summary>
-					<div class="collapse-content collapse-arrow bg-black text-white whitespace-pre-wrap break-words p-4 text-sm leading-snug font-mono">
-						@templ.Raw(strings.TrimSpace(props.applyLogs.ToHTML()))
-						<div id="tailed-apply-logs"></div>
-					</div>
-				</details>
+					@runningTime(props.run)
+				</span>
+			</div>
+			<div class="flex gap-1 items-center z-20" id="run-identifier">
+				@helpers.Identifier(props.run.ID)
 			</div>
 		</div>
-	}
+		<div
+			id="period-report"
+			sse-swap={ periodReportUpdate }
+		>
+			@periodReport(props.run)
+		</div>
+		<div class="flex flex-col gap-4">
+			<div
+				id={ "run-item-" + props.run.ID.String() }
+				sse-swap={ runWidgetUpdate }
+			>
+				@t.singleRunTable(props.run)
+			</div>
+			<details class="collapse collapse-arrow border-base-content/20 border" id="plan" open>
+				<summary class="collapse-title">
+					<div class="flex gap-2 items-center">
+						<span class="font-semibold">Plan</span>
+						<div sse-swap={ planStatusUpdate }>
+							@phaseStatus(props.run.Plan)
+						</div>
+						<div sse-swap={ planTimeUpdate }>
+							@runningTime(&props.run.Plan)
+						</div>
+					</div>
+				</summary>
+				<div class="collapse-content bg-black text-white whitespace-pre-wrap break-words p-4 text-sm leading-snug font-mono">
+					@templ.Raw(strings.TrimSpace(props.planLogs.ToHTML()))
+					<div id="tailed-plan-logs"></div>
+				</div>
+			</details>
+			<details class="collapse collapse-arrow border-base-content/20 border" id="apply" open>
+				<summary class="collapse-title">
+					<div class="flex gap-2 items-center">
+						<span class="font-semibold">Apply</span>
+						<div sse-swap={ applyStatusUpdate }>
+							@phaseStatus(props.run.Apply)
+						</div>
+						<div sse-swap={ applyTimeUpdate }>
+							@runningTime(&props.run.Apply)
+						</div>
+					</div>
+				</summary>
+				<div class="collapse-content collapse-arrow bg-black text-white whitespace-pre-wrap break-words p-4 text-sm leading-snug font-mono">
+					@templ.Raw(strings.TrimSpace(props.applyLogs.ToHTML()))
+					<div id="tailed-apply-logs"></div>
+				</div>
+			</details>
+		</div>
+	</div>
 }
 
 templ getPreContent() {
@@ -368,7 +159,7 @@ templ runningTime(tsk task) {
 	}
 }
 
-templ periodReport(run *run.Run) {
+templ periodReport(run *runpkg.Run) {
 	{{ report := run.PeriodReport(time.Now()) }}
 	<div
 		id="period-report"
@@ -394,23 +185,23 @@ templ periodReport(run *run.Run) {
 	</div>
 }
 
-templ resourceReport(report *run.Report) {
+templ resourceReport(report *runpkg.Report) {
 	<div class="font-mono text-md" id="resource-summary">
 		<span class="text-green-700">+{ report.Additions }</span><span class="text-blue-700">~{ report.Changes }</span><span class="text-red-700">-{ report.Destructions }</span>
 	</div>
 }
 
-var phaseBadges = map[run.PhaseStatus]string{
-	run.PhasePending:     "badge-primary",
-	run.PhaseQueued:      "badge-secondary",
-	run.PhaseRunning:     "badge-primary",
-	run.PhaseFinished:    "badge-success",
-	run.PhaseCanceled:    "badge-warning",
-	run.PhaseErrored:     "badge-error",
-	run.PhaseUnreachable: "badge-neutral",
+var phaseBadges = map[runpkg.PhaseStatus]string{
+	runpkg.PhasePending:     "badge-primary",
+	runpkg.PhaseQueued:      "badge-secondary",
+	runpkg.PhaseRunning:     "badge-primary",
+	runpkg.PhaseFinished:    "badge-success",
+	runpkg.PhaseCanceled:    "badge-warning",
+	runpkg.PhaseErrored:     "badge-error",
+	runpkg.PhaseUnreachable: "badge-neutral",
 }
 
-templ phaseStatus(phase run.Phase) {
+templ phaseStatus(phase runpkg.Phase) {
 	<span
 		id={ string(phase.PhaseType) + "-status" }
 		class={ "badge", phaseBadges[phase.Status] }
