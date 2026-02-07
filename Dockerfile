@@ -13,6 +13,10 @@ FROM --platform=$BUILDPLATFORM alpine:3.23.3 AS base
 # https://docs.docker.com/build/cache/optimize/#use-cache-mounts Mounting
 # /etc/apk/cache with type=cache lets the image build system handle apk's cache
 # for us, without leaving any cache files in the image itself.
+
+# To Do: 
+#   - Update base image after CVEs are fixed
+#   - Remove apk update && apk upgrade (When the CVEs are fixed, this is no longer relevant)
 RUN --mount=type=cache,target=/etc/apk/cache \
   apk update && \
   apk upgrade --no-cache && \
