@@ -24,10 +24,7 @@ jobs:
       - name: Lint check
         run: |
           make lint
-          helm lint ./charts/otfd
-          helm lint ./charts/otf-agent
-          helm template ./charts/otfd > /dev/null
-          helm template ./charts/otf-agent --set token=my_agent_token --set url=https://otf.ninja > /dev/null
+          make helm-lint
       - name: Vet check
         run: make vet
       - name: Install e2e dependencies
@@ -128,10 +125,7 @@ jobs:
           make helm-docs
       - name: Lint check
         run: |
-          helm lint ./charts/otfd
-          helm lint ./charts/otf-agent
-          helm template ./charts/otfd > /dev/null
-          helm template ./charts/otf-agent --set token=my_agent_token --set url=https://otf.ninja > /dev/null
+          make helm-lint
       - name: Checkout charts repo
         uses: actions/checkout@v6
         with:
