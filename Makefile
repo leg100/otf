@@ -211,4 +211,7 @@ helm-dependency-update-otfd:
 
 .PHONY: helm-dependency-update-otf-agent
 helm-dependency-update-otf-agent:
-	helm dependency update ./charts/otf-agent
+
+.PHONY: helm-lint
+helm-lint:
+	./hack/helm-lint.sh

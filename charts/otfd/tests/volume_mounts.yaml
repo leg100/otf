@@ -1,0 +1,18 @@
+extraEnvs:
+  OTF_PUBLIC_KEY_PATH: "/etc/otf/keys/public_key"
+  OTF_PRIVATE_KEY_PATH: "/etc/otf/keys/private_key"
+
+volumes:
+  - name: otf-keys
+    secret:
+      secretName: otfd
+      items:
+        - key: public_key
+          path: public_key
+        - key: private_key
+          path: private_key
+
+volumeMounts:
+  - name: otf-keys
+    mountPath: /etc/otf/keys
+    readOnly: true
