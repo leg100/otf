@@ -749,22 +749,6 @@ templ (s workspaceRepoSelector) action(repo vcs.Repo) {
 	</form>
 }
 
-templ workspaceHeaderLinksAndStartRunSelector(props workspaceGetProps) {
-	if props.canCreateRun {
-		<div>
-			<form id="workspace-start-run-form" action={ paths.StartRunWorkspace(props.ws.ID) } method="POST">
-				<select class="select" name="operation" id="start-run-operation" onchange="this.form.submit()">
-					<option disabled selected>-- start run --</option>
-					<option value="plan-only">plan only</option>
-					if props.canApply {
-						<option value="plan-and-apply">plan and apply</option>
-					}
-				</select>
-			</form>
-		</div>
-	}
-}
-
 func magnifyingGlassStyle(ctx context.Context) (string, error) {
 	path, err := helpers.AssetPath(ctx, "/static/images/magnifying_glass.svg")
 	if err != nil {

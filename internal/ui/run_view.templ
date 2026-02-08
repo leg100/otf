@@ -41,6 +41,7 @@ templ (t *templates) getRun(props getRunProps) {
 	<div
 		hx-ext="sse"
 		sse-connect={ string(paths.WatchRun(props.run.ID)) }
+		class="flex flex-col gap-4"
 	>
 		<div class="flex gap-4 text-sm">
 			<div class="flex gap-1 items-center">
@@ -68,12 +69,6 @@ templ (t *templates) getRun(props getRunProps) {
 			<div class="flex gap-1 items-center z-20" id="run-identifier">
 				@helpers.Identifier(props.run.ID)
 			</div>
-		</div>
-		<div
-			id="period-report"
-			sse-swap={ periodReportUpdate }
-		>
-			@periodReport(props.run)
 		</div>
 		<div class="flex flex-col gap-4">
 			<div

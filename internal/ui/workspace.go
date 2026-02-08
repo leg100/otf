@@ -256,7 +256,6 @@ func (h *Handlers) getWorkspace(w http.ResponseWriter, r *http.Request) {
 		w,
 		r,
 		withWorkspace(ws),
-		withContentLinks(workspaceHeaderLinksAndStartRunSelector(props)),
 		withBreadcrumbs(
 			helpers.Breadcrumb{Name: props.ws.Name},
 		),
@@ -408,9 +407,7 @@ func (h *Handlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 		r,
 		withWorkspace(ws),
 		withBreadcrumbs(
-			helpers.Breadcrumb{Name: "Workspaces", Link: paths.Workspaces(props.ws.Organization)},
-			helpers.Breadcrumb{Name: props.ws.Name, Link: paths.Workspace(props.ws.ID)},
-			helpers.Breadcrumb{Name: "settings"},
+			helpers.Breadcrumb{Name: "Settings"},
 		),
 	)
 }

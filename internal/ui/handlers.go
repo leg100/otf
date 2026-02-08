@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 
@@ -10,6 +11,7 @@ import (
 	"github.com/leg100/otf/internal/authenticator"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/configversion"
+	"github.com/leg100/otf/internal/configversion/source"
 	"github.com/leg100/otf/internal/engine"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/http/html"
@@ -17,8 +19,10 @@ import (
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/module"
 	"github.com/leg100/otf/internal/organization"
+	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
+	runpkg "github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/runner"
 	"github.com/leg100/otf/internal/state"
 	"github.com/leg100/otf/internal/team"
@@ -33,22 +37,22 @@ import (
 // Handlers registers all UI handlers
 type Handlers struct {
 	Logger                       logr.Logger
-	Runs                         *run.Service
-	Workspaces                   *workspace.Service
-	Users                        *user.Service
-	Teams                        *team.Service
-	Organizations                *organization.Service
-	Modules                      *module.Service
+	Runs                         RunService
+	Workspaces                   WorkspaceService
+	Users                        UserService
+	Teams                        TeamClient
+	Organizations                OrganizationService
+	Modules                      ModuleService
 	VCSProviders                 *vcs.Service
 	State                        *state.Service
-	Runners                      *runner.Service
-	GithubApp                    *github.Service
+	Runners                      runnerClient
+	GithubApp                    GithubAppService
 	EngineService                *engine.Service
-	Configs                      *configversion.Service
-	HostnameService              *internal.HostnameService
-	Tokens                       *tokens.Service
-	Authorizer                   *authz.Authorizer
-	AuthenticatorService         *authenticator.Service
+	Configs                      ConfigVersionService
+	HostnameService              HostnameService
+	Tokens                       sessionService
+	Authorizer                   authz.Interface
+	AuthenticatorService         loginService
 	VariablesService             *variable.Service
 	GithubHostname               *internal.WebURL
 	SkipTLSVerification          bool
@@ -56,6 +60,103 @@ type Handlers struct {
 	RestrictOrganizationCreation bool
 
 	templates *templates
+}
+
+type OrganizationService interface {
+	Create(ctx context.Context, opts organization.CreateOptions) (*organization.Organization, error)
+	Update(ctx context.Context, name organization.Name, opts organization.UpdateOptions) (*organization.Organization, error)
+	Get(ctx context.Context, name organization.Name) (*organization.Organization, error)
+	List(ctx context.Context, opts organization.ListOptions) (*resource.Page[*organization.Organization], error)
+	Delete(ctx context.Context, name organization.Name) error
+
+	CreateToken(ctx context.Context, opts organization.CreateOrganizationTokenOptions) (*organization.OrganizationToken, []byte, error)
+	ListTokens(ctx context.Context, org organization.Name) ([]*organization.OrganizationToken, error)
+	DeleteToken(ctx context.Context, org organization.Name) error
+}
+
+type ConfigVersionService interface {
+	GetSourceIcon(source source.Source) templ.Component
+}
+
+type GithubAppService interface {
+	CreateApp(context.Context, github.CreateAppOptions) (*github.App, error)
+	GetApp(context.Context) (*github.App, error)
+	DeleteApp(context.Context) error
+	ListInstallations(context.Context) ([]vcs.Installation, error)
+	DeleteInstallation(context.Context, int64) error
+}
+
+type TeamClient interface {
+	Create(ctx context.Context, organization organization.Name, opts team.CreateTeamOptions) (*team.Team, error)
+	Get(ctx context.Context, organization organization.Name, teamName string) (*team.Team, error)
+	GetByID(ctx context.Context, teamID resource.TfeID) (*team.Team, error)
+	List(ctx context.Context, organization organization.Name) ([]*team.Team, error)
+	Update(ctx context.Context, teamID resource.TfeID, opts team.UpdateTeamOptions) (*team.Team, error)
+	Delete(ctx context.Context, teamID resource.TfeID) error
+}
+
+type ModuleService interface {
+	GetModuleByID(context.Context, resource.TfeID) (*module.Module, error)
+	ListModules(context.Context, module.ListOptions) ([]*module.Module, error)
+	ListProviders(context.Context, organization.Name) ([]string, error)
+	GetModuleInfo(context.Context, resource.TfeID) (*module.TerraformModule, error)
+	PublishModule(context.Context, module.PublishOptions) (*module.Module, error)
+	DeleteModule(context.Context, resource.TfeID) (*module.Module, error)
+}
+
+type HostnameService interface {
+	Hostname() string
+	URL(path string) string
+	WebhookURL(path string) string
+}
+
+type RunService interface {
+	Create(context.Context, resource.TfeID, runpkg.CreateOptions) (*run.Run, error)
+	List(_ context.Context, opts run.ListOptions) (*resource.Page[*run.Run], error)
+	Get(ctx context.Context, id resource.TfeID) (*run.Run, error)
+	GetChunk(ctx context.Context, opts run.GetChunkOptions) (run.Chunk, error)
+	Cancel(ctx context.Context, id resource.TfeID) error
+	ForceCancel(ctx context.Context, id resource.TfeID) error
+	Discard(ctx context.Context, id resource.TfeID) error
+	Tail(context.Context, run.TailOptions) (<-chan run.Chunk, error)
+	Delete(context.Context, resource.TfeID) error
+	Apply(context.Context, resource.TfeID) error
+	Watch(ctx context.Context) (<-chan pubsub.Event[*run.Event], func())
+}
+
+type WorkspaceService interface {
+	Get(context.Context, resource.TfeID) (*workspace.Workspace, error)
+	Watch(ctx context.Context) (<-chan pubsub.Event[*workspace.Event], func())
+	List(ctx context.Context, opts workspace.ListOptions) (*resource.Page[*workspace.Workspace], error)
+	ListTags(ctx context.Context, organization organization.Name, opts workspace.ListTagsOptions) (*resource.Page[*workspace.Tag], error)
+	Create(ctx context.Context, opts workspace.CreateOptions) (*workspace.Workspace, error)
+	GetByName(ctx context.Context, organization organization.Name, workspace string) (*workspace.Workspace, error)
+	GetWorkspacePolicy(ctx context.Context, workspaceID resource.TfeID) (workspace.Policy, error)
+	Update(ctx context.Context, workspaceID resource.TfeID, opts workspace.UpdateOptions) (*workspace.Workspace, error)
+	Delete(ctx context.Context, workspaceID resource.TfeID) (*workspace.Workspace, error)
+	Lock(ctx context.Context, workspaceID resource.TfeID, runID *resource.TfeID) (*workspace.Workspace, error)
+	Unlock(ctx context.Context, workspaceID resource.TfeID, runID *resource.TfeID, force bool) (*workspace.Workspace, error)
+	SetPermission(ctx context.Context, workspaceID, teamID resource.TfeID, role authz.Role) error
+	UnsetPermission(ctx context.Context, workspaceID, teamID resource.TfeID) error
+	DeleteTags(ctx context.Context, organization organization.Name, tagIDs []resource.TfeID) error
+	AddTags(ctx context.Context, workspaceID resource.TfeID, tags []workspace.TagSpec) error
+	RemoveTags(ctx context.Context, workspaceID resource.TfeID, tags []workspace.TagSpec) error
+}
+
+// runnerClient gives web handlers access to the agents service endpoints
+type runnerClient interface {
+	CreateAgentPool(ctx context.Context, opts runner.CreateAgentPoolOptions) (*runner.Pool, error)
+	UpdateAgentPool(ctx context.Context, poolID resource.TfeID, opts runner.UpdatePoolOptions) (*runner.Pool, error)
+	ListAgentPoolsByOrganization(ctx context.Context, organization organization.Name, opts runner.ListPoolOptions) ([]*runner.Pool, error)
+	GetAgentPool(ctx context.Context, poolID resource.TfeID) (*runner.Pool, error)
+	DeleteAgentPool(ctx context.Context, poolID resource.TfeID) (*runner.Pool, error)
+
+	Register(ctx context.Context, opts runner.RegisterRunnerOptions) (*runner.RunnerMeta, error)
+	ListRunners(ctx context.Context, opts runner.ListOptions) ([]*runner.RunnerMeta, error)
+	CreateAgentToken(ctx context.Context, poolID resource.TfeID, opts runner.CreateAgentTokenOptions) (*runner.AgentToken, []byte, error)
+	GetAgentToken(ctx context.Context, tokenID resource.TfeID) (*runner.AgentToken, error)
+	ListAgentTokens(ctx context.Context, poolID resource.TfeID) ([]*runner.AgentToken, error)
+	DeleteAgentToken(ctx context.Context, tokenID resource.TfeID) (*runner.AgentToken, error)
 }
 
 func NewHandlers(
@@ -106,6 +207,7 @@ func NewHandlers(
 		SiteToken:                    SiteToken,
 		RestrictOrganizationCreation: RestrictOrganizationCreation,
 		templates: &templates{
+			Authorizer: Authorizer,
 			configs:    Configs,
 			workspaces: Workspaces,
 			users:      Users,
@@ -137,7 +239,10 @@ func (h *Handlers) AddHandlers(r *mux.Router) {
 }
 
 func (h *Handlers) renderPage(comp templ.Component, title string, w http.ResponseWriter, r *http.Request, opts ...renderPageOption) {
-	var props helpers.LayoutProps
+	props := helpers.LayoutProps{
+		Authorizer: h.Authorizer,
+		Title:      title,
+	}
 	for _, o := range opts {
 		o(&props)
 	}

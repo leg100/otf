@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/html/components/paths"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
@@ -64,12 +65,15 @@ templ (t *templates) listWorkspaceVariables(props listWorkspaceVariablesProps) {
 			},
 			props.rows,
 		)
-		if props.canCreateVariable {
-			<form class="mt-2" action={ paths.NewVariable(props.ws.ID) } method="GET">
-				<button class="btn">Add variable</button>
-			</form>
-		}
 	</div>
+}
+
+templ (t *templates) newWorkspaceVariableButton(workspaceID resource.ID) {
+	if t.CanAccess(ctx, authz.CreateWorkspaceVariableAction, workspaceID) {
+		<form class="mt-2" action={ paths.NewVariable(workspaceID) } method="GET">
+			<button class="btn">Add variable</button>
+		</form>
+	}
 }
 
 type listVariableSetsProps struct {
@@ -376,7 +380,7 @@ templ (t variablesTable) Row(v variableRow) {
 				{ v.Key }
 			}
 		</td>
-		<td>
+		<td class="max-w-100 truncate">
 			if v.Sensitive {
 				<span class="badge badge-soft">hidden</span>
 			} else {

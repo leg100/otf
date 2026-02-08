@@ -17,9 +17,9 @@ import (
 )
 
 func TestListModules(t *testing.T) {
-	h := &moduleHandlers{
-		client:     &fakeModuleService{mod: &module.Module{}},
-		authorizer: authz.NewAllowAllAuthorizer(),
+	h := &Handlers{
+		Modules:    &fakeModuleService{mod: &module.Module{}},
+		Authorizer: authz.NewAllowAllAuthorizer(),
 	}
 	user := &user.User{ID: resource.NewTfeID(resource.UserKind)}
 
@@ -27,7 +27,7 @@ func TestListModules(t *testing.T) {
 	r := httptest.NewRequest("GET", q, nil)
 	r = r.WithContext(authz.AddSubjectToContext(r.Context(), user))
 	w := httptest.NewRecorder()
-	h.list(w, r)
+	h.listModules(w, r)
 	assert.Equal(t, 200, w.Code, w.Body.String())
 }
 
@@ -68,27 +68,27 @@ func TestGetModule(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			h := &moduleHandlers{
-				client: &fakeModuleService{
+			h := &Handlers{
+				Modules: &fakeModuleService{
 					mod:     &tt.mod,
 					tarball: tarball,
 				},
-				system: &fakeHostnameService{},
+				HostnameService: &fakeHostnameService{},
 			}
 
 			q := "/?module_id=mod-123&version=1.0.0"
 			r := httptest.NewRequest("GET", q, nil)
 			w := httptest.NewRecorder()
-			h.get(w, r)
+			h.getModule(w, r)
 			assert.Equal(t, 200, w.Code, w.Body.String())
 		})
 	}
 }
 
 type fakeModuleService struct {
+	ModuleService
 	mod     *module.Module
 	tarball []byte
-	moduleClient
 }
 
 func (f *fakeModuleService) GetModuleByID(context.Context, resource.TfeID) (*module.Module, error) {
@@ -108,6 +108,7 @@ func (f *fakeModuleService) GetModuleInfo(context.Context, resource.TfeID) (*mod
 }
 
 type fakeHostnameService struct {
+	HostnameService
 	hostname string
 }
 

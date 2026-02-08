@@ -195,8 +195,9 @@ func (h *Handlers) listWorkspaceVariables(w http.ResponseWriter, r *http.Request
 		r,
 		withWorkspace(ws),
 		withBreadcrumbs(
-			helpers.Breadcrumb{Name: "Variables", Link: paths.Variables(props.ws.ID)},
+			helpers.Breadcrumb{Name: "Variables", Link: paths.Variables(ws.ID)},
 		),
+		withContentActions(h.templates.newWorkspaceVariableButton(ws.ID)),
 	)
 }
 

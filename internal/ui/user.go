@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
@@ -19,17 +18,12 @@ import (
 	"github.com/leg100/otf/internal/user"
 )
 
-// userHandlers provides handlers for the web UI
-type userHandlers struct {
-	users      usersClient
-	authorizer authz.Interface
-}
-
-type usersClient interface {
+type UserService interface {
 	Create(ctx context.Context, username string, opts ...user.NewUserOption) (*user.User, error)
 	List(ctx context.Context) ([]*user.User, error)
 	ListOrganizationUsers(ctx context.Context, organization organization.Name) ([]*user.User, error)
 	ListTeamUsers(ctx context.Context, teamID resource.TfeID) ([]*user.User, error)
+	GetUser(ctx context.Context, spec user.UserSpec) (*user.User, error)
 	Delete(ctx context.Context, username user.Username) error
 	AddTeamMembership(ctx context.Context, teamID resource.TfeID, usernames []user.Username) error
 	RemoveTeamMembership(ctx context.Context, teamID resource.TfeID, usernames []user.Username) error
@@ -37,6 +31,10 @@ type usersClient interface {
 	CreateToken(ctx context.Context, opts user.CreateUserTokenOptions) (*user.UserToken, []byte, error)
 	ListTokens(ctx context.Context) ([]*user.UserToken, error)
 	DeleteToken(ctx context.Context, tokenID resource.TfeID) error
+}
+
+type sessionService interface {
+	StartSession(w http.ResponseWriter, r *http.Request, userID resource.TfeID) error
 }
 
 // addUserHandlers registers user UI handlers with the router
@@ -198,10 +196,10 @@ func (h *Handlers) userTokens(w http.ResponseWriter, r *http.Request) {
 
 	h.renderPage(
 		h.templates.tokenList(tokens),
-		"user tokens",
+		"User tokens",
 		w,
 		r,
-		withBreadcrumbs(helpers.Breadcrumb{Name: "user tokens"}),
+		withBreadcrumbs(helpers.Breadcrumb{Name: "User tokens"}),
 		withContentActions(tokenListActions()),
 	)
 }

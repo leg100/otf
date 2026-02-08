@@ -1,13 +1,13 @@
 package ui
 
 import (
-	"github.com/leg100/otf/internal/configversion"
-	"github.com/leg100/otf/internal/user"
-	"github.com/leg100/otf/internal/workspace"
+	"github.com/leg100/otf/internal/authz"
 )
 
 type templates struct {
-	workspaces *workspace.Service
-	users      *user.Service
-	configs    *configversion.Service
+	*authz.Authorizer
+
+	workspaces WorkspaceService
+	users      UserService
+	configs    ConfigVersionService
 }

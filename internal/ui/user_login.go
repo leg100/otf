@@ -11,12 +11,6 @@ import (
 	"github.com/leg100/otf/internal/user"
 )
 
-type loginHandlers struct {
-	loginService loginService
-	tokens       tokensClient
-	siteToken    string
-}
-
 type loginService interface {
 	Clients() []*authenticator.OAuthClient
 }
@@ -32,7 +26,7 @@ func addLoginHandlers(r *mux.Router, h *Handlers) {
 }
 
 func (h *Handlers) loginHandler(w http.ResponseWriter, r *http.Request) {
-	h.renderPage(login(h.AuthenticatorService.Clients()), "", w, r)
+	html.Render(login(h.AuthenticatorService.Clients()), w, r)
 }
 
 // adminLoginPromptHandler presents a prompt for logging in as site admin

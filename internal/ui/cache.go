@@ -11,10 +11,14 @@ import (
 // workspaceCache is a caching client for retrieving workspaces
 type workspaceCache struct {
 	cache  map[resource.TfeID]*workspace.Workspace
-	getter *workspace.Service
+	getter workspaceCacheService
 }
 
-func newWorkspaceCache(getter *workspace.Service) *workspaceCache {
+type workspaceCacheService interface {
+	Get(ctx context.Context, workspaceID resource.TfeID) (*workspace.Workspace, error)
+}
+
+func newWorkspaceCache(getter workspaceCacheService) *workspaceCache {
 	return &workspaceCache{
 		cache:  make(map[resource.TfeID]*workspace.Workspace),
 		getter: getter,
@@ -36,10 +40,14 @@ func (c *workspaceCache) Get(ctx context.Context, workspaceID resource.TfeID) (*
 // userCache is a caching client for retrieving users
 type userCache struct {
 	cache  map[user.Username]*user.User
-	getter *user.Service
+	getter userCacheService
 }
 
-func newUserCache(getter *user.Service) *userCache {
+type userCacheService interface {
+	GetUser(ctx context.Context, spec user.UserSpec) (*user.User, error)
+}
+
+func newUserCache(getter userCacheService) *userCache {
 	return &userCache{
 		cache:  make(map[user.Username]*user.User),
 		getter: getter,

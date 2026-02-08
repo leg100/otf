@@ -1,7 +1,6 @@
 package ui
 
 import (
-	"context"
 	"encoding/json"
 	"math"
 	"net/http"
@@ -12,37 +11,12 @@ import (
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
-	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runner"
 	"github.com/leg100/otf/internal/ui/helpers"
 	"github.com/leg100/otf/internal/workspace"
 )
-
-// runnerHandlers provides handlers for the web UI for runners
-type runnerHandlers struct {
-	svc        runnerClient
-	workspaces *workspace.Service
-	logger     logr.Logger
-	authorizer authz.Interface
-}
-
-// runnerClient gives web handlers access to the agents service endpoints
-type runnerClient interface {
-	CreateAgentPool(ctx context.Context, opts runner.CreateAgentPoolOptions) (*runner.Pool, error)
-	UpdateAgentPool(ctx context.Context, poolID resource.TfeID, opts runner.UpdatePoolOptions) (*runner.Pool, error)
-	ListAgentPoolsByOrganization(ctx context.Context, organization organization.Name, opts runner.ListPoolOptions) ([]*runner.Pool, error)
-	GetAgentPool(ctx context.Context, poolID resource.TfeID) (*runner.Pool, error)
-	DeleteAgentPool(ctx context.Context, poolID resource.TfeID) (*runner.Pool, error)
-
-	Register(ctx context.Context, opts runner.RegisterRunnerOptions) (*runner.RunnerMeta, error)
-	ListRunners(ctx context.Context, opts runner.ListOptions) ([]*runner.RunnerMeta, error)
-	CreateAgentToken(ctx context.Context, poolID resource.TfeID, opts runner.CreateAgentTokenOptions) (*runner.AgentToken, []byte, error)
-	GetAgentToken(ctx context.Context, tokenID resource.TfeID) (*runner.AgentToken, error)
-	ListAgentTokens(ctx context.Context, poolID resource.TfeID) ([]*runner.AgentToken, error)
-	DeleteAgentToken(ctx context.Context, tokenID resource.TfeID) (*runner.AgentToken, error)
-}
 
 type (
 	// templates may serialize hundreds of workspaces to JSON, so a struct with

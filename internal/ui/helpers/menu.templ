@@ -2,18 +2,37 @@ package helpers
 
 import (
 	"context"
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/html/components/paths"
 	"github.com/leg100/otf/internal/resource"
 	"strings"
 )
 
-templ WorkspaceMenu(workspace resource.Info) {
-	<ul id="workspace-menu" class="menu menu-horizontal w-full">
-		@MenuItem("Overview", paths.Workspace(workspace.ID))
-		@MenuItem("Runs", paths.Runs(workspace.ID), "/app/runs")
-		@MenuItem("Variables", paths.Variables(workspace.ID), "/app/variables")
-		@MenuItem("Settings", paths.EditWorkspace(workspace.ID))
-	</ul>
+templ WorkspaceMenu(workspace resource.Info, organization resource.ID, authorizer authz.Interface) {
+	<div class="flex flex-row items-center">
+		<ul id="workspace-menu" class="menu menu-horizontal">
+			@MenuItem("<", paths.Organization(organization))
+			@MenuItem("Overview", paths.Workspace(workspace.ID))
+			@MenuItem("Runs", paths.Runs(workspace.ID), "/app/runs")
+			@MenuItem("Variables", paths.Variables(workspace.ID), "/app/variables")
+			if authorizer.CanAccess(ctx, authz.UpdateWorkspaceAction, workspace.ID) {
+				@MenuItem("Settings", paths.EditWorkspace(workspace.ID))
+			}
+		</ul>
+		<div class="">
+			<form id="workspace-start-run-form" action={ paths.StartRunWorkspace(workspace.ID) } method="POST">
+				if authorizer.CanAccess(ctx, authz.CreateRunAction, workspace.ID) {
+					<select class="select select-sm" name="operation" id="start-run-operation" onchange="this.form.submit()">
+						<option disabled selected>-- start run --</option>
+						<option value="plan-only">plan only</option>
+						if authorizer.CanAccess(ctx, authz.ApplyRunAction, workspace.ID) {
+							<option value="plan-and-apply">plan and apply</option>
+						}
+					</select>
+				}
+			</form>
+		</div>
+	</div>
 }
 
 templ OrganizationMenu(organization resource.ID) {
@@ -39,7 +58,7 @@ templ OrganizationMenu(organization resource.ID) {
 }
 
 templ SiteMenu() {
-	<ul class="menu w-full">
+	<ul class="menu menu-horizontal w-full">
 		<li class="menu-title">
 			<div class="flex gap-2 items-center">
 				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
@@ -50,7 +69,7 @@ templ SiteMenu() {
 		</li>
 		@MenuItem("Organizations", paths.Organizations())
 		@MenuItem("Profile", paths.Profile())
-		@MenuItem("User Tokens", paths.Tokens())
+		@MenuItem("User Tokens", paths.Tokens(), "/app/current-user/tokens")
 		@MenuItem("Github App", paths.GithubApps())
 	</ul>
 }

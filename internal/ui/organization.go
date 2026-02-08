@@ -1,7 +1,6 @@
 package ui
 
 import (
-	"context"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -12,27 +11,6 @@ import (
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/ui/helpers"
-)
-
-type (
-	// organizationHandlers is the web application for organizations
-	organizationHandlers struct {
-		svc              organizationClient
-		RestrictCreation bool
-	}
-
-	// organizationClient provides the web app with access to organizations
-	organizationClient interface {
-		Create(ctx context.Context, opts organization.CreateOptions) (*organization.Organization, error)
-		Update(ctx context.Context, name organization.Name, opts organization.UpdateOptions) (*organization.Organization, error)
-		Get(ctx context.Context, name organization.Name) (*organization.Organization, error)
-		List(ctx context.Context, opts organization.ListOptions) (*resource.Page[*organization.Organization], error)
-		Delete(ctx context.Context, name organization.Name) error
-
-		CreateToken(ctx context.Context, opts organization.CreateOrganizationTokenOptions) (*organization.OrganizationToken, []byte, error)
-		ListTokens(ctx context.Context, org organization.Name) ([]*organization.OrganizationToken, error)
-		DeleteToken(ctx context.Context, org organization.Name) error
-	}
 )
 
 // addOrganizationHandlers registers organization UI handlers with the router

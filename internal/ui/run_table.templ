@@ -2,7 +2,6 @@ package ui
 
 import (
 	"context"
-	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/http/html/components/paths"
 	runpkg "github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/runstatus"
@@ -14,7 +13,7 @@ type runsTable struct {
 	filteredByWorkspace bool
 	workspaces          *workspaceCache
 	users               *userCache
-	configs             *configversion.Service
+	configs             ConfigVersionService
 }
 
 func (t *templates) newRunsTable(filteredByWorkspace bool) *runsTable {

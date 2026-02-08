@@ -24,7 +24,7 @@ func TestLoginHandler(t *testing.T) {
 
 	r := httptest.NewRequest("GET", "/?", nil)
 	w := httptest.NewRecorder()
-	h := &loginHandlers{loginService: svc}
+	h := &Handlers{AuthenticatorService: svc}
 	h.loginHandler(w, r)
 	body := w.Body.String()
 	if assert.Equal(t, 200, w.Code, "output: %s", body) {
@@ -34,9 +34,9 @@ func TestLoginHandler(t *testing.T) {
 }
 
 func TestAdminLoginHandler(t *testing.T) {
-	h := &loginHandlers{
-		siteToken: "secrettoken",
-		tokens:    &fakeTokensService{},
+	h := &Handlers{
+		SiteToken: "secrettoken",
+		Tokens:    &fakeTokensService{},
 	}
 
 	tests := []struct {

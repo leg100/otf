@@ -15,7 +15,7 @@ import (
 
 func TestUserHandlers(t *testing.T) {
 	t.Run("new token", func(t *testing.T) {
-		h := &userHandlers{}
+		h := &Handlers{}
 		r := httptest.NewRequest("GET", "/?", nil)
 		w := httptest.NewRecorder()
 
@@ -25,7 +25,7 @@ func TestUserHandlers(t *testing.T) {
 	})
 
 	t.Run("create token", func(t *testing.T) {
-		h := userHandlers{users: &fakeUserService{}}
+		h := Handlers{Users: &fakeUserService{}}
 		r := httptest.NewRequest("GET", "/?", nil)
 		r = r.WithContext(authz.AddSubjectToContext(context.Background(), user.NewTestUser(t)))
 		w := httptest.NewRecorder()
@@ -39,8 +39,8 @@ func TestUserHandlers(t *testing.T) {
 	})
 
 	t.Run("list tokens", func(t *testing.T) {
-		h := userHandlers{
-			users: &fakeUserService{
+		h := Handlers{
+			Users: &fakeUserService{
 				ut: &user.UserToken{},
 			},
 		}
@@ -54,8 +54,8 @@ func TestUserHandlers(t *testing.T) {
 	})
 
 	t.Run("delete token", func(t *testing.T) {
-		h := userHandlers{
-			users: &fakeUserService{},
+		h := Handlers{
+			Users: &fakeUserService{},
 		}
 		r := httptest.NewRequest("POST", "/?id=token-123", nil)
 		r = r.WithContext(authz.AddSubjectToContext(context.Background(), user.NewTestUser(t)))
@@ -86,11 +86,10 @@ func (f *fakeTokensService) StartSession(w http.ResponseWriter, r *http.Request,
 }
 
 type fakeUserService struct {
+	UserService
 	user  *user.User
 	token []byte
 	ut    *user.UserToken
-
-	*user.Service
 }
 
 func (f *fakeUserService) Create(context.Context, string, ...user.NewUserOption) (*user.User, error) {
