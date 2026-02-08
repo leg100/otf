@@ -14,7 +14,7 @@ templ WorkspaceMenu(workspace resource.Info, organization resource.ID, authorize
 			@MenuItem("<", paths.Organization(organization))
 			@MenuItem("Overview", paths.Workspace(workspace.ID))
 			@MenuItem("Runs", paths.Runs(workspace.ID), "/app/runs")
-			@MenuItem("Variables", paths.Variables(workspace.ID), "/app/variables")
+			@MenuItem("Variables", paths.Variables(workspace.ID), "/app/variables", string(paths.Variables(workspace.ID)))
 			if authorizer.CanAccess(ctx, authz.UpdateWorkspaceAction, workspace.ID) {
 				@MenuItem("Settings", paths.EditWorkspace(workspace.ID))
 			}

@@ -6,7 +6,7 @@ require (
 	cloud.google.com/go/pubsub/v2 v2.3.0
 	codeberg.org/mvdkleijn/forgejo-sdk/forgejo/v2 v2.2.0
 	github.com/DataDog/jsonapi v0.13.0
-	github.com/a-h/templ v0.3.977
+	github.com/a-h/templ v0.3.978-0.20260116131757-cf6235acf4d4
 	github.com/allegro/bigcache v1.2.1
 	github.com/antchfx/htmlquery v1.3.0
 	github.com/bradleyfalzon/ghinstallation/v2 v2.17.0

@@ -11,7 +11,7 @@ import (
 )
 
 templ (t *templates) newWorkspaceVariable(ws *workspace.Workspace) {
-	<span class="text-xl">Add a new workspace variable</span>
+	<span class="text-md">Add a new workspace variable</span>
 	@variableForm(variableFormProps{
 		variable: &variable.Variable{},
 		action:   paths.CreateVariable(ws.ID),
@@ -24,7 +24,7 @@ type newVariableSetProps struct {
 }
 
 templ (t *templates) newVariableSet(props newVariableSetProps) {
-	<span class="text-xl">Add a new variable set</span>
+	<span class="text-md">Add a new variable set</span>
 	@variableSetForm(variableSetFormProps{
 		set:                 &variable.VariableSet{Global: true}, // set global as default
 		action:              paths.CreateVariableSet(props.organization),
@@ -132,7 +132,7 @@ type editWorkspaceVariableProps struct {
 }
 
 templ (t *templates) editWorkspaceVariable(props editWorkspaceVariableProps) {
-	<span class="text-xl">Edit workspace variable</span>
+	<span class="text-md">Edit workspace variable</span>
 	@variableForm(variableFormProps{
 		variable: props.variable,
 		edit:     true,

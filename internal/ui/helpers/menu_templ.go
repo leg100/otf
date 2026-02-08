@@ -53,7 +53,7 @@ func WorkspaceMenu(workspace resource.Info, organization resource.ID, authorizer
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = MenuItem("Variables", paths.Variables(workspace.ID), "/app/variables").Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = MenuItem("Variables", paths.Variables(workspace.ID), "/app/variables", string(paths.Variables(workspace.ID))).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

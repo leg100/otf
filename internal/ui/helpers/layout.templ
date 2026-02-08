@@ -47,7 +47,7 @@ templ Layout(props LayoutProps) {
 			<div class="flex flex-wrap items-center gap-4 pb-2 text-xl/9">
 				<div class="flex">
 					for i, crumb := range props.Breadcrumbs {
-						<h1 class="text-2xl font-bold">
+						<h1 class={ "text-2xl", templ.KV("font-bold", i == len(props.Breadcrumbs)-1) }>
 							if crumb.Link != "" {
 								<a
 									href={ crumb.Link }

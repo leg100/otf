@@ -80,11 +80,9 @@ func (h *Handlers) newWorkspaceVariable(w http.ResponseWriter, r *http.Request) 
 		"new variable",
 		w,
 		r,
-		withOrganization(ws.Organization),
+		withWorkspace(ws),
 		withBreadcrumbs(
-			helpers.Breadcrumb{Name: "Workspaces", Link: paths.Workspaces(ws.Organization)},
-			helpers.Breadcrumb{Name: ws.Name, Link: paths.Workspace(ws.ID)},
-			helpers.Breadcrumb{Name: "new"},
+			helpers.Breadcrumb{Name: "New variable"},
 		),
 	)
 }
@@ -228,12 +226,9 @@ func (h *Handlers) editWorkspaceVariable(w http.ResponseWriter, r *http.Request)
 		"edit | "+wv.Variable.ID.String(),
 		w,
 		r,
-		withOrganization(ws.Organization),
+		withWorkspace(ws),
 		withBreadcrumbs(
-			helpers.Breadcrumb{Name: "Workspaces", Link: paths.Workspaces(props.ws.Organization)},
-			helpers.Breadcrumb{Name: props.ws.Name, Link: paths.Workspace(props.ws.ID)},
-			helpers.Breadcrumb{Name: "Variables", Link: paths.Variables(props.ws.ID)},
-			helpers.Breadcrumb{Name: "edit"},
+			helpers.Breadcrumb{Name: "Edit variable"},
 		),
 	)
 }
