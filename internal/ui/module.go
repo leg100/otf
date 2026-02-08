@@ -49,15 +49,16 @@ func (h *Handlers) listModules(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	props := moduleListProps{
+		organization:          params.Organization,
+		page:                  resource.NewPage(modules, params.PageOptions, nil),
+		canPublishModule:      h.Authorizer.CanAccess(r.Context(), authz.CreateModuleAction, params.Organization),
+		providerFilterVisible: params.ProviderFilterVisible,
+		allProviders:          providers,
+		selectedProviders:     params.Providers,
+	}
 	h.renderPage(
-		h.templates.moduleList(moduleListProps{
-			organization:          params.Organization,
-			page:                  resource.NewPage(modules, params.PageOptions, nil),
-			canPublishModule:      h.Authorizer.CanAccess(r.Context(), authz.CreateModuleAction, params.Organization),
-			providerFilterVisible: params.ProviderFilterVisible,
-			allProviders:          providers,
-			selectedProviders:     params.Providers,
-		}),
+		h.templates.moduleList(props),
 		"Modules",
 		w,
 		r,
@@ -65,6 +66,7 @@ func (h *Handlers) listModules(w http.ResponseWriter, r *http.Request) {
 		withBreadcrumbs(
 			helpers.Breadcrumb{Name: "Modules"},
 		),
+		withContentActions(moduleListActions(props)),
 	)
 }
 

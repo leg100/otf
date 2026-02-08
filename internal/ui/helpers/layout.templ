@@ -142,7 +142,7 @@ templ navbar(organization resource.ID, workspace *resource.Info) {
 			</div>
 			<div class="flex gap-4 items-center">
 				if organization != nil {
-					<a href={ paths.Organization(organization) }>
+					<a id="organization-breadcrumb" href={ paths.Organization(organization) }>
 						<span class="flex gap-2 items-center">
 							<svg
 								xmlns="http://www.w3.org/2000/svg"

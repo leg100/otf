@@ -240,11 +240,11 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 			require.NoError(t, err)
 
 			// go to workspace settings
-			err = page.Locator(`//ul[@id='workspace-submenu']//li[@id='menu-item-settings']/a`).Click()
+			err = page.Locator(`//li[@id='menu-item-settings']/a`).Click()
 			require.NoError(t, err)
 
 			// confirm 'settings' submenu button is active
-			err = expect.Locator(page.Locator(`//ul[@id='workspace-submenu']//li[@id='menu-item-settings']/a`)).ToHaveClass(`menu-active`)
+			err = expect.Locator(page.Locator(`//li[@id='menu-item-settings']/a`)).ToHaveClass(`menu-active`)
 			require.NoError(t, err)
 
 			// default should be set to always trigger runs
@@ -317,7 +317,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 			require.NoError(t, err)
 
 			// go to workspace settings
-			err = page.Locator(`//ul[@id='workspace-submenu']//li[@id='menu-item-settings']/a`).Click()
+			err = page.Locator(`//li[@id='menu-item-settings']/a`).Click()
 			require.NoError(t, err)
 
 			// trigger patterns strategy should be set
@@ -360,7 +360,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 			require.NoError(t, err)
 
 			// go to workspace settings
-			err = page.Locator(`//ul[@id='workspace-submenu']//li[@id='menu-item-settings']/a`).Click()
+			err = page.Locator(`//li[@id='menu-item-settings']/a`).Click()
 			require.NoError(t, err)
 
 			// tag regex strategy should be set
@@ -389,7 +389,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 			_, err = page.Goto(workspaceURL(daemon.System.Hostname(), org.Name, ws1.Name))
 			require.NoError(t, err)
 			// go to workspace settings
-			err = page.Locator(`//ul[@id='workspace-submenu']//li[@id='menu-item-settings']/a`).Click()
+			err = page.Locator(`//li[@id='menu-item-settings']/a`).Click()
 			require.NoError(t, err)
 
 			// allow applies from the CLI
@@ -417,7 +417,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 			require.NoError(t, err)
 
 			// go to workspace settings
-			err = page.Locator(`//ul[@id='workspace-submenu']//li[@id='menu-item-settings']/a`).Click()
+			err = page.Locator(`//li[@id='menu-item-settings']/a`).Click()
 			require.NoError(t, err)
 
 			// enter a description
@@ -446,7 +446,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 				// go to workspace settings
 				_, err := page.Goto(workspaceURL(daemon.System.Hostname(), org.Name, ws.Name))
 				require.NoError(t, err)
-				err = page.Locator(`//ul[@id='workspace-submenu']//li[@id='menu-item-settings']/a`).Click()
+				err = page.Locator(`//li[@id='menu-item-settings']/a`).Click()
 				require.NoError(t, err)
 
 				// switch engine from terraform to tofu

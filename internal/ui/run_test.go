@@ -19,14 +19,19 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestListRunsHandler(t *testing.T) {
+func TestRunsHandlers(t *testing.T) {
+	ws := workspace.NewTestWorkspace(t, nil)
 	workspaces := &fakeWorkspaceClient{
-		ws: workspace.NewTestWorkspace(t, nil),
+		ws: ws,
 	}
+	cv := configversion.NewConfigurationVersion(ws.ID, configversion.CreateOptions{})
+	run, err := run.NewRun(ws, cv, run.CreateOptions{})
+	require.NoError(t, err)
+
 	h := &Handlers{
 		Workspaces: workspaces,
 		Runs: &fakeRunClient{
-			run: &run.Run{},
+			run: run,
 		},
 		Configs:    &fakeConfigsClient{},
 		Authorizer: authz.NewAllowAllAuthorizer(),
@@ -37,40 +42,20 @@ func TestListRunsHandler(t *testing.T) {
 	}
 	user := &user.User{ID: resource.NewTfeID(resource.UserKind)}
 
-	r := httptest.NewRequest("GET", "/?workspace_id=ws-123&page=1", nil)
-	r = r.WithContext(authz.AddSubjectToContext(r.Context(), user))
-	w := httptest.NewRecorder()
-	h.listRuns(w, r)
-	assert.Equal(t, 200, w.Code)
-}
+	t.Run("list runs", func(t *testing.T) {
+		r := httptest.NewRequest("GET", "/?workspace_id=ws-123&page=1", nil)
+		r = r.WithContext(authz.AddSubjectToContext(r.Context(), user))
+		w := httptest.NewRecorder()
+		h.listRuns(w, r)
+		assert.Equal(t, 200, w.Code)
+	})
 
-func TestWeb_GetHandler(t *testing.T) {
-	workspaces := &fakeWorkspaceClient{
-		ws: workspace.NewTestWorkspace(t, nil),
-	}
-	ws := workspace.NewTestWorkspace(t, nil)
-	cv := configversion.NewConfigurationVersion(ws.ID, configversion.CreateOptions{})
-	run, err := run.NewRun(ws, cv, run.CreateOptions{})
-	require.NoError(t, err)
-
-	h := &Handlers{
-		Workspaces: &fakeWorkspaceClient{
-			ws: workspace.NewTestWorkspace(t, nil),
-		},
-		Runs: &fakeRunClient{
-			run: run,
-		},
-		Configs:    &fakeConfigsClient{},
-		Authorizer: authz.NewAllowAllAuthorizer(),
-		templates: &templates{
-			configs:    &fakeConfigsClient{},
-			workspaces: workspaces,
-		},
-	}
-	r := httptest.NewRequest("GET", "/?run_id=run-123", nil)
-	w := httptest.NewRecorder()
-	h.getRun(w, r)
-	assert.Equal(t, 200, w.Code, w.Body.String())
+	t.Run("get run", func(t *testing.T) {
+		r := httptest.NewRequest("GET", "/?run_id=run-123", nil)
+		w := httptest.NewRecorder()
+		h.getRun(w, r)
+		assert.Equal(t, 200, w.Code, w.Body.String())
+	})
 }
 
 func TestRuns_CancelHandler(t *testing.T) {

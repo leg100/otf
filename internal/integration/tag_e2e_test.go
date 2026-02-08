@@ -93,6 +93,8 @@ resource "null_resource" "tags_e2e" {}
 
 		require.NoError(t, err)
 		// go to workspace listing
+		err = page.Locator(`//a[@id='organization-breadcrumb']`).Click()
+		require.NoError(t, err)
 		err = page.Locator(`//li[@id='menu-item-workspaces']//a`).Click()
 		require.NoError(t, err)
 		// show tags

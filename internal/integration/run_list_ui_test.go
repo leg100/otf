@@ -22,7 +22,7 @@ func TestIntegration_RunListUI(t *testing.T) {
 		require.NoError(t, err)
 
 		// navigate to runs page
-		err = page.Locator(`//ul[@id='workspace-submenu']//li[@id='menu-item-runs']/a`).Click()
+		err = page.Locator(`//li[@id='menu-item-runs']/a`).Click()
 		require.NoError(t, err)
 
 		// should be no runs listed
@@ -55,7 +55,7 @@ func TestIntegration_RunListUI(t *testing.T) {
 		require.NoError(t, err)
 
 		// confirm 'runs' submenu button is active
-		err = expect.Locator(page.Locator(`//ul[@id='workspace-submenu']//li[@id='menu-item-runs']/a`)).ToHaveClass(`menu-active`)
+		err = expect.Locator(page.Locator(`//li[@id='menu-item-runs']/a`)).ToHaveClass(`menu-active`)
 		require.NoError(t, err)
 
 		// should be three runs

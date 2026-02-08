@@ -121,6 +121,10 @@ func (h *Handlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 			helpers.Breadcrumb{Name: "Workspaces"},
 		),
 		withOrganization(*params.Organization),
+		withContentActions(workspaceListActions(
+			*params.Organization,
+			h.Authorizer.CanAccess(r.Context(), authz.CreateWorkspaceAction, *params.Organization),
+		)),
 	)
 }
 

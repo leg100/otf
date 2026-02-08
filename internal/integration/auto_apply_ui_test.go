@@ -20,7 +20,7 @@ func TestAutoApply(t *testing.T) {
 		_, err := page.Goto(workspaceURL(svc.System.Hostname(), org.Name, t.Name()))
 		require.NoError(t, err)
 		// go to workspace settings
-		err = page.Locator(`//ul[@id='workspace-submenu']//li[@id='menu-item-settings']/a`).Click()
+		err = page.Locator(`//li[@id='menu-item-settings']/a`).Click()
 		require.NoError(t, err)
 		// enable auto-apply
 		err = page.Locator(`//input[@name='auto_apply' and @value='true']`).Click()
