@@ -1,7 +1,6 @@
 package ui
 
 import (
-	"context"
 	"net/http"
 	"strings"
 
@@ -17,22 +16,6 @@ import (
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/templ-go/x/urlbuilder"
 )
-
-type vcsHandlers struct {
-	*internal.HostnameService
-
-	client vcsClient
-}
-
-type vcsClient interface {
-	Create(ctx context.Context, opts vcs.CreateOptions) (*vcs.Provider, error)
-	Update(ctx context.Context, id resource.TfeID, opts vcs.UpdateOptions) (*vcs.Provider, error)
-	Get(ctx context.Context, id resource.TfeID) (*vcs.Provider, error)
-	List(ctx context.Context, organization organization.Name) ([]*vcs.Provider, error)
-	Delete(ctx context.Context, id resource.TfeID) (*vcs.Provider, error)
-	GetKind(id vcs.KindID) (vcs.Kind, error)
-	GetKinds() []vcs.Kind
-}
 
 func addVCSHandlers(r *mux.Router, h *Handlers) {
 	r.HandleFunc("/organizations/{organization_name}/vcs-providers", h.listVCSProviders).Methods("GET")

@@ -22,7 +22,6 @@ import (
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
-	runpkg "github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/runner"
 	"github.com/leg100/otf/internal/state"
 	"github.com/leg100/otf/internal/team"
@@ -111,7 +110,7 @@ type HostnameService interface {
 }
 
 type RunService interface {
-	Create(context.Context, resource.TfeID, runpkg.CreateOptions) (*run.Run, error)
+	Create(context.Context, resource.TfeID, run.CreateOptions) (*run.Run, error)
 	List(_ context.Context, opts run.ListOptions) (*resource.Page[*run.Run], error)
 	Get(ctx context.Context, id resource.TfeID) (*run.Run, error)
 	GetChunk(ctx context.Context, opts run.GetChunkOptions) (run.Chunk, error)
@@ -269,12 +268,6 @@ func withWorkspace(ws *workspace.Workspace) renderPageOption {
 func withBreadcrumbs(crumbs ...helpers.Breadcrumb) renderPageOption {
 	return func(opts *helpers.LayoutProps) {
 		opts.Breadcrumbs = append(opts.Breadcrumbs, crumbs...)
-	}
-}
-
-func withContentLinks(comp templ.Component) renderPageOption {
-	return func(opts *helpers.LayoutProps) {
-		opts.ContentLinks = comp
 	}
 }
 

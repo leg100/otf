@@ -19,7 +19,6 @@ type LayoutProps struct {
 	Workspace      *resource.Info
 	Breadcrumbs    []Breadcrumb
 	ContentActions templ.Component
-	ContentLinks   templ.Component
 	ContentMenu    templ.Component
 	PreContent     templ.Component
 	PostContent    templ.Component
@@ -67,11 +66,6 @@ templ Layout(props LayoutProps) {
 						@props.ContentActions
 					}
 				</div>
-				<ul class="flex grow items-center justify-end gap-4">
-					if props.ContentLinks != nil {
-						@props.ContentLinks
-					}
-				</ul>
 			</div>
 			if props.ContentMenu != nil {
 				@props.ContentMenu

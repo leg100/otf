@@ -7,14 +7,9 @@ import (
 	"github.com/a-h/templ"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/html/components/paths"
-	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/workspace"
 )
-
-type workspaceUIHelpersAuthorizer interface {
-	CanAccess(context.Context, authz.Action, resource.ID) bool
-}
 
 type workspaceLockInfo struct {
 	Text     string        // button text

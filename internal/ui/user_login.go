@@ -7,16 +7,11 @@ import (
 	"github.com/leg100/otf/internal/authenticator"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
-	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/user"
 )
 
 type loginService interface {
 	Clients() []*authenticator.OAuthClient
-}
-
-type tokensClient interface {
-	StartSession(w http.ResponseWriter, r *http.Request, userID resource.TfeID) error
 }
 
 func addLoginHandlers(r *mux.Router, h *Handlers) {
