@@ -91,6 +91,14 @@ templ BareLayout(props BareLayoutProps) {
 	<html lang="en">
 		<head>
 			<script src={ AssetPath(ctx, "/static/js/theme-change.2.0.2.js") }></script>
+			<script async crossorigin="anonymous">
+			   // Prevents page flicker with non-default themes:
+			   // https://github.com/saadeghi/theme-change/issues/28
+			   var selectedTheme = localStorage.getItem("theme");
+			   if(selectedTheme) {
+				   document.documentElement.setAttribute("data-theme", selectedTheme);
+			   }
+			</script>
 			<meta charset="utf-8"/>
 			<meta name="viewport" content="width=device-width, initial-scale=1"/>
 			if props.PreContent != nil {

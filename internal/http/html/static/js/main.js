@@ -20,10 +20,3 @@ window.addEventListener("load", (e) => {
 		Alpine.initTree(evt.detail.elt);
 	});
 });
-
-// Prevents page flicker with non-default themes:
-// https://github.com/saadeghi/theme-change/issues/28
-var selectedTheme = localStorage.getItem("theme");
-if (selectedTheme) {
-	document.documentElement.setAttribute("data-theme", selectedTheme);
-}
