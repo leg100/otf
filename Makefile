@@ -125,8 +125,8 @@ tunnel:
 # Generate path helpers
 .PHONY: paths
 paths:
-	go generate ./internal/http/html/paths
-	go tool goimports -w ./internal/http/html/paths
+	go generate ./internal/ui/paths
+	go tool goimports -w ./internal/ui/paths
 	go tool goimports -w ./internal/http/html/components/paths
 
 # Re-generate RBAC action strings

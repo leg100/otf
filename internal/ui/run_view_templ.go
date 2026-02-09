@@ -10,11 +10,11 @@ import templruntime "github.com/a-h/templ/runtime"
 
 import (
 	"fmt"
-	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/resource"
 	runpkg "github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/ui/helpers"
+	"github.com/leg100/otf/internal/ui/paths"
 	"github.com/leg100/otf/internal/workspace"
 	"strings"
 	"time"

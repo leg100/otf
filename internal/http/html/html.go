@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/gomarkdown/markdown"
-	"github.com/leg100/otf/internal/http/html/paths"
+	"github.com/leg100/otf/internal/ui/paths"
 )
 
 const (

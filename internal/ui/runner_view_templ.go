@@ -10,11 +10,11 @@ import templruntime "github.com/a-h/templ/runtime"
 
 import (
 	"fmt"
-	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	runnerpkg "github.com/leg100/otf/internal/runner"
 	"github.com/leg100/otf/internal/ui/helpers"
+	"github.com/leg100/otf/internal/ui/paths"
 )
 
 type listRunnersProps struct {

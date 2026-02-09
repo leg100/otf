@@ -1,0 +1,103 @@
+- name: admin
+  controller_type: 1
+- name: login
+  no_prefix: true
+  controller_type: 1
+- name: logout
+  controller_type: 1
+- name: admin_login
+  path: /admin/login
+  no_prefix: true
+  controller_type: 1
+- name: profile
+  controller_type: 1
+- name: tokens
+  path: /current-user/tokens
+  controller_type: 1
+- name: delete_token
+  path: /current-user/tokens/delete
+  controller_type: 1
+- name: new_token
+  path: /current-user/tokens/new
+  controller_type: 1
+- name: create_token
+  path: /current-user/tokens/create
+  controller_type: 1
+- name: github_app
+  actions:
+  - name: exchange-code
+    collection: true
+  - name: complete
+    collection: true
+  - name: delete-install
+- name: organization
+  nested:
+  - name: workspace
+    nested:
+    - name: run
+      actions:
+      - name: apply
+      - name: discard
+      - name: cancel
+      - name: force-cancel
+      - name: retry
+      - name: tail
+      - name: watch
+      - name: watch-latest
+        collection: true
+    - name: variable
+    actions:
+    - name: lock
+    - name: unlock
+    - name: force-unlock
+    - name: set-permission
+    - name: unset-permission
+    - name: connect
+    - name: disconnect
+    - name: start-run
+    - name: setup-connection-provider
+    - name: setup-connection-repo
+    - name: create-tag
+    - name: delete-tag
+    - name: state
+    - name: pools
+  - name: organization_run
+    path: /run
+    actions:
+    - name: list
+      collection: true
+    skip_default_actions: true
+  - name: runner
+    actions:
+    - name: watch
+      collection: true
+  - name: agent_pool
+    nested:
+    - name: agent_token
+  - name: variable_set
+    nested:
+    - name: variable_set_variable
+  - name: organization_token
+    path: /token
+    actions:
+    - name: show
+      collection: true
+    - name: create
+      collection: true
+    - name: delete
+      collection: true
+    skip_default_actions: true
+  - name: user
+  - name: team
+    actions:
+    - name: add-member
+    - name: remove-member
+  - name: vcs_provider
+    actions:
+    - name: new-github-app
+      collection: true
+    camel: VCSProvider
+    lower_camel: vcsProvider
+  - name: module
+    actions:
+    - name: connect

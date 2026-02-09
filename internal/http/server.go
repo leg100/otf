@@ -16,9 +16,9 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/html"
-	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/json"
 	"github.com/leg100/otf/internal/logr"
+	"github.com/leg100/otf/internal/ui/paths"
 )
 
 const (
