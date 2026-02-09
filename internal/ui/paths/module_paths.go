@@ -4,34 +4,34 @@ package paths
 
 import "fmt"
 
-func Modules(organization fmt.Stringer) string {
-	return fmt.Sprintf("/app/organizations/%s/modules", organization)
+func Modules(organization any) string {
+	return fmt.Sprintf("/app/organizations/%v/modules", organization)
 }
 
-func CreateModule(organization fmt.Stringer) string {
-	return fmt.Sprintf("/app/organizations/%s/modules/create", organization)
+func CreateModule(organization any) string {
+	return fmt.Sprintf("/app/organizations/%v/modules/create", organization)
 }
 
-func NewModule(organization fmt.Stringer) string {
-	return fmt.Sprintf("/app/organizations/%s/modules/new", organization)
+func NewModule(organization any) string {
+	return fmt.Sprintf("/app/organizations/%v/modules/new", organization)
 }
 
-func Module(module fmt.Stringer) string {
-	return fmt.Sprintf("/app/modules/%s", module)
+func Module(module any) string {
+	return fmt.Sprintf("/app/modules/%v", module)
 }
 
-func EditModule(module fmt.Stringer) string {
-	return fmt.Sprintf("/app/modules/%s/edit", module)
+func EditModule(module any) string {
+	return fmt.Sprintf("/app/modules/%v/edit", module)
 }
 
-func UpdateModule(module fmt.Stringer) string {
-	return fmt.Sprintf("/app/modules/%s/update", module)
+func UpdateModule(module any) string {
+	return fmt.Sprintf("/app/modules/%v/update", module)
 }
 
-func DeleteModule(module fmt.Stringer) string {
-	return fmt.Sprintf("/app/modules/%s/delete", module)
+func DeleteModule(module any) string {
+	return fmt.Sprintf("/app/modules/%v/delete", module)
 }
 
-func ConnectModule(module fmt.Stringer) string {
-	return fmt.Sprintf("/app/modules/%s/connect", module)
+func ConnectModule(module any) string {
+	return fmt.Sprintf("/app/modules/%v/connect", module)
 }

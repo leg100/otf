@@ -16,20 +16,20 @@ func NewGithubApp() string {
 	return "/app/github-apps/new"
 }
 
-func GithubApp(githubApp fmt.Stringer) string {
-	return fmt.Sprintf("/app/github-apps/%s", githubApp)
+func GithubApp(githubApp any) string {
+	return fmt.Sprintf("/app/github-apps/%v", githubApp)
 }
 
-func EditGithubApp(githubApp fmt.Stringer) string {
-	return fmt.Sprintf("/app/github-apps/%s/edit", githubApp)
+func EditGithubApp(githubApp any) string {
+	return fmt.Sprintf("/app/github-apps/%v/edit", githubApp)
 }
 
-func UpdateGithubApp(githubApp fmt.Stringer) string {
-	return fmt.Sprintf("/app/github-apps/%s/update", githubApp)
+func UpdateGithubApp(githubApp any) string {
+	return fmt.Sprintf("/app/github-apps/%v/update", githubApp)
 }
 
-func DeleteGithubApp(githubApp fmt.Stringer) string {
-	return fmt.Sprintf("/app/github-apps/%s/delete", githubApp)
+func DeleteGithubApp(githubApp any) string {
+	return fmt.Sprintf("/app/github-apps/%v/delete", githubApp)
 }
 
 func ExchangeCodeGithubApp() string {
@@ -40,6 +40,6 @@ func CompleteGithubApp() string {
 	return "/app/github-apps/complete"
 }
 
-func DeleteInstallGithubApp(githubApp fmt.Stringer) string {
-	return fmt.Sprintf("/app/github-apps/%s/delete-install", githubApp)
+func DeleteInstallGithubApp(githubApp any) string {
+	return fmt.Sprintf("/app/github-apps/%v/delete-install", githubApp)
 }

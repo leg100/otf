@@ -4,14 +4,14 @@ package paths
 
 import "fmt"
 
-func OrganizationToken(organization fmt.Stringer) string {
-	return fmt.Sprintf("/app/organizations/%s/tokens/show", organization)
+func OrganizationToken(organization any) string {
+	return fmt.Sprintf("/app/organizations/%v/tokens/show", organization)
 }
 
-func CreateOrganizationToken(organization fmt.Stringer) string {
-	return fmt.Sprintf("/app/organizations/%s/tokens/create", organization)
+func CreateOrganizationToken(organization any) string {
+	return fmt.Sprintf("/app/organizations/%v/tokens/create", organization)
 }
 
-func DeleteOrganizationToken(organization fmt.Stringer) string {
-	return fmt.Sprintf("/app/organizations/%s/tokens/delete", organization)
+func DeleteOrganizationToken(organization any) string {
+	return fmt.Sprintf("/app/organizations/%v/tokens/delete", organization)
 }

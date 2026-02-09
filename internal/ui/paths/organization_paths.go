@@ -16,18 +16,18 @@ func NewOrganization() string {
 	return "/app/organizations/new"
 }
 
-func Organization(organization fmt.Stringer) string {
-	return fmt.Sprintf("/app/organizations/%s", organization)
+func Organization(organization any) string {
+	return fmt.Sprintf("/app/organizations/%v", organization)
 }
 
-func EditOrganization(organization fmt.Stringer) string {
-	return fmt.Sprintf("/app/organizations/%s/edit", organization)
+func EditOrganization(organization any) string {
+	return fmt.Sprintf("/app/organizations/%v/edit", organization)
 }
 
-func UpdateOrganization(organization fmt.Stringer) string {
-	return fmt.Sprintf("/app/organizations/%s/update", organization)
+func UpdateOrganization(organization any) string {
+	return fmt.Sprintf("/app/organizations/%v/update", organization)
 }
 
-func DeleteOrganization(organization fmt.Stringer) string {
-	return fmt.Sprintf("/app/organizations/%s/delete", organization)
+func DeleteOrganization(organization any) string {
+	return fmt.Sprintf("/app/organizations/%v/delete", organization)
 }

@@ -4,30 +4,30 @@ package paths
 
 import "fmt"
 
-func AgentTokens(agentPool fmt.Stringer) string {
-	return fmt.Sprintf("/app/agent-pools/%s/agent-tokens", agentPool)
+func AgentTokens(agentPool any) string {
+	return fmt.Sprintf("/app/agent-pools/%v/agent-tokens", agentPool)
 }
 
-func CreateAgentToken(agentPool fmt.Stringer) string {
-	return fmt.Sprintf("/app/agent-pools/%s/agent-tokens/create", agentPool)
+func CreateAgentToken(agentPool any) string {
+	return fmt.Sprintf("/app/agent-pools/%v/agent-tokens/create", agentPool)
 }
 
-func NewAgentToken(agentPool fmt.Stringer) string {
-	return fmt.Sprintf("/app/agent-pools/%s/agent-tokens/new", agentPool)
+func NewAgentToken(agentPool any) string {
+	return fmt.Sprintf("/app/agent-pools/%v/agent-tokens/new", agentPool)
 }
 
-func AgentToken(agentToken fmt.Stringer) string {
-	return fmt.Sprintf("/app/agent-tokens/%s", agentToken)
+func AgentToken(agentToken any) string {
+	return fmt.Sprintf("/app/agent-tokens/%v", agentToken)
 }
 
-func EditAgentToken(agentToken fmt.Stringer) string {
-	return fmt.Sprintf("/app/agent-tokens/%s/edit", agentToken)
+func EditAgentToken(agentToken any) string {
+	return fmt.Sprintf("/app/agent-tokens/%v/edit", agentToken)
 }
 
-func UpdateAgentToken(agentToken fmt.Stringer) string {
-	return fmt.Sprintf("/app/agent-tokens/%s/update", agentToken)
+func UpdateAgentToken(agentToken any) string {
+	return fmt.Sprintf("/app/agent-tokens/%v/update", agentToken)
 }
 
-func DeleteAgentToken(agentToken fmt.Stringer) string {
-	return fmt.Sprintf("/app/agent-tokens/%s/delete", agentToken)
+func DeleteAgentToken(agentToken any) string {
+	return fmt.Sprintf("/app/agent-tokens/%v/delete", agentToken)
 }

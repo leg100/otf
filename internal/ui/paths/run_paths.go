@@ -4,62 +4,62 @@ package paths
 
 import "fmt"
 
-func Runs(workspace fmt.Stringer) string {
-	return fmt.Sprintf("/app/workspaces/%s/runs", workspace)
+func Runs(workspace any) string {
+	return fmt.Sprintf("/app/workspaces/%v/runs", workspace)
 }
 
-func CreateRun(workspace fmt.Stringer) string {
-	return fmt.Sprintf("/app/workspaces/%s/runs/create", workspace)
+func CreateRun(workspace any) string {
+	return fmt.Sprintf("/app/workspaces/%v/runs/create", workspace)
 }
 
-func NewRun(workspace fmt.Stringer) string {
-	return fmt.Sprintf("/app/workspaces/%s/runs/new", workspace)
+func NewRun(workspace any) string {
+	return fmt.Sprintf("/app/workspaces/%v/runs/new", workspace)
 }
 
-func Run(run fmt.Stringer) string {
-	return fmt.Sprintf("/app/runs/%s", run)
+func Run(run any) string {
+	return fmt.Sprintf("/app/runs/%v", run)
 }
 
-func EditRun(run fmt.Stringer) string {
-	return fmt.Sprintf("/app/runs/%s/edit", run)
+func EditRun(run any) string {
+	return fmt.Sprintf("/app/runs/%v/edit", run)
 }
 
-func UpdateRun(run fmt.Stringer) string {
-	return fmt.Sprintf("/app/runs/%s/update", run)
+func UpdateRun(run any) string {
+	return fmt.Sprintf("/app/runs/%v/update", run)
 }
 
-func DeleteRun(run fmt.Stringer) string {
-	return fmt.Sprintf("/app/runs/%s/delete", run)
+func DeleteRun(run any) string {
+	return fmt.Sprintf("/app/runs/%v/delete", run)
 }
 
-func ApplyRun(run fmt.Stringer) string {
-	return fmt.Sprintf("/app/runs/%s/apply", run)
+func ApplyRun(run any) string {
+	return fmt.Sprintf("/app/runs/%v/apply", run)
 }
 
-func DiscardRun(run fmt.Stringer) string {
-	return fmt.Sprintf("/app/runs/%s/discard", run)
+func DiscardRun(run any) string {
+	return fmt.Sprintf("/app/runs/%v/discard", run)
 }
 
-func CancelRun(run fmt.Stringer) string {
-	return fmt.Sprintf("/app/runs/%s/cancel", run)
+func CancelRun(run any) string {
+	return fmt.Sprintf("/app/runs/%v/cancel", run)
 }
 
-func ForceCancelRun(run fmt.Stringer) string {
-	return fmt.Sprintf("/app/runs/%s/force-cancel", run)
+func ForceCancelRun(run any) string {
+	return fmt.Sprintf("/app/runs/%v/force-cancel", run)
 }
 
-func RetryRun(run fmt.Stringer) string {
-	return fmt.Sprintf("/app/runs/%s/retry", run)
+func RetryRun(run any) string {
+	return fmt.Sprintf("/app/runs/%v/retry", run)
 }
 
-func TailRun(run fmt.Stringer) string {
-	return fmt.Sprintf("/app/runs/%s/tail", run)
+func TailRun(run any) string {
+	return fmt.Sprintf("/app/runs/%v/tail", run)
 }
 
-func WatchRun(run fmt.Stringer) string {
-	return fmt.Sprintf("/app/runs/%s/watch", run)
+func WatchRun(run any) string {
+	return fmt.Sprintf("/app/runs/%v/watch", run)
 }
 
-func WatchLatestRun(workspace fmt.Stringer) string {
-	return fmt.Sprintf("/app/workspaces/%s/runs/watch-latest", workspace)
+func WatchLatestRun(workspace any) string {
+	return fmt.Sprintf("/app/workspaces/%v/runs/watch-latest", workspace)
 }

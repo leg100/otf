@@ -4,30 +4,30 @@ package paths
 
 import "fmt"
 
-func Users(organization fmt.Stringer) string {
-	return fmt.Sprintf("/app/organizations/%s/users", organization)
+func Users(organization any) string {
+	return fmt.Sprintf("/app/organizations/%v/users", organization)
 }
 
-func CreateUser(organization fmt.Stringer) string {
-	return fmt.Sprintf("/app/organizations/%s/users/create", organization)
+func CreateUser(organization any) string {
+	return fmt.Sprintf("/app/organizations/%v/users/create", organization)
 }
 
-func NewUser(organization fmt.Stringer) string {
-	return fmt.Sprintf("/app/organizations/%s/users/new", organization)
+func NewUser(organization any) string {
+	return fmt.Sprintf("/app/organizations/%v/users/new", organization)
 }
 
-func User(user fmt.Stringer) string {
-	return fmt.Sprintf("/app/users/%s", user)
+func User(user any) string {
+	return fmt.Sprintf("/app/users/%v", user)
 }
 
-func EditUser(user fmt.Stringer) string {
-	return fmt.Sprintf("/app/users/%s/edit", user)
+func EditUser(user any) string {
+	return fmt.Sprintf("/app/users/%v/edit", user)
 }
 
-func UpdateUser(user fmt.Stringer) string {
-	return fmt.Sprintf("/app/users/%s/update", user)
+func UpdateUser(user any) string {
+	return fmt.Sprintf("/app/users/%v/update", user)
 }
 
-func DeleteUser(user fmt.Stringer) string {
-	return fmt.Sprintf("/app/users/%s/delete", user)
+func DeleteUser(user any) string {
+	return fmt.Sprintf("/app/users/%v/delete", user)
 }

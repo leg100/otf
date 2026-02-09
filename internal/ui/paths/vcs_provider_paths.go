@@ -4,34 +4,34 @@ package paths
 
 import "fmt"
 
-func VCSProviders(organization fmt.Stringer) string {
-	return fmt.Sprintf("/app/organizations/%s/vcs-providers", organization)
+func VCSProviders(organization any) string {
+	return fmt.Sprintf("/app/organizations/%v/vcs-providers", organization)
 }
 
-func CreateVCSProvider(organization fmt.Stringer) string {
-	return fmt.Sprintf("/app/organizations/%s/vcs-providers/create", organization)
+func CreateVCSProvider(organization any) string {
+	return fmt.Sprintf("/app/organizations/%v/vcs-providers/create", organization)
 }
 
-func NewVCSProvider(organization fmt.Stringer) string {
-	return fmt.Sprintf("/app/organizations/%s/vcs-providers/new", organization)
+func NewVCSProvider(organization any) string {
+	return fmt.Sprintf("/app/organizations/%v/vcs-providers/new", organization)
 }
 
-func VCSProvider(vcsProvider fmt.Stringer) string {
-	return fmt.Sprintf("/app/vcs-providers/%s", vcsProvider)
+func VCSProvider(vcsProvider any) string {
+	return fmt.Sprintf("/app/vcs-providers/%v", vcsProvider)
 }
 
-func EditVCSProvider(vcsProvider fmt.Stringer) string {
-	return fmt.Sprintf("/app/vcs-providers/%s/edit", vcsProvider)
+func EditVCSProvider(vcsProvider any) string {
+	return fmt.Sprintf("/app/vcs-providers/%v/edit", vcsProvider)
 }
 
-func UpdateVCSProvider(vcsProvider fmt.Stringer) string {
-	return fmt.Sprintf("/app/vcs-providers/%s/update", vcsProvider)
+func UpdateVCSProvider(vcsProvider any) string {
+	return fmt.Sprintf("/app/vcs-providers/%v/update", vcsProvider)
 }
 
-func DeleteVCSProvider(vcsProvider fmt.Stringer) string {
-	return fmt.Sprintf("/app/vcs-providers/%s/delete", vcsProvider)
+func DeleteVCSProvider(vcsProvider any) string {
+	return fmt.Sprintf("/app/vcs-providers/%v/delete", vcsProvider)
 }
 
-func NewGithubAppVCSProvider(organization fmt.Stringer) string {
-	return fmt.Sprintf("/app/organizations/%s/vcs-providers/new-github-app", organization)
+func NewGithubAppVCSProvider(organization any) string {
+	return fmt.Sprintf("/app/organizations/%v/vcs-providers/new-github-app", organization)
 }

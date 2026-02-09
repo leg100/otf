@@ -4,30 +4,30 @@ package paths
 
 import "fmt"
 
-func VariableSetVariables(variableSet fmt.Stringer) string {
-	return fmt.Sprintf("/app/variable-sets/%s/variable-set-variables", variableSet)
+func VariableSetVariables(variableSet any) string {
+	return fmt.Sprintf("/app/variable-sets/%v/variable-set-variables", variableSet)
 }
 
-func CreateVariableSetVariable(variableSet fmt.Stringer) string {
-	return fmt.Sprintf("/app/variable-sets/%s/variable-set-variables/create", variableSet)
+func CreateVariableSetVariable(variableSet any) string {
+	return fmt.Sprintf("/app/variable-sets/%v/variable-set-variables/create", variableSet)
 }
 
-func NewVariableSetVariable(variableSet fmt.Stringer) string {
-	return fmt.Sprintf("/app/variable-sets/%s/variable-set-variables/new", variableSet)
+func NewVariableSetVariable(variableSet any) string {
+	return fmt.Sprintf("/app/variable-sets/%v/variable-set-variables/new", variableSet)
 }
 
-func VariableSetVariable(variableSetVariable fmt.Stringer) string {
-	return fmt.Sprintf("/app/variable-set-variables/%s", variableSetVariable)
+func VariableSetVariable(variableSetVariable any) string {
+	return fmt.Sprintf("/app/variable-set-variables/%v", variableSetVariable)
 }
 
-func EditVariableSetVariable(variableSetVariable fmt.Stringer) string {
-	return fmt.Sprintf("/app/variable-set-variables/%s/edit", variableSetVariable)
+func EditVariableSetVariable(variableSetVariable any) string {
+	return fmt.Sprintf("/app/variable-set-variables/%v/edit", variableSetVariable)
 }
 
-func UpdateVariableSetVariable(variableSetVariable fmt.Stringer) string {
-	return fmt.Sprintf("/app/variable-set-variables/%s/update", variableSetVariable)
+func UpdateVariableSetVariable(variableSetVariable any) string {
+	return fmt.Sprintf("/app/variable-set-variables/%v/update", variableSetVariable)
 }
 
-func DeleteVariableSetVariable(variableSetVariable fmt.Stringer) string {
-	return fmt.Sprintf("/app/variable-set-variables/%s/delete", variableSetVariable)
+func DeleteVariableSetVariable(variableSetVariable any) string {
+	return fmt.Sprintf("/app/variable-set-variables/%v/delete", variableSetVariable)
 }

@@ -4,38 +4,38 @@ package paths
 
 import "fmt"
 
-func Teams(organization fmt.Stringer) string {
-	return fmt.Sprintf("/app/organizations/%s/teams", organization)
+func Teams(organization any) string {
+	return fmt.Sprintf("/app/organizations/%v/teams", organization)
 }
 
-func CreateTeam(organization fmt.Stringer) string {
-	return fmt.Sprintf("/app/organizations/%s/teams/create", organization)
+func CreateTeam(organization any) string {
+	return fmt.Sprintf("/app/organizations/%v/teams/create", organization)
 }
 
-func NewTeam(organization fmt.Stringer) string {
-	return fmt.Sprintf("/app/organizations/%s/teams/new", organization)
+func NewTeam(organization any) string {
+	return fmt.Sprintf("/app/organizations/%v/teams/new", organization)
 }
 
-func Team(team fmt.Stringer) string {
-	return fmt.Sprintf("/app/teams/%s", team)
+func Team(team any) string {
+	return fmt.Sprintf("/app/teams/%v", team)
 }
 
-func EditTeam(team fmt.Stringer) string {
-	return fmt.Sprintf("/app/teams/%s/edit", team)
+func EditTeam(team any) string {
+	return fmt.Sprintf("/app/teams/%v/edit", team)
 }
 
-func UpdateTeam(team fmt.Stringer) string {
-	return fmt.Sprintf("/app/teams/%s/update", team)
+func UpdateTeam(team any) string {
+	return fmt.Sprintf("/app/teams/%v/update", team)
 }
 
-func DeleteTeam(team fmt.Stringer) string {
-	return fmt.Sprintf("/app/teams/%s/delete", team)
+func DeleteTeam(team any) string {
+	return fmt.Sprintf("/app/teams/%v/delete", team)
 }
 
-func AddMemberTeam(team fmt.Stringer) string {
-	return fmt.Sprintf("/app/teams/%s/add-member", team)
+func AddMemberTeam(team any) string {
+	return fmt.Sprintf("/app/teams/%v/add-member", team)
 }
 
-func RemoveMemberTeam(team fmt.Stringer) string {
-	return fmt.Sprintf("/app/teams/%s/remove-member", team)
+func RemoveMemberTeam(team any) string {
+	return fmt.Sprintf("/app/teams/%v/remove-member", team)
 }

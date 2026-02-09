@@ -4,86 +4,86 @@ package paths
 
 import "fmt"
 
-func Workspaces(organization fmt.Stringer) string {
-	return fmt.Sprintf("/app/organizations/%s/workspaces", organization)
+func Workspaces(organization any) string {
+	return fmt.Sprintf("/app/organizations/%v/workspaces", organization)
 }
 
-func CreateWorkspace(organization fmt.Stringer) string {
-	return fmt.Sprintf("/app/organizations/%s/workspaces/create", organization)
+func CreateWorkspace(organization any) string {
+	return fmt.Sprintf("/app/organizations/%v/workspaces/create", organization)
 }
 
-func NewWorkspace(organization fmt.Stringer) string {
-	return fmt.Sprintf("/app/organizations/%s/workspaces/new", organization)
+func NewWorkspace(organization any) string {
+	return fmt.Sprintf("/app/organizations/%v/workspaces/new", organization)
 }
 
-func Workspace(workspace fmt.Stringer) string {
-	return fmt.Sprintf("/app/workspaces/%s", workspace)
+func Workspace(workspace any) string {
+	return fmt.Sprintf("/app/workspaces/%v", workspace)
 }
 
-func EditWorkspace(workspace fmt.Stringer) string {
-	return fmt.Sprintf("/app/workspaces/%s/edit", workspace)
+func EditWorkspace(workspace any) string {
+	return fmt.Sprintf("/app/workspaces/%v/edit", workspace)
 }
 
-func UpdateWorkspace(workspace fmt.Stringer) string {
-	return fmt.Sprintf("/app/workspaces/%s/update", workspace)
+func UpdateWorkspace(workspace any) string {
+	return fmt.Sprintf("/app/workspaces/%v/update", workspace)
 }
 
-func DeleteWorkspace(workspace fmt.Stringer) string {
-	return fmt.Sprintf("/app/workspaces/%s/delete", workspace)
+func DeleteWorkspace(workspace any) string {
+	return fmt.Sprintf("/app/workspaces/%v/delete", workspace)
 }
 
-func LockWorkspace(workspace fmt.Stringer) string {
-	return fmt.Sprintf("/app/workspaces/%s/lock", workspace)
+func LockWorkspace(workspace any) string {
+	return fmt.Sprintf("/app/workspaces/%v/lock", workspace)
 }
 
-func UnlockWorkspace(workspace fmt.Stringer) string {
-	return fmt.Sprintf("/app/workspaces/%s/unlock", workspace)
+func UnlockWorkspace(workspace any) string {
+	return fmt.Sprintf("/app/workspaces/%v/unlock", workspace)
 }
 
-func ForceUnlockWorkspace(workspace fmt.Stringer) string {
-	return fmt.Sprintf("/app/workspaces/%s/force-unlock", workspace)
+func ForceUnlockWorkspace(workspace any) string {
+	return fmt.Sprintf("/app/workspaces/%v/force-unlock", workspace)
 }
 
-func SetPermissionWorkspace(workspace fmt.Stringer) string {
-	return fmt.Sprintf("/app/workspaces/%s/set-permission", workspace)
+func SetPermissionWorkspace(workspace any) string {
+	return fmt.Sprintf("/app/workspaces/%v/set-permission", workspace)
 }
 
-func UnsetPermissionWorkspace(workspace fmt.Stringer) string {
-	return fmt.Sprintf("/app/workspaces/%s/unset-permission", workspace)
+func UnsetPermissionWorkspace(workspace any) string {
+	return fmt.Sprintf("/app/workspaces/%v/unset-permission", workspace)
 }
 
-func ConnectWorkspace(workspace fmt.Stringer) string {
-	return fmt.Sprintf("/app/workspaces/%s/connect", workspace)
+func ConnectWorkspace(workspace any) string {
+	return fmt.Sprintf("/app/workspaces/%v/connect", workspace)
 }
 
-func DisconnectWorkspace(workspace fmt.Stringer) string {
-	return fmt.Sprintf("/app/workspaces/%s/disconnect", workspace)
+func DisconnectWorkspace(workspace any) string {
+	return fmt.Sprintf("/app/workspaces/%v/disconnect", workspace)
 }
 
-func StartRunWorkspace(workspace fmt.Stringer) string {
-	return fmt.Sprintf("/app/workspaces/%s/start-run", workspace)
+func StartRunWorkspace(workspace any) string {
+	return fmt.Sprintf("/app/workspaces/%v/start-run", workspace)
 }
 
-func SetupConnectionProviderWorkspace(workspace fmt.Stringer) string {
-	return fmt.Sprintf("/app/workspaces/%s/setup-connection-provider", workspace)
+func SetupConnectionProviderWorkspace(workspace any) string {
+	return fmt.Sprintf("/app/workspaces/%v/setup-connection-provider", workspace)
 }
 
-func SetupConnectionRepoWorkspace(workspace fmt.Stringer) string {
-	return fmt.Sprintf("/app/workspaces/%s/setup-connection-repo", workspace)
+func SetupConnectionRepoWorkspace(workspace any) string {
+	return fmt.Sprintf("/app/workspaces/%v/setup-connection-repo", workspace)
 }
 
-func CreateTagWorkspace(workspace fmt.Stringer) string {
-	return fmt.Sprintf("/app/workspaces/%s/create-tag", workspace)
+func CreateTagWorkspace(workspace any) string {
+	return fmt.Sprintf("/app/workspaces/%v/create-tag", workspace)
 }
 
-func DeleteTagWorkspace(workspace fmt.Stringer) string {
-	return fmt.Sprintf("/app/workspaces/%s/delete-tag", workspace)
+func DeleteTagWorkspace(workspace any) string {
+	return fmt.Sprintf("/app/workspaces/%v/delete-tag", workspace)
 }
 
-func StateWorkspace(workspace fmt.Stringer) string {
-	return fmt.Sprintf("/app/workspaces/%s/state", workspace)
+func StateWorkspace(workspace any) string {
+	return fmt.Sprintf("/app/workspaces/%v/state", workspace)
 }
 
-func PoolsWorkspace(workspace fmt.Stringer) string {
-	return fmt.Sprintf("/app/workspaces/%s/pools", workspace)
+func PoolsWorkspace(workspace any) string {
+	return fmt.Sprintf("/app/workspaces/%v/pools", workspace)
 }

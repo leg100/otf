@@ -4,34 +4,34 @@ package paths
 
 import "fmt"
 
-func Runners(organization fmt.Stringer) string {
-	return fmt.Sprintf("/app/organizations/%s/runners", organization)
+func Runners(organization any) string {
+	return fmt.Sprintf("/app/organizations/%v/runners", organization)
 }
 
-func CreateRunner(organization fmt.Stringer) string {
-	return fmt.Sprintf("/app/organizations/%s/runners/create", organization)
+func CreateRunner(organization any) string {
+	return fmt.Sprintf("/app/organizations/%v/runners/create", organization)
 }
 
-func NewRunner(organization fmt.Stringer) string {
-	return fmt.Sprintf("/app/organizations/%s/runners/new", organization)
+func NewRunner(organization any) string {
+	return fmt.Sprintf("/app/organizations/%v/runners/new", organization)
 }
 
-func Runner(runner fmt.Stringer) string {
-	return fmt.Sprintf("/app/runners/%s", runner)
+func Runner(runner any) string {
+	return fmt.Sprintf("/app/runners/%v", runner)
 }
 
-func EditRunner(runner fmt.Stringer) string {
-	return fmt.Sprintf("/app/runners/%s/edit", runner)
+func EditRunner(runner any) string {
+	return fmt.Sprintf("/app/runners/%v/edit", runner)
 }
 
-func UpdateRunner(runner fmt.Stringer) string {
-	return fmt.Sprintf("/app/runners/%s/update", runner)
+func UpdateRunner(runner any) string {
+	return fmt.Sprintf("/app/runners/%v/update", runner)
 }
 
-func DeleteRunner(runner fmt.Stringer) string {
-	return fmt.Sprintf("/app/runners/%s/delete", runner)
+func DeleteRunner(runner any) string {
+	return fmt.Sprintf("/app/runners/%v/delete", runner)
 }
 
-func WatchRunners(organization fmt.Stringer) string {
-	return fmt.Sprintf("/app/organizations/%s/runners/watch", organization)
+func WatchRunners(organization any) string {
+	return fmt.Sprintf("/app/organizations/%v/runners/watch", organization)
 }

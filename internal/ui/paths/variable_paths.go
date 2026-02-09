@@ -4,30 +4,30 @@ package paths
 
 import "fmt"
 
-func Variables(workspace fmt.Stringer) string {
-	return fmt.Sprintf("/app/workspaces/%s/variables", workspace)
+func Variables(workspace any) string {
+	return fmt.Sprintf("/app/workspaces/%v/variables", workspace)
 }
 
-func CreateVariable(workspace fmt.Stringer) string {
-	return fmt.Sprintf("/app/workspaces/%s/variables/create", workspace)
+func CreateVariable(workspace any) string {
+	return fmt.Sprintf("/app/workspaces/%v/variables/create", workspace)
 }
 
-func NewVariable(workspace fmt.Stringer) string {
-	return fmt.Sprintf("/app/workspaces/%s/variables/new", workspace)
+func NewVariable(workspace any) string {
+	return fmt.Sprintf("/app/workspaces/%v/variables/new", workspace)
 }
 
-func Variable(variable fmt.Stringer) string {
-	return fmt.Sprintf("/app/variables/%s", variable)
+func Variable(variable any) string {
+	return fmt.Sprintf("/app/variables/%v", variable)
 }
 
-func EditVariable(variable fmt.Stringer) string {
-	return fmt.Sprintf("/app/variables/%s/edit", variable)
+func EditVariable(variable any) string {
+	return fmt.Sprintf("/app/variables/%v/edit", variable)
 }
 
-func UpdateVariable(variable fmt.Stringer) string {
-	return fmt.Sprintf("/app/variables/%s/update", variable)
+func UpdateVariable(variable any) string {
+	return fmt.Sprintf("/app/variables/%v/update", variable)
 }
 
-func DeleteVariable(variable fmt.Stringer) string {
-	return fmt.Sprintf("/app/variables/%s/delete", variable)
+func DeleteVariable(variable any) string {
+	return fmt.Sprintf("/app/variables/%v/delete", variable)
 }
