@@ -2,11 +2,11 @@ package ui
 
 import (
 	"fmt"
-	"github.com/leg100/otf/internal/ui/paths"
 	"github.com/leg100/otf/internal/resource"
 	runpkg "github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/ui/helpers"
+	"github.com/leg100/otf/internal/ui/paths"
 	"github.com/leg100/otf/internal/workspace"
 	"strings"
 	"time"
@@ -40,7 +40,7 @@ type getRunProps struct {
 templ (t *templates) getRun(props getRunProps) {
 	<div
 		hx-ext="sse"
-		sse-connect={ string(paths.WatchRun(props.run.ID)) }
+		sse-connect={ paths.WatchRun(props.run.ID) }
 		class="flex flex-col gap-4"
 	>
 		<div class="flex gap-4 text-sm">
