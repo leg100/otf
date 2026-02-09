@@ -53,12 +53,12 @@ func WorkspaceMenu(workspace resource.Info, organization resource.ID, authorizer
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = MenuItem("Variables", paths.Variables(workspace.ID), "/app/variables", string(paths.Variables(workspace.ID))).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = MenuItem("Variables", paths.Variables(workspace.ID), "/app/variables", paths.Variables(workspace.ID)).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if authorizer.CanAccess(ctx, authz.UpdateWorkspaceAction, workspace.ID) {
-			templ_7745c5c3_Err = MenuItem("Settings", paths.EditWorkspace(workspace.ID), string(paths.Workspace(workspace.ID))+"/setup-connection").Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = MenuItem("Settings", paths.EditWorkspace(workspace.ID), paths.Workspace(workspace.ID)+"/setup-connection").Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -282,9 +282,9 @@ func MenuItem(title string, path string, matchPrefixes ...string) templ.Componen
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var6 string
-		templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs("menu-item-" + strings.ReplaceAll(strings.ToLower(string(title)), " ", "-"))
+		templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs("menu-item-" + strings.ReplaceAll(strings.ToLower(title), " ", "-"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/helpers/menu.templ`, Line: 70, Col: 85}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/helpers/menu.templ`, Line: 70, Col: 77}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 		if templ_7745c5c3_Err != nil {
@@ -330,9 +330,9 @@ func MenuItem(title string, path string, matchPrefixes ...string) templ.Componen
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var10 string
-		templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(string(title))
+		templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(title)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/helpers/menu.templ`, Line: 75, Col: 18}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/helpers/menu.templ`, Line: 75, Col: 10}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 		if templ_7745c5c3_Err != nil {

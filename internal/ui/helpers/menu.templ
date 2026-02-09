@@ -3,8 +3,8 @@ package helpers
 import (
 	"context"
 	"github.com/leg100/otf/internal/authz"
-	"github.com/leg100/otf/internal/ui/paths"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/ui/paths"
 	"strings"
 )
 
@@ -14,9 +14,9 @@ templ WorkspaceMenu(workspace resource.Info, organization resource.ID, authorize
 			@MenuItem("<", paths.Organization(organization))
 			@MenuItem("Overview", paths.Workspace(workspace.ID))
 			@MenuItem("Runs", paths.Runs(workspace.ID), "/app/runs")
-			@MenuItem("Variables", paths.Variables(workspace.ID), "/app/variables", string(paths.Variables(workspace.ID)))
+			@MenuItem("Variables", paths.Variables(workspace.ID), "/app/variables", paths.Variables(workspace.ID))
 			if authorizer.CanAccess(ctx, authz.UpdateWorkspaceAction, workspace.ID) {
-				@MenuItem("Settings", paths.EditWorkspace(workspace.ID), string(paths.Workspace(workspace.ID))+"/setup-connection")
+				@MenuItem("Settings", paths.EditWorkspace(workspace.ID), paths.Workspace(workspace.ID)+"/setup-connection")
 			}
 		</ul>
 		<div class="">
@@ -67,12 +67,12 @@ templ SiteMenu() {
 }
 
 templ MenuItem(title string, path string, matchPrefixes ...string) {
-	<li id={ "menu-item-" + strings.ReplaceAll(strings.ToLower(string(title)), " ", "-") }>
+	<li id={ "menu-item-" + strings.ReplaceAll(strings.ToLower(title), " ", "-") }>
 		<a
 			href={ path }
 			class={ templ.KV("menu-active", menuIsActive(ctx, path, matchPrefixes...)) }
 		>
-			{ string(title) }
+			{ title }
 		</a>
 	</li>
 }
