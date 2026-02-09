@@ -16,7 +16,7 @@ templ WorkspaceMenu(workspace resource.Info, organization resource.ID, authorize
 			@MenuItem("Runs", paths.Runs(workspace.ID), "/app/runs")
 			@MenuItem("Variables", paths.Variables(workspace.ID), "/app/variables", string(paths.Variables(workspace.ID)))
 			if authorizer.CanAccess(ctx, authz.UpdateWorkspaceAction, workspace.ID) {
-				@MenuItem("Settings", paths.EditWorkspace(workspace.ID))
+				@MenuItem("Settings", paths.EditWorkspace(workspace.ID), string(paths.Workspace(workspace.ID))+"/setup-connection")
 			}
 		</ul>
 		<div class="">

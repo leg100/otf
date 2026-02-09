@@ -591,11 +591,9 @@ func (h *Handlers) listWorkspaceVCSProviders(w http.ResponseWriter, r *http.Requ
 		"list vcs providers | "+ws.ID.String(),
 		w,
 		r,
-		withOrganization(ws.Organization),
+		withWorkspace(ws),
 		withBreadcrumbs(
-			helpers.Breadcrumb{Name: "workspaces", Link: paths.Workspaces(ws.Organization)},
-			helpers.Breadcrumb{Name: ws.Name, Link: paths.Workspace(ws.ID)},
-			helpers.Breadcrumb{Name: "vcs providers"},
+			helpers.Breadcrumb{Name: "Connect workspace to VCS provider"},
 		),
 	)
 }
@@ -637,9 +635,7 @@ func (h *Handlers) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Request)
 		r,
 		withWorkspace(ws),
 		withBreadcrumbs(
-			helpers.Breadcrumb{Name: "workspaces", Link: paths.Workspaces(ws.Organization)},
-			helpers.Breadcrumb{Name: ws.Name, Link: paths.Workspace(ws.ID)},
-			helpers.Breadcrumb{Name: "vcs repositories"},
+			helpers.Breadcrumb{Name: "Connect workspace to VCS repository"},
 		),
 	)
 }

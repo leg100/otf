@@ -2098,14 +2098,14 @@ func (t *templates) listVCSProviders(ws *workspace.Workspace, providers []*vcs.P
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 180, "r[<div>Select a <a class=\"underline\" href=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 180, "<div>Select a <a class=\"underline\" href=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var95 templ.SafeURL
 		templ_7745c5c3_Var95, templ_7745c5c3_Err = templ.JoinURLErrs(paths.VCSProviders(ws.Organization))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/workspace_view.templ`, Line: 693, Col: 78}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/workspace_view.templ`, Line: 692, Col: 78}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var95))
 		if templ_7745c5c3_Err != nil {
@@ -2132,7 +2132,7 @@ func (t *templates) listVCSProviders(ws *workspace.Workspace, providers []*vcs.P
 			var templ_7745c5c3_Var96 templ.SafeURL
 			templ_7745c5c3_Var96, templ_7745c5c3_Err = templ.JoinURLErrs(paths.VCSProviders(ws.Organization))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/workspace_view.templ`, Line: 702, Col: 131}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/workspace_view.templ`, Line: 701, Col: 131}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var96))
 			if templ_7745c5c3_Err != nil {
@@ -2179,7 +2179,7 @@ func (s vcsProviderSelector) action(vcsProviderID resource.TfeID) templ.Componen
 		var templ_7745c5c3_Var98 templ.SafeURL
 		templ_7745c5c3_Var98, templ_7745c5c3_Err = templ.JoinURLErrs(paths.SetupConnectionRepoWorkspace(s.workspaceID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/workspace_view.templ`, Line: 712, Col: 65}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/workspace_view.templ`, Line: 711, Col: 65}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var98))
 		if templ_7745c5c3_Err != nil {
@@ -2192,7 +2192,7 @@ func (s vcsProviderSelector) action(vcsProviderID resource.TfeID) templ.Componen
 		var templ_7745c5c3_Var99 string
 		templ_7745c5c3_Var99, templ_7745c5c3_Err = templ.JoinStringErrs(vcsProviderID.String())
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/workspace_view.templ`, Line: 713, Col: 76}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/workspace_view.templ`, Line: 712, Col: 76}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var99))
 		if templ_7745c5c3_Err != nil {
@@ -2238,7 +2238,7 @@ func (t *templates) listVCSRepos(ws *workspace.Workspace, vcsProviderID resource
 		var templ_7745c5c3_Var101 templ.SafeURL
 		templ_7745c5c3_Var101, templ_7745c5c3_Err = templ.JoinURLErrs(paths.ConnectWorkspace(ws.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/workspace_view.templ`, Line: 723, Col: 45}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/workspace_view.templ`, Line: 722, Col: 45}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var101))
 		if templ_7745c5c3_Err != nil {
@@ -2251,7 +2251,7 @@ func (t *templates) listVCSRepos(ws *workspace.Workspace, vcsProviderID resource
 		var templ_7745c5c3_Var102 string
 		templ_7745c5c3_Var102, templ_7745c5c3_Err = templ.JoinStringErrs(vcsProviderID.String())
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/workspace_view.templ`, Line: 724, Col: 97}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/workspace_view.templ`, Line: 723, Col: 97}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var102))
 		if templ_7745c5c3_Err != nil {
@@ -2310,7 +2310,7 @@ func (s workspaceRepoSelector) action(repo vcs.Repo) templ.Component {
 		var templ_7745c5c3_Var104 templ.SafeURL
 		templ_7745c5c3_Var104, templ_7745c5c3_Err = templ.JoinURLErrs(paths.ConnectWorkspace(s.workspaceID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/workspace_view.templ`, Line: 745, Col: 53}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/workspace_view.templ`, Line: 744, Col: 53}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var104))
 		if templ_7745c5c3_Err != nil {
@@ -2323,7 +2323,7 @@ func (s workspaceRepoSelector) action(repo vcs.Repo) templ.Component {
 		var templ_7745c5c3_Var105 string
 		templ_7745c5c3_Var105, templ_7745c5c3_Err = templ.JoinStringErrs(s.vcsProviderID.String())
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/workspace_view.templ`, Line: 746, Col: 78}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/workspace_view.templ`, Line: 745, Col: 78}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var105))
 		if templ_7745c5c3_Err != nil {
@@ -2336,7 +2336,7 @@ func (s workspaceRepoSelector) action(repo vcs.Repo) templ.Component {
 		var templ_7745c5c3_Var106 string
 		templ_7745c5c3_Var106, templ_7745c5c3_Err = templ.JoinStringErrs(repo.String())
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/workspace_view.templ`, Line: 747, Col: 78}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/workspace_view.templ`, Line: 746, Col: 78}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var106))
 		if templ_7745c5c3_Err != nil {

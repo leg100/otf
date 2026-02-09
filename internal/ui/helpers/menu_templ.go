@@ -58,7 +58,7 @@ func WorkspaceMenu(workspace resource.Info, organization resource.ID, authorizer
 			return templ_7745c5c3_Err
 		}
 		if authorizer.CanAccess(ctx, authz.UpdateWorkspaceAction, workspace.ID) {
-			templ_7745c5c3_Err = MenuItem("Settings", paths.EditWorkspace(workspace.ID)).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = MenuItem("Settings", paths.EditWorkspace(workspace.ID), string(paths.Workspace(workspace.ID))+"/setup-connection").Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

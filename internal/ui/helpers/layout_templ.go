@@ -363,7 +363,7 @@ func BareLayout(props BareLayoutProps) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "\"></head><body hx-ext=\"morph\" class=\"min-h-screen grid grid-rows-[auto_1fr_auto]\"><header class=\"border-b-1 border-base-content/30\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "\"></head><body hx-ext=\"morph\" class=\"min-h-screen min-w-3xl grid grid-rows-[auto_1fr_auto]\"><header class=\"border-b-1 border-base-content/30\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
