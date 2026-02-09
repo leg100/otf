@@ -1,9 +1,4 @@
-package html
-
-const (
-	NarrowDropDown DropDownUIWidth = "narrow"
-	WideDropDown   DropDownUIWidth = "wide"
-)
+package helpers
 
 type (
 	// DropdownUI populates a search/dropdown UI component.
@@ -21,6 +16,4 @@ type (
 		// Width: "narrow" or "wide"
 		Width DropDownUIWidth
 	}
-
-	DropDownUIWidth string
 )

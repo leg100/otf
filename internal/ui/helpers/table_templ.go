@@ -11,8 +11,8 @@ import templruntime "github.com/a-h/templ/runtime"
 import (
 	"context"
 	"fmt"
-	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/resource"
+	"net/url"
 	"strconv"
 )
 
@@ -295,13 +295,13 @@ func (p pageInfo[T]) navigationButtons() templ.Component {
 			err         error
 		)
 		if p.PreviousPage != nil {
-			previousURL, err = html.MergeQuery(CurrentURL(ctx), pageQuery(*p.PreviousPage))
+			previousURL, err = mergeQuery(CurrentURL(ctx), pageQuery(*p.PreviousPage))
 			if err != nil {
 				return err
 			}
 		}
 		if p.NextPage != nil {
-			nextURL, err = html.MergeQuery(CurrentURL(ctx), pageQuery(*p.NextPage))
+			nextURL, err = mergeQuery(CurrentURL(ctx), pageQuery(*p.NextPage))
 			if err != nil {
 				return err
 			}
@@ -452,6 +452,25 @@ func (p pageInfo[T]) pageSizeSelector() templ.Component {
 
 func pageQuery(page int) string {
 	return fmt.Sprintf("page=%d", page)
+}
+
+// MergeQuery merges the query string into the given url, replacing any existing
+// query parameters with the same name.
+func mergeQuery(u string, q string) (templ.SafeURL, error) {
+	parsedURL, err := url.Parse(u)
+	if err != nil {
+		return "", err
+	}
+	mergeQuery, err := url.ParseQuery(q)
+	if err != nil {
+		return "", err
+	}
+	existingQuery := parsedURL.Query()
+	for k, v := range mergeQuery {
+		existingQuery.Set(k, v[0])
+	}
+	parsedURL.RawQuery = existingQuery.Encode()
+	return templ.SafeURL(parsedURL.String()), nil
 }
 
 var _ = templruntime.GeneratedTemplate
