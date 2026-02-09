@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.5.8](https://github.com/leg100/otf/compare/v0.5.7...v0.5.8) (2026-02-09)
+
+
+### Features
+
+* **ui:** revamp menu layout ([#884](https://github.com/leg100/otf/issues/884)) ([0510bce](https://github.com/leg100/otf/commit/0510bce29341a11795147387754049b91b714d9a))
+
+
+### Bug Fixes
+
+* **charts/otfd:** Adjust indentation for volume mounts in deployment.yaml ([#881](https://github.com/leg100/otf/issues/881)) ([67341d3](https://github.com/leg100/otf/commit/67341d38f2decd7a206921595bca217d8efa8462))
+* **dockerfile:** bump alpine version and upgrade base packages to fix critical CVE ([#882](https://github.com/leg100/otf/issues/882)) ([3e730d7](https://github.com/leg100/otf/commit/3e730d73468d32cb0e93a9207393de91a2bfe143))
+* sync layout templ code ([3cf0505](https://github.com/leg100/otf/commit/3cf0505816df8a5d475488d06ecf290c70856885))
+
 ## [0.5.7](https://github.com/leg100/otf/compare/v0.5.6...v0.5.7) (2026-02-01)
 
 
