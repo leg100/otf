@@ -252,11 +252,6 @@ func main() {
 		log.Fatal("Error parsing template: ", err.Error())
 	}
 
-	templTmpl, err := template.New("templ.go.tmpl").Funcs(funcmap).ParseFiles("templ.go.tmpl")
-	if err != nil {
-		log.Fatal("Error parsing template: ", err.Error())
-	}
-
 	funcmapTmpl, err := template.New("funcmap.go.tmpl").Funcs(funcmap).ParseFiles("funcmap.go.tmpl")
 	if err != nil {
 		log.Fatal("Error parsing template: ", err.Error())
@@ -273,22 +268,6 @@ func main() {
 		}
 
 		f, err := os.Create(fmt.Sprintf("%s_paths.go", ctlr.Name))
-		if err != nil {
-			log.Fatal("Error:", err.Error())
-		}
-		_, err = buf.WriteTo(f)
-		if err != nil {
-			log.Fatal("Error:", err.Error())
-		}
-		f.Close()
-	}
-
-	// render ../components/*_paths.go for each controller
-	for _, ctlr := range controllers {
-		if err := templTmpl.Execute(&buf, ctlr); err != nil {
-			log.Fatal("Error executing template: ", err.Error())
-		}
-		f, err := os.Create(fmt.Sprintf("../components/paths/%s_paths.go", ctlr.Name))
 		if err != nil {
 			log.Fatal("Error:", err.Error())
 		}

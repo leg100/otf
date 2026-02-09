@@ -127,7 +127,6 @@ tunnel:
 paths:
 	go generate ./internal/ui/paths
 	go tool goimports -w ./internal/ui/paths
-	go tool goimports -w ./internal/http/html/components/paths
 
 # Re-generate RBAC action strings
 .PHONY: actions
