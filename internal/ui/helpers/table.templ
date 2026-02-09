@@ -1,0 +1,152 @@
+package helpers
+
+import (
+	"context"
+	"fmt"
+	"github.com/leg100/otf/internal/http/html"
+	"github.com/leg100/otf/internal/resource"
+	"strconv"
+)
+
+// TablePopulator populates a table component with resources of type T.
+type TablePopulator[T any] interface {
+	Header() templ.Component
+	Row(T) templ.Component
+}
+
+templ UnpaginatedTable[T any](populator TablePopulator[T], resources []T) {
+	<div class="border-t border-b border-base-content/20">
+		<table class="table overflow-x-auto">
+			<thead>
+				<tr>
+					@populator.Header()
+				</tr>
+			</thead>
+			<tbody>
+				for _, item := range resources {
+					@populator.Row(item)
+				}
+				if len(resources) == 0 {
+					<tr>
+						<td id="no-items-found" colspan="100%">
+							No items found
+						</td>
+					</tr>
+				}
+			</tbody>
+		</table>
+	</div>
+	{ children... }
+}
+
+templ Table[T any](populator TablePopulator[T], page *resource.Page[T]) {
+	{{ info := pageInfo[T]{Page: page} }}
+	@UnpaginatedTable(populator, page.Items) {
+		<div class="flex p-4 gap-2 justify-between items-center">
+			@info.pageSizeSelector()
+			@info.summary()
+			@info.navigationButtons()
+		</div>
+	}
+}
+
+// PollingTable renders a table that polls for updates every X seconds.
+templ PollingTable[T any](populator TablePopulator[T], page *resource.Page[T]) {
+	<div id="polling-table" hx-get="" hx-trigger="every 5s" hx-swap="morph:innerHTML" hx-sync="this:abort">
+		@templ.Fragment("polling-table") {
+			@Table(populator, page)
+		}
+	</div>
+}
+
+type pageInfo[T any] struct {
+	*resource.Page[T]
+}
+
+templ (p pageInfo[T]) summary() {
+	{{
+		size, err := p.pageSize(ctx)
+		if err != nil {
+			return err
+		}
+		var (
+			firstItemNumber int
+			lastItemNumber  int
+		)
+		if len(p.Items) > 0 {
+			firstItemNumber = ((p.CurrentPage - 1) * size) + 1
+			lastItemNumber = max(0, firstItemNumber+len(p.Items)-1)
+		}
+	}}
+	<div class="badge" id="page-info">
+		{ fmt.Sprintf("%d-%d of %d", firstItemNumber, lastItemNumber, p.TotalCount) }
+	</div>
+}
+
+func (p pageInfo[T]) pageSize(ctx context.Context) (int, error) {
+	if preferredSize := Cookie(ctx, "page_size"); preferredSize != "" {
+		size, err := strconv.Atoi(preferredSize)
+		if err != nil {
+			return 0, err
+		}
+		return size, nil
+	}
+	return resource.DefaultPageSize, nil
+}
+
+templ (p pageInfo[T]) navigationButtons() {
+	{{
+		var (
+			previousURL templ.SafeURL
+			nextURL     templ.SafeURL
+			err         error
+		)
+		if p.PreviousPage != nil {
+			previousURL, err = html.MergeQuery(CurrentURL(ctx), pageQuery(*p.PreviousPage))
+			if err != nil {
+				return err
+			}
+		}
+		if p.NextPage != nil {
+			nextURL, err = html.MergeQuery(CurrentURL(ctx), pageQuery(*p.NextPage))
+			if err != nil {
+				return err
+			}
+		}
+	}}
+	<div class="join">
+		<button class={ "join-item btn btn-sm", templ.KV("btn-disabled", p.PreviousPage == nil) }>
+			<a id="prev-page-link" href={ previousURL }>Previous Page</a>
+		</button>
+		<button class={ "join-item btn btn-sm", templ.KV("btn-disabled", p.NextPage == nil) }>
+			<a id="next-page-link" href={ nextURL }>Next Page</a>
+		</button>
+	</div>
+}
+
+templ (p pageInfo[T]) pageSizeSelector() {
+	{{
+		currentSize, err := p.pageSize(ctx)
+		if err != nil {
+			return err
+		}
+	}}
+	<label class="select select-sm w-45">
+		<span class="label">Page size</span>
+		<select class="select" onchange="savePageSize(this)" id="page-size-selector">
+			for _, size := range []int{20,40,60,80,100} {
+				<option selected?={ currentSize == size }>{ strconv.Itoa(size) }</option>
+			}
+		</select>
+		<script>
+			function savePageSize(event) {
+				document.cookie = "page_size=" + event.value;
+				location.reload();
+			}
+		</script>
+	</label>
+}
+
+func pageQuery(page int) string {
+	return fmt.Sprintf("page=%d", page)
+}

@@ -1,103 +1,43 @@
 package ui
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
 
-	"github.com/a-h/templ"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/configversion/source"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
-	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/paths"
-	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
 	runpkg "github.com/leg100/otf/internal/run"
-	"github.com/leg100/otf/internal/user"
-	"github.com/leg100/otf/internal/workspace"
-)
-
-type (
-	runHandlers struct {
-		logger     logr.Logger
-		runs       runClient
-		workspaces runWorkspaceClient
-		users      runUsersClient
-		configs    runConfigsClient
-		authorizer runAuthorizer
-	}
-
-	runClient interface {
-		Create(ctx context.Context, workspaceID resource.TfeID, opts runpkg.CreateOptions) (*runpkg.Run, error)
-		List(ctx context.Context, opts runpkg.ListOptions) (*resource.Page[*runpkg.Run], error)
-		Get(ctx context.Context, id resource.TfeID) (*runpkg.Run, error)
-		Delete(ctx context.Context, runID resource.TfeID) error
-		Cancel(ctx context.Context, runID resource.TfeID) error
-		ForceCancel(ctx context.Context, runID resource.TfeID) error
-		Apply(ctx context.Context, runID resource.TfeID) error
-		Discard(ctx context.Context, runID resource.TfeID) error
-		Watch(ctx context.Context) (<-chan pubsub.Event[*runpkg.Event], func())
-		Tail(ctx context.Context, opts runpkg.TailOptions) (<-chan runpkg.Chunk, error)
-		GetChunk(ctx context.Context, opts runpkg.GetChunkOptions) (runpkg.Chunk, error)
-	}
-
-	runWorkspaceClient interface {
-		Get(ctx context.Context, workspaceID resource.TfeID) (*workspace.Workspace, error)
-		Watch(ctx context.Context) (<-chan pubsub.Event[*workspace.Event], func())
-	}
-
-	runWorkspaceGetClient interface {
-		Get(ctx context.Context, workspaceID resource.TfeID) (*workspace.Workspace, error)
-	}
-
-	runUsersClient interface {
-		GetUser(ctx context.Context, spec user.UserSpec) (*user.User, error)
-	}
-
-	runAuthorizer interface {
-		CanAccess(context.Context, authz.Action, resource.ID) bool
-	}
-
-	runConfigsClient interface {
-		GetSourceIcon(source source.Source) templ.Component
-	}
+	"github.com/leg100/otf/internal/ui/helpers"
 )
 
 // addRunHandlers registers run UI handlers with the router
-func addRunHandlers(r *mux.Router, logger logr.Logger, runs runClient, workspaces runWorkspaceClient, users runUsersClient, configs runConfigsClient, authorizer runAuthorizer) {
-	h := &runHandlers{
-		authorizer: authorizer,
-		logger:     logger,
-		runs:       runs,
-		workspaces: workspaces,
-		users:      users,
-		configs:    configs,
-	}
-
-	r.HandleFunc("/organizations/{organization_name}/runs", h.list).Methods("GET")
-	r.HandleFunc("/workspaces/{workspace_id}/runs", h.list).Methods("GET")
+func addRunHandlers(r *mux.Router, h *Handlers) {
+	r.HandleFunc("/organizations/{organization_name}/runs", h.listRuns).Methods("GET")
+	r.HandleFunc("/workspaces/{workspace_id}/runs", h.listRuns).Methods("GET")
 	r.HandleFunc("/workspaces/{workspace_id}/start-run", h.createRun).Methods("POST")
-	r.HandleFunc("/workspaces/{workspace_id}/runs/watch-latest", h.watchLatest).Methods("GET")
-	r.HandleFunc("/runs/{run_id}", h.get).Methods("GET")
-	r.HandleFunc("/runs/{run_id}/delete", h.delete).Methods("POST")
-	r.HandleFunc("/runs/{run_id}/cancel", h.cancel).Methods("POST")
-	r.HandleFunc("/runs/{run_id}/force-cancel", h.forceCancel).Methods("POST")
-	r.HandleFunc("/runs/{run_id}/apply", h.apply).Methods("POST")
-	r.HandleFunc("/runs/{run_id}/discard", h.discard).Methods("POST")
-	r.HandleFunc("/runs/{run_id}/retry", h.retry).Methods("POST")
-	r.HandleFunc("/runs/{run_id}/watch", h.watch).Methods("GET")
+	r.HandleFunc("/workspaces/{workspace_id}/runs/watch-latest", h.watchLatestRun).Methods("GET")
+	r.HandleFunc("/runs/{run_id}", h.getRun).Methods("GET")
+	r.HandleFunc("/runs/{run_id}/delete", h.deleteRun).Methods("POST")
+	r.HandleFunc("/runs/{run_id}/cancel", h.cancelRun).Methods("POST")
+	r.HandleFunc("/runs/{run_id}/force-cancel", h.forceCancelRun).Methods("POST")
+	r.HandleFunc("/runs/{run_id}/apply", h.applyRun).Methods("POST")
+	r.HandleFunc("/runs/{run_id}/discard", h.discardRun).Methods("POST")
+	r.HandleFunc("/runs/{run_id}/retry", h.retryRun).Methods("POST")
+	r.HandleFunc("/runs/{run_id}/watch", h.watchRun).Methods("GET")
 	r.HandleFunc("/runs/{run_id}/tail", h.tailRun)
 
 	// this handles the link the terraform CLI shows during a plan/apply.
-	r.HandleFunc("/{organization_name}/{workspace_id}/runs/{run_id}", h.get).Methods("GET")
+	r.HandleFunc("/{organization_name}/{workspace_id}/runs/{run_id}", h.getRun).Methods("GET")
 }
 
-func (h *runHandlers) createRun(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) createRun(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		WorkspaceID resource.TfeID   `schema:"workspace_id,required"`
 		Operation   runpkg.Operation `schema:"operation,required"`
@@ -107,7 +47,7 @@ func (h *runHandlers) createRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	createdRun, err := h.runs.Create(r.Context(), params.WorkspaceID, runpkg.CreateOptions{
+	createdRun, err := h.Runs.Create(r.Context(), params.WorkspaceID, runpkg.CreateOptions{
 		IsDestroy: internal.Ptr(params.Operation == runpkg.DestroyAllOperation),
 		PlanOnly:  internal.Ptr(params.Operation == runpkg.PlanOnlyOperation),
 		Source:    source.UI,
@@ -120,7 +60,7 @@ func (h *runHandlers) createRun(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, paths.Run(createdRun.ID), http.StatusFound)
 }
 
-func (h *runHandlers) list(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) listRuns(w http.ResponseWriter, r *http.Request) {
 	var opts struct {
 		runpkg.ListOptions
 		StatusFilterVisible bool `schema:"status_filter_visible"`
@@ -134,60 +74,68 @@ func (h *runHandlers) list(w http.ResponseWriter, r *http.Request) {
 		status:              opts.Statuses,
 		statusFilterVisible: opts.StatusFilterVisible,
 		pageOptions:         opts.PageOptions,
-		table: runsTable{
-			workspaceGetClient: newWorkspaceCache(h.workspaces),
-			users:              newUserCache(h.users),
-			configs:            h.configs,
-		},
 	}
 
+	var renderOptions []renderPageOption
 	if opts.ListOptions.WorkspaceID != nil {
-		ws, err := h.workspaces.Get(r.Context(), *opts.WorkspaceID)
+		ws, err := h.Workspaces.Get(r.Context(), *opts.WorkspaceID)
 		if err != nil {
 			html.Error(r, w, err.Error())
 			return
 		}
-		props.organization = ws.Organization
-		props.ws = ws
-		props.canUpdateWorkspace = h.authorizer.CanAccess(r.Context(), authz.UpdateWorkspaceAction, ws.ID)
+		renderOptions = append(renderOptions, withWorkspace(ws))
+		props.filterByWorkspace = true
+		props.canUpdateWorkspace = h.Authorizer.CanAccess(r.Context(), authz.UpdateWorkspaceAction, ws.ID)
 	} else if opts.ListOptions.Organization != nil {
-		props.organization = *opts.ListOptions.Organization
+		renderOptions = append(
+			renderOptions,
+			withOrganization(*opts.ListOptions.Organization),
+		)
 	} else {
 		html.Error(r, w, "must provide either organization_name or workspace_id", html.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
+	renderOptions = append(renderOptions, withBreadcrumbs(
+		helpers.Breadcrumb{Name: "Runs"},
+	))
 
-	page, err := h.runs.List(r.Context(), opts.ListOptions)
+	page, err := h.Runs.List(r.Context(), opts.ListOptions)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
 	}
 	props.page = page
 
-	html.Render(runList(props), w, r)
+	h.renderPage(
+		h.templates.runList(props),
+		"runs",
+		w,
+		r,
+		renderOptions...,
+	)
 }
 
-func (h *runHandlers) get(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) getRun(w http.ResponseWriter, r *http.Request) {
 	runID, err := decode.ID("run_id", r)
 	if err != nil {
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
-	run, err := h.runs.Get(r.Context(), runID)
+	run, err := h.Runs.Get(r.Context(), runID)
 	if err != nil {
 		html.Error(r, w, "retrieving run: "+err.Error())
 		return
 	}
 
-	ws, err := h.workspaces.Get(r.Context(), run.WorkspaceID)
+	ws, err := h.Workspaces.Get(r.Context(), run.WorkspaceID)
 	if err != nil {
 		html.Error(r, w, "retrieving workspace: "+err.Error())
 		return
 	}
 
 	// Get existing logs thus far received for each phase.
-	planLogs, err := h.runs.GetChunk(r.Context(), runpkg.GetChunkOptions{
+	planLogs, err := h.Runs.GetChunk(r.Context(), runpkg.GetChunkOptions{
 		RunID: run.ID,
 		Phase: runpkg.PlanPhase,
 	})
@@ -195,7 +143,7 @@ func (h *runHandlers) get(w http.ResponseWriter, r *http.Request) {
 		html.Error(r, w, "retrieving plan logs: "+err.Error())
 		return
 	}
-	applyLogs, err := h.runs.GetChunk(r.Context(), runpkg.GetChunkOptions{
+	applyLogs, err := h.Runs.GetChunk(r.Context(), runpkg.GetChunkOptions{
 		RunID: run.ID,
 		Phase: runpkg.ApplyPhase,
 	})
@@ -205,29 +153,38 @@ func (h *runHandlers) get(w http.ResponseWriter, r *http.Request) {
 	}
 
 	props := getRunProps{
-		run:            run,
-		ws:             ws,
-		planLogs:       runpkg.Chunk{Data: planLogs.Data},
-		applyLogs:      runpkg.Chunk{Data: applyLogs.Data},
-		users:          h.users,
-		singleRowTable: h.singleRowTable(run),
+		run:       run,
+		ws:        ws,
+		planLogs:  runpkg.Chunk{Data: planLogs.Data},
+		applyLogs: runpkg.Chunk{Data: applyLogs.Data},
 	}
-	html.Render(getRun(props), w, r)
+	h.renderPage(
+		h.templates.getRun(props),
+		run.ID.String(),
+		w,
+		r,
+		withWorkspace(ws),
+		withPreContent(getPreContent()),
+		withPostContent(getPostContent(props)),
+		withBreadcrumbs(
+			helpers.Breadcrumb{Name: props.run.ID.String()},
+		),
+	)
 }
 
-func (h *runHandlers) delete(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) deleteRun(w http.ResponseWriter, r *http.Request) {
 	runID, err := decode.ID("run_id", r)
 	if err != nil {
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
-	runItem, err := h.runs.Get(r.Context(), runID)
+	runItem, err := h.Runs.Get(r.Context(), runID)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
 	}
-	err = h.runs.Delete(r.Context(), runID)
+	err = h.Runs.Delete(r.Context(), runID)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -235,14 +192,14 @@ func (h *runHandlers) delete(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, paths.Workspace(runItem.WorkspaceID), http.StatusFound)
 }
 
-func (h *runHandlers) cancel(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) cancelRun(w http.ResponseWriter, r *http.Request) {
 	runID, err := decode.ID("run_id", r)
 	if err != nil {
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
-	if err := h.runs.Cancel(r.Context(), runID); err != nil {
+	if err := h.Runs.Cancel(r.Context(), runID); err != nil {
 		html.Error(r, w, err.Error())
 		return
 	}
@@ -250,14 +207,14 @@ func (h *runHandlers) cancel(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("HX-Redirect", paths.Run(runID))
 }
 
-func (h *runHandlers) forceCancel(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) forceCancelRun(w http.ResponseWriter, r *http.Request) {
 	runID, err := decode.ID("run_id", r)
 	if err != nil {
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
-	if err := h.runs.ForceCancel(r.Context(), runID); err != nil {
+	if err := h.Runs.ForceCancel(r.Context(), runID); err != nil {
 		html.Error(r, w, err.Error())
 		return
 	}
@@ -265,14 +222,14 @@ func (h *runHandlers) forceCancel(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("HX-Redirect", paths.Run(runID))
 }
 
-func (h *runHandlers) apply(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) applyRun(w http.ResponseWriter, r *http.Request) {
 	runID, err := decode.ID("run_id", r)
 	if err != nil {
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
-	if err := h.runs.Apply(r.Context(), runID); err != nil {
+	if err := h.Runs.Apply(r.Context(), runID); err != nil {
 		html.Error(r, w, err.Error())
 		return
 	}
@@ -280,14 +237,14 @@ func (h *runHandlers) apply(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, paths.Run(runID)+"#apply", http.StatusFound)
 }
 
-func (h *runHandlers) discard(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) discardRun(w http.ResponseWriter, r *http.Request) {
 	runID, err := decode.ID("run_id", r)
 	if err != nil {
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
-	if err := h.runs.Discard(r.Context(), runID); err != nil {
+	if err := h.Runs.Discard(r.Context(), runID); err != nil {
 		html.Error(r, w, err.Error())
 		return
 	}
@@ -295,20 +252,20 @@ func (h *runHandlers) discard(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("HX-Redirect", paths.Run(runID))
 }
 
-func (h *runHandlers) retry(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) retryRun(w http.ResponseWriter, r *http.Request) {
 	runID, err := decode.ID("run_id", r)
 	if err != nil {
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
-	existingRun, err := h.runs.Get(r.Context(), runID)
+	existingRun, err := h.Runs.Get(r.Context(), runID)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
 	}
 
-	newRun, err := h.runs.Create(r.Context(), existingRun.WorkspaceID, runpkg.CreateOptions{
+	newRun, err := h.Runs.Create(r.Context(), existingRun.WorkspaceID, runpkg.CreateOptions{
 		ConfigurationVersionID: &existingRun.ConfigurationVersionID,
 		IsDestroy:              &existingRun.IsDestroy,
 		PlanOnly:               &existingRun.PlanOnly,
@@ -332,7 +289,7 @@ const (
 	applyStatusUpdate  sseEvent = "ApplyStatusUpdate"
 )
 
-func (h *runHandlers) watch(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) watchRun(w http.ResponseWriter, r *http.Request) {
 	runID, err := decode.ID("run_id", r)
 	if err != nil {
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
@@ -340,10 +297,10 @@ func (h *runHandlers) watch(w http.ResponseWriter, r *http.Request) {
 	}
 	conn := newSSEConnection(w, false)
 
-	sub, _ := h.runs.Watch(r.Context())
+	sub, _ := h.Runs.Watch(r.Context())
 
 	send := func() {
-		run, err := h.runs.Get(r.Context(), runID)
+		run, err := h.Runs.Get(r.Context(), runID)
 		if err != nil {
 			// terminate conn on error
 			return
@@ -369,7 +326,7 @@ func (h *runHandlers) watch(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if err := conn.Render(r.Context(), h.singleRowTable(run), runWidgetUpdate); err != nil {
+		if err := conn.Render(r.Context(), h.templates.singleRunTable(run), runWidgetUpdate); err != nil {
 			return
 		}
 	}
@@ -404,7 +361,7 @@ func (h *runHandlers) watch(w http.ResponseWriter, r *http.Request) {
 
 const latestRunUpdate sseEvent = "LatestRunUpdate"
 
-func (h *runHandlers) watchLatest(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) watchLatestRun(w http.ResponseWriter, r *http.Request) {
 	workspaceID, err := decode.ID("workspace_id", r)
 	if err != nil {
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
@@ -413,9 +370,9 @@ func (h *runHandlers) watchLatest(w http.ResponseWriter, r *http.Request) {
 
 	// Setup event subscriptions first then retrieve workspace to ensure we
 	// don't miss anything.
-	workspacesSub, _ := h.workspaces.Watch(r.Context())
-	runsSub, _ := h.runs.Watch(r.Context())
-	ws, err := h.workspaces.Get(r.Context(), workspaceID)
+	workspacesSub, _ := h.Workspaces.Watch(r.Context())
+	runsSub, _ := h.Runs.Watch(r.Context())
+	ws, err := h.Workspaces.Get(r.Context(), workspaceID)
 	if err != nil {
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
 		return
@@ -425,12 +382,12 @@ func (h *runHandlers) watchLatest(w http.ResponseWriter, r *http.Request) {
 
 	// function for retrieving run, rendering fragment and sending to client.
 	send := func(runID resource.TfeID) {
-		run, err := h.runs.Get(r.Context(), runID)
+		run, err := h.Runs.Get(r.Context(), runID)
 		if err != nil {
 			// terminate conn on error
 			return
 		}
-		if err := conn.Render(r.Context(), h.singleRowTable(run), latestRunUpdate); err != nil {
+		if err := conn.Render(r.Context(), h.templates.singleRunTable(run), latestRunUpdate); err != nil {
 			// terminate conn on error
 			return
 		}
@@ -497,14 +454,14 @@ const (
 	EventLogFinished sseEvent = "log_finished"
 )
 
-func (h *runHandlers) tailRun(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) tailRun(w http.ResponseWriter, r *http.Request) {
 	var params runpkg.TailOptions
 	if err := decode.All(&params, r); err != nil {
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
-	ch, err := h.runs.Tail(r.Context(), params)
+	ch, err := h.Runs.Tail(r.Context(), params)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -533,7 +490,7 @@ func (h *runHandlers) tailRun(w http.ResponseWriter, r *http.Request) {
 				NextOffset: chunk.NextOffset(),
 			})
 			if err != nil {
-				h.logger.Error(err, "marshalling data")
+				h.Logger.Error(err, "marshalling data")
 				continue
 			}
 			conn.Send(js, EventLogChunk)
@@ -541,18 +498,4 @@ func (h *runHandlers) tailRun(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-}
-
-func (h *runHandlers) singleRowTable(run *runpkg.Run) templ.Component {
-	return singleRunTable(h.users, h.configs, run)
-}
-
-func singleRunTable(users runUsersClient, configs runConfigsClient, run *runpkg.Run) templ.Component {
-	return components.UnpaginatedTable(
-		&runsTable{
-			users:   users,
-			configs: configs,
-		},
-		[]*runpkg.Run{run},
-	)
 }

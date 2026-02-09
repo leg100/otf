@@ -1,0 +1,82 @@
+package helpers
+
+import "encoding/json"
+
+const (
+	NarrowDropDown DropDownUIWidth = "narrow"
+	WideDropDown   DropDownUIWidth = "wide"
+)
+
+type SearchDropdownProps struct {
+	// Name to send along with value in the POST form
+	Name string
+	// Existing values to NOT show in the dropdown
+	Existing []string
+	// Available values to show in the dropdown
+	Available []string
+	// Action is the form action URL
+	Action templ.SafeURL
+	// Placeholder to show in the input element.
+	Placeholder string
+	// Width: "narrow" or "wide"
+	Width DropDownUIWidth
+}
+
+type DropDownUIWidth string
+
+templ SearchDropdown(props SearchDropdownProps) {
+	{{
+		width := map[string]bool{
+			"w-40": props.Width == NarrowDropDown,
+			"w-80": props.Width == WideDropDown,
+		}
+	}}
+	<script src={ AssetPath(ctx, "/static/js/search_dropdown.js") }></script>
+	<form id="search-dropdown" action={ props.Action } method="POST"></form>
+	<div
+		x-data={ "search_dropdown(" + toJSON(props.Existing) + ", " + toJSON(props.Available) + ")" }
+		x-ref="searchdrop"
+		@keydown.escape.prevent.stop="close($refs.input-search)"
+		@focusin.window="! $refs.searchdrop.contains($event.target) && close()"
+		@click.outside="close()"
+		x-id="['dropdown-button']"
+		class="relative"
+	>
+		<input type="hidden" name={ props.Name } :value="search" form="search-dropdown"/>
+		<input
+			@focusin="open = true"
+			x-model="search"
+			type="text"
+			x-ref="input-search"
+			@click="open = true"
+			:aria-expanded="open"
+			:aria-controls="$id('dropdown-button')"
+			class={ "input flex items-center gap-2 px-2 py-1", width }
+			placeholder={ props.Placeholder }
+			form="search-dropdown"
+		/>
+		<div
+			x-ref="panel"
+			x-show="open && (existing?.includes(search) || isNew || filterAvailable?.length > 0)"
+			x-transition.origin.top.left
+			:id="$id('dropdown-button')"
+			x-cloak
+			class={ "absolute", "flex", "flex-col", "mt-1", "overflow-x-auto", "border", "border-base-content/30", width }
+		>
+			<span class="text-left py-1 px-2 text-gray-600 italic" x-show="existing?.includes(search)">
+				<span x-text="search"></span> already added
+			</span>
+			<button form="search-dropdown" class="btn text-left" x-show="isNew">
+				Create:<span x-text="search"></span>
+			</button>
+			<template x-for="item in filterAvailable" :key="item">
+				<button @click="search = item" form="search-dropdown" class="btn text-left" x-text="item"></button>
+			</template>
+		</div>
+	</div>
+}
+
+func toJSON(v any) string {
+	b, _ := json.Marshal(v)
+	return string(b)
+}

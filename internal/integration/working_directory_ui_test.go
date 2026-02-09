@@ -27,7 +27,7 @@ func TestWorkingDirectory(t *testing.T) {
 		require.NoError(t, err)
 
 		// go to workspace settings
-		err = page.Locator(`//ul[@id='workspace-submenu']//li[@id='menu-item-settings']/a`).Click()
+		err = page.Locator(`//li[@id='menu-item-settings']/a`).Click()
 		require.NoError(t, err)
 
 		// enter working directory

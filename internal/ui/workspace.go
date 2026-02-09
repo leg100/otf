@@ -1,27 +1,21 @@
 package ui
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
-	"time"
 
 	"github.com/a-h/templ"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
-	"github.com/leg100/otf/internal/configversion/source"
 	"github.com/leg100/otf/internal/engine"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
-	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/paths"
-	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/organization"
-	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
-	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/team"
+	"github.com/leg100/otf/internal/ui/helpers"
 	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/workspace"
@@ -48,98 +42,8 @@ const (
 	VCSTriggerTags string = "tags"
 )
 
-type (
-	workspaceHandlers struct {
-		*workspaceUIHelpers
-		logger       logr.Logger
-		teams        workspaceTeamClient
-		vcsproviders workspaceVCSProvidersClient
-		client       workspaceClient
-		authorizer   workspaceAuthorizer
-		releases     workspaceEngineClient
-		runs         workspaceRunClient
-		users        workspaceUserClient
-		configs      workspaceConfigsClient
-	}
-
-	workspaceTeamClient interface {
-		List(context.Context, organization.Name) ([]*team.Team, error)
-	}
-
-	workspaceVCSProvidersClient interface {
-		Get(ctx context.Context, providerID resource.TfeID) (*vcs.Provider, error)
-		List(context.Context, organization.Name) ([]*vcs.Provider, error)
-	}
-
-	workspaceAuthorizer interface {
-		CanAccess(context.Context, authz.Action, resource.ID) bool
-	}
-
-	workspaceEngineClient interface {
-		GetLatest(context.Context, *engine.Engine) (string, time.Time, error)
-	}
-
-	// workspaceClient provides web handlers with access to the workspace service
-	workspaceClient interface {
-		Create(ctx context.Context, opts workspace.CreateOptions) (*workspace.Workspace, error)
-		Get(ctx context.Context, workspaceID resource.TfeID) (*workspace.Workspace, error)
-		GetByName(ctx context.Context, organization organization.Name, workspace string) (*workspace.Workspace, error)
-		List(ctx context.Context, opts workspace.ListOptions) (*resource.Page[*workspace.Workspace], error)
-		Update(ctx context.Context, workspaceID resource.TfeID, opts workspace.UpdateOptions) (*workspace.Workspace, error)
-		Delete(ctx context.Context, workspaceID resource.TfeID) (*workspace.Workspace, error)
-		Lock(ctx context.Context, workspaceID resource.TfeID, runID *resource.TfeID) (*workspace.Workspace, error)
-		Unlock(ctx context.Context, workspaceID resource.TfeID, runID *resource.TfeID, force bool) (*workspace.Workspace, error)
-
-		AddTags(ctx context.Context, workspaceID resource.TfeID, tags []workspace.TagSpec) error
-		RemoveTags(ctx context.Context, workspaceID resource.TfeID, tags []workspace.TagSpec) error
-		ListTags(ctx context.Context, organization organization.Name, opts workspace.ListTagsOptions) (*resource.Page[*workspace.Tag], error)
-
-		GetWorkspacePolicy(ctx context.Context, workspaceID resource.TfeID) (workspace.Policy, error)
-		SetPermission(ctx context.Context, workspaceID, teamID resource.TfeID, role authz.Role) error
-		UnsetPermission(ctx context.Context, workspaceID, teamID resource.TfeID) error
-		Watch(context.Context) (<-chan pubsub.Event[*workspace.Event], func())
-	}
-
-	workspaceRunClient interface {
-		Get(ctx context.Context, id resource.TfeID) (*run.Run, error)
-	}
-
-	workspaceUserClient interface {
-		GetUser(ctx context.Context, spec user.UserSpec) (*user.User, error)
-	}
-	workspaceConfigsClient interface {
-		GetSourceIcon(source source.Source) templ.Component
-	}
-)
-
 // addWorkspaceHandlers registers workspace UI handlers with the router
-func addWorkspaceHandlers(
-	r *mux.Router,
-	logger logr.Logger,
-	workspaces workspaceClient,
-	teams workspaceTeamClient,
-	vcsproviders workspaceVCSProvidersClient,
-	authorizer workspaceAuthorizer,
-	releases workspaceEngineClient,
-	runs workspaceRunClient,
-	users workspaceUserClient,
-	configs workspaceConfigsClient,
-) {
-	h := &workspaceHandlers{
-		workspaceUIHelpers: &workspaceUIHelpers{
-			authorizer: authorizer,
-		},
-		logger:       logger,
-		authorizer:   authorizer,
-		teams:        teams,
-		vcsproviders: vcsproviders,
-		client:       workspaces,
-		releases:     releases,
-		runs:         runs,
-		users:        users,
-		configs:      configs,
-	}
-
+func addWorkspaceHandlers(r *mux.Router, h *Handlers) {
 	r.HandleFunc("/organizations/{organization_name}/workspaces", h.listWorkspaces).Methods("GET")
 	r.HandleFunc("/organizations/{organization_name}/workspaces/new", h.newWorkspace).Methods("GET")
 	r.HandleFunc("/organizations/{organization_name}/workspaces/create", h.createWorkspace).Methods("POST")
@@ -164,7 +68,7 @@ func addWorkspaceHandlers(
 
 }
 
-func (h *workspaceHandlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		workspace.ListOptions
 		StatusFilterVisible bool `schema:"status_filter_visible"`
@@ -177,7 +81,7 @@ func (h *workspaceHandlers) listWorkspaces(w http.ResponseWriter, r *http.Reques
 
 	// retrieve all tags for listing in tag filter
 	tags, err := resource.ListAll(func(opts resource.PageOptions) (*resource.Page[*workspace.Tag], error) {
-		return h.client.ListTags(r.Context(), *params.Organization, workspace.ListTagsOptions{
+		return h.Workspaces.ListTags(r.Context(), *params.Organization, workspace.ListTagsOptions{
 			PageOptions: opts,
 		})
 	})
@@ -190,7 +94,7 @@ func (h *workspaceHandlers) listWorkspaces(w http.ResponseWriter, r *http.Reques
 		tagStrings[i] = tag.Name
 	}
 
-	page, err := h.client.List(r.Context(), params.ListOptions)
+	page, err := h.Workspaces.List(r.Context(), params.ListOptions)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -204,19 +108,27 @@ func (h *workspaceHandlers) listWorkspaces(w http.ResponseWriter, r *http.Reques
 		status:              params.Status,
 		statusFilterVisible: params.StatusFilterVisible,
 		tagFilterVisible:    params.TagFilterVisible,
-		canCreate: h.authorizer.CanAccess(
-			r.Context(),
-			authz.CreateWorkspaceAction,
-			params.Organization,
-		),
-		pageOptions: params.PageOptions,
-		page:        page,
+		pageOptions:         params.PageOptions,
+		page:                page,
 	}
 
-	html.Render(workspaceList(props), w, r)
+	h.renderPage(
+		h.templates.workspaceList(props),
+		"workspaces",
+		w,
+		r,
+		withBreadcrumbs(
+			helpers.Breadcrumb{Name: "Workspaces"},
+		),
+		withOrganization(*params.Organization),
+		withContentActions(workspaceListActions(
+			*params.Organization,
+			h.Authorizer.CanAccess(r.Context(), authz.CreateWorkspaceAction, *params.Organization),
+		)),
+	)
 }
 
-func (h *workspaceHandlers) newWorkspace(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) newWorkspace(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		Organization organization.Name `schema:"organization_name"`
 	}
@@ -224,10 +136,19 @@ func (h *workspaceHandlers) newWorkspace(w http.ResponseWriter, r *http.Request)
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
-	html.Render(workspaceNew(params.Organization), w, r)
+	h.renderPage(
+		h.templates.workspaceNew(params.Organization),
+		"new workspace",
+		w,
+		r,
+		withBreadcrumbs(
+			helpers.Breadcrumb{Name: "workspaces", Link: paths.Workspaces(params.Organization)},
+			helpers.Breadcrumb{Name: "new"},
+		),
+	)
 }
 
-func (h *workspaceHandlers) createWorkspace(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) createWorkspace(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		Name         *string            `schema:"name,required"`
 		Organization *organization.Name `schema:"organization_name,required"`
@@ -237,7 +158,7 @@ func (h *workspaceHandlers) createWorkspace(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	ws, err := h.client.Create(r.Context(), workspace.CreateOptions{
+	ws, err := h.Workspaces.Create(r.Context(), workspace.CreateOptions{
 		Name:         params.Name,
 		Organization: params.Organization,
 	})
@@ -249,14 +170,14 @@ func (h *workspaceHandlers) createWorkspace(w http.ResponseWriter, r *http.Reque
 	http.Redirect(w, r, paths.Workspace(ws.ID), http.StatusFound)
 }
 
-func (h *workspaceHandlers) getWorkspace(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) getWorkspace(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.ID("workspace_id", r)
 	if err != nil {
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
-	ws, err := h.client.Get(r.Context(), id)
+	ws, err := h.Workspaces.Get(r.Context(), id)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -269,7 +190,7 @@ func (h *workspaceHandlers) getWorkspace(w http.ResponseWriter, r *http.Request)
 
 	var provider *vcs.Provider
 	if ws.Connection != nil {
-		provider, err = h.vcsproviders.Get(r.Context(), ws.Connection.VCSProviderID)
+		provider, err = h.VCSProviders.Get(r.Context(), ws.Connection.VCSProviderID)
 		if err != nil {
 			html.Error(r, w, err.Error())
 			return
@@ -281,7 +202,7 @@ func (h *workspaceHandlers) getWorkspace(w http.ResponseWriter, r *http.Request)
 	var availableTags []string
 	{
 		tags, err := resource.ListAll(func(opts resource.PageOptions) (*resource.Page[*workspace.Tag], error) {
-			return h.client.ListTags(r.Context(), ws.Organization, workspace.ListTagsOptions{
+			return h.Workspaces.ListTags(r.Context(), ws.Organization, workspace.ListTagsOptions{
 				PageOptions: opts,
 			})
 		})
@@ -304,39 +225,48 @@ func (h *workspaceHandlers) getWorkspace(w http.ResponseWriter, r *http.Request)
 	// Generate component for latest run if workspace has one.
 	var latestRunTable templ.Component
 	if ws.LatestRun != nil {
-		run, err := h.runs.Get(r.Context(), ws.LatestRun.ID)
+		run, err := h.Runs.Get(r.Context(), ws.LatestRun.ID)
 		if err != nil {
 			html.Error(r, w, err.Error())
 			return
 		}
-		latestRunTable = singleRunTable(h.users, h.configs, run)
+		latestRunTable = h.templates.singleRunTable(run)
 	}
 
 	props := workspaceGetProps{
 		ws:                 ws,
 		workspaceLockInfo:  lockInfo,
 		vcsProvider:        provider,
-		canApply:           h.authorizer.CanAccess(r.Context(), authz.ApplyRunAction, ws.ID),
-		canAddTags:         h.authorizer.CanAccess(r.Context(), authz.AddTagsAction, ws.ID),
-		canRemoveTags:      h.authorizer.CanAccess(r.Context(), authz.RemoveTagsAction, ws.ID),
-		canCreateRun:       h.authorizer.CanAccess(r.Context(), authz.CreateRunAction, ws.ID),
-		canLockWorkspace:   h.authorizer.CanAccess(r.Context(), authz.LockWorkspaceAction, ws.ID),
-		canUnlockWorkspace: h.authorizer.CanAccess(r.Context(), authz.UnlockWorkspaceAction, ws.ID),
-		canUpdateWorkspace: h.authorizer.CanAccess(r.Context(), authz.UpdateWorkspaceAction, ws.ID),
-		tagsDropdown: components.SearchDropdownProps{
+		canApply:           h.Authorizer.CanAccess(r.Context(), authz.ApplyRunAction, ws.ID),
+		canAddTags:         h.Authorizer.CanAccess(r.Context(), authz.AddTagsAction, ws.ID),
+		canRemoveTags:      h.Authorizer.CanAccess(r.Context(), authz.RemoveTagsAction, ws.ID),
+		canCreateRun:       h.Authorizer.CanAccess(r.Context(), authz.CreateRunAction, ws.ID),
+		canLockWorkspace:   h.Authorizer.CanAccess(r.Context(), authz.LockWorkspaceAction, ws.ID),
+		canUnlockWorkspace: h.Authorizer.CanAccess(r.Context(), authz.UnlockWorkspaceAction, ws.ID),
+		canUpdateWorkspace: h.Authorizer.CanAccess(r.Context(), authz.UpdateWorkspaceAction, ws.ID),
+		tagsDropdown: helpers.SearchDropdownProps{
 			Name:        "tag_name",
 			Available:   availableTags,
 			Existing:    ws.Tags,
 			Action:      templ.SafeURL(paths.CreateTagWorkspace(ws.ID)),
 			Placeholder: "Add tags",
-			Width:       components.NarrowDropDown,
+			Width:       helpers.NarrowDropDown,
 		},
 		latestRunTable: latestRunTable,
 	}
-	html.Render(workspaceGet(props), w, r)
+	h.renderPage(
+		h.templates.workspaceGet(props),
+		"workspaces",
+		w,
+		r,
+		withWorkspace(ws),
+		withBreadcrumbs(
+			helpers.Breadcrumb{Name: props.ws.Name},
+		),
+	)
 }
 
-func (h *workspaceHandlers) getWorkspaceByName(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) getWorkspaceByName(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		Name         string            `schema:"workspace_name,required"`
 		Organization organization.Name `schema:"organization_name,required"`
@@ -346,7 +276,7 @@ func (h *workspaceHandlers) getWorkspaceByName(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	ws, err := h.client.GetByName(r.Context(), params.Organization, params.Name)
+	ws, err := h.Workspaces.GetByName(r.Context(), params.Organization, params.Name)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -355,27 +285,27 @@ func (h *workspaceHandlers) getWorkspaceByName(w http.ResponseWriter, r *http.Re
 	http.Redirect(w, r, paths.Workspace(ws.ID), http.StatusFound)
 }
 
-func (h *workspaceHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 	workspaceID, err := decode.ID("workspace_id", r)
 	if err != nil {
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
-	ws, err := h.client.Get(r.Context(), workspaceID)
+	ws, err := h.Workspaces.Get(r.Context(), workspaceID)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
 	}
 
-	policy, err := h.client.GetWorkspacePolicy(r.Context(), workspaceID)
+	policy, err := h.Workspaces.GetWorkspacePolicy(r.Context(), workspaceID)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
 	}
 
 	// Get teams for populating team permissions
-	teams, err := h.teams.List(r.Context(), ws.Organization)
+	teams, err := h.Teams.List(r.Context(), ws.Organization)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -399,7 +329,7 @@ func (h *workspaceHandlers) editWorkspace(w http.ResponseWriter, r *http.Request
 
 	var provider *vcs.Provider
 	if ws.Connection != nil {
-		provider, err = h.vcsproviders.Get(r.Context(), ws.Connection.VCSProviderID)
+		provider, err = h.VCSProviders.Get(r.Context(), ws.Connection.VCSProviderID)
 		if err != nil {
 			html.Error(r, w, err.Error())
 			return
@@ -407,7 +337,7 @@ func (h *workspaceHandlers) editWorkspace(w http.ResponseWriter, r *http.Request
 	}
 
 	tags, err := resource.ListAll(func(opts resource.PageOptions) (*resource.Page[*workspace.Tag], error) {
-		return h.client.ListTags(r.Context(), ws.Organization, workspace.ListTagsOptions{
+		return h.Workspaces.ListTags(r.Context(), ws.Organization, workspace.ListTagsOptions{
 			PageOptions: opts,
 		})
 	})
@@ -439,7 +369,7 @@ func (h *workspaceHandlers) editWorkspace(w http.ResponseWriter, r *http.Request
 		// (a): it's not the current engine
 		// (b): it's currently set to track the latest version.
 		if engineSelectorProps.current != engine.String() || engineSelectorProps.engines[i].latest {
-			latest, _, err := h.releases.GetLatest(r.Context(), engine)
+			latest, _, err := h.EngineService.GetLatest(r.Context(), engine)
 			if err != nil {
 				html.Error(r, w, err.Error())
 				return
@@ -470,14 +400,23 @@ func (h *workspaceHandlers) editWorkspace(w http.ResponseWriter, r *http.Request
 		vcsTriggerAlways:   VCSTriggerAlways,
 		vcsTriggerPatterns: VCSTriggerPatterns,
 		vcsTriggerTags:     VCSTriggerTags,
-		canUpdateWorkspace: h.authorizer.CanAccess(r.Context(), authz.UpdateWorkspaceAction, ws.ID),
-		canDeleteWorkspace: h.authorizer.CanAccess(r.Context(), authz.DeleteWorkspaceAction, ws.ID),
+		canUpdateWorkspace: h.Authorizer.CanAccess(r.Context(), authz.UpdateWorkspaceAction, ws.ID),
+		canDeleteWorkspace: h.Authorizer.CanAccess(r.Context(), authz.DeleteWorkspaceAction, ws.ID),
 		poolsURL:           poolsURL,
 	}
-	html.Render(workspaceEdit(props), w, r)
+	h.renderPage(
+		h.templates.workspaceEdit(props),
+		"edit | "+ws.ID.String(),
+		w,
+		r,
+		withWorkspace(ws),
+		withBreadcrumbs(
+			helpers.Breadcrumb{Name: "Settings"},
+		),
+	)
 }
 
-func (h *workspaceHandlers) updateWorkspace(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) updateWorkspace(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		AgentPoolID           *resource.TfeID `schema:"agent_pool_id"`
 		AutoApply             bool            `schema:"auto_apply"`
@@ -506,7 +445,7 @@ func (h *workspaceHandlers) updateWorkspace(w http.ResponseWriter, r *http.Reque
 	}
 
 	// get workspace before updating to determine if it is connected or not.
-	ws, err := h.client.Get(r.Context(), params.WorkspaceID)
+	ws, err := h.Workspaces.Get(r.Context(), params.WorkspaceID)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -555,7 +494,7 @@ func (h *workspaceHandlers) updateWorkspace(w http.ResponseWriter, r *http.Reque
 		opts.AgentPoolID = params.AgentPoolID
 	}
 
-	ws, err = h.client.Update(r.Context(), params.WorkspaceID, opts)
+	ws, err = h.Workspaces.Update(r.Context(), params.WorkspaceID, opts)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -566,14 +505,14 @@ func (h *workspaceHandlers) updateWorkspace(w http.ResponseWriter, r *http.Reque
 	http.Redirect(w, r, paths.EditWorkspace(ws.ID), http.StatusFound)
 }
 
-func (h *workspaceHandlers) deleteWorkspace(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) deleteWorkspace(w http.ResponseWriter, r *http.Request) {
 	workspaceID, err := decode.ID("workspace_id", r)
 	if err != nil {
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
-	ws, err := h.client.Delete(r.Context(), workspaceID)
+	ws, err := h.Workspaces.Delete(r.Context(), workspaceID)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -582,14 +521,14 @@ func (h *workspaceHandlers) deleteWorkspace(w http.ResponseWriter, r *http.Reque
 	http.Redirect(w, r, paths.Workspaces(ws.Organization), http.StatusFound)
 }
 
-func (h *workspaceHandlers) lockWorkspace(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) lockWorkspace(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.ID("workspace_id", r)
 	if err != nil {
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
-	ws, err := h.client.Lock(r.Context(), id, nil)
+	ws, err := h.Workspaces.Lock(r.Context(), id, nil)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -597,30 +536,14 @@ func (h *workspaceHandlers) lockWorkspace(w http.ResponseWriter, r *http.Request
 	http.Redirect(w, r, paths.Workspace(ws.ID), http.StatusFound)
 }
 
-func (h *workspaceHandlers) unlockWorkspace(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) unlockWorkspace(w http.ResponseWriter, r *http.Request) {
 	workspaceID, err := decode.ID("workspace_id", r)
 	if err != nil {
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
-	ws, err := h.client.Unlock(r.Context(), workspaceID, nil, false)
-	if err != nil {
-		html.Error(r, w, err.Error())
-		return
-	}
-
-	http.Redirect(w, r, paths.Workspace(ws.ID), http.StatusFound)
-}
-
-func (h *workspaceHandlers) forceUnlockWorkspace(w http.ResponseWriter, r *http.Request) {
-	workspaceID, err := decode.ID("workspace_id", r)
-	if err != nil {
-		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
-		return
-	}
-
-	ws, err := h.client.Unlock(r.Context(), workspaceID, nil, true)
+	ws, err := h.Workspaces.Unlock(r.Context(), workspaceID, nil, false)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -629,28 +552,53 @@ func (h *workspaceHandlers) forceUnlockWorkspace(w http.ResponseWriter, r *http.
 	http.Redirect(w, r, paths.Workspace(ws.ID), http.StatusFound)
 }
 
-func (h *workspaceHandlers) listWorkspaceVCSProviders(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) forceUnlockWorkspace(w http.ResponseWriter, r *http.Request) {
 	workspaceID, err := decode.ID("workspace_id", r)
 	if err != nil {
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
-	ws, err := h.client.Get(r.Context(), workspaceID)
-	if err != nil {
-		html.Error(r, w, err.Error())
-		return
-	}
-	providers, err := h.vcsproviders.List(r.Context(), ws.Organization)
+	ws, err := h.Workspaces.Unlock(r.Context(), workspaceID, nil, true)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
 	}
 
-	html.Render(listVCSProviders(ws, providers), w, r)
+	http.Redirect(w, r, paths.Workspace(ws.ID), http.StatusFound)
 }
 
-func (h *workspaceHandlers) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) listWorkspaceVCSProviders(w http.ResponseWriter, r *http.Request) {
+	workspaceID, err := decode.ID("workspace_id", r)
+	if err != nil {
+		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
+		return
+	}
+
+	ws, err := h.Workspaces.Get(r.Context(), workspaceID)
+	if err != nil {
+		html.Error(r, w, err.Error())
+		return
+	}
+	providers, err := h.VCSProviders.List(r.Context(), ws.Organization)
+	if err != nil {
+		html.Error(r, w, err.Error())
+		return
+	}
+
+	h.renderPage(
+		h.templates.listVCSProviders(ws, providers),
+		"list vcs providers | "+ws.ID.String(),
+		w,
+		r,
+		withWorkspace(ws),
+		withBreadcrumbs(
+			helpers.Breadcrumb{Name: "Connect workspace to VCS provider"},
+		),
+	)
+}
+
+func (h *Handlers) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		WorkspaceID   resource.TfeID `schema:"workspace_id,required"`
 		VCSProviderID resource.TfeID `schema:"vcs_provider_id,required"`
@@ -662,12 +610,12 @@ func (h *workspaceHandlers) listWorkspaceVCSRepos(w http.ResponseWriter, r *http
 		return
 	}
 
-	ws, err := h.client.Get(r.Context(), params.WorkspaceID)
+	ws, err := h.Workspaces.Get(r.Context(), params.WorkspaceID)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
 	}
-	client, err := h.vcsproviders.Get(r.Context(), params.VCSProviderID)
+	client, err := h.VCSProviders.Get(r.Context(), params.VCSProviderID)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -680,10 +628,19 @@ func (h *workspaceHandlers) listWorkspaceVCSRepos(w http.ResponseWriter, r *http
 		return
 	}
 
-	html.Render(listVCSRepos(ws, params.VCSProviderID, repos), w, r)
+	h.renderPage(
+		h.templates.listVCSRepos(ws, params.VCSProviderID, repos),
+		"list vcs repos | "+ws.ID.String(),
+		w,
+		r,
+		withWorkspace(ws),
+		withBreadcrumbs(
+			helpers.Breadcrumb{Name: "Connect workspace to VCS repository"},
+		),
+	)
 }
 
-func (h *workspaceHandlers) connect(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) connect(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		WorkspaceID   resource.TfeID  `schema:"workspace_id,required"`
 		RepoPath      *vcs.Repo       `schema:"identifier,required"`
@@ -694,7 +651,7 @@ func (h *workspaceHandlers) connect(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err := h.client.Update(r.Context(), params.WorkspaceID, workspace.UpdateOptions{
+	_, err := h.Workspaces.Update(r.Context(), params.WorkspaceID, workspace.UpdateOptions{
 		ConnectOptions: &workspace.ConnectOptions{
 			VCSProviderID: params.VCSProviderID,
 			RepoPath:      params.RepoPath,
@@ -709,14 +666,14 @@ func (h *workspaceHandlers) connect(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, paths.Workspace(params.WorkspaceID), http.StatusFound)
 }
 
-func (h *workspaceHandlers) disconnect(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) disconnect(w http.ResponseWriter, r *http.Request) {
 	workspaceID, err := decode.ID("workspace_id", r)
 	if err != nil {
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
-	_, err = h.client.Update(r.Context(), workspaceID, workspace.UpdateOptions{
+	_, err = h.Workspaces.Update(r.Context(), workspaceID, workspace.UpdateOptions{
 		Disconnect: true,
 	})
 	if err != nil {
@@ -728,7 +685,7 @@ func (h *workspaceHandlers) disconnect(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, paths.Workspace(workspaceID), http.StatusFound)
 }
 
-func (h *workspaceHandlers) setWorkspacePermission(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) setWorkspacePermission(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		WorkspaceID resource.TfeID `schema:"workspace_id,required"`
 		TeamID      resource.TfeID `schema:"team_id,required"`
@@ -744,7 +701,7 @@ func (h *workspaceHandlers) setWorkspacePermission(w http.ResponseWriter, r *htt
 		return
 	}
 
-	err = h.client.SetPermission(r.Context(), params.WorkspaceID, params.TeamID, role)
+	err = h.Workspaces.SetPermission(r.Context(), params.WorkspaceID, params.TeamID, role)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -753,7 +710,7 @@ func (h *workspaceHandlers) setWorkspacePermission(w http.ResponseWriter, r *htt
 	http.Redirect(w, r, paths.EditWorkspace(params.WorkspaceID), http.StatusFound)
 }
 
-func (h *workspaceHandlers) unsetWorkspacePermission(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) unsetWorkspacePermission(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		WorkspaceID resource.TfeID `schema:"workspace_id,required"`
 		TeamID      resource.TfeID `schema:"team_id,required"`
@@ -763,7 +720,7 @@ func (h *workspaceHandlers) unsetWorkspacePermission(w http.ResponseWriter, r *h
 		return
 	}
 
-	err := h.client.UnsetPermission(r.Context(), params.WorkspaceID, params.TeamID)
+	err := h.Workspaces.UnsetPermission(r.Context(), params.WorkspaceID, params.TeamID)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -772,7 +729,7 @@ func (h *workspaceHandlers) unsetWorkspacePermission(w http.ResponseWriter, r *h
 	http.Redirect(w, r, paths.EditWorkspace(params.WorkspaceID), http.StatusFound)
 }
 
-func (h *workspaceHandlers) createTag(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) createTag(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		WorkspaceID *resource.TfeID `schema:"workspace_id,required"`
 		TagName     *string         `schema:"tag_name,required"`
@@ -782,7 +739,7 @@ func (h *workspaceHandlers) createTag(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := h.client.AddTags(r.Context(), *params.WorkspaceID, []workspace.TagSpec{{Name: *params.TagName}})
+	err := h.Workspaces.AddTags(r.Context(), *params.WorkspaceID, []workspace.TagSpec{{Name: *params.TagName}})
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -792,7 +749,7 @@ func (h *workspaceHandlers) createTag(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, paths.Workspace(params.WorkspaceID), http.StatusFound)
 }
 
-func (h *workspaceHandlers) deleteTag(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) deleteTag(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		WorkspaceID *resource.TfeID `schema:"workspace_id,required"`
 		TagName     *string         `schema:"tag_name,required"`
@@ -802,7 +759,7 @@ func (h *workspaceHandlers) deleteTag(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := h.client.RemoveTags(r.Context(), *params.WorkspaceID, []workspace.TagSpec{{Name: *params.TagName}})
+	err := h.Workspaces.RemoveTags(r.Context(), *params.WorkspaceID, []workspace.TagSpec{{Name: *params.TagName}})
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return

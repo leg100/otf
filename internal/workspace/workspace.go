@@ -288,6 +288,13 @@ func (f *factory) NewWorkspace(ctx context.Context, opts CreateOptions) (*Worksp
 
 func (ws *Workspace) String() string { return ws.Organization.String() + "/" + ws.Name }
 
+func (ws *Workspace) Info() resource.Info {
+	return resource.Info{
+		Name: ws.Name,
+		ID:   ws.ID,
+	}
+}
+
 // ExecutionModes returns a list of possible execution modes
 func (ws *Workspace) ExecutionModes() []string {
 	return []string{"local", "remote", "agent"}

@@ -19,57 +19,54 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestListRunsHandler(t *testing.T) {
-	h := &runHandlers{
-		workspaces: &fakeWorkspaceClient{
-			ws: workspace.NewTestWorkspace(t, nil),
-		},
-		runs: &fakeRunClient{
-			run: &run.Run{},
-		},
-		configs:    &fakeConfigsClient{},
-		authorizer: authz.NewAllowAllAuthorizer(),
-	}
-	user := &user.User{ID: resource.NewTfeID(resource.UserKind)}
-
-	r := httptest.NewRequest("GET", "/?workspace_id=ws-123&page=1", nil)
-	r = r.WithContext(authz.AddSubjectToContext(r.Context(), user))
-	w := httptest.NewRecorder()
-	h.list(w, r)
-	assert.Equal(t, 200, w.Code)
-}
-
-func TestWeb_GetHandler(t *testing.T) {
+func TestRunsHandlers(t *testing.T) {
 	ws := workspace.NewTestWorkspace(t, nil)
+	workspaces := &fakeWorkspaceClient{
+		ws: ws,
+	}
 	cv := configversion.NewConfigurationVersion(ws.ID, configversion.CreateOptions{})
 	run, err := run.NewRun(ws, cv, run.CreateOptions{})
 	require.NoError(t, err)
 
-	h := &runHandlers{
-		workspaces: &fakeWorkspaceClient{
-			ws: workspace.NewTestWorkspace(t, nil),
-		},
-		runs: &fakeRunClient{
+	h := &Handlers{
+		Workspaces: workspaces,
+		Runs: &fakeRunClient{
 			run: run,
 		},
-		configs:    &fakeConfigsClient{},
-		authorizer: authz.NewAllowAllAuthorizer(),
+		Configs:    &fakeConfigsClient{},
+		Authorizer: authz.NewAllowAllAuthorizer(),
+		templates: &templates{
+			workspaces: workspaces,
+			configs:    &fakeConfigsClient{},
+		},
 	}
-	r := httptest.NewRequest("GET", "/?run_id=run-123", nil)
-	w := httptest.NewRecorder()
-	h.get(w, r)
-	assert.Equal(t, 200, w.Code, w.Body.String())
+	user := &user.User{ID: resource.NewTfeID(resource.UserKind)}
+
+	t.Run("list runs", func(t *testing.T) {
+		r := httptest.NewRequest("GET", "/?workspace_id=ws-123&page=1", nil)
+		r = r.WithContext(authz.AddSubjectToContext(r.Context(), user))
+		w := httptest.NewRecorder()
+		h.listRuns(w, r)
+		assert.Equal(t, 200, w.Code)
+	})
+
+	t.Run("get run", func(t *testing.T) {
+		r := httptest.NewRequest("GET", "/?run_id=run-123", nil)
+		w := httptest.NewRecorder()
+		h.getRun(w, r)
+		assert.Equal(t, 200, w.Code, w.Body.String())
+	})
 }
 
 func TestRuns_CancelHandler(t *testing.T) {
 	run := &run.Run{ID: testutils.ParseID(t, "run-1")}
-	h := &runHandlers{
-		runs: &fakeRunClient{},
+	h := &Handlers{
+		Runs: &fakeRunClient{},
 	}
 
 	r := httptest.NewRequest("POST", "/?run_id=run-1", nil)
 	w := httptest.NewRecorder()
-	h.cancel(w, r)
+	h.cancelRun(w, r)
 
 	assert.Equal(t, 200, w.Code, w.Body.String())
 	assert.Equal(t, paths.Run(run.ID), w.Header().Get("HX-Redirect"))
@@ -77,13 +74,13 @@ func TestRuns_CancelHandler(t *testing.T) {
 
 func TestRuns_ForceCancelHandler(t *testing.T) {
 	run := &run.Run{ID: testutils.ParseID(t, "run-1")}
-	h := &runHandlers{
-		runs: &fakeRunClient{},
+	h := &Handlers{
+		Runs: &fakeRunClient{},
 	}
 
 	r := httptest.NewRequest("POST", "/?run_id=run-1", nil)
 	w := httptest.NewRecorder()
-	h.forceCancel(w, r)
+	h.forceCancelRun(w, r)
 
 	assert.Equal(t, 200, w.Code, w.Body.String())
 	assert.Equal(t, paths.Run(run.ID), w.Header().Get("HX-Redirect"))
@@ -91,13 +88,13 @@ func TestRuns_ForceCancelHandler(t *testing.T) {
 
 func TestRuns_DiscardHandler(t *testing.T) {
 	run := &run.Run{ID: testutils.ParseID(t, "run-1")}
-	h := &runHandlers{
-		runs: &fakeRunClient{},
+	h := &Handlers{
+		Runs: &fakeRunClient{},
 	}
 
 	r := httptest.NewRequest("POST", "/?run_id=run-1", nil)
 	w := httptest.NewRecorder()
-	h.discard(w, r)
+	h.discardRun(w, r)
 
 	assert.Equal(t, 200, w.Code, w.Body.String())
 	assert.Equal(t, paths.Run(run.ID), w.Header().Get("HX-Redirect"))
@@ -105,8 +102,8 @@ func TestRuns_DiscardHandler(t *testing.T) {
 
 func TestWebHandlers_CreateRun_Connected(t *testing.T) {
 	run := &run.Run{ID: testutils.ParseID(t, "run-1")}
-	h := &runHandlers{
-		runs: &fakeRunClient{run: run},
+	h := &Handlers{
+		Runs: &fakeRunClient{run: run},
 	}
 
 	q := "/?workspace_id=run-123&operation=plan-only&connected=true"
@@ -118,8 +115,8 @@ func TestWebHandlers_CreateRun_Connected(t *testing.T) {
 
 func TestWebHandlers_CreateRun_Unconnected(t *testing.T) {
 	run := &run.Run{ID: testutils.ParseID(t, "run-1")}
-	h := &runHandlers{
-		runs: &fakeRunClient{run: run},
+	h := &Handlers{
+		Runs: &fakeRunClient{run: run},
 	}
 
 	q := "/?workspace_id=run-123&operation=plan-only&connected=false"
@@ -131,8 +128,8 @@ func TestWebHandlers_CreateRun_Unconnected(t *testing.T) {
 
 func TestTailLogs(t *testing.T) {
 	chunks := make(chan run.Chunk, 1)
-	h := &runHandlers{
-		runs: &fakeRunClient{
+	h := &Handlers{
+		Runs: &fakeRunClient{
 			run:    &run.Run{ID: testutils.ParseID(t, "run-1")},
 			chunks: chunks,
 		},
@@ -158,8 +155,8 @@ func TestTailLogs(t *testing.T) {
 }
 
 type fakeRunClient struct {
-	run *run.Run
-	runClient
+	RunService
+	run    *run.Run
 	chunks chan run.Chunk
 }
 
@@ -196,8 +193,8 @@ func (f *fakeRunClient) Tail(context.Context, run.TailOptions) (<-chan run.Chunk
 }
 
 type fakeWorkspaceClient struct {
+	WorkspaceService
 	ws *workspace.Workspace
-	runWorkspaceClient
 }
 
 func (f *fakeWorkspaceClient) Get(context.Context, resource.TfeID) (*workspace.Workspace, error) {

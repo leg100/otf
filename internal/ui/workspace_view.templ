@@ -5,35 +5,26 @@ import (
 	"fmt"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
-	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/components/paths"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/team"
+	"github.com/leg100/otf/internal/ui/helpers"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/workspace"
 )
 
-templ workspaceNew(organization organization.Name) {
-	@components.Layout(components.LayoutProps{
-		Title:        "new workspace",
-		Organization: organization,
-		Breadcrumbs: []components.Breadcrumb{
-			{Name: "workspaces", Link: paths.Workspaces(organization)},
-			{Name: "new"},
-		},
-	}) {
-		<form class="flex flex-col gap-2" action={ paths.CreateWorkspace(organization) } method="POST">
-			<div class="field">
-				<label for="name">Name</label>
-				<input class="input w-80" type="text" name="name" id="name" required/>
-			</div>
-			<div>
-				<button class="btn" id="create-workspace-button">Create workspace</button>
-			</div>
-		</form>
-	}
+templ (t *templates) workspaceNew(organization organization.Name) {
+	<form class="flex flex-col gap-2" action={ paths.CreateWorkspace(organization) } method="POST">
+		<div class="field">
+			<label for="name">Name</label>
+			<input class="input w-80" type="text" name="name" id="name" required/>
+		</div>
+		<div>
+			<button class="btn" id="create-workspace-button">Create workspace</button>
+		</div>
+	</form>
 }
 
 type workspaceListProps struct {
@@ -42,57 +33,44 @@ type workspaceListProps struct {
 	status              []runstatus.Status
 	allTags             []string
 	selectedTags        []string
-	canCreate           bool
 	statusFilterVisible bool
 	tagFilterVisible    bool
 	pageOptions         resource.PageOptions
 	page                *resource.Page[*workspace.Workspace]
 }
 
-templ workspaceList(props workspaceListProps) {
-	{{
-		layoutProps := components.LayoutProps{
-			Title:        "workspaces",
-			Organization: props.organization,
-			ContentLinks: workspaceListActions(props.organization, props.canCreate),
-			Breadcrumbs: []components.Breadcrumb{
-				{Name: "Workspaces"},
-			},
-		}
-	}}
-	@components.Layout(layoutProps) {
-		<form action={ paths.Workspaces(props.organization) } hx-include="this" class="flex flex-col gap-2">
-			<div class="flex flex-col gap-2">
-				<input
-					class="input w-60 bg-[size:14px] bg-[10px] bg-no-repeat pl-10"
-					type="search"
-					name="search[name]"
-					value={ props.search }
-					style={ magnifyingGlassStyle(ctx) }
-					placeholder="Search workspaces"
-					hx-trigger="keyup changed delay:500ms, keyup[key=='Enter']"
-					hx-get={ components.CurrentPath(ctx) }
-					hx-target="#polling-table"
-					id="workspace-search"
-					onblur="if (this.defaultValue != this.value) { this.form.submit() }"
-				/>
-				@runstatus.Filter(props.status, props.statusFilterVisible)
-				@components.Filter(components.FilterProps[string]{
-					Title:            "Filter by tag",
-					All:              props.allTags,
-					Selected:         props.selectedTags,
-					ParamName:        "search[tags]",
-					Visible:          props.tagFilterVisible,
-					VisibleParamName: "tag_filter_visible",
-					Label:            tag,
-					CheckboxClass: func(_ string) string {
-						return "checkbox-accent"
-					},
-				})
-			</div>
-			@components.PollingTable(workspacesTable{}, props.page)
-		</form>
-	}
+templ (t *templates) workspaceList(props workspaceListProps) {
+	<form action={ paths.Workspaces(props.organization) } hx-include="this" class="flex flex-col gap-2">
+		<div class="flex flex-col gap-2">
+			<input
+				class="input w-60 bg-[size:14px] bg-[10px] bg-no-repeat pl-10"
+				type="search"
+				name="search[name]"
+				value={ props.search }
+				style={ magnifyingGlassStyle(ctx) }
+				placeholder="Search workspaces"
+				hx-trigger="keyup changed delay:500ms, keyup[key=='Enter']"
+				hx-get={ helpers.CurrentPath(ctx) }
+				hx-target="#polling-table"
+				id="workspace-search"
+				onblur="if (this.defaultValue != this.value) { this.form.submit() }"
+			/>
+			@runstatus.Filter(props.status, props.statusFilterVisible)
+			@helpers.Filter(helpers.FilterProps[string]{
+				Title:            "Filter by tag",
+				All:              props.allTags,
+				Selected:         props.selectedTags,
+				ParamName:        "search[tags]",
+				Visible:          props.tagFilterVisible,
+				VisibleParamName: "tag_filter_visible",
+				Label:            tag,
+				CheckboxClass: func(_ string) string {
+					return "checkbox-accent"
+				},
+			})
+		</div>
+		@helpers.PollingTable(workspacesTable{}, props.page)
+	</form>
 }
 
 type workspacesTable struct{}
@@ -160,136 +138,123 @@ type workspaceGetProps struct {
 	canUnlockWorkspace bool
 	canUpdateWorkspace bool
 	unassignedTags     []string
-	tagsDropdown       components.SearchDropdownProps
+	tagsDropdown       helpers.SearchDropdownProps
 	latestRunTable     templ.Component
 }
 
-templ workspaceGet(props workspaceGetProps) {
-	{{
-		layoutProps := components.LayoutProps{
-			Title:        "workspaces",
-			Organization: props.ws.Organization,
-			ContentLinks: workspaceHeaderLinksAndStartRunSelector(props),
-			Breadcrumbs: []components.Breadcrumb{
-				{Name: "Workspaces"},
-				{Name: props.ws.Name},
-			},
-		}
-	}}
-	@components.Layout(layoutProps) {
-		<div
-			hx-ext="sse"
-			sse-connect={ paths.WatchLatestRun(props.ws.ID) }
-			class="grid grid-cols-[3fr_1fr] gap-4 h-full"
-		>
-			<div class="flex flex-col gap-4">
-				<div>
-					@lockWidget(lockWidgetProps{
-						ws:   props.ws,
-						info: props.workspaceLockInfo,
-					})
-				</div>
-				<div>
-					<h3 class="text-md font-bold">
-						Latest Run
-					</h3>
-					<div
-						id="latest-run"
-						sse-swap={ latestRunUpdate }
-					>
-						if props.latestRunTable != nil {
-							@props.latestRunTable
-						} else {
-							There are no runs for this workspace.
-						}
-					</div>
-				</div>
-				<div>
-					<div hx-get={ string(paths.StateWorkspace(props.ws.ID)) } hx-trigger="load" hx-swap="innerHTML"></div>
-				</div>
+templ (t *templates) workspaceGet(props workspaceGetProps) {
+	<div
+		hx-ext="sse"
+		sse-connect={ paths.WatchLatestRun(props.ws.ID) }
+		class="grid grid-cols-[3fr_1fr] gap-4 h-full"
+	>
+		<div class="flex flex-col gap-4">
+			<div>
+				@lockWidget(lockWidgetProps{
+					ws:   props.ws,
+					info: props.workspaceLockInfo,
+				})
 			</div>
-			<div class="border-l-1 border-base-content/30 h-full p-2 flex flex-col gap-2">
-				<h3 class="font-bold">About</h3>
-				<div>
-					@components.Identifier(props.ws.ID)
-				</div>
-				<div class="divider my-0"></div>
-				<div class="flex flex-col gap-2">
-					<h4 class="font-bold text-sm">Engine</h4>
-					<div class="flex gap-2">
-						<a
-							class=""
-							href={ paths.EditWorkspace(props.ws.ID) + "#engine-version-field" }
-							title="Change engine version"
-						>
-							<div id="current-engine" class="badge badge-md badge-ghost">
-								{ props.ws.Engine.String() }
-							</div>
-						</a>
-						<a
-							class=""
-							href={ paths.EditWorkspace(props.ws.ID) + "#engine-version-field" }
-							title="Change engine version"
-						>
-							<div id="current-engine-version" class="badge badge-md badge-ghost">
-								{ props.ws.EngineVersion.String() }
-							</div>
-						</a>
-					</div>
-				</div>
-				if props.ws.Connection != nil {
-					<div class="divider my-0"></div>
-					<div class="flex flex-col gap-2">
-						<h4 class="font-bold text-sm">VCS</h4>
-						<div class="flex gap-2 items-center">
-							@props.vcsProvider.Kind.Icon
-							<a
-								class="text-sm"
-								href={ RepoURL(props.vcsProvider, props.ws.Connection.Repo) }
-								title="Go to repo homepage"
-							>
-								{ props.ws.Connection.Repo.String() }
-							</a>
-							@components.ExternalIcon()
-						</div>
-					</div>
-				}
-				<div class="divider my-0"></div>
-				<div id="tags" class="flex gap-2 flex-col">
-					<h4 class="font-bold text-sm">Tags</h4>
-					<form action={ paths.DeleteTagWorkspace(props.ws.ID) } method="POST">
-						<div class="grid grid-cols-[auto_1fr] gap-2 items-center">
-							for _, name := range props.ws.Tags {
-								@tag(name)
-								<div>
-									<button
-										class="btn btn-error btn-outline btn-xs"
-										id="delete-tag-button"
-										name="tag_name"
-										value={ name }
-									>
-										<svg
-											xmlns="http://www.w3.org/2000/svg"
-											fill="none"
-											viewBox="0 0 24 24"
-											stroke-width="1.5"
-											stroke="currentColor"
-											class="size-4"
-										>
-											<path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"></path>
-										</svg>
-									</button>
-								</div>
-							}
-						</div>
-					</form>
-					if props.canAddTags {
-						@components.SearchDropdown(props.tagsDropdown)
+			<div>
+				<h3 class="text-md font-bold">
+					Latest Run
+				</h3>
+				<div
+					id="latest-run"
+					sse-swap={ latestRunUpdate }
+				>
+					if props.latestRunTable != nil {
+						@props.latestRunTable
+					} else {
+						There are no runs for this workspace.
 					}
 				</div>
 			</div>
+			<div>
+				<div hx-get={ string(paths.StateWorkspace(props.ws.ID)) } hx-trigger="load" hx-swap="innerHTML"></div>
+			</div>
 		</div>
-	}
+		<div class="border-l-1 border-base-content/30 h-full p-2 flex flex-col gap-2">
+			<h3 class="font-bold">About</h3>
+			<div>
+				@helpers.Identifier(props.ws.ID)
+			</div>
+			<div class="divider my-0"></div>
+			<div class="flex flex-col gap-2">
+				<h4 class="font-bold text-sm">Engine</h4>
+				<div class="flex gap-2">
+					<a
+						class=""
+						href={ paths.EditWorkspace(props.ws.ID) + "#engine-version-field" }
+						title="Change engine version"
+					>
+						<div id="current-engine" class="badge badge-md badge-ghost">
+							{ props.ws.Engine.String() }
+						</div>
+					</a>
+					<a
+						class=""
+						href={ paths.EditWorkspace(props.ws.ID) + "#engine-version-field" }
+						title="Change engine version"
+					>
+						<div id="current-engine-version" class="badge badge-md badge-ghost">
+							{ props.ws.EngineVersion.String() }
+						</div>
+					</a>
+				</div>
+			</div>
+			if props.ws.Connection != nil {
+				<div class="divider my-0"></div>
+				<div class="flex flex-col gap-2">
+					<h4 class="font-bold text-sm">VCS</h4>
+					<div class="flex gap-2 items-center">
+						@props.vcsProvider.Kind.Icon
+						<a
+							class="text-sm"
+							href={ RepoURL(props.vcsProvider, props.ws.Connection.Repo) }
+							title="Go to repo homepage"
+						>
+							{ props.ws.Connection.Repo.String() }
+						</a>
+						@helpers.ExternalIcon()
+					</div>
+				</div>
+			}
+			<div class="divider my-0"></div>
+			<div id="tags" class="flex gap-2 flex-col">
+				<h4 class="font-bold text-sm">Tags</h4>
+				<form action={ paths.DeleteTagWorkspace(props.ws.ID) } method="POST">
+					<div class="grid grid-cols-[auto_1fr] gap-2 items-center">
+						for _, name := range props.ws.Tags {
+							@tag(name)
+							<div>
+								<button
+									class="btn btn-error btn-outline btn-xs"
+									id="delete-tag-button"
+									name="tag_name"
+									value={ name }
+								>
+									<svg
+										xmlns="http://www.w3.org/2000/svg"
+										fill="none"
+										viewBox="0 0 24 24"
+										stroke-width="1.5"
+										stroke="currentColor"
+										class="size-4"
+									>
+										<path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"></path>
+									</svg>
+								</button>
+							</div>
+						}
+					</div>
+				</form>
+				if props.canAddTags {
+					@helpers.SearchDropdown(props.tagsDropdown)
+				}
+			</div>
+		</div>
+	</div>
 }
 
 type lockWidgetProps struct {
@@ -396,129 +361,115 @@ type workspacePerm struct {
 	team *team.Team
 }
 
-templ workspaceEdit(props workspaceEditProps) {
-	{{
-		layoutProps := components.LayoutProps{
-			Title:        "edit | " + props.ws.ID.String(),
-			Organization: props.ws.Organization,
-			ContentLinks: WorkspaceHeaderLinks(props.ws.ID, props.canUpdateWorkspace),
-			Breadcrumbs: []components.Breadcrumb{
-				{Name: "Workspaces", Link: paths.Workspaces(props.ws.Organization)},
-				{Name: props.ws.Name, Link: paths.Workspace(props.ws.ID)},
-				{Name: "settings"},
-			},
+templ (t *templates) workspaceEdit(props workspaceEditProps) {
+	<div class="mt-3">
+		if props.ws.Connection != nil {
+			<form action={ paths.DisconnectWorkspace(props.ws.ID) } method="POST">
+				<button class="btn" id="disconnect-workspace-repo-button">
+					Disconnect from { props.ws.Connection.Repo.String() } ({ props.vcsProvider.String() })
+				</button>
+			</form>
+		} else {
+			<form action={ paths.SetupConnectionProviderWorkspace(props.ws.ID) } method="GET">
+				<button class="btn" id="list-workspace-vcs-providers-button">
+					Connect to VCS
+				</button>
+			</form>
 		}
-	}}
-	@components.Layout(layoutProps) {
-		<div class="mt-3">
-			if props.ws.Connection != nil {
-				<form action={ paths.DisconnectWorkspace(props.ws.ID) } method="POST">
-					<button class="btn" id="disconnect-workspace-repo-button">
-						Disconnect from { props.ws.Connection.Repo.String() } ({ props.vcsProvider.String() })
-					</button>
-				</form>
-			} else {
-				<form action={ paths.SetupConnectionProviderWorkspace(props.ws.ID) } method="GET">
-					<button class="btn" id="list-workspace-vcs-providers-button">
-						Connect to VCS
-					</button>
-				</form>
-			}
+	</div>
+	<hr class="my-4"/>
+	<form class="flex flex-col gap-5" action={ paths.UpdateWorkspace(props.ws.ID) } method="POST">
+		<div class="field">
+			<label for="name">Name</label>
+			<input class="input w-80" type="text" name="name" id="name" value={ props.ws.Name } required/>
 		</div>
-		<hr class="my-4"/>
-		<form class="flex flex-col gap-5" action={ paths.UpdateWorkspace(props.ws.ID) } method="POST">
-			<div class="field">
-				<label for="name">Name</label>
-				<input class="input w-80" type="text" name="name" id="name" value={ props.ws.Name } required/>
+		<div class="field">
+			<label for="description">Description</label>
+			<textarea class="textarea w-96" rows="3" name="description" id="description">{ props.ws.Description }</textarea>
+		</div>
+		<fieldset class="border border-base-content/60 p-3 flex flex-col gap-2">
+			<legend>Execution mode</legend>
+			<div class="form-checkbox">
+				<input type="radio" name="execution_mode" id="remote" value="remote" checked?={ props.ws.ExecutionMode == "remote" }/>
+				<label for="remote">Remote</label>
+				<span class="description">Your plans and applies occur on the OTF servers.</span>
 			</div>
-			<div class="field">
-				<label for="description">Description</label>
-				<textarea class="textarea w-96" rows="3" name="description" id="description">{ props.ws.Description }</textarea>
-			</div>
-			<fieldset class="border border-base-content/60 p-3 flex flex-col gap-2">
-				<legend>Execution mode</legend>
-				<div class="form-checkbox">
-					<input type="radio" name="execution_mode" id="remote" value="remote" checked?={ props.ws.ExecutionMode == "remote" }/>
-					<label for="remote">Remote</label>
-					<span class="description">Your plans and applies occur on the OTF servers.</span>
-				</div>
-				<div class="form-checkbox">
-					<input type="radio" name="execution_mode" id="local" value="local" checked?={ props.ws.ExecutionMode == "local" }/>
-					<label for="local">Local</label>
-					<span class="description">
-						Your plans and applies occur on your local machines. OTF is only used to store and synchronize state.
-					</span>
-				</div>
-				<div class="form-checkbox">
-					<input class="peer" type="radio" name="execution_mode" id="agent" value="agent" checked?={ props.ws.ExecutionMode == "agent" }/>
-					<label for="agent">Agent</label>
-					<span class="description">Your plans and applies occur on OTF agents.</span>
-					<div class="col-start-2 hidden peer-checked:flex flex-col mt-2 bg-base-300 p-2 gap-2">
-						<div class="flex items-center gap-2">
-							<label class="text-md" for="agent-pool-id">Agent pool</label>
-							<div hx-get={ props.poolsURL } hx-trigger="load" hx-swap="innerHTML"></div>
-						</div>
-						<span class="description">Select an agent pool. If no pools are listed then you either need to create a pool or you need to configure at least one pool to grant access to your workspace. Manage agent pools <a id="agent-pools-link" class="underline" href={ paths.AgentPools(props.ws.Organization) }>here</a>.</span>
-					</div>
-				</div>
-			</fieldset>
-			<fieldset class="border border-base-content/60 px-3 py-3 flex flex-col gap-2">
-				<legend>Apply method</legend>
-				<div class="form-checkbox">
-					<input type="radio" name="auto_apply" id="auto-apply" value="true" checked?={ props.ws.AutoApply }/>
-					<label for="auto-apply">Auto apply</label>
-					<span class="description">Automatically apply changes when a Terraform plan is successful. Plans that have no changes will not be applied. If this workspace is linked to version control, a push to the default branch of the linked repository will trigger a plan and apply. Note: if you're using the <a class="underline" href="https://developer.hashicorp.com/terraform/cli/cloud/settings#the-cloud-block">cloud block</a> as opposed to the <a class="underline" href="https://developer.hashicorp.com/terraform/language/settings/backends/remote">remote backend</a> you still need to use the <span class="font-bold">-auto-approve</span> flag with <span class="font-bold">terraform apply</span>.</span>
-				</div>
-				<div class="form-checkbox">
-					<input type="radio" name="auto_apply" id="manual-apply" value="false" checked?={ !props.ws.AutoApply }/>
-					<label for="manual-apply">Manual apply</label>
-					<span class="description">Require an operator to confirm the result of the Terraform plan before applying. If this workspace is linked to version control, a push to the default branch of the linked repository will only trigger a plan and then wait for confirmation.</span>
-				</div>
-			</fieldset>
-			@engineSelector(props.engines)
-			<div class="field">
-				<label for="working_directory">Working directory</label>
-				<input class="input w-96" type="text" name="working_directory" id="working_directory" value={ props.ws.WorkingDirectory }/>
+			<div class="form-checkbox">
+				<input type="radio" name="execution_mode" id="local" value="local" checked?={ props.ws.ExecutionMode == "local" }/>
+				<label for="local">Local</label>
 				<span class="description">
-					The directory that Terraform will execute within. This defaults to the root of your repository and is typically set to a subdirectory matching the environment when multiple environments exist within the same repository.
+					Your plans and applies occur on your local machines. OTF is only used to store and synchronize state.
 				</span>
 			</div>
-			if props.ws.Connection != nil {
-				@editConnection(props)
-			}
 			<div class="form-checkbox">
-				<input class="" type="checkbox" name="global_remote_state" id="global-remote-state" checked?={ props.ws.GlobalRemoteState }/>
-				<label class="font-semibold" for="global-remote-state">Remote state sharing</label>
-				<span class="description">Share this workspace's state with all workspaces in this organization. The <span class="font-bold font-mono">terraform_remote_state</span> data source relies on state sharing to access workspace outputs.</span>
+				<input class="peer" type="radio" name="execution_mode" id="agent" value="agent" checked?={ props.ws.ExecutionMode == "agent" }/>
+				<label for="agent">Agent</label>
+				<span class="description">Your plans and applies occur on OTF agents.</span>
+				<div class="col-start-2 hidden peer-checked:flex flex-col mt-2 bg-base-300 p-2 gap-2">
+					<div class="flex items-center gap-2">
+						<label class="text-md" for="agent-pool-id">Agent pool</label>
+						<div hx-get={ props.poolsURL } hx-trigger="load" hx-swap="innerHTML"></div>
+					</div>
+					<span class="description">Select an agent pool. If no pools are listed then you either need to create a pool or you need to configure at least one pool to grant access to your workspace. Manage agent pools <a id="agent-pools-link" class="underline" href={ paths.AgentPools(props.ws.Organization) }>here</a>.</span>
+				</div>
 			</div>
-			<div class="field">
-				<button class="btn w-40">Save changes</button>
+		</fieldset>
+		<fieldset class="border border-base-content/60 px-3 py-3 flex flex-col gap-2">
+			<legend>Apply method</legend>
+			<div class="form-checkbox">
+				<input type="radio" name="auto_apply" id="auto-apply" value="true" checked?={ props.ws.AutoApply }/>
+				<label for="auto-apply">Auto apply</label>
+				<span class="description">Automatically apply changes when a Terraform plan is successful. Plans that have no changes will not be applied. If this workspace is linked to version control, a push to the default branch of the linked repository will trigger a plan and apply. Note: if you're using the <a class="underline" href="https://developer.hashicorp.com/terraform/cli/cloud/settings#the-cloud-block">cloud block</a> as opposed to the <a class="underline" href="https://developer.hashicorp.com/terraform/language/settings/backends/remote">remote backend</a> you still need to use the <span class="font-bold">-auto-approve</span> flag with <span class="font-bold">terraform apply</span>.</span>
 			</div>
+			<div class="form-checkbox">
+				<input type="radio" name="auto_apply" id="manual-apply" value="false" checked?={ !props.ws.AutoApply }/>
+				<label for="manual-apply">Manual apply</label>
+				<span class="description">Require an operator to confirm the result of the Terraform plan before applying. If this workspace is linked to version control, a push to the default branch of the linked repository will only trigger a plan and then wait for confirmation.</span>
+			</div>
+		</fieldset>
+		@engineSelector(props.engines)
+		<div class="field">
+			<label for="working_directory">Working directory</label>
+			<input class="input w-96" type="text" name="working_directory" id="working_directory" value={ props.ws.WorkingDirectory }/>
+			<span class="description">
+				The directory that Terraform will execute within. This defaults to the root of your repository and is typically set to a subdirectory matching the environment when multiple environments exist within the same repository.
+			</span>
+		</div>
+		if props.ws.Connection != nil {
+			@editConnection(props)
+		}
+		<div class="form-checkbox">
+			<input class="" type="checkbox" name="global_remote_state" id="global-remote-state" checked?={ props.ws.GlobalRemoteState }/>
+			<label class="font-semibold" for="global-remote-state">Remote state sharing</label>
+			<span class="description">Share this workspace's state with all workspaces in this organization. The <span class="font-bold font-mono">terraform_remote_state</span> data source relies on state sharing to access workspace outputs.</span>
+		</div>
+		<div class="field">
+			<button class="btn w-40">Save changes</button>
+		</div>
+	</form>
+	<hr class="my-4"/>
+	<h3 class="font-semibold text-lg">Permissions</h3>
+	<div id="permissions-container">
+		@editPermissions(props)
+	</div>
+	<hr class="my-4"/>
+	<h3 class="font-semibold text-lg">Advanced</h3>
+	<div class="flex flex-col gap-4 mt-2 mb-6">
+		<form action={ paths.StartRunWorkspace(props.ws.ID) } method="POST">
+			<button id="queue-destroy-plan-button" class="btn btn-error btn-outline" onclick="return confirm('This will destroy all infrastructure in this workspace. Please confirm.')">
+				Queue destroy plan
+			</button>
+			<input type="hidden" name="connected" value={ workspaceBoolString(props.ws.Connection != nil) }/>
+			<input name="operation" value="destroy-all" type="hidden"/>
 		</form>
-		<hr class="my-4"/>
-		<h3 class="font-semibold text-lg">Permissions</h3>
-		<div id="permissions-container">
-			@editPermissions(props)
-		</div>
-		<hr class="my-4"/>
-		<h3 class="font-semibold text-lg">Advanced</h3>
-		<div class="flex flex-col gap-4 mt-2 mb-6">
-			<form action={ paths.StartRunWorkspace(props.ws.ID) } method="POST">
-				<button id="queue-destroy-plan-button" class="btn btn-error btn-outline" onclick="return confirm('This will destroy all infrastructure in this workspace. Please confirm.')">
-					Queue destroy plan
+		if props.canDeleteWorkspace {
+			<form action={ paths.DeleteWorkspace(props.ws.ID) } method="POST">
+				<button id="delete-workspace-button" class="btn btn-error btn-outline" onclick="return confirm('Are you sure you want to delete?')">
+					Delete workspace
 				</button>
-				<input type="hidden" name="connected" value={ workspaceBoolString(props.ws.Connection != nil) }/>
-				<input name="operation" value="destroy-all" type="hidden"/>
 			</form>
-			if props.canDeleteWorkspace {
-				<form action={ paths.DeleteWorkspace(props.ws.ID) } method="POST">
-					<button id="delete-workspace-button" class="btn btn-error btn-outline" onclick="return confirm('Are you sure you want to delete?')">
-						Delete workspace
-					</button>
-				</form>
-			}
-		</div>
-	}
+		}
+	</div>
 }
 
 type engineSelectorProps struct {
@@ -600,7 +551,7 @@ templ editConnection(props workspaceEditProps) {
 			<input class="peer" type="radio" id="vcs-triggers-patterns" name="vcs_trigger" value={ props.vcsTriggerPatterns } checked?={ len(props.ws.TriggerPatterns) > 0 }/>
 			<label for="vcs-triggers-patterns">Only trigger runs when files in specified paths change</label>
 			<span class="description">Supports glob patterns.</span>
-			<script src={ components.AssetPath(ctx, "/static/js/workspace_trigger_patterns.js") }></script>
+			<script src={ helpers.AssetPath(ctx, "/static/js/workspace_trigger_patterns.js") }></script>
 			<div class="hidden bg-base-200 p-2 col-start-2 mt-2 w-full peer-checked:block" x-data={ "workspace_trigger_patterns(" + toJSON(props.ws.TriggerPatterns) + ")" }>
 				<input type="hidden" id="paths" name="trigger_patterns" :value="JSON.stringify(paths)"/>
 				<div class="flex flex-col gap-2">
@@ -702,7 +653,7 @@ templ editPermissions(props workspaceEditProps) {
 							<button class="btn" form="update-permissions">Update</button>
 							<form class="" action={ paths.UnsetPermissionWorkspace(props.ws.ID) } method="POST">
 								<input name="team_id" value={ workspacePerm.team.ID.String() } type="hidden"/>
-								@components.DeleteButton()
+								@helpers.DeleteButton()
 							</form>
 						</td>
 					</tr>
@@ -736,32 +687,19 @@ templ editPermissions(props workspaceEditProps) {
 	</div>
 }
 
-templ listVCSProviders(ws *workspace.Workspace, providers []*vcs.Provider) {
-	{{
-		layoutProps := components.LayoutProps{
-			Title:        "list vcs providers | " + ws.ID.String(),
-			Organization: ws.Organization,
-			Breadcrumbs: []components.Breadcrumb{
-				{Name: "workspaces", Link: paths.Workspaces(ws.Organization)},
-				{Name: ws.Name, Link: paths.Workspace(ws.ID)},
-				{Name: "vcs providers"},
-			},
-		}
-	}}
-	@components.Layout(layoutProps) {
-		@ConnectionSteps(ConnectStep)
-		<div>Select a <a class="underline" href={ paths.VCSProviders(ws.Organization) }>VCS provider</a> to connect this workspace to a repository.</div>
-		@components.UnpaginatedTable(
-			&vcsTable{
-				Actions: vcsProviderSelector{workspaceID: ws.ID}.action,
-			},
-			providers,
-		)
-		if len(providers) == 0 {
-			<span>
-				No VCS providers are currently configured. Create a VCS provider <a class="underline" href={ paths.VCSProviders(ws.Organization) }>here</a>.
-			</span>
-		}
+templ (t *templates) listVCSProviders(ws *workspace.Workspace, providers []*vcs.Provider) {
+	@ConnectionSteps(ConnectStep)
+	<div>Select a <a class="underline" href={ paths.VCSProviders(ws.Organization) }>VCS provider</a> to connect this workspace to a repository.</div>
+	@helpers.UnpaginatedTable(
+		&vcsTable{
+			Actions: vcsProviderSelector{workspaceID: ws.ID}.action,
+		},
+		providers,
+	)
+	if len(providers) == 0 {
+		<span>
+			No VCS providers are currently configured. Create a VCS provider <a class="underline" href={ paths.VCSProviders(ws.Organization) }>here</a>.
+		</span>
 	}
 }
 
@@ -776,38 +714,25 @@ templ (s vcsProviderSelector) action(vcsProviderID resource.TfeID) {
 	</form>
 }
 
-templ listVCSRepos(ws *workspace.Workspace, vcsProviderID resource.TfeID, repos []vcs.Repo) {
-	{{
-		layoutProps := components.LayoutProps{
-			Title:        "list vcs repos | " + ws.ID.String(),
-			Organization: ws.Organization,
-			Breadcrumbs: []components.Breadcrumb{
-				{Name: "workspaces", Link: paths.Workspaces(ws.Organization)},
-				{Name: ws.Name, Link: paths.Workspace(ws.ID)},
-				{Name: "vcs repositories"},
-			},
-		}
-	}}
-	@components.Layout(layoutProps) {
-		@ConnectionSteps(SelectRepoStep)
-		<div>
-			Select a VCS repository to connect this workspace to. Either select a repository from the list or enter the name of a repository below.
-		</div>
-		<form action={ paths.ConnectWorkspace(ws.ID) } method="POST">
-			<input type="hidden" name="vcs_provider_id" id="vcs_provider_id" value={ vcsProviderID.String() }/>
-			<input class="input" type="text" name="identifier" id="identifier" value="" placeholder="{owner}/{repository}" required/>
-			<button class="btn">Connect</button>
-		</form>
-		@components.UnpaginatedTable(
-			&ReposTable{
-				Actions: workspaceRepoSelector{
-					workspaceID:   ws.ID,
-					vcsProviderID: vcsProviderID,
-				}.action,
-			},
-			repos,
-		)
-	}
+templ (t *templates) listVCSRepos(ws *workspace.Workspace, vcsProviderID resource.TfeID, repos []vcs.Repo) {
+	@ConnectionSteps(SelectRepoStep)
+	<div>
+		Select a VCS repository to connect this workspace to. Either select a repository from the list or enter the name of a repository below.
+	</div>
+	<form action={ paths.ConnectWorkspace(ws.ID) } method="POST">
+		<input type="hidden" name="vcs_provider_id" id="vcs_provider_id" value={ vcsProviderID.String() }/>
+		<input class="input" type="text" name="identifier" id="identifier" value="" placeholder="{owner}/{repository}" required/>
+		<button class="btn">Connect</button>
+	</form>
+	@helpers.UnpaginatedTable(
+		&ReposTable{
+			Actions: workspaceRepoSelector{
+				workspaceID:   ws.ID,
+				vcsProviderID: vcsProviderID,
+			}.action,
+		},
+		repos,
+	)
 }
 
 type workspaceRepoSelector struct {
@@ -823,36 +748,8 @@ templ (s workspaceRepoSelector) action(repo vcs.Repo) {
 	</form>
 }
 
-templ WorkspaceHeaderLinks(workspaceID resource.TfeID, canUpdate bool) {
-	<ul id="workspace-submenu" class="menu menu-horizontal bg-base-200 rounded-box [&>li>a]:py-0">
-		@components.MenuItem("Overview", paths.Workspace(workspaceID))
-		@components.MenuItem("Runs", paths.Runs(workspaceID))
-		@components.MenuItem("Variables", paths.Variables(workspaceID))
-		if canUpdate {
-			@components.MenuItem("Settings", paths.EditWorkspace(workspaceID))
-		}
-	</ul>
-}
-
-templ workspaceHeaderLinksAndStartRunSelector(props workspaceGetProps) {
-	if props.canCreateRun {
-		<div>
-			<form id="workspace-start-run-form" action={ paths.StartRunWorkspace(props.ws.ID) } method="POST">
-				<select class="select" name="operation" id="start-run-operation" onchange="this.form.submit()">
-					<option disabled selected>-- start run --</option>
-					<option value="plan-only">plan only</option>
-					if props.canApply {
-						<option value="plan-and-apply">plan and apply</option>
-					}
-				</select>
-			</form>
-		</div>
-	}
-	@WorkspaceHeaderLinks(props.ws.ID, props.canUpdateWorkspace)
-}
-
 func magnifyingGlassStyle(ctx context.Context) (string, error) {
-	path, err := components.AssetPath(ctx, "/static/images/magnifying_glass.svg")
+	path, err := helpers.AssetPath(ctx, "/static/images/magnifying_glass.svg")
 	if err != nil {
 		return "", err
 	}

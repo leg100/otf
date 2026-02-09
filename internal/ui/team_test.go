@@ -19,7 +19,7 @@ import (
 
 func TestTeam_WebHandlers(t *testing.T) {
 	t.Run("new", func(t *testing.T) {
-		h := &teamHandlers{}
+		h := &Handlers{}
 		q := "/?organization_name=acme-corp"
 		r := httptest.NewRequest("GET", q, nil)
 		w := httptest.NewRecorder()
@@ -28,7 +28,7 @@ func TestTeam_WebHandlers(t *testing.T) {
 	})
 
 	t.Run("create", func(t *testing.T) {
-		h := &teamHandlers{}
+		h := &Handlers{}
 		q := "/?organization_name=acme-corp"
 		r := httptest.NewRequest("GET", q, nil)
 		w := httptest.NewRecorder()
@@ -38,7 +38,7 @@ func TestTeam_WebHandlers(t *testing.T) {
 
 	t.Run("update", func(t *testing.T) {
 		team := &team.Team{Name: "acme-org", ID: testutils.ParseID(t, "team-123")}
-		h := &teamHandlers{teams: &fakeTeamService{team: team}}
+		h := &Handlers{Teams: &fakeTeamService{team: team}}
 
 		q := "/?team_id=team-123&manage_workspaces=true"
 		r := httptest.NewRequest("GET", q, nil)
@@ -53,10 +53,10 @@ func TestTeam_WebHandlers(t *testing.T) {
 		owners := &team.Team{Name: "owners", Organization: org1}
 		owner, err := user.NewUser(uuid.NewString(), user.WithTeams(owners))
 		require.NoError(t, err)
-		h := &teamHandlers{
-			authorizer: authz.NewAllowAllAuthorizer(),
-			teams:      &fakeTeamService{team: owners},
-			users:      &fakeUserService{user: owner},
+		h := &Handlers{
+			Authorizer: authz.NewAllowAllAuthorizer(),
+			Teams:      &fakeTeamService{team: owners},
+			Users:      &fakeUserService{user: owner},
 		}
 
 		q := "/?team_id=team-123"
@@ -70,9 +70,9 @@ func TestTeam_WebHandlers(t *testing.T) {
 
 	t.Run("list", func(t *testing.T) {
 		team := &team.Team{Name: "acme-org", ID: testutils.ParseID(t, "team-123")}
-		h := &teamHandlers{
-			teams:      &fakeTeamService{team: team},
-			authorizer: authz.NewAllowAllAuthorizer(),
+		h := &Handlers{
+			Teams:      &fakeTeamService{team: team},
+			Authorizer: authz.NewAllowAllAuthorizer(),
 		}
 		// make request with user with full perms, to ensure parts of
 		// page that are hidden to unprivileged users are not hidden.
@@ -88,7 +88,7 @@ func TestTeam_WebHandlers(t *testing.T) {
 
 	t.Run("delete", func(t *testing.T) {
 		team := &team.Team{Name: "acme-org", ID: testutils.ParseID(t, "team-123"), Organization: organization.NewTestName(t)}
-		h := &teamHandlers{teams: &fakeTeamService{team: team}}
+		h := &Handlers{Teams: &fakeTeamService{team: team}}
 		q := "/?team_id=team-123"
 		r := httptest.NewRequest("POST", q, nil)
 		w := httptest.NewRecorder()

@@ -1,7 +1,7 @@
 package authenticator
 
-import "github.com/leg100/otf/internal/http/html/components"
+import "github.com/leg100/otf/internal/ui/helpers"
 
 templ oidcIcon() {
-	<img src={ components.AssetPath(ctx, "/static/images/openid-icon.png") } width="24" height="24"/>
+	<img src={ helpers.AssetPath(ctx, "/static/images/openid-icon.png") } width="24" height="24"/>
 }

@@ -436,18 +436,17 @@ func (a *tfe) convert(from *Workspace, r *http.Request) (*TFEWorkspace, error) {
 // ToTFE converts an OTF workspace to a TFE workspace.
 func ToTFE(a *authz.Authorizer, from *Workspace, r *http.Request) (*TFEWorkspace, error) {
 	ctx := r.Context()
-	accessRequest := &authz.Request{ID: &from.ID}
 	perms := &TFEWorkspacePermissions{
-		CanLock:           a.CanAccess(ctx, authz.LockWorkspaceAction, accessRequest),
-		CanUnlock:         a.CanAccess(ctx, authz.UnlockWorkspaceAction, accessRequest),
-		CanForceUnlock:    a.CanAccess(ctx, authz.UnlockWorkspaceAction, accessRequest),
-		CanQueueApply:     a.CanAccess(ctx, authz.ApplyRunAction, accessRequest),
-		CanQueueDestroy:   a.CanAccess(ctx, authz.ApplyRunAction, accessRequest),
-		CanQueueRun:       a.CanAccess(ctx, authz.CreateRunAction, accessRequest),
-		CanDestroy:        a.CanAccess(ctx, authz.DeleteWorkspaceAction, accessRequest),
-		CanReadSettings:   a.CanAccess(ctx, authz.GetWorkspaceAction, accessRequest),
-		CanUpdate:         a.CanAccess(ctx, authz.UpdateWorkspaceAction, accessRequest),
-		CanUpdateVariable: a.CanAccess(ctx, authz.UpdateWorkspaceAction, accessRequest),
+		CanLock:           a.CanAccess(ctx, authz.LockWorkspaceAction, &from.ID),
+		CanUnlock:         a.CanAccess(ctx, authz.UnlockWorkspaceAction, &from.ID),
+		CanForceUnlock:    a.CanAccess(ctx, authz.UnlockWorkspaceAction, &from.ID),
+		CanQueueApply:     a.CanAccess(ctx, authz.ApplyRunAction, &from.ID),
+		CanQueueDestroy:   a.CanAccess(ctx, authz.ApplyRunAction, &from.ID),
+		CanQueueRun:       a.CanAccess(ctx, authz.CreateRunAction, &from.ID),
+		CanDestroy:        a.CanAccess(ctx, authz.DeleteWorkspaceAction, &from.ID),
+		CanReadSettings:   a.CanAccess(ctx, authz.GetWorkspaceAction, &from.ID),
+		CanUpdate:         a.CanAccess(ctx, authz.UpdateWorkspaceAction, &from.ID),
+		CanUpdateVariable: a.CanAccess(ctx, authz.UpdateWorkspaceAction, &from.ID),
 	}
 
 	to := &TFEWorkspace{

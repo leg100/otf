@@ -1,32 +1,23 @@
 package ui
 
 import (
-	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/components/paths"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/team"
+	"github.com/leg100/otf/internal/ui/helpers"
 )
 
-templ newTeamView(organization organization.Name) {
-	@components.Layout(components.LayoutProps{
-		Title:        "new team",
-		Organization: organization,
-		Breadcrumbs: []components.Breadcrumb{
-			{Name: "Teams", Link: paths.Teams(organization)},
-			{Name: "new"},
-		},
-	}) {
-		<form class="flex flex-col gap-2" action={ paths.CreateTeam(organization) } method="POST">
-			<div class="field">
-				<label for="name">Name</label>
-				<input class="input w-80" type="text" name="name" id="name" required/>
-			</div>
-			<div>
-				<button class="btn" id="create-team-button">Create team</button>
-			</div>
-		</form>
-	}
+templ (t *templates) newTeamView(organization organization.Name) {
+	<form class="flex flex-col gap-2" action={ paths.CreateTeam(organization) } method="POST">
+		<div class="field">
+			<label for="name">Name</label>
+			<input class="input w-80" type="text" name="name" id="name" required/>
+		</div>
+		<div>
+			<button class="btn" id="create-team-button">Create team</button>
+		</div>
+	</form>
 }
 
 type listTeamsProps struct {
@@ -37,19 +28,10 @@ type listTeamsProps struct {
 
 type listOptions struct{}
 
-templ listTeams(props listTeamsProps) {
-	@components.Layout(components.LayoutProps{
-		Title:        "teams",
-		Organization: props.organization,
-		Breadcrumbs: []components.Breadcrumb{
-			{Name: "Teams"},
-		},
-		ContentActions: listTeamsActions(props),
-	}) {
-		<div id="content-list">
-			@components.Table(&teamTable{}, props.teams)
-		</div>
-	}
+templ (t *templates) listTeams(props listTeamsProps) {
+	<div id="content-list">
+		@helpers.Table(&teamTable{}, props.teams)
+	</div>
 }
 
 type teamTable struct{}
@@ -67,7 +49,7 @@ templ (t teamTable) Row(tm *team.Team) {
 			</a>
 		</td>
 		<td>
-			@components.Identifier(tm.ID)
+			@helpers.Identifier(tm.ID)
 		</td>
 	</tr>
 }

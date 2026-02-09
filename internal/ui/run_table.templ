@@ -1,0 +1,194 @@
+package ui
+
+import (
+	"context"
+	"github.com/leg100/otf/internal/http/html/components/paths"
+	runpkg "github.com/leg100/otf/internal/run"
+	"github.com/leg100/otf/internal/runstatus"
+	"github.com/leg100/otf/internal/ui/helpers"
+	"github.com/leg100/otf/internal/user"
+)
+
+type runsTable struct {
+	filteredByWorkspace bool
+	workspaces          *workspaceCache
+	users               *userCache
+	configs             ConfigVersionService
+}
+
+func (t *templates) newRunsTable(filteredByWorkspace bool) *runsTable {
+	return &runsTable{
+		workspaces: newWorkspaceCache(t.workspaces),
+		users:      newUserCache(t.users),
+		configs:    t.configs,
+	}
+}
+
+templ (t *runsTable) Header() {
+	<th>Run</th>
+	if !t.filteredByWorkspace {
+		<th>Workspace</th>
+	}
+	<th>Source</th>
+	<th>Status</th>
+	<th class="hidden xl:block">Created</th>
+	<th>Actions</th>
+}
+
+templ (t *runsTable) Row(run *runpkg.Run) {
+	<tr id={ "run-item-" + run.ID.String() }>
+		<td>
+			<a class="link" href={ paths.Run(run.ID) }>
+				{ run.ID.String() }
+			</a>
+		</td>
+		if !t.filteredByWorkspace {
+			<td>
+				<a class="link" href={ paths.Workspace(run.WorkspaceID) }>
+					{ t.getWorkspaceName(ctx, run) }
+				</a>
+			</td>
+		}
+		<td>
+			<div class="flex flex gap-2">
+				@t.avatar(run)
+				<div class="flex flex-col gap-2">
+					if run.CreatedBy != nil {
+						<span class="inline-block max-w-[16rem] truncate" id="run-created-by">
+							{ run.CreatedBy.String() }
+						</span>
+					} else if run.IngressAttributes != nil {
+						<span class="inline-block max-w-[16rem] truncate">
+							<a id="vcs-username" href={ templ.SafeURL(run.IngressAttributes.SenderHTMLURL) }>{ run.IngressAttributes.SenderUsername }</a>
+						</span>
+					}
+					<div class="flex gap-2 items-center">
+						@t.configs.GetSourceIcon(run.Source)
+						if run.IngressAttributes != nil {
+							<div class="badge badge-secondary badge-soft badge-sm font-mono">
+								<svg
+									xmlns="http://www.w3.org/2000/svg"
+									xml:space="preserve"
+									viewBox="0 0 97 97"
+									class="size-4"
+								>
+									<path fill="#F05133" d="M92.71 44.408 52.591 4.291c-2.31-2.311-6.057-2.311-8.369 0l-8.33 8.332L46.459 23.19c2.456-.83 5.272-.273 7.229 1.685 1.969 1.97 2.521 4.81 1.67 7.275l10.186 10.185c2.465-.85 5.307-.3 7.275 1.671 2.75 2.75 2.75 7.206 0 9.958-2.752 2.751-7.208 2.751-9.961 0-2.068-2.07-2.58-5.11-1.531-7.658l-9.5-9.499v24.997c.67.332 1.303.774 1.861 1.332 2.75 2.75 2.75 7.206 0 9.959-2.75 2.749-7.209 2.749-9.957 0-2.75-2.754-2.75-7.21 0-9.959.68-.679 1.467-1.193 2.307-1.537v-25.23c-.84-.344-1.625-.853-2.307-1.537-2.083-2.082-2.584-5.14-1.516-7.698L31.798 16.715 4.288 44.222c-2.311 2.313-2.311 6.06 0 8.371l40.121 40.118c2.31 2.311 6.056 2.311 8.369 0L92.71 52.779c2.311-2.311 2.311-6.06 0-8.371z"></path>
+								</svg>
+								if run.IngressAttributes.IsPullRequest {
+									<a id="pull-request-link" href={ templ.SafeURL(run.IngressAttributes.PullRequestURL) } title={ run.IngressAttributes.PullRequestTitle }>#{ run.IngressAttributes.PullRequestNumber }</a>
+								} else if run.IngressAttributes.Branch != "" {
+									<a href={ templ.SafeURL(run.IngressAttributes.CommitURL) }>
+										<span class="max-w-[12rem] truncate" id="vcs-branch">{ run.IngressAttributes.Branch }</span>
+									</a>
+								} else if run.IngressAttributes.Tag != "" {
+									<a href={ templ.SafeURL(run.IngressAttributes.CommitURL) }>
+										<span class="max-w-[12rem] truncate" id="vcs-tag">{ run.IngressAttributes.Tag }</span>
+									</a>
+								}
+								<a id="commit-sha-abbrev" href={ templ.SafeURL(run.IngressAttributes.CommitURL) }>({ run.IngressAttributes.CommitSHA[:7] })</a>
+							</div>
+						}
+					</div>
+				</div>
+			</div>
+		</td>
+		<td>
+			<div class="flex flex-col gap-2">
+				<div>
+					@runstatus.Badge(run.ID, run.Status)
+				</div>
+				<div class="flex gap-2 items-center">
+					if run.Apply.ResourceReport != nil {
+						<span>
+							@resourceReport(run.Apply.ResourceReport)
+						</span>
+					} else if run.Plan.ResourceReport != nil {
+						<span>
+							@resourceReport(run.Plan.ResourceReport)
+						</span>
+					}
+					if run.PlanOnly {
+						<span class="badge badge-soft badge-accent badge-sm">plan only</span>
+					}
+				</div>
+			</div>
+		</td>
+		<td class="align-top hidden xl:block">
+			@helpers.Ago(run.CreatedAt)
+		</td>
+		<td class="align-top">
+			<div class="flex gap-2">
+				if run.Status == runstatus.Planned {
+					<form action={ paths.ApplyRun(run.ID) } method="POST">
+						<button id="apply-button" class="btn btn-sm">Apply</button>
+					</form>
+				}
+				if run.Cancelable() {
+					<button
+						class="btn btn-sm btn-error btn-outline"
+						hx-post={ paths.CancelRun(run.ID) }
+						hx-confirm="Are you sure you want to cancel?"
+					>
+						Cancel
+					</button>
+				} else if run.ForceCancelable() {
+					<button
+						class="btn btn-sm btn-error btn-outline"
+						hx-post={ paths.ForceCancelRun(run.ID) }
+						hx-confirm="Are you sure you want to force cancel?"
+					>
+						Force cancel
+					</button>
+				} else if run.Discardable() {
+					<button
+						id="run-discard-button"
+						class="btn btn-sm btn-error btn-outline"
+						hx-post={ paths.DiscardRun(run.ID) }
+						hx-confirm="Are you sure you want to discard?"
+					>
+						Discard
+					</button>
+				} else if run.Done() {
+					<form action={ paths.RetryRun(run.ID) } method="POST">
+						<button id="retry-button" class="btn btn-sm btn-soft btn-info">Retry</button>
+					</form>
+				} else if run.CancelSignaledAt != nil {
+					cancelling...
+				}
+			</div>
+		</td>
+	</tr>
+}
+
+func (t runsTable) getWorkspaceName(ctx context.Context, run *runpkg.Run) (string, error) {
+	ws, err := t.workspaces.Get(ctx, run.WorkspaceID)
+	if err != nil {
+		return "", err
+	}
+	return ws.Name, nil
+}
+
+templ (t runsTable) avatar(run *runpkg.Run) {
+	<div class="avatar">
+		<div class="size-14 rounded">
+			if run.CreatedBy != nil {
+				{{
+					user, err := t.users.GetUser(ctx, user.UserSpec{Username: run.CreatedBy})
+					if err != nil {
+						return err
+					}
+				}}
+				@helpers.Avatar(user.AvatarURL)
+			} else if run.IngressAttributes != nil {
+				<img src={ templ.SafeURL(run.IngressAttributes.SenderAvatarURL) }/>
+			}
+		</div>
+	</div>
+}
+
+func (t *templates) singleRunTable(run *runpkg.Run) templ.Component {
+	return helpers.UnpaginatedTable(
+		t.newRunsTable(true),
+		[]*runpkg.Run{run},
+	)
+}

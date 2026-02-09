@@ -1,7 +1,6 @@
 package ui
 
 import (
-	"context"
 	"errors"
 	"html/template"
 	"net/http"
@@ -14,61 +13,22 @@ import (
 	"github.com/leg100/otf/internal/module"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/ui/helpers"
 	"github.com/leg100/otf/internal/vcs"
 )
 
-type (
-	// moduleHandlers provides handlers for the webUI
-	moduleHandlers struct {
-		client       moduleClient
-		vcsproviders moduleVCSProvidersClient
-		system       moduleHostnameClient
-		authorizer   moduleAuthorizer
-	}
-
-	moduleHostnameClient interface {
-		Hostname() string
-	}
-
-	// moduleClient provides web handlers with access to modules
-	moduleClient interface {
-		GetModuleByID(ctx context.Context, id resource.TfeID) (*module.Module, error)
-		GetModuleInfo(ctx context.Context, versionID resource.TfeID) (*module.TerraformModule, error)
-		ListModules(context.Context, module.ListOptions) ([]*module.Module, error)
-		PublishModule(context.Context, module.PublishOptions) (*module.Module, error)
-		DeleteModule(ctx context.Context, id resource.TfeID) (*module.Module, error)
-		ListProviders(context.Context, organization.Name) ([]string, error)
-	}
-
-	moduleAuthorizer interface {
-		CanAccess(context.Context, authz.Action, resource.ID) bool
-	}
-
-	// moduleVCSProvidersClient provides web handlers with access to vcs providers
-	moduleVCSProvidersClient interface {
-		Get(context.Context, resource.TfeID) (*vcs.Provider, error)
-		List(context.Context, organization.Name) ([]*vcs.Provider, error)
-	}
-)
-
 // addModuleHandlers registers module UI handlers with the router
-func addModuleHandlers(r *mux.Router, client moduleClient, vcsproviders moduleVCSProvidersClient, system moduleHostnameClient, authorizer moduleAuthorizer) {
-	h := &moduleHandlers{
-		client:       client,
-		vcsproviders: vcsproviders,
-		system:       system,
-		authorizer:   authorizer,
-	}
+func addModuleHandlers(r *mux.Router, h *Handlers) {
+	r.HandleFunc("/organizations/{organization_name}/modules", h.listModules).Methods("GET")
+	r.HandleFunc("/organizations/{organization_name}/modules/new", h.newModule).Methods("GET")
+	r.HandleFunc("/organizations/{organization_name}/modules/create", h.publishModule).Methods("POST")
 
-	r.HandleFunc("/organizations/{organization_name}/modules", h.list).Methods("GET")
-	r.HandleFunc("/organizations/{organization_name}/modules/new", h.new).Methods("GET")
-	r.HandleFunc("/modules/{vcs_provider_id}/connect", h.connect).Methods("GET")
-	r.HandleFunc("/organizations/{organization_name}/modules/create", h.publish).Methods("POST")
-	r.HandleFunc("/modules/{module_id}", h.get).Methods("GET")
-	r.HandleFunc("/modules/{module_id}/delete", h.delete).Methods("POST")
+	r.HandleFunc("/modules/{vcs_provider_id}/connect", h.connectModule).Methods("GET")
+	r.HandleFunc("/modules/{module_id}", h.getModule).Methods("GET")
+	r.HandleFunc("/modules/{module_id}/delete", h.deleteModule).Methods("POST")
 }
 
-func (h *moduleHandlers) list(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) listModules(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		module.ListOptions
 		resource.PageOptions
@@ -78,12 +38,12 @@ func (h *moduleHandlers) list(w http.ResponseWriter, r *http.Request) {
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
-	modules, err := h.client.ListModules(r.Context(), params.ListOptions)
+	modules, err := h.Modules.ListModules(r.Context(), params.ListOptions)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
 	}
-	providers, err := h.client.ListProviders(r.Context(), params.Organization)
+	providers, err := h.Modules.ListProviders(r.Context(), params.Organization)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -92,15 +52,25 @@ func (h *moduleHandlers) list(w http.ResponseWriter, r *http.Request) {
 	props := moduleListProps{
 		organization:          params.Organization,
 		page:                  resource.NewPage(modules, params.PageOptions, nil),
-		canPublishModule:      h.authorizer.CanAccess(r.Context(), authz.CreateModuleAction, params.Organization),
+		canPublishModule:      h.Authorizer.CanAccess(r.Context(), authz.CreateModuleAction, params.Organization),
 		providerFilterVisible: params.ProviderFilterVisible,
 		allProviders:          providers,
 		selectedProviders:     params.Providers,
 	}
-	html.Render(moduleList(props), w, r)
+	h.renderPage(
+		h.templates.moduleList(props),
+		"Modules",
+		w,
+		r,
+		withOrganization(params.Organization),
+		withBreadcrumbs(
+			helpers.Breadcrumb{Name: "Modules"},
+		),
+		withContentActions(moduleListActions(props)),
+	)
 }
 
-func (h *moduleHandlers) get(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) getModule(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		ID      resource.TfeID `schema:"module_id,required"`
 		Version *string        `schema:"version"`
@@ -110,7 +80,7 @@ func (h *moduleHandlers) get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	mod, err := h.client.GetModuleByID(r.Context(), params.ID)
+	mod, err := h.Modules.GetModuleByID(r.Context(), params.ID)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -127,7 +97,7 @@ func (h *moduleHandlers) get(w http.ResponseWriter, r *http.Request) {
 		modver = mod.Latest()
 	}
 	if modver != nil {
-		tfmod, err = h.client.GetModuleInfo(r.Context(), modver.ID)
+		tfmod, err = h.Modules.GetModuleInfo(r.Context(), modver.ID)
 		if err != nil {
 			html.Error(r, w, err.Error())
 			return
@@ -141,17 +111,26 @@ func (h *moduleHandlers) get(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	props := moduleGetProps{
-		module:          mod,
-		terraformModule: tfmod,
-		readme:          readme,
-		currentVersion:  modver,
-		hostname:        h.system.Hostname(),
-	}
-	html.Render(moduleGet(props), w, r)
+	h.renderPage(
+		h.templates.moduleGet(moduleGetProps{
+			module:          mod,
+			terraformModule: tfmod,
+			readme:          readme,
+			currentVersion:  modver,
+			hostname:        h.HostnameService.Hostname(),
+		}),
+		"modules",
+		w,
+		r,
+		withOrganization(mod.Organization),
+		withBreadcrumbs(
+			helpers.Breadcrumb{Name: "Modules", Link: paths.Modules(mod.Organization)},
+			helpers.Breadcrumb{Name: mod.Name},
+		),
+	)
 }
 
-func (h *moduleHandlers) new(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) newModule(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		Organization organization.Name `schema:"organization_name"`
 	}
@@ -159,19 +138,28 @@ func (h *moduleHandlers) new(w http.ResponseWriter, r *http.Request) {
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
-	providers, err := h.vcsproviders.List(r.Context(), params.Organization)
+	providers, err := h.VCSProviders.List(r.Context(), params.Organization)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
 	}
-	props := newViewProps{
-		organization: params.Organization,
-		providers:    providers,
-	}
-	html.Render(newView(props), w, r)
+	h.renderPage(
+		h.templates.newView(newViewProps{
+			organization: params.Organization,
+			providers:    providers,
+		}),
+		"new module",
+		w,
+		r,
+		withOrganization(params.Organization),
+		withBreadcrumbs(
+			helpers.Breadcrumb{Name: "Modules", Link: paths.Modules(params.Organization)},
+			helpers.Breadcrumb{Name: "new"},
+		),
+	)
 }
 
-func (h *moduleHandlers) connect(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) connectModule(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		VCSProviderID resource.TfeID `schema:"vcs_provider_id,required"`
 		// TODO: filters, public/private, etc
@@ -181,13 +169,13 @@ func (h *moduleHandlers) connect(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	provider, err := h.vcsproviders.Get(r.Context(), params.VCSProviderID)
+	provider, err := h.VCSProviders.Get(r.Context(), params.VCSProviderID)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
 	}
 
-	client, err := h.vcsproviders.Get(r.Context(), params.VCSProviderID)
+	client, err := h.VCSProviders.Get(r.Context(), params.VCSProviderID)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -214,14 +202,23 @@ func (h *moduleHandlers) connect(w http.ResponseWriter, r *http.Request) {
 		filtered = append(filtered, res)
 	}
 
-	props := connectProps{
-		repos:    filtered,
-		provider: provider,
-	}
-	html.Render(connect(props), w, r)
+	h.renderPage(
+		h.templates.connect(connectProps{
+			repos:    filtered,
+			provider: provider,
+		}),
+		"new module",
+		w,
+		r,
+		withOrganization(provider.Organization),
+		withBreadcrumbs(
+			helpers.Breadcrumb{Name: "Modules", Link: paths.Modules(provider.Organization)},
+			helpers.Breadcrumb{Name: "new"},
+		),
+	)
 }
 
-func (h *moduleHandlers) publish(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) publishModule(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		VCSProviderID resource.TfeID `schema:"vcs_provider_id,required"`
 		Repo          vcs.Repo       `schema:"identifier,required"`
@@ -231,7 +228,7 @@ func (h *moduleHandlers) publish(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	mod, err := h.client.PublishModule(r.Context(), module.PublishOptions{
+	mod, err := h.Modules.PublishModule(r.Context(), module.PublishOptions{
 		Repo:          module.Repo(params.Repo),
 		VCSProviderID: params.VCSProviderID,
 	})
@@ -247,14 +244,14 @@ func (h *moduleHandlers) publish(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, paths.Module(mod.ID), http.StatusFound)
 }
 
-func (h *moduleHandlers) delete(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) deleteModule(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.ID("module_id", r)
 	if err != nil {
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
-	deleted, err := h.client.DeleteModule(r.Context(), id)
+	deleted, err := h.Modules.DeleteModule(r.Context(), id)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return

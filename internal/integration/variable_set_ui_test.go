@@ -265,7 +265,7 @@ func TestIntegration_VariableSetUI_WorkspaceVariables(t *testing.T) {
 		_, err = page.Goto(workspaceURL(svc.System.Hostname(), org.Name, ws1.Name))
 		require.NoError(t, err)
 
-		err = page.Locator(`//ul[@id='workspace-submenu']//li[@id='menu-item-variables']/a`).Click()
+		err = page.Locator(`//li[@id='menu-item-variables']/a`).Click()
 		require.NoError(t, err)
 
 		// both sets define a variable named 'foo', but the workspace-scoped

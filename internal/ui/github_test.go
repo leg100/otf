@@ -20,33 +20,34 @@ import (
 )
 
 func TestWebHandlers_new(t *testing.T) {
-	h := &githubHandlers{
+	h := &Handlers{
 		HostnameService: internal.NewHostnameService("example.com"),
-		githubAPIURL:    internal.MustWebURL("github.com"),
+		GithubHostname:  internal.MustWebURL("github.com"),
 	}
 
 	r := httptest.NewRequest("GET", "/?", nil)
 	w := httptest.NewRecorder()
-	h.new(w, r)
+	h.newGithubApp(w, r)
 	assert.Equal(t, 200, w.Code, w.Body.String())
 }
 
 func TestWebHandlers_get(t *testing.T) {
-	h := &githubHandlers{
+	h := &Handlers{
 		HostnameService: internal.NewHostnameService("example.com"),
-		githubAPIURL:    internal.MustWebURL("github.com"),
-		svc: &fakeGithubService{
+		GithubHostname:  internal.MustWebURL("github.com"),
+		GithubApp: &fakeGithubService{
 			app: &github.App{},
 			installs: []vcs.Installation{
 				{ID: 123, Username: internal.Ptr("bob")},
 			},
 		},
+		Authorizer: authz.NewAllowAllAuthorizer(),
 	}
 
 	r := httptest.NewRequest("GET", "/?", nil)
 	r = r.WithContext(authz.AddSubjectToContext(context.Background(), &user.SiteAdmin))
 	w := httptest.NewRecorder()
-	h.get(w, r)
+	h.getGithubApp(w, r)
 	assert.Equal(t, 200, w.Code, w.Body.String())
 }
 
@@ -71,21 +72,21 @@ func TestWebHandlers_exchangeCode(t *testing.T) {
 		return u
 	}()
 
-	h := &githubHandlers{
-		githubAPIURL:        stubURL,
-		skipTLSVerification: true,
-		svc:                 &fakeGithubService{},
+	h := &Handlers{
+		GithubHostname:      stubURL,
+		SkipTLSVerification: true,
+		GithubApp:           &fakeGithubService{},
 	}
 
 	r := httptest.NewRequest("GET", "/?code=the-code", nil)
 	w := httptest.NewRecorder()
-	h.exchangeCode(w, r)
+	h.exchangeCodeGithubApp(w, r)
 	testutils.AssertRedirect(t, w, "/app/github-apps")
 }
 
 func TestGithubHandlers_deleteApp(t *testing.T) {
-	h := &githubHandlers{
-		svc: &fakeGithubService{
+	h := &Handlers{
+		GithubApp: &fakeGithubService{
 			app: &github.App{
 				GithubURL: github.DefaultBaseURL,
 			},
@@ -94,18 +95,18 @@ func TestGithubHandlers_deleteApp(t *testing.T) {
 
 	r := httptest.NewRequest("POST", "/?", nil)
 	w := httptest.NewRecorder()
-	h.delete(w, r)
+	h.deleteGithubApp(w, r)
 	testutils.AssertRedirect(t, w, "/app/github-apps")
 }
 
 func TestWebHandlers_deleteInstall(t *testing.T) {
-	h := &githubHandlers{
-		svc: &fakeGithubService{},
+	h := &Handlers{
+		GithubApp: &fakeGithubService{},
 	}
 
 	r := httptest.NewRequest("POST", "/?install_id=123", nil)
 	w := httptest.NewRecorder()
-	h.deleteInstall(w, r)
+	h.deleteGithubAppInstall(w, r)
 	testutils.AssertRedirect(t, w, "/app/github-apps")
 }
 

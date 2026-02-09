@@ -20,7 +20,7 @@ func TestRunnerHandlers_createAgentPool(t *testing.T) {
 	svc := &fakeRunnerService{
 		pool: &runner.Pool{ID: id},
 	}
-	h := &runnerHandlers{svc: svc}
+	h := &Handlers{Runners: svc}
 	q := "/?organization_name=" + organization.String() + "&name=my-pool"
 	r := httptest.NewRequest("GET", q, nil)
 	w := httptest.NewRecorder()
@@ -36,8 +36,8 @@ func TestRunnerHandlers_createAgentPool(t *testing.T) {
 }
 
 func TestRunnerHandlers_listAgentPools(t *testing.T) {
-	h := &runnerHandlers{
-		svc: &fakeRunnerService{
+	h := &Handlers{
+		Runners: &fakeRunnerService{
 			pool: &runner.Pool{ID: testutils.ParseID(t, "pool-123")},
 		},
 	}
@@ -52,8 +52,8 @@ func TestRunnerHandlers_listAgentPools(t *testing.T) {
 
 func TestRunnerHandlers_createAgentToken(t *testing.T) {
 	id := testutils.ParseID(t, "pool-123")
-	h := &runnerHandlers{
-		svc: &fakeRunnerService{},
+	h := &Handlers{
+		Runners: &fakeRunnerService{},
 	}
 	q := "/?pool_id=pool-123&description=lorem-ipsum-etc"
 	r := httptest.NewRequest("GET", q, nil)
@@ -67,8 +67,8 @@ func TestRunnerHandlers_createAgentToken(t *testing.T) {
 func TestRunnerHandlers_deleteAgentToken(t *testing.T) {
 	agentPoolID := resource.NewTfeID(resource.AgentPoolKind)
 
-	h := &runnerHandlers{
-		svc: &fakeRunnerService{
+	h := &Handlers{
+		Runners: &fakeRunnerService{
 			at: &runner.AgentToken{
 				AgentPoolID: agentPoolID,
 			},

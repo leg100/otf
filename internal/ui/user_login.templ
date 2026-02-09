@@ -3,11 +3,11 @@ package ui
 import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authenticator"
-	"github.com/leg100/otf/internal/http/html/components"
+	"github.com/leg100/otf/internal/ui/helpers"
 )
 
 templ login(clients []*authenticator.OAuthClient) {
-	@components.BareLayout(components.BareLayoutProps{
+	@helpers.BareLayout(helpers.BareLayoutProps{
 		Title: "login",
 	}) {
 		<div class="h-full flex items-center justify-center">

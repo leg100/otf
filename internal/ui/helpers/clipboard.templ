@@ -1,0 +1,30 @@
+package helpers
+
+import "github.com/leg100/otf/internal/resource"
+
+templ CopyableContent() {
+	<div class="flex gap-1 items-center" x-data="{ open: false }">
+		<span x-ref="content" class="font-mono break-all text-gray-500 text-xs">
+			{ children... }
+		</span>
+		<a class="copyable-content shrink-0" @click="navigator.clipboard.writeText($refs.content.innerHTML); open = true; setTimeout(() => open = false, 1000)">
+			<img id="clipboard-icon" src={ AssetPath(ctx, "/static/images/clipboard_copy.svg") }/>
+			<span
+				class="bg-black text-white p-1 text-xs font-bold absolute"
+				style="display: none"
+				x-cloak
+				x-show="open"
+			>
+				copied!
+			</span>
+		</a>
+	</div>
+}
+
+templ Identifier(id resource.TfeID) {
+	<span class="identifier truncate">
+		@CopyableContent() {
+			{ id.String() }
+		}
+	</span>
+}

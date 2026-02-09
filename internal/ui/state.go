@@ -9,17 +9,11 @@ import (
 	"github.com/leg100/otf/internal/state"
 )
 
-type stateHandlers struct {
-	*state.Service
-}
-
-func addStateHandlers(r *mux.Router, state *state.Service) {
-	h := stateHandlers{Service: state}
-
+func addStateHandlers(r *mux.Router, h *Handlers) {
 	r.HandleFunc("/workspaces/{workspace_id}/state", h.getState).Methods("GET")
 }
 
-func (h *stateHandlers) getState(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) getState(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.ID("workspace_id", r)
 	if err != nil {
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
@@ -28,7 +22,7 @@ func (h *stateHandlers) getState(w http.ResponseWriter, r *http.Request) {
 
 	// ignore errors and instead render unpopulated template
 	f := &state.File{}
-	sv, err := h.GetCurrent(r.Context(), id)
+	sv, err := h.State.GetCurrent(r.Context(), id)
 	if err == nil {
 		f, _ = sv.File()
 	}

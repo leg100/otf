@@ -34,14 +34,14 @@ func TestOrganization_ListHandler(t *testing.T) {
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				svc := &organizationHandlers{
-					svc:              &fakeOrganizationService{},
-					RestrictCreation: tt.restrict,
+				svc := &Handlers{
+					Organizations:                &fakeOrganizationService{},
+					RestrictOrganizationCreation: tt.restrict,
 				}
 				r := httptest.NewRequest("GET", "/?", nil)
 				r = r.WithContext(authz.AddSubjectToContext(context.Background(), tt.subject))
 				w := httptest.NewRecorder()
-				svc.list(w, r)
+				svc.listOrganizations(w, r)
 				assert.Equal(t, 200, w.Code, w.Body.String())
 				doc, err := htmlquery.Parse(w.Body)
 				require.NoError(t, err)

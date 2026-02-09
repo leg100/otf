@@ -25,7 +25,7 @@ func TestVariableE2E(t *testing.T) {
 		require.NoError(t, err)
 
 		// go to variables
-		err = page.Locator(`//ul[@id='workspace-submenu']//li[@id='menu-item-variables']/a`).Click()
+		err = page.Locator(`//li[@id='menu-item-variables']/a`).Click()
 		require.NoError(t, err)
 
 		// confirm 'variables' submenu button is active
@@ -85,7 +85,7 @@ output "foo" {
 		_, err = page.Goto(workspaceURL(svc.System.Hostname(), org.Name, "my-test-workspace"))
 		require.NoError(t, err)
 		// go to variables
-		err = page.Locator(`//ul[@id='workspace-submenu']//li[@id='menu-item-variables']/a`).Click()
+		err = page.Locator(`//li[@id='menu-item-variables']/a`).Click()
 		require.NoError(t, err)
 		// edit variable
 		err = page.Locator(`//tr[@id='item-variable-foo']//button[@id='edit-button']`).Click()

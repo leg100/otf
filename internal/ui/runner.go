@@ -1,7 +1,6 @@
 package ui
 
 import (
-	"context"
 	"encoding/json"
 	"math"
 	"net/http"
@@ -11,38 +10,13 @@ import (
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
-	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/paths"
-	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runner"
+	"github.com/leg100/otf/internal/ui/helpers"
 	"github.com/leg100/otf/internal/workspace"
 )
-
-// runnerHandlers provides handlers for the web UI for runners
-type runnerHandlers struct {
-	svc        runnerClient
-	workspaces *workspace.Service
-	logger     logr.Logger
-	authorizer authz.Interface
-}
-
-// runnerClient gives web handlers access to the agents service endpoints
-type runnerClient interface {
-	CreateAgentPool(ctx context.Context, opts runner.CreateAgentPoolOptions) (*runner.Pool, error)
-	UpdateAgentPool(ctx context.Context, poolID resource.TfeID, opts runner.UpdatePoolOptions) (*runner.Pool, error)
-	ListAgentPoolsByOrganization(ctx context.Context, organization organization.Name, opts runner.ListPoolOptions) ([]*runner.Pool, error)
-	GetAgentPool(ctx context.Context, poolID resource.TfeID) (*runner.Pool, error)
-	DeleteAgentPool(ctx context.Context, poolID resource.TfeID) (*runner.Pool, error)
-
-	Register(ctx context.Context, opts runner.RegisterRunnerOptions) (*runner.RunnerMeta, error)
-	ListRunners(ctx context.Context, opts runner.ListOptions) ([]*runner.RunnerMeta, error)
-	CreateAgentToken(ctx context.Context, poolID resource.TfeID, opts runner.CreateAgentTokenOptions) (*runner.AgentToken, []byte, error)
-	GetAgentToken(ctx context.Context, tokenID resource.TfeID) (*runner.AgentToken, error)
-	ListAgentTokens(ctx context.Context, poolID resource.TfeID) ([]*runner.AgentToken, error)
-	DeleteAgentToken(ctx context.Context, tokenID resource.TfeID) (*runner.AgentToken, error)
-}
 
 type (
 	// templates may serialize hundreds of workspaces to JSON, so a struct with
@@ -66,20 +40,7 @@ func (l *poolWorkspaceList) UnmarshalText(v []byte) error {
 	return nil
 }
 
-func addRunnerHandlers(
-	r *mux.Router,
-	svc *runner.Service,
-	workspaces *workspace.Service,
-	authorizer *authz.Authorizer,
-	logger logr.Logger,
-) {
-	h := &runnerHandlers{
-		authorizer: authorizer,
-		logger:     logger,
-		svc:        svc,
-		workspaces: workspaces,
-	}
-
+func addRunnerHandlers(r *mux.Router, h *Handlers) {
 	// runners
 	r.HandleFunc("/organizations/{organization_name}/runners", h.listRunners).Methods("GET")
 
@@ -98,13 +59,13 @@ func addRunnerHandlers(
 
 // runner handlers
 
-func (h *runnerHandlers) listRunners(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) listRunners(w http.ResponseWriter, r *http.Request) {
 	var params runner.ListOptions
 	if err := decode.All(&params, r); err != nil {
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
-	runners, err := h.svc.ListRunners(r.Context(), params)
+	runners, err := h.Runners.ListRunners(r.Context(), params)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -115,19 +76,26 @@ func (h *runnerHandlers) listRunners(w http.ResponseWriter, r *http.Request) {
 		hideServerRunners: params.HideServerRunners,
 		page:              resource.NewPage(runners, resource.PageOptions{}, nil),
 	}
-	html.Render(listRunners(props), w, r)
+	h.renderPage(
+		listRunners(props),
+		"runners",
+		w,
+		r,
+		withOrganization(*params.Organization),
+		withBreadcrumbs(helpers.Breadcrumb{Name: "Runners"}),
+	)
 }
 
 // agent pool handlers
 
-func (h *runnerHandlers) createAgentPool(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) createAgentPool(w http.ResponseWriter, r *http.Request) {
 	var opts runner.CreateAgentPoolOptions
 	if err := decode.All(&opts, r); err != nil {
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
-	pool, err := h.svc.CreateAgentPool(r.Context(), opts)
+	pool, err := h.Runners.CreateAgentPool(r.Context(), opts)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -137,7 +105,7 @@ func (h *runnerHandlers) createAgentPool(w http.ResponseWriter, r *http.Request)
 	http.Redirect(w, r, paths.AgentPool(pool.ID), http.StatusFound)
 }
 
-func (h *runnerHandlers) updateAgentPool(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) updateAgentPool(w http.ResponseWriter, r *http.Request) {
 	poolID, err := decode.ID("pool_id", r)
 	if err != nil {
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
@@ -168,7 +136,7 @@ func (h *runnerHandlers) updateAgentPool(w http.ResponseWriter, r *http.Request)
 		opts.AllowedWorkspaces[i] = allowed.ID
 	}
 
-	pool, err := h.svc.UpdateAgentPool(r.Context(), poolID, opts)
+	pool, err := h.Runners.UpdateAgentPool(r.Context(), poolID, opts)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -178,7 +146,7 @@ func (h *runnerHandlers) updateAgentPool(w http.ResponseWriter, r *http.Request)
 	http.Redirect(w, r, paths.AgentPool(pool.ID), http.StatusFound)
 }
 
-func (h *runnerHandlers) listAgentPools(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) listAgentPools(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		resource.PageOptions
 		Organization organization.Name `schema:"organization_name"`
@@ -187,7 +155,7 @@ func (h *runnerHandlers) listAgentPools(w http.ResponseWriter, r *http.Request) 
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
-	pools, err := h.svc.ListAgentPoolsByOrganization(r.Context(), params.Organization, runner.ListPoolOptions{})
+	pools, err := h.Runners.ListAgentPoolsByOrganization(r.Context(), params.Organization, runner.ListPoolOptions{})
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -197,17 +165,24 @@ func (h *runnerHandlers) listAgentPools(w http.ResponseWriter, r *http.Request) 
 		organization: params.Organization,
 		pools:        resource.NewPage(pools, params.PageOptions, nil),
 	}
-	html.Render(listAgentPools(props), w, r)
+	h.renderPage(
+		h.templates.listAgentPools(props),
+		"agent pools",
+		w,
+		r,
+		withOrganization(params.Organization),
+		withBreadcrumbs(helpers.Breadcrumb{Name: "Agent Pools"}),
+	)
 }
 
-func (h *runnerHandlers) getAgentPool(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) getAgentPool(w http.ResponseWriter, r *http.Request) {
 	poolID, err := decode.ID("pool_id", r)
 	if err != nil {
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
-	pool, err := h.svc.GetAgentPool(r.Context(), poolID)
+	pool, err := h.Runners.GetAgentPool(r.Context(), poolID)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -222,7 +197,7 @@ func (h *runnerHandlers) getAgentPool(w http.ResponseWriter, r *http.Request) {
 	// fetch all workspaces in organization then distribute them among the three
 	// sets documented above.
 	allWorkspaces, err := resource.ListAll(func(opts resource.PageOptions) (*resource.Page[*workspace.Workspace], error) {
-		return h.workspaces.List(r.Context(), workspace.ListOptions{
+		return h.Workspaces.List(r.Context(), workspace.ListOptions{
 			PageOptions:  opts,
 			Organization: &pool.Organization,
 		})
@@ -251,13 +226,13 @@ func (h *runnerHandlers) getAgentPool(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	tokens, err := h.svc.ListAgentTokens(r.Context(), poolID)
+	tokens, err := h.Runners.ListAgentTokens(r.Context(), poolID)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
 	}
 
-	agents, err := h.svc.ListRunners(r.Context(), runner.ListOptions{
+	agents, err := h.Runners.ListRunners(r.Context(), runner.ListOptions{
 		PoolID: &poolID,
 	})
 	if err != nil {
@@ -272,19 +247,29 @@ func (h *runnerHandlers) getAgentPool(w http.ResponseWriter, r *http.Request) {
 		availableWorkspaces:            availableWorkspaces,
 		tokens:                         tokens,
 		agents:                         resource.NewPage(agents, resource.PageOptions{}, nil),
-		canDeleteAgentPool:             h.authorizer.CanAccess(r.Context(), authz.DeleteAgentPoolAction, pool.Organization),
+		canDeleteAgentPool:             h.Authorizer.CanAccess(r.Context(), authz.DeleteAgentPoolAction, pool.Organization),
 	}
-	html.Render(getAgentPool(props), w, r)
+	h.renderPage(
+		h.templates.getAgentPool(props),
+		pool.Name,
+		w,
+		r,
+		withOrganization(pool.Organization),
+		withBreadcrumbs(
+			helpers.Breadcrumb{Name: "Agent Pools", Link: paths.AgentPools(props.pool.Organization)},
+			helpers.Breadcrumb{Name: props.pool.Name},
+		),
+	)
 }
 
-func (h *runnerHandlers) deleteAgentPool(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) deleteAgentPool(w http.ResponseWriter, r *http.Request) {
 	poolID, err := decode.ID("pool_id", r)
 	if err != nil {
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
-	pool, err := h.svc.DeleteAgentPool(r.Context(), poolID)
+	pool, err := h.Runners.DeleteAgentPool(r.Context(), poolID)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -294,7 +279,7 @@ func (h *runnerHandlers) deleteAgentPool(w http.ResponseWriter, r *http.Request)
 	http.Redirect(w, r, paths.AgentPools(pool.Organization), http.StatusFound)
 }
 
-func (h *runnerHandlers) listAllowedPools(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) listAllowedPools(w http.ResponseWriter, r *http.Request) {
 	var opts struct {
 		WorkspaceID resource.TfeID  `schema:"workspace_id,required"`
 		AgentPoolID *resource.TfeID `schema:"agent_pool_id"`
@@ -303,12 +288,12 @@ func (h *runnerHandlers) listAllowedPools(w http.ResponseWriter, r *http.Request
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
-	ws, err := h.workspaces.Get(r.Context(), opts.WorkspaceID)
+	ws, err := h.Workspaces.Get(r.Context(), opts.WorkspaceID)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
 	}
-	pools, err := h.svc.ListAgentPoolsByOrganization(r.Context(), ws.Organization, runner.ListPoolOptions{
+	pools, err := h.Runners.ListAgentPoolsByOrganization(r.Context(), ws.Organization, runner.ListPoolOptions{
 		AllowedWorkspaceID: &opts.WorkspaceID,
 	})
 	if err != nil {
@@ -325,7 +310,7 @@ func (h *runnerHandlers) listAllowedPools(w http.ResponseWriter, r *http.Request
 
 // agent token handlers
 
-func (h *runnerHandlers) createAgentToken(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) createAgentToken(w http.ResponseWriter, r *http.Request) {
 	poolID, err := decode.ID("pool_id", r)
 	if err != nil {
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
@@ -337,27 +322,27 @@ func (h *runnerHandlers) createAgentToken(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	_, token, err := h.svc.CreateAgentToken(r.Context(), poolID, opts)
+	_, token, err := h.Runners.CreateAgentToken(r.Context(), poolID, opts)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
 	}
 
-	if err := components.TokenFlashMessage(w, token); err != nil {
+	if err := helpers.TokenFlashMessage(w, token); err != nil {
 		html.Error(r, w, err.Error())
 		return
 	}
 	http.Redirect(w, r, paths.AgentPool(poolID), http.StatusFound)
 }
 
-func (h *runnerHandlers) deleteAgentToken(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) deleteAgentToken(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.ID("token_id", r)
 	if err != nil {
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
-	at, err := h.svc.DeleteAgentToken(r.Context(), id)
+	at, err := h.Runners.DeleteAgentToken(r.Context(), id)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return

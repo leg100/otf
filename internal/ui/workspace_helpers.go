@@ -7,18 +7,9 @@ import (
 	"github.com/a-h/templ"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/html/components/paths"
-	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/workspace"
 )
-
-type workspaceUIHelpers struct {
-	authorizer workspaceUIHelpersAuthorizer
-}
-
-type workspaceUIHelpersAuthorizer interface {
-	CanAccess(context.Context, authz.Action, resource.ID) bool
-}
 
 type workspaceLockInfo struct {
 	Text     string        // button text
@@ -30,7 +21,7 @@ type workspaceLockInfo struct {
 
 // lockButtonHelper helps the UI determine the button to display for
 // locking/unlocking the workspace.
-func (h *workspaceUIHelpers) lockButtonHelper(
+func (h *Handlers) lockButtonHelper(
 	ctx context.Context,
 	ws *workspace.Workspace,
 	currentUser *user.User,
@@ -41,7 +32,7 @@ func (h *workspaceUIHelpers) lockButtonHelper(
 		btn.Text = "Unlock"
 		btn.Action = paths.UnlockWorkspace(ws.ID)
 		// A user needs at least the unlock permission
-		if !h.authorizer.CanAccess(ctx, authz.UnlockWorkspaceAction, ws.ID) {
+		if !h.Authorizer.CanAccess(ctx, authz.UnlockWorkspaceAction, ws.ID) {
 			btn.Tooltip = "insufficient permissions"
 			btn.Disabled = true
 			return btn, nil
@@ -55,7 +46,7 @@ func (h *workspaceUIHelpers) lockButtonHelper(
 			return btn, nil
 		}
 		// User is going to need the force unlock permission
-		if h.authorizer.CanAccess(ctx, authz.ForceUnlockWorkspaceAction, ws.ID) {
+		if h.Authorizer.CanAccess(ctx, authz.ForceUnlockWorkspaceAction, ws.ID) {
 			btn.Text = "Force unlock"
 			btn.Action = paths.ForceUnlockWorkspace(ws.ID)
 			return btn, nil
@@ -67,7 +58,7 @@ func (h *workspaceUIHelpers) lockButtonHelper(
 		btn.Text = "Lock"
 		btn.Action = paths.LockWorkspace(ws.ID)
 		// User needs at least the lock permission
-		if !h.authorizer.CanAccess(ctx, authz.LockWorkspaceAction, ws.ID) {
+		if !h.Authorizer.CanAccess(ctx, authz.LockWorkspaceAction, ws.ID) {
 			btn.Disabled = true
 			btn.Tooltip = "insufficient permissions"
 		}

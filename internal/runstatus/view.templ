@@ -1,9 +1,9 @@
 package runstatus
 
 import (
-	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/components/paths"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/ui/helpers"
 	"strings"
 )
 
@@ -30,7 +30,7 @@ templ Badge(runID resource.TfeID, status Status) {
 }
 
 templ Filter(selected []Status, visible bool) {
-	@components.Filter(components.FilterProps[Status]{
+	@helpers.Filter(helpers.FilterProps[Status]{
 		Title:            "Filter by status",
 		All:              All(),
 		Selected:         selected,

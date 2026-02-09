@@ -2,11 +2,11 @@ package ui
 
 import (
 	"fmt"
-	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/components/paths"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	runnerpkg "github.com/leg100/otf/internal/runner"
+	"github.com/leg100/otf/internal/ui/helpers"
 )
 
 type listRunnersProps struct {
@@ -16,29 +16,21 @@ type listRunnersProps struct {
 }
 
 templ listRunners(props listRunnersProps) {
-	@components.Layout(components.LayoutProps{
-		Title:        "runners",
-		Organization: props.organization,
-		Breadcrumbs: []components.Breadcrumb{
-			{Name: "Runners"},
-		},
-	}) {
-		<div class="description max-w-2xl">
-			A runner handles the execution of runs. There are two types of runners: the runner built into <span class="font-bold">otfd</span> which handles runs for workspaces with the <span class="font-bold">remote</span> execution mode; and <span class="font-bold">otf-agent</span>, which handles runs for workspaces with the <span class="font-bold">agent</span> execution mode.
-		</div>
-		<form action={ paths.Runners(props.organization) }>
-			<fieldset class="fieldset p-4 bg-base-100 border border-base-content/20 rounded-box w-64">
-				<legend class="fieldset-legend">Filters</legend>
-				<label class="fieldset-label">
-					<input type="checkbox" name="hide_server_runners" class="toggle toggle-secondary" onchange="this.form.submit()" checked?={ props.hideServerRunners }/>
-					Hide <span class="font-bold">otfd</span> runners
-				</label>
-			</fieldset>
-		</form>
-		<div>
-			@components.PollingTable(runnersTable{}, props.page)
-		</div>
-	}
+	<div class="description max-w-2xl">
+		A runner handles the execution of runs. There are two types of runners: the runner built into <span class="font-bold">otfd</span> which handles runs for workspaces with the <span class="font-bold">remote</span> execution mode; and <span class="font-bold">otf-agent</span>, which handles runs for workspaces with the <span class="font-bold">agent</span> execution mode.
+	</div>
+	<form action={ paths.Runners(props.organization) }>
+		<fieldset class="fieldset p-4 bg-base-100 border border-base-content/20 rounded-box w-64">
+			<legend class="fieldset-legend">Filters</legend>
+			<label class="fieldset-label">
+				<input type="checkbox" name="hide_server_runners" class="toggle toggle-secondary" onchange="this.form.submit()" checked?={ props.hideServerRunners }/>
+				Hide <span class="font-bold">otfd</span> runners
+			</label>
+		</fieldset>
+	</form>
+	<div>
+		@helpers.PollingTable(runnersTable{}, props.page)
+	</div>
 }
 
 var runnerStatusColors = map[runnerpkg.RunnerStatus]string{
@@ -73,7 +65,7 @@ templ (t runnersTable) Row(runner *runnerpkg.RunnerMeta) {
 						-
 					}
 				</span>
-				@components.Identifier(runner.ID)
+				@helpers.Identifier(runner.ID)
 			</div>
 		</td>
 		<td>
@@ -116,7 +108,7 @@ templ (t runnersTable) Row(runner *runnerpkg.RunnerMeta) {
 		</td>
 		<td>
 			<span title={ runner.LastPingAt.String() }>
-				@components.Ago(runner.LastPingAt)
+				@helpers.Ago(runner.LastPingAt)
 			</span>
 		</td>
 	</tr>
@@ -127,35 +119,27 @@ type listAgentPoolProps struct {
 	pools        *resource.Page[*runnerpkg.Pool]
 }
 
-templ listAgentPools(props listAgentPoolProps) {
-	@components.Layout(components.LayoutProps{
-		Title:        "agent pools",
-		Organization: props.organization,
-		Breadcrumbs: []components.Breadcrumb{
-			{Name: "Agent Pools"},
-		},
-	}) {
-		<div class="text-sm text-base-content/60 w-3/4">
-			An agent pool is a group of <span class="font-bold">otf-agent</span> processes that can be used to communicate with isolated, private, or on-premises infrastructure. Each agent pool has its own set of tokens which are not shared across pools. When a workspace is configured to execute runs using the <span class="font-bold">agent</span> execution mode, any available agent in that workspace's associated agent pool is eligible to complete the run.
-		</div>
-		<details id="new-pool-details" closed>
-			<summary class="cursor-pointer py-2">
-				<span class="font-semibold">New agent pool</span>
-			</summary>
-			<form class="flex flex-col gap-5" action={ paths.CreateAgentPool(props.organization) } method="POST">
-				<div class="field">
-					<label for="name">Name</label>
-					<input class="input w-80" rows="3" type="text" name="name" id="new-pool-name" required/>
-					<span class="description">Enter a name to help identify the pool.</span>
-				</div>
-				<div class="field">
-					<button class="btn w-40">Create agent pool</button>
-				</div>
-			</form>
-			<hr class="my-4"/>
-		</details>
-		@components.Table(&agentPoolsTable{}, props.pools)
-	}
+templ (t *templates) listAgentPools(props listAgentPoolProps) {
+	<div class="text-sm text-base-content/60 w-3/4">
+		An agent pool is a group of <span class="font-bold">otf-agent</span> processes that can be used to communicate with isolated, private, or on-premises infrastructure. Each agent pool has its own set of tokens which are not shared across pools. When a workspace is configured to execute runs using the <span class="font-bold">agent</span> execution mode, any available agent in that workspace's associated agent pool is eligible to complete the run.
+	</div>
+	<details id="new-pool-details" closed>
+		<summary class="cursor-pointer py-2">
+			<span class="font-semibold">New agent pool</span>
+		</summary>
+		<form class="flex flex-col gap-5" action={ paths.CreateAgentPool(props.organization) } method="POST">
+			<div class="field">
+				<label for="name">Name</label>
+				<input class="input w-80" rows="3" type="text" name="name" id="new-pool-name" required/>
+				<span class="description">Enter a name to help identify the pool.</span>
+			</div>
+			<div class="field">
+				<button class="btn w-40">Create agent pool</button>
+			</div>
+		</form>
+		<hr class="my-4"/>
+	</details>
+	@helpers.Table(&agentPoolsTable{}, props.pools)
 }
 
 type agentPoolsTable struct{}
@@ -174,10 +158,10 @@ templ (t agentPoolsTable) Row(pool *runnerpkg.Pool) {
 			</a>
 		</td>
 		<td>
-			@components.Identifier(pool.ID)
+			@helpers.Identifier(pool.ID)
 		</td>
 		<td>
-			@components.Ago(pool.CreatedAt)
+			@helpers.Ago(pool.CreatedAt)
 		</td>
 	</tr>
 }
@@ -205,129 +189,120 @@ type getAgentPoolProps struct {
 	canDeleteAgentPool             bool
 }
 
-templ getAgentPool(props getAgentPoolProps) {
-	@components.Layout(components.LayoutProps{
-		Title:        props.pool.Name,
-		Organization: props.pool.Organization,
-		Breadcrumbs: []components.Breadcrumb{
-			{Name: "Agent Pools", Link: paths.AgentPools(props.pool.Organization)},
-			{Name: props.pool.Name},
-		},
-	}) {
-		<div>
-			@components.Identifier(props.pool.ID)
+templ (t *templates) getAgentPool(props getAgentPoolProps) {
+	<div>
+		@helpers.Identifier(props.pool.ID)
+	</div>
+	<form class="" action={ paths.UpdateAgentPool(props.pool.ID) } method="POST">
+		<div class="field mb-4">
+			<label for="name">Name</label>
+			<input class="input w-80" type="text" name="name" id="name" value={ props.pool.Name } required/>
 		</div>
-		<form class="" action={ paths.UpdateAgentPool(props.pool.ID) } method="POST">
-			<div class="field mb-4">
-				<label for="name">Name</label>
-				<input class="input w-80" type="text" name="name" id="name" value={ props.pool.Name } required/>
+		<fieldset class="border border-slate-900 p-3 flex flex-col gap-2">
+			<legend class="">Workspaces</legend>
+			<span class="description">You can grant access to this agent pool globally to all current and future workspaces in this organization or grant access to specific workspaces.</span>
+			<div class="mt-4 form-checkbox">
+				<input type="radio" id="workspaces-all" name="organization_scoped" value="true" checked?={ props.pool.OrganizationScoped }/>
+				<label for="workspaces-all">Grant access to all workspaces in this organization</label>
 			</div>
-			<fieldset class="border border-slate-900 p-3 flex flex-col gap-2">
-				<legend class="">Workspaces</legend>
-				<span class="description">You can grant access to this agent pool globally to all current and future workspaces in this organization or grant access to specific workspaces.</span>
-				<div class="mt-4 form-checkbox">
-					<input type="radio" id="workspaces-all" name="organization_scoped" value="true" checked?={ props.pool.OrganizationScoped }/>
-					<label for="workspaces-all">Grant access to all workspaces in this organization</label>
-				</div>
-				<div class="mt-4 form-checkbox">
-					<input class="peer" type="radio" id="workspaces-specific" name="organization_scoped" value="false" checked?={ !props.pool.OrganizationScoped }/>
-					<label for="workspaces-specific">Grant access to specific workspaces</label>
-					<script src={ components.AssetPath(ctx, "/static/js/dropdown.js") }></script>
+			<div class="mt-4 form-checkbox">
+				<input class="peer" type="radio" id="workspaces-specific" name="organization_scoped" value="false" checked?={ !props.pool.OrganizationScoped }/>
+				<label for="workspaces-specific">Grant access to specific workspaces</label>
+				<script src={ helpers.AssetPath(ctx, "/static/js/dropdown.js") }></script>
+				<div
+					class="hidden relative col-start-2 mt-2 w-full peer-checked:block"
+					x-data={ "dropdown(" + toJSON(props.allowedButUnassignedWorkspaces) + ", " + toJSON(props.availableWorkspaces) + ")" }
+					x-ref="workspace_select"
+					@keydown.escape.prevent.stop="close($refs.workspace_input)"
+					@focusin.window="! $refs.workspace_select.contains($event.target) && close()"
+				>
 					<div
-						class="hidden relative col-start-2 mt-2 w-full peer-checked:block"
-						x-data={ "dropdown(" + toJSON(props.allowedButUnassignedWorkspaces) + ", " + toJSON(props.availableWorkspaces) + ")" }
-						x-ref="workspace_select"
-						@keydown.escape.prevent.stop="close($refs.workspace_input)"
-						@focusin.window="! $refs.workspace_select.contains($event.target) && close()"
+						@click.outside="close()"
 					>
+						<input type="hidden" id="workspaces" name="allowed_workspaces" :value="JSON.stringify(existing)"/>
+						<input
+							class="input grow w-80"
+							type="text"
+							id="workspace-input"
+							x-ref="workspace_input"
+							x-model="search"
+							placeholder="Select workspace"
+							@focusin="open = true"
+							@click="open = true"
+						/>
 						<div
-							@click.outside="close()"
+							x-ref="panel"
+							x-show="showPanel"
+							x-cloak
+							class="absolute flex flex-col w-80 mt-1 bg-base-100 overflow-x-auto border border-black"
 						>
-							<input type="hidden" id="workspaces" name="allowed_workspaces" :value="JSON.stringify(existing)"/>
-							<input
-								class="input grow w-80"
-								type="text"
-								id="workspace-input"
-								x-ref="workspace_input"
-								x-model="search"
-								placeholder="Select workspace"
-								@focusin="open = true"
-								@click="open = true"
-							/>
-							<div
-								x-ref="panel"
-								x-show="showPanel"
-								x-cloak
-								class="absolute flex flex-col w-80 mt-1 bg-base-100 overflow-x-auto border border-black"
-							>
-								<template x-for="item in filterAvailable" :key="item.id">
-									<button :id="item.id" @click="addItem(item)" class="text-left py-1 px-2" x-text="item.name"></button>
-								</template>
-							</div>
+							<template x-for="item in filterAvailable" :key="item.id">
+								<button :id="item.id" @click="addItem(item)" class="text-left py-1 px-2" x-text="item.name"></button>
+							</template>
 						</div>
-						<div class="mt-2 p-2 flex flex-col gap-2">
-							<div class="description">A workspace must be granted access before it can be assigned. To revoke access from an assigned workspace, first unassign the workspace and then revoke.</div>
-							<h4 class="font-bold text-sm">Granted</h4>
-							<div id="granted-workspaces" class="flex flex-row gap-2">
-								<template x-for="item in existing">
-									<div class="text-sm flex">
-										<a class="bg-green-300 py-1 px-2" x-text="item.name" :href="'/app/workspaces/' + item.id + '/edit'"></a><button @click="deleteItem(item)" type="button" class="text-white bg-black py-1 px-2 hover:bg-red-500" id="button-remove-tag-{ . }" class="delete cross">revoke</button>
-									</div>
-								</template>
-							</div>
-							<h4 class="font-bold text-sm">Granted & Assigned</h4>
-							<div id="granted-and-assigned-workspaces" class="flex flex-row gap-2">
-								<input type="hidden" id="assigned-workspaces" name="assigned_workspaces" value={ toJSON(props.assignedWorkspaces) }/>
-								for _, ws := range props.assignedWorkspaces {
-									<a class="bg-blue-300 hover:text-white py-1 px-2 text-sm" href={ paths.EditWorkspace(ws.ID) }>{ ws.Name }</a>
-								}
-							</div>
+					</div>
+					<div class="mt-2 p-2 flex flex-col gap-2">
+						<div class="description">A workspace must be granted access before it can be assigned. To revoke access from an assigned workspace, first unassign the workspace and then revoke.</div>
+						<h4 class="font-bold text-sm">Granted</h4>
+						<div id="granted-workspaces" class="flex flex-row gap-2">
+							<template x-for="item in existing">
+								<div class="text-sm flex">
+									<a class="bg-green-300 py-1 px-2" x-text="item.name" :href="'/app/workspaces/' + item.id + '/edit'"></a><button @click="deleteItem(item)" type="button" class="text-white bg-black py-1 px-2 hover:bg-red-500" id="button-remove-tag-{ . }" class="delete cross">revoke</button>
+								</div>
+							</template>
+						</div>
+						<h4 class="font-bold text-sm">Granted & Assigned</h4>
+						<div id="granted-and-assigned-workspaces" class="flex flex-row gap-2">
+							<input type="hidden" id="assigned-workspaces" name="assigned_workspaces" value={ toJSON(props.assignedWorkspaces) }/>
+							for _, ws := range props.assignedWorkspaces {
+								<a class="bg-blue-300 hover:text-white py-1 px-2 text-sm" href={ paths.EditWorkspace(ws.ID) }>{ ws.Name }</a>
+							}
 						</div>
 					</div>
 				</div>
-			</fieldset>
+			</div>
+		</fieldset>
+		<div class="field">
+			<button class="btn w-40 mt-4">Save changes</button>
+		</div>
+	</form>
+	<hr class="my-4"/>
+	<h3 class="font-semibold text-lg mb-2">Tokens</h3>
+	<details id="new-token-details" closed>
+		<summary class="cursor-pointer py-2">
+			<span class="font-semibold">New token</span>
+		</summary>
+		<form class="flex flex-col gap-5" action={ paths.CreateAgentToken(props.pool.ID) } method="POST">
 			<div class="field">
-				<button class="btn w-40 mt-4">Save changes</button>
+				<label for="new-token-description">Description</label>
+				<input class="input w-3/4" rows="3" type="text" name="description" id="new-token-description" required/>
+				<span class="description">Enter a description to help identify the token.</span>
+			</div>
+			<div class="field">
+				<button class="btn w-40">Create token</button>
 			</div>
 		</form>
+	</details>
+	@helpers.UnpaginatedTable(agentTokensTable{}, props.tokens)
+	<hr class="my-4"/>
+	<h3 class="font-semibold text-lg mb-2">Agents</h3>
+	@helpers.PollingTable(runnersTable{}, props.agents)
+	if props.canDeleteAgentPool {
 		<hr class="my-4"/>
-		<h3 class="font-semibold text-lg mb-2">Tokens</h3>
-		<details id="new-token-details" closed>
-			<summary class="cursor-pointer py-2">
-				<span class="font-semibold">New token</span>
-			</summary>
-			<form class="flex flex-col gap-5" action={ paths.CreateAgentToken(props.pool.ID) } method="POST">
-				<div class="field">
-					<label for="new-token-description">Description</label>
-					<input class="input w-3/4" rows="3" type="text" name="description" id="new-token-description" required/>
-					<span class="description">Enter a description to help identify the token.</span>
-				</div>
-				<div class="field">
-					<button class="btn w-40">Create token</button>
-				</div>
-			</form>
-		</details>
-		@components.UnpaginatedTable(agentTokensTable{}, props.tokens)
-		<hr class="my-4"/>
-		<h3 class="font-semibold text-lg mb-2">Agents</h3>
-		@components.PollingTable(runnersTable{}, props.agents)
-		if props.canDeleteAgentPool {
-			<hr class="my-4"/>
-			<h3 class="font-semibold text-lg mb-2">Advanced</h3>
-			if len(props.assignedWorkspaces) > 0 {
-				<span class="description">Before deleting an agent pool you must unassign the pool from the following workspaces:</span>
-				<ul id="unassign-workspaces-before-deletion" class="flex flex-row gap-2">
-					for _, ws := range props.assignedWorkspaces {
-						<a class="bg-blue-300 text-sm hover:text-white py-1 px-2" href={ paths.EditWorkspace(ws.ID) }>{ ws.Name }</a>
-					}
-				</ul>
-			}
-			<form class="mt-2" action={ paths.DeleteAgentPool(props.pool.ID) } method="POST">
-				<button id="delete-agent-pool-button" class="btn btn-outline btn-error disabled:opacity-75" onclick="return confirm('Are you sure you want to delete?')" disabled?={ len(props.assignedWorkspaces) > 0 }>
-					Delete agent pool
-				</button>
-			</form>
+		<h3 class="font-semibold text-lg mb-2">Advanced</h3>
+		if len(props.assignedWorkspaces) > 0 {
+			<span class="description">Before deleting an agent pool you must unassign the pool from the following workspaces:</span>
+			<ul id="unassign-workspaces-before-deletion" class="flex flex-row gap-2">
+				for _, ws := range props.assignedWorkspaces {
+					<a class="bg-blue-300 text-sm hover:text-white py-1 px-2" href={ paths.EditWorkspace(ws.ID) }>{ ws.Name }</a>
+				}
+			</ul>
 		}
+		<form class="mt-2" action={ paths.DeleteAgentPool(props.pool.ID) } method="POST">
+			<button id="delete-agent-pool-button" class="btn btn-outline btn-error disabled:opacity-75" onclick="return confirm('Are you sure you want to delete?')" disabled?={ len(props.assignedWorkspaces) > 0 }>
+				Delete agent pool
+			</button>
+		</form>
 	}
 }
 
@@ -344,14 +319,14 @@ templ (t agentTokensTable) Row(token *runnerpkg.AgentToken) {
 	<tr>
 		<td>{ token.Description }</td>
 		<td>
-			@components.Identifier(token.ID)
+			@helpers.Identifier(token.ID)
 		</td>
 		<td>
-			@components.Ago(token.CreatedAt)
+			@helpers.Ago(token.CreatedAt)
 		</td>
 		<td>
 			<form id="delete-agent-token" action={ paths.DeleteAgentToken(token.ID) } method="POST">
-				@components.DeleteButton()
+				@helpers.DeleteButton()
 			</form>
 		</td>
 	</tr>

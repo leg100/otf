@@ -98,7 +98,7 @@ func TestAgentPoolsUI(t *testing.T) {
 		require.NoError(t, err)
 
 		// go to workspace settings
-		err = page.Locator(`//ul[@id='workspace-submenu']//li[@id='menu-item-settings']/a`).Click()
+		err = page.Locator(`//li[@id='menu-item-settings']/a`).Click()
 		require.NoError(t, err)
 
 		// select agent execution mode radio button
@@ -200,7 +200,7 @@ func TestAgentPoolsUI(t *testing.T) {
 		require.NoError(t, err)
 
 		// go to workspace settings
-		err = page.Locator(`//ul[@id='workspace-submenu']//li[@id='menu-item-settings']/a`).Click()
+		err = page.Locator(`//li[@id='menu-item-settings']/a`).Click()
 		require.NoError(t, err)
 
 		// switch execution mode from agent to remote
