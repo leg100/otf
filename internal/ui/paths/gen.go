@@ -252,11 +252,6 @@ func main() {
 		log.Fatal("Error parsing template: ", err.Error())
 	}
 
-	funcmapTmpl, err := template.New("funcmap.go.tmpl").Funcs(funcmap).ParseFiles("funcmap.go.tmpl")
-	if err != nil {
-		log.Fatal("Error parsing template: ", err.Error())
-	}
-
 	// Render tmpl out to a tmp buffer first to prevent error messages from
 	// being written to files (and to stop files being unnecessarily truncated).
 	var buf bytes.Buffer
@@ -277,22 +272,6 @@ func main() {
 		}
 		f.Close()
 	}
-
-	// Render single funcmap.go
-	if err := funcmapTmpl.Execute(&buf, controllers); err != nil {
-		log.Fatal("Error executing template: ", err.Error())
-	}
-
-	// Now write to file
-	f, err := os.Create("funcmap.go")
-	if err != nil {
-		log.Fatal("Error:", err.Error())
-	}
-	_, err = buf.WriteTo(f)
-	if err != nil {
-		log.Fatal("Error:", err.Error())
-	}
-	f.Close()
 }
 
 // buildControllers recursively builds a slice of controllers
