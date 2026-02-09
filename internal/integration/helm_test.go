@@ -83,7 +83,7 @@ func TestHelm(t *testing.T) {
 
 		run, err = kdeploy.Runs.Read(t.Context(), run.ID)
 		require.NoError(t, err)
-		assert.Equal(t, runstatus.Planned, runstatus.Status(run.Status))
+		assert.Equal(t, runstatus.Planned, runstatus.Status(run.Status), debug(t.Context()))
 	})
 
 	t.Run("deploy agent", func(t *testing.T) {
