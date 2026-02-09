@@ -11,7 +11,7 @@ import templruntime "github.com/a-h/templ/runtime"
 import (
 	"context"
 	"github.com/leg100/otf/internal/authz"
-	"github.com/leg100/otf/internal/http/html/components/paths"
+	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/resource"
 	"strings"
 )
@@ -256,7 +256,7 @@ func SiteMenu() templ.Component {
 	})
 }
 
-func MenuItem(title string, path templ.SafeURL, matchPrefixes ...string) templ.Component {
+func MenuItem(title string, path string, matchPrefixes ...string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -294,7 +294,7 @@ func MenuItem(title string, path templ.SafeURL, matchPrefixes ...string) templ.C
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var7 = []any{templ.KV("menu-active", menuIsActive(ctx, string(path), matchPrefixes...))}
+		var templ_7745c5c3_Var7 = []any{templ.KV("menu-active", menuIsActive(ctx, path, matchPrefixes...))}
 		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var7...)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err

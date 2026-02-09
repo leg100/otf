@@ -9,7 +9,7 @@ import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
 import (
-	"github.com/leg100/otf/internal/http/html/components/paths"
+	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/module"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"

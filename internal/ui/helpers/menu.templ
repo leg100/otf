@@ -3,7 +3,7 @@ package helpers
 import (
 	"context"
 	"github.com/leg100/otf/internal/authz"
-	"github.com/leg100/otf/internal/http/html/components/paths"
+	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/resource"
 	"strings"
 )
@@ -66,11 +66,11 @@ templ SiteMenu() {
 	</ul>
 }
 
-templ MenuItem(title string, path templ.SafeURL, matchPrefixes ...string) {
+templ MenuItem(title string, path string, matchPrefixes ...string) {
 	<li id={ "menu-item-" + strings.ReplaceAll(strings.ToLower(string(title)), " ", "-") }>
 		<a
 			href={ path }
-			class={ templ.KV("menu-active", menuIsActive(ctx, string(path), matchPrefixes...)) }
+			class={ templ.KV("menu-active", menuIsActive(ctx, path, matchPrefixes...)) }
 		>
 			{ string(title) }
 		</a>

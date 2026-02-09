@@ -11,7 +11,7 @@ import templruntime "github.com/a-h/templ/runtime"
 import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/github"
-	"github.com/leg100/otf/internal/http/html/components/paths"
+	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/ui/helpers"
 	"github.com/leg100/otf/internal/vcs"
 	"strconv"

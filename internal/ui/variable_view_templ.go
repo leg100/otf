@@ -10,7 +10,7 @@ import templruntime "github.com/a-h/templ/runtime"
 
 import (
 	"github.com/leg100/otf/internal/authz"
-	"github.com/leg100/otf/internal/http/html/components/paths"
+	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/ui/helpers"
@@ -617,7 +617,7 @@ func (t *templates) editVSV(props editVSVProps) templ.Component {
 type variableFormProps struct {
 	variable *variable.Variable
 	edit     bool
-	action   templ.SafeURL
+	action   string
 }
 
 // form for editing a variable.
@@ -791,7 +791,7 @@ func variableForm(props variableFormProps) templ.Component {
 type variableSetFormProps struct {
 	set                 *variable.VariableSet
 	edit                bool
-	action              templ.SafeURL
+	action              string
 	availableWorkspaces []resource.Info
 	existingWorkspaces  []resource.Info
 }
@@ -1183,14 +1183,14 @@ func (t variablesTable) Row(v variableRow) templ.Component {
 	})
 }
 
-func (t variablesTable) editPath(row variableRow) templ.SafeURL {
+func (t variablesTable) editPath(row variableRow) string {
 	if row.set != nil {
 		return paths.EditVariableSetVariable(row.ID)
 	}
 	return paths.EditVariable(row.ID)
 }
 
-func (t variablesTable) deletePath(row variableRow) templ.SafeURL {
+func (t variablesTable) deletePath(row variableRow) string {
 	if row.set != nil {
 		return paths.DeleteVariableSetVariable(row.ID)
 	}
