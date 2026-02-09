@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal/authz"
-	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/ui/paths"
 	"github.com/leg100/otf/internal/user"
 	"github.com/stretchr/testify/assert"
 )

@@ -46,7 +46,7 @@ The database schema is migrated using [tern](https://github.com/jackc/tern). The
 
 ## HTML path helpers
 
-Rails-style path helpers are generated using `go generate`. The path specifications are maintained in `./http/html/paths/paths.yaml`. After making changes to the specs run the following make task to generate the helpers:
+Rails-style path helpers are generated using `go generate`. The path specifications are maintained in `./ui/paths/paths.yaml`. After making changes to the specs run the following make task to generate the helpers:
 
 * `make paths`
 

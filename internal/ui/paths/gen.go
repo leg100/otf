@@ -137,7 +137,7 @@ func (r controller) FormatString(action action) string {
 		if r.Parent != nil {
 			b.WriteString(r.Parent.Path())
 			b.WriteString("s")
-			b.WriteString("/%s")
+			b.WriteString("/%v")
 		}
 	}
 	b.WriteString(r.Path())
@@ -151,7 +151,7 @@ func (r controller) FormatString(action action) string {
 		b.WriteString(action.Name)
 		return b.String()
 	}
-	b.WriteString("%s")
+	b.WriteString("%v")
 	if action.Name == "show" {
 		// show has no explict action specified in the path; show is instead implied using
 		// the controller name alone
@@ -187,27 +187,11 @@ func (r controller) HelperName(action action) string {
 	}
 }
 
-// FuncMapName returns the function map name for the given action.
-func (r controller) FuncMapName(action action) string {
-	switch action.Name {
-	case "show":
-		// show funcmap name is merely the singular form of the resource name
-		return r.LowerCamel() + "Path"
-	case "list":
-		// list funcmap name is merely the plural form of the resource name
-		return r.LowerCamel() + "sPath"
-	default:
-		// funcmap names for all other actions include their name followed by
-		// the resource name
-		return strcase.ToLowerCamel(action.Name) + r.Camel() + "Path"
-	}
-}
-
 // HelperParams returns a list of parameters for use in a path helper function
 // in a template.
 func (r controller) HelperParams(action action) string {
 	if params := r.params(action.Collection); len(params) > 0 {
-		return fmt.Sprintf("%s fmt.Stringer", strings.Join(params, ", "))
+		return fmt.Sprintf("%s any", strings.Join(params, ", "))
 	}
 	return ""
 }
@@ -252,16 +236,6 @@ func main() {
 		log.Fatal("Error parsing template: ", err.Error())
 	}
 
-	templTmpl, err := template.New("templ.go.tmpl").Funcs(funcmap).ParseFiles("templ.go.tmpl")
-	if err != nil {
-		log.Fatal("Error parsing template: ", err.Error())
-	}
-
-	funcmapTmpl, err := template.New("funcmap.go.tmpl").Funcs(funcmap).ParseFiles("funcmap.go.tmpl")
-	if err != nil {
-		log.Fatal("Error parsing template: ", err.Error())
-	}
-
 	// Render tmpl out to a tmp buffer first to prevent error messages from
 	// being written to files (and to stop files being unnecessarily truncated).
 	var buf bytes.Buffer
@@ -282,38 +256,6 @@ func main() {
 		}
 		f.Close()
 	}
-
-	// render ../components/*_paths.go for each controller
-	for _, ctlr := range controllers {
-		if err := templTmpl.Execute(&buf, ctlr); err != nil {
-			log.Fatal("Error executing template: ", err.Error())
-		}
-		f, err := os.Create(fmt.Sprintf("../components/paths/%s_paths.go", ctlr.Name))
-		if err != nil {
-			log.Fatal("Error:", err.Error())
-		}
-		_, err = buf.WriteTo(f)
-		if err != nil {
-			log.Fatal("Error:", err.Error())
-		}
-		f.Close()
-	}
-
-	// Render single funcmap.go
-	if err := funcmapTmpl.Execute(&buf, controllers); err != nil {
-		log.Fatal("Error executing template: ", err.Error())
-	}
-
-	// Now write to file
-	f, err := os.Create("funcmap.go")
-	if err != nil {
-		log.Fatal("Error:", err.Error())
-	}
-	_, err = buf.WriteTo(f)
-	if err != nil {
-		log.Fatal("Error:", err.Error())
-	}
-	f.Close()
 }
 
 // buildControllers recursively builds a slice of controllers

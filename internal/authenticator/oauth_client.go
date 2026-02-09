@@ -14,9 +14,9 @@ import (
 	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
-	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/ui/paths"
 	userpkg "github.com/leg100/otf/internal/user"
 	"golang.org/x/oauth2"
 )

@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
-	"github.com/leg100/otf/internal/http/html/components/paths"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/ui/helpers"
+	"github.com/leg100/otf/internal/ui/paths"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/workspace"
 )
@@ -171,7 +171,7 @@ templ (t *templates) workspaceGet(props workspaceGetProps) {
 				</div>
 			</div>
 			<div>
-				<div hx-get={ string(paths.StateWorkspace(props.ws.ID)) } hx-trigger="load" hx-swap="innerHTML"></div>
+				<div hx-get={ paths.StateWorkspace(props.ws.ID) } hx-trigger="load" hx-swap="innerHTML"></div>
 			</div>
 		</div>
 		<div class="border-l-1 border-base-content/30 h-full p-2 flex flex-col gap-2">

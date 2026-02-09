@@ -7,11 +7,11 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/leg100/otf/internal/authz"
-	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/testutils"
+	"github.com/leg100/otf/internal/ui/paths"
 	"github.com/leg100/otf/internal/user"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

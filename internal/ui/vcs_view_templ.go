@@ -11,10 +11,10 @@ import templruntime "github.com/a-h/templ/runtime"
 import (
 	"errors"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/http/html/components/paths"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/ui/helpers"
+	"github.com/leg100/otf/internal/ui/paths"
 	"github.com/leg100/otf/internal/vcs"
 	"time"
 )
@@ -413,7 +413,7 @@ func (t *templates) newProvider(props newProviderProps) templ.Component {
 
 type vcsFormProps struct {
 	provider *vcs.Provider
-	action   templ.SafeURL
+	action   string
 	edit     bool
 }
 
