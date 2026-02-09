@@ -249,7 +249,7 @@ func BareLayout(props BareLayoutProps) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "\"></script><script async crossorigin=\"anonymous\">\n\t\t\t   // Prevents page flicker with non-default themes:\n\t\t\t   // https://github.com/saadeghi/theme-change/issues/28\n\t\t\t   var selectedTheme = localStorage.getItem(\"theme\");\n\t\t\t   if(selectedTheme) {\n\t\t\t\t   document.documentElement.setAttribute(\"data-theme\", selectedTheme);\n\t\t\t   }\n\t\t   </script><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "\"></script><script async crossorigin=\"anonymous\">\n\t\t\t   // Prevents page flicker with non-default themes:\n\t\t\t   // https://github.com/saadeghi/theme-change/issues/28\n\t\t\t   var selectedTheme = localStorage.getItem(\"theme\");\n\t\t\t   if(selectedTheme) {\n\t\t\t\t   document.documentElement.setAttribute(\"data-theme\", selectedTheme);\n\t\t\t   }\n\t\t\t</script><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
