@@ -13,18 +13,6 @@ import (
 	"fmt"
 )
 
-var flashColors = map[FlashType]string{
-	FlashSuccessType: "alert-success",
-	FlashWarningType: "alert-warning",
-	FlashErrorType:   "alert-error",
-}
-
-var flashIcons = map[FlashType]templ.Component{
-	FlashSuccessType: successIcon(),
-	FlashWarningType: warningIcon(),
-	FlashErrorType:   errorIcon(),
-}
-
 func successIcon() templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context

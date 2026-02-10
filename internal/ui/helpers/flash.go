@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"net/http"
 	"time"
+
+	"github.com/a-h/templ"
 )
 
 const (
@@ -15,6 +17,18 @@ const (
 
 	flashCookie = "flash" // name of flash cookie
 )
+
+var flashColors = map[FlashType]string{
+	FlashSuccessType: "alert-success",
+	FlashWarningType: "alert-warning",
+	FlashErrorType:   "alert-error",
+}
+
+var flashIcons = map[FlashType]templ.Component{
+	FlashSuccessType: successIcon(),
+	FlashWarningType: warningIcon(),
+	FlashErrorType:   errorIcon(),
+}
 
 type FlashType string
 
