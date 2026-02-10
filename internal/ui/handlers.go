@@ -14,7 +14,6 @@ import (
 	"github.com/leg100/otf/internal/configversion/source"
 	"github.com/leg100/otf/internal/engine"
 	"github.com/leg100/otf/internal/github"
-	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/module"
 	"github.com/leg100/otf/internal/organization"
@@ -247,7 +246,7 @@ func (h *Handlers) renderPage(comp templ.Component, title string, w http.Respons
 	}
 	// Render component as a child of the layout component.
 	layout := helpers.Layout(props)
-	html.Render(layout, w, r, html.WithChildren(comp))
+	helpers.Render(layout, w, r, helpers.WithChildren(comp))
 }
 
 type renderPageOption func(opts *helpers.LayoutProps)

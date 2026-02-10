@@ -6,7 +6,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/decode"
-	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/ui/helpers"
@@ -45,30 +44,30 @@ func (h *Handlers) newOrganization(w http.ResponseWriter, r *http.Request) {
 func (h *Handlers) createOrganization(w http.ResponseWriter, r *http.Request) {
 	var opts organization.CreateOptions
 	if err := decode.Form(&opts, r); err != nil {
-		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
 	org, err := h.Organizations.Create(r.Context(), opts)
 	if err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
 
-	html.FlashSuccess(w, "created organization: "+org.Name.String())
+	helpers.FlashSuccess(w, "created organization: "+org.Name.String())
 	http.Redirect(w, r, paths.Organization(org.Name), http.StatusFound)
 }
 
 func (h *Handlers) listOrganizations(w http.ResponseWriter, r *http.Request) {
 	var opts organization.ListOptions
 	if err := decode.All(&opts, r); err != nil {
-		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
 	organizations, err := h.Organizations.List(r.Context(), opts)
 	if err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
 
@@ -77,7 +76,7 @@ func (h *Handlers) listOrganizations(w http.ResponseWriter, r *http.Request) {
 	// (b) The user has site permissions.
 	subject, err := authz.SubjectFromContext(r.Context())
 	if err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
 	canCreate := !h.RestrictOrganizationCreation || subject.CanAccess(authz.CreateOrganizationAction, authz.Request{ID: resource.SiteID})
@@ -102,7 +101,7 @@ func (h *Handlers) getOrganization(w http.ResponseWriter, r *http.Request) {
 		Name organization.Name `schema:"name"`
 	}
 	if err := decode.All(&params, r); err != nil {
-		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 	http.Redirect(w, r, paths.Workspaces(params.Name), http.StatusFound)
@@ -113,13 +112,13 @@ func (h *Handlers) editOrganization(w http.ResponseWriter, r *http.Request) {
 		Name organization.Name `schema:"name"`
 	}
 	if err := decode.All(&params, r); err != nil {
-		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
 	org, err := h.Organizations.Get(r.Context(), params.Name)
 	if err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
 
@@ -141,7 +140,7 @@ func (h *Handlers) updateOrganization(w http.ResponseWriter, r *http.Request) {
 		UpdatedName string            `schema:"new_name,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
-		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
@@ -149,11 +148,11 @@ func (h *Handlers) updateOrganization(w http.ResponseWriter, r *http.Request) {
 		Name: &params.UpdatedName,
 	})
 	if err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
 
-	html.FlashSuccess(w, "updated organization")
+	helpers.FlashSuccess(w, "updated organization")
 	http.Redirect(w, r, paths.EditOrganization(org.Name), http.StatusFound)
 }
 
@@ -162,16 +161,16 @@ func (h *Handlers) deleteOrganization(w http.ResponseWriter, r *http.Request) {
 		Name organization.Name `schema:"name"`
 	}
 	if err := decode.All(&params, r); err != nil {
-		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
 	if err := h.Organizations.Delete(r.Context(), params.Name); err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
 
-	html.FlashSuccess(w, "deleted organization: "+params.Name.String())
+	helpers.FlashSuccess(w, "deleted organization: "+params.Name.String())
 	http.Redirect(w, r, paths.Organizations(), http.StatusFound)
 }
 
@@ -182,17 +181,17 @@ func (h *Handlers) deleteOrganization(w http.ResponseWriter, r *http.Request) {
 func (h *Handlers) createOrganizationToken(w http.ResponseWriter, r *http.Request) {
 	var opts organization.CreateOrganizationTokenOptions
 	if err := decode.Route(&opts, r); err != nil {
-		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 	_, token, err := h.Organizations.CreateToken(r.Context(), opts)
 	if err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
 
 	if err := helpers.TokenFlashMessage(w, token); err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
 	http.Redirect(w, r, paths.OrganizationToken(opts.Organization), http.StatusFound)
@@ -203,13 +202,13 @@ func (h *Handlers) organizationToken(w http.ResponseWriter, r *http.Request) {
 		Name organization.Name `schema:"organization_name"`
 	}
 	if err := decode.All(&params, r); err != nil {
-		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 	// ListOrganizationTokens should only ever return either 0 or 1 token
 	tokens, err := h.Organizations.ListTokens(r.Context(), params.Name)
 	if err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
 	var token *organization.OrganizationToken
@@ -233,13 +232,13 @@ func (h *Handlers) deleteOrganizationToken(w http.ResponseWriter, r *http.Reques
 		Name organization.Name `schema:"organization_name"`
 	}
 	if err := decode.All(&params, r); err != nil {
-		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 	if err := h.Organizations.DeleteToken(r.Context(), params.Name); err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
-	html.FlashSuccess(w, "Deleted organization token")
+	helpers.FlashSuccess(w, "Deleted organization token")
 	http.Redirect(w, r, paths.OrganizationToken(params.Name), http.StatusFound)
 }

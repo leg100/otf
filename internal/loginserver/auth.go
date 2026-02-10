@@ -7,7 +7,7 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/decode"
-	"github.com/leg100/otf/internal/http/html"
+	"github.com/leg100/otf/internal/ui/helpers"
 	"github.com/leg100/otf/internal/user"
 )
 
@@ -55,7 +55,7 @@ func (s *server) authHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method == "GET" {
-		html.Render(consent(), w, r)
+		helpers.Render(consent(), w, r)
 		return
 	}
 

@@ -3,16 +3,20 @@ package helpers
 import (
 	"bytes"
 	"context"
-	gohttp "net/http"
+	"html/template"
+	"net/http"
 	"net/url"
+	"time"
 
+	"github.com/gomarkdown/markdown"
 	"github.com/leg100/otf/internal/authz"
-	"github.com/leg100/otf/internal/http/html"
+	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/ui/paths"
 )
 
 func AssetPath(ctx context.Context, path string) (string, error) {
-	return html.AssetsFS.Path(path)
+	return otfhttp.AssetsFS.Path(path)
 }
 
 func CurrentUsername(ctx context.Context) (string, error) {
@@ -57,7 +61,7 @@ func IsSiteAdmin(ctx context.Context) bool {
 }
 
 func CurrentPath(ctx context.Context) string {
-	request := html.RequestFromContext(ctx)
+	request := RequestFromContext(ctx)
 	if request == nil {
 		return ""
 	}
@@ -65,7 +69,7 @@ func CurrentPath(ctx context.Context) string {
 }
 
 func CurrentURL(ctx context.Context) string {
-	request := html.RequestFromContext(ctx)
+	request := RequestFromContext(ctx)
 	if request == nil {
 		return ""
 	}
@@ -73,7 +77,7 @@ func CurrentURL(ctx context.Context) string {
 }
 
 func CurrentURLWithoutQuery(ctx context.Context) string {
-	request := html.RequestFromContext(ctx)
+	request := RequestFromContext(ctx)
 	if request == nil {
 		return ""
 	}
@@ -87,18 +91,18 @@ func CurrentURLWithoutQuery(ctx context.Context) string {
 
 // TokenFlashMessage is a helper for rendering a flash message with an
 // authentication token.
-func TokenFlashMessage(w gohttp.ResponseWriter, token []byte) error {
+func TokenFlashMessage(w http.ResponseWriter, token []byte) error {
 	// render a small templated flash message
 	buf := new(bytes.Buffer)
 	if err := flashToken(string(token)).Render(context.Background(), buf); err != nil {
 		return err
 	}
-	html.FlashSuccess(w, buf.String())
+	FlashSuccess(w, buf.String())
 	return nil
 }
 
 func Cookie(ctx context.Context, name string) string {
-	request := html.RequestFromContext(ctx)
+	request := RequestFromContext(ctx)
 	if request == nil {
 		return ""
 	}
@@ -108,4 +112,43 @@ func Cookie(ctx context.Context, name string) string {
 		}
 	}
 	return ""
+}
+
+const (
+	pathCookie = "path"
+)
+
+func MarkdownToHTML(md []byte) template.HTML {
+	return template.HTML(string(markdown.ToHTML(md, nil, nil)))
+}
+
+// SendUserToLoginPage sends user to the login prompt page, saving the original
+// path they tried to access so it can return them there after login.
+func SendUserToLoginPage(w http.ResponseWriter, r *http.Request) {
+	// if request path was for a background event-stream then save the referring
+	// html page, otherwise the user will be returned to a blank page.
+	path := r.URL.String()
+	if r.Header.Get("Accept") == "text/event-stream" {
+		path = r.Referer()
+	}
+	SetCookie(w, pathCookie, path, nil)
+
+	// Force ajax requests to reload entire page
+	if isHTMX := r.Header.Get("HX-Request"); isHTMX == "true" {
+		w.Header().Add("HX-Refresh", "true")
+		return
+	}
+	http.Redirect(w, r, paths.Login(), http.StatusFound)
+}
+
+// ReturnUserOriginalPage returns a user to the original page they tried to
+// access before they were redirected to the login page.
+func ReturnUserOriginalPage(w http.ResponseWriter, r *http.Request) {
+	// Return user to the original path they attempted to access
+	if cookie, err := r.Cookie(pathCookie); err == nil {
+		SetCookie(w, pathCookie, "", &time.Time{})
+		http.Redirect(w, r, cookie.Value, http.StatusFound)
+	} else {
+		http.Redirect(w, r, paths.Profile(), http.StatusFound)
+	}
 }

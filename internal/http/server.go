@@ -15,7 +15,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/json"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/ui/paths"
@@ -82,7 +81,7 @@ func NewServer(logger logr.Logger, cfg ServerConfig) (*Server, error) {
 	r.Handle("/", http.RedirectHandler("/app/organizations", http.StatusFound))
 
 	// Serve static files
-	if err := html.AddStaticHandler(logger, r); err != nil {
+	if err := AddStaticHandler(logger, r); err != nil {
 		return nil, err
 	}
 

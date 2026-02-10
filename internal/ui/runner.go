@@ -9,7 +9,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/decode"
-	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runner"
@@ -62,12 +61,12 @@ func addRunnerHandlers(r *mux.Router, h *Handlers) {
 func (h *Handlers) listRunners(w http.ResponseWriter, r *http.Request) {
 	var params runner.ListOptions
 	if err := decode.All(&params, r); err != nil {
-		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 	runners, err := h.Runners.ListRunners(r.Context(), params)
 	if err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
 
@@ -91,24 +90,24 @@ func (h *Handlers) listRunners(w http.ResponseWriter, r *http.Request) {
 func (h *Handlers) createAgentPool(w http.ResponseWriter, r *http.Request) {
 	var opts runner.CreateAgentPoolOptions
 	if err := decode.All(&opts, r); err != nil {
-		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
 	pool, err := h.Runners.CreateAgentPool(r.Context(), opts)
 	if err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
 
-	html.FlashSuccess(w, "created agent pool: "+pool.Name)
+	helpers.FlashSuccess(w, "created agent pool: "+pool.Name)
 	http.Redirect(w, r, paths.AgentPool(pool.ID), http.StatusFound)
 }
 
 func (h *Handlers) updateAgentPool(w http.ResponseWriter, r *http.Request) {
 	poolID, err := decode.ID("pool_id", r)
 	if err != nil {
-		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 	// the client sends json-encoded slices of poolWorkspace structs whereas
@@ -124,7 +123,7 @@ func (h *Handlers) updateAgentPool(w http.ResponseWriter, r *http.Request) {
 		AllowedAndAssigned   poolWorkspaceList `schema:"assigned_workspaces"`
 	}
 	if err := decode.All(&params, r); err != nil {
-		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 	opts := runner.UpdatePoolOptions{
@@ -138,11 +137,11 @@ func (h *Handlers) updateAgentPool(w http.ResponseWriter, r *http.Request) {
 
 	pool, err := h.Runners.UpdateAgentPool(r.Context(), poolID, opts)
 	if err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
 
-	html.FlashSuccess(w, "updated agent pool: "+pool.Name)
+	helpers.FlashSuccess(w, "updated agent pool: "+pool.Name)
 	http.Redirect(w, r, paths.AgentPool(pool.ID), http.StatusFound)
 }
 
@@ -152,12 +151,12 @@ func (h *Handlers) listAgentPools(w http.ResponseWriter, r *http.Request) {
 		Organization organization.Name `schema:"organization_name"`
 	}
 	if err := decode.All(&params, r); err != nil {
-		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 	pools, err := h.Runners.ListAgentPoolsByOrganization(r.Context(), params.Organization, runner.ListPoolOptions{})
 	if err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
 
@@ -178,13 +177,13 @@ func (h *Handlers) listAgentPools(w http.ResponseWriter, r *http.Request) {
 func (h *Handlers) getAgentPool(w http.ResponseWriter, r *http.Request) {
 	poolID, err := decode.ID("pool_id", r)
 	if err != nil {
-		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
 	pool, err := h.Runners.GetAgentPool(r.Context(), poolID)
 	if err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
 
@@ -203,7 +202,7 @@ func (h *Handlers) getAgentPool(w http.ResponseWriter, r *http.Request) {
 		})
 	})
 	if err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
 
@@ -228,7 +227,7 @@ func (h *Handlers) getAgentPool(w http.ResponseWriter, r *http.Request) {
 
 	tokens, err := h.Runners.ListAgentTokens(r.Context(), poolID)
 	if err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
 
@@ -236,7 +235,7 @@ func (h *Handlers) getAgentPool(w http.ResponseWriter, r *http.Request) {
 		PoolID: &poolID,
 	})
 	if err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
 
@@ -265,17 +264,17 @@ func (h *Handlers) getAgentPool(w http.ResponseWriter, r *http.Request) {
 func (h *Handlers) deleteAgentPool(w http.ResponseWriter, r *http.Request) {
 	poolID, err := decode.ID("pool_id", r)
 	if err != nil {
-		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
 	pool, err := h.Runners.DeleteAgentPool(r.Context(), poolID)
 	if err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
 
-	html.FlashSuccess(w, "Deleted agent pool: "+pool.Name)
+	helpers.FlashSuccess(w, "Deleted agent pool: "+pool.Name)
 	http.Redirect(w, r, paths.AgentPools(pool.Organization), http.StatusFound)
 }
 
@@ -285,19 +284,19 @@ func (h *Handlers) listAllowedPools(w http.ResponseWriter, r *http.Request) {
 		AgentPoolID *resource.TfeID `schema:"agent_pool_id"`
 	}
 	if err := decode.All(&opts, r); err != nil {
-		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 	ws, err := h.Workspaces.Get(r.Context(), opts.WorkspaceID)
 	if err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
 	pools, err := h.Runners.ListAgentPoolsByOrganization(r.Context(), ws.Organization, runner.ListPoolOptions{
 		AllowedWorkspaceID: &opts.WorkspaceID,
 	})
 	if err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
 
@@ -305,7 +304,7 @@ func (h *Handlers) listAllowedPools(w http.ResponseWriter, r *http.Request) {
 		pools:         pools,
 		currentPoolID: opts.AgentPoolID,
 	}
-	html.Render(agentPoolListAllowed(props), w, r)
+	helpers.Render(agentPoolListAllowed(props), w, r)
 }
 
 // agent token handlers
@@ -313,23 +312,23 @@ func (h *Handlers) listAllowedPools(w http.ResponseWriter, r *http.Request) {
 func (h *Handlers) createAgentToken(w http.ResponseWriter, r *http.Request) {
 	poolID, err := decode.ID("pool_id", r)
 	if err != nil {
-		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 	var opts runner.CreateAgentTokenOptions
 	if err := decode.All(&opts, r); err != nil {
-		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
 	_, token, err := h.Runners.CreateAgentToken(r.Context(), poolID, opts)
 	if err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
 
 	if err := helpers.TokenFlashMessage(w, token); err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
 	http.Redirect(w, r, paths.AgentPool(poolID), http.StatusFound)
@@ -338,16 +337,16 @@ func (h *Handlers) createAgentToken(w http.ResponseWriter, r *http.Request) {
 func (h *Handlers) deleteAgentToken(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.ID("token_id", r)
 	if err != nil {
-		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
 	at, err := h.Runners.DeleteAgentToken(r.Context(), id)
 	if err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
 
-	html.FlashSuccess(w, "Deleted token: "+at.Description)
+	helpers.FlashSuccess(w, "Deleted token: "+at.Description)
 	http.Redirect(w, r, paths.AgentPool(at.AgentPoolID), http.StatusFound)
 }

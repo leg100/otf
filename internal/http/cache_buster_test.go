@@ -1,4 +1,4 @@
-package html
+package http
 
 import (
 	"io/fs"

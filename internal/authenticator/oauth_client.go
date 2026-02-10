@@ -13,9 +13,9 @@ import (
 	"github.com/leg100/otf/internal/authz"
 	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/http/decode"
-	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/ui/helpers"
 	"github.com/leg100/otf/internal/ui/paths"
 	userpkg "github.com/leg100/otf/internal/user"
 	"golang.org/x/oauth2"
@@ -161,14 +161,14 @@ func (a *OAuthClient) callbackHandler(w http.ResponseWriter, r *http.Request) {
 		return a.config().Exchange(ctx, resp.AuthCode)
 	}()
 	if err != nil {
-		html.FlashError(w, err.Error())
+		helpers.FlashError(w, err.Error())
 		http.Redirect(w, r, paths.Login(), http.StatusFound)
 		return
 	}
 	// Extract user info from OAuth token
 	userInfo, err := a.parseUserInfo(r.Context(), token)
 	if err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
 
@@ -181,7 +181,7 @@ func (a *OAuthClient) callbackHandler(w http.ResponseWriter, r *http.Request) {
 		user, err = a.users.Create(ctx, userInfo.Username.String())
 	}
 	if err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
 
@@ -197,7 +197,7 @@ func (a *OAuthClient) callbackHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := a.sessions.StartSession(w, r, user.ID); err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
 }

@@ -1,4 +1,4 @@
-package html
+package http
 
 import (
 	"embed"
@@ -33,7 +33,7 @@ func init() {
 			panic(err.Error())
 		}
 		root := findModuleRoot(wd)
-		localPath := filepath.Join(root, "internal/http/html")
+		localPath := filepath.Join(root, "internal/http")
 		localDisk := os.DirFS(localPath)
 
 		AssetsFS = &CacheBuster{localDisk}

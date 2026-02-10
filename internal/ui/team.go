@@ -8,7 +8,6 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/decode"
-	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/team"
@@ -32,7 +31,7 @@ func (h *Handlers) newTeam(w http.ResponseWriter, r *http.Request) {
 		Organization *organization.Name `schema:"organization_name,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
-		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
@@ -55,7 +54,7 @@ func (h *Handlers) createTeam(w http.ResponseWriter, r *http.Request) {
 		Organization *organization.Name `schema:"organization_name,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
-		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
@@ -63,11 +62,11 @@ func (h *Handlers) createTeam(w http.ResponseWriter, r *http.Request) {
 		Name: params.Name,
 	})
 	if err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
 
-	html.FlashSuccess(w, "created team: "+createdTeam.Name)
+	helpers.FlashSuccess(w, "created team: "+createdTeam.Name)
 	http.Redirect(w, r, paths.Team(createdTeam.ID), http.StatusFound)
 }
 
@@ -79,7 +78,7 @@ func (h *Handlers) updateTeam(w http.ResponseWriter, r *http.Request) {
 		ManageModules    bool           `schema:"manage_modules"`
 	}
 	if err := decode.All(&params, r); err != nil {
-		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
@@ -91,31 +90,31 @@ func (h *Handlers) updateTeam(w http.ResponseWriter, r *http.Request) {
 		},
 	})
 	if err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
 
-	html.FlashSuccess(w, "team permissions updated")
+	helpers.FlashSuccess(w, "team permissions updated")
 	http.Redirect(w, r, paths.Team(updatedTeam.ID), http.StatusFound)
 }
 
 func (h *Handlers) getTeam(w http.ResponseWriter, r *http.Request) {
 	teamID, err := decode.ID("team_id", r)
 	if err != nil {
-		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
 	team, err := h.Teams.GetByID(r.Context(), teamID)
 	if err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
 
 	// get usernames of team members
 	members, err := h.Users.ListTeamUsers(r.Context(), teamID)
 	if err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
 	usernames := make([]user.Username, len(members))
@@ -130,7 +129,7 @@ func (h *Handlers) getTeam(w http.ResponseWriter, r *http.Request) {
 	if h.Authorizer.CanAccess(r.Context(), authz.ListUsersAction, resource.SiteID) {
 		users, err := h.Users.List(r.Context())
 		if err != nil {
-			html.Error(r, w, err.Error())
+			helpers.Error(r, w, err.Error())
 			return
 		}
 		nonMembers := diffUsers(members, users)
@@ -172,13 +171,13 @@ func (h *Handlers) getTeam(w http.ResponseWriter, r *http.Request) {
 func (h *Handlers) listTeams(w http.ResponseWriter, r *http.Request) {
 	var params team.ListOptions
 	if err := decode.All(&params, r); err != nil {
-		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
 	teams, err := h.Teams.List(r.Context(), params.Organization)
 	if err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
 
@@ -201,21 +200,21 @@ func (h *Handlers) listTeams(w http.ResponseWriter, r *http.Request) {
 func (h *Handlers) deleteTeam(w http.ResponseWriter, r *http.Request) {
 	teamID, err := decode.ID("team_id", r)
 	if err != nil {
-		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
 	deletedTeam, err := h.Teams.GetByID(r.Context(), teamID)
 	if err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
 	err = h.Teams.Delete(r.Context(), teamID)
 	if err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
 
-	html.FlashSuccess(w, "deleted team: "+deletedTeam.Name)
+	helpers.FlashSuccess(w, "deleted team: "+deletedTeam.Name)
 	http.Redirect(w, r, paths.Teams(deletedTeam.Organization), http.StatusFound)
 }

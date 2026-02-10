@@ -1,8 +1,9 @@
-package html
+package helpers
 
 import (
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 )
@@ -55,7 +56,8 @@ func (s *FlashStack) Push(t FlashType, msg string) {
 func (s FlashStack) Write(w http.ResponseWriter) {
 	js, err := json.Marshal(s)
 	if err != nil {
-		htmlPanic("marshalling flash messages to json: %v", err)
+		// upstream middleware catches the panic
+		panic(fmt.Sprintf("marshalling flash messages to json: %v", err))
 	}
 	encoded := base64.URLEncoding.EncodeToString(js)
 	SetCookie(w, flashCookie, encoded, nil)

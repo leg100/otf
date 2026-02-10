@@ -8,7 +8,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/decode"
-	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/ui/helpers"
@@ -32,13 +31,13 @@ func (h *Handlers) newVCSProvider(w http.ResponseWriter, r *http.Request) {
 		KindID       vcs.KindID        `schema:"kind,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
-		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
 	kind, err := h.VCSProviders.GetKind(params.KindID)
 	if err != nil {
-		html.Error(r, w, "schema not found", html.WithStatus(http.StatusUnprocessableEntity))
+		helpers.Error(r, w, "schema not found", helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
@@ -59,28 +58,28 @@ func (h *Handlers) newVCSProvider(w http.ResponseWriter, r *http.Request) {
 func (h *Handlers) createVCSProvider(w http.ResponseWriter, r *http.Request) {
 	var params vcs.CreateOptions
 	if err := decode.All(&params, r); err != nil {
-		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 	provider, err := h.VCSProviders.Create(r.Context(), params)
 	if err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
-	html.FlashSuccess(w, "created provider: "+provider.String())
+	helpers.FlashSuccess(w, "created provider: "+provider.String())
 	http.Redirect(w, r, paths.VCSProviders(provider.Organization), http.StatusFound)
 }
 
 func (h *Handlers) editVCSProvider(w http.ResponseWriter, r *http.Request) {
 	providerID, err := decode.ID("vcs_provider_id", r)
 	if err != nil {
-		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
 	provider, err := h.VCSProviders.Get(r.Context(), providerID)
 	if err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
 
@@ -106,7 +105,7 @@ func (h *Handlers) updateVCSProvider(w http.ResponseWriter, r *http.Request) {
 		BaseURL *internal.WebURL `schema:"base_url,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
-		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
@@ -122,22 +121,22 @@ func (h *Handlers) updateVCSProvider(w http.ResponseWriter, r *http.Request) {
 	}
 	provider, err := h.VCSProviders.Update(r.Context(), params.ID, opts)
 	if err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
-	html.FlashSuccess(w, "updated provider: "+provider.String())
+	helpers.FlashSuccess(w, "updated provider: "+provider.String())
 	http.Redirect(w, r, paths.VCSProviders(provider.Organization), http.StatusFound)
 }
 
 func (h *Handlers) listVCSProviders(w http.ResponseWriter, r *http.Request) {
 	var params vcs.ListOptions
 	if err := decode.All(&params, r); err != nil {
-		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 	providers, err := h.VCSProviders.List(r.Context(), params.Organization)
 	if err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
 	props := listProps{
@@ -158,16 +157,16 @@ func (h *Handlers) listVCSProviders(w http.ResponseWriter, r *http.Request) {
 func (h *Handlers) deleteVCSProvider(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.ID("vcs_provider_id", r)
 	if err != nil {
-		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
 	provider, err := h.VCSProviders.Delete(r.Context(), id)
 	if err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
-	html.FlashSuccess(w, "deleted provider: "+provider.String())
+	helpers.FlashSuccess(w, "deleted provider: "+provider.String())
 	http.Redirect(w, r, paths.VCSProviders(provider.Organization), http.StatusFound)
 }
 

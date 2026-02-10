@@ -1,4 +1,4 @@
-package html
+package helpers
 
 import (
 	"encoding/base64"
