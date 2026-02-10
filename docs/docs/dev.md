@@ -92,7 +92,7 @@ CHART=otf-agent make bump-chart-version
 Each chart's `README.md` is generated from a template, `README.md.gotmpl` in the same directory, using [helm-docs](https://github.com/norwoodj/helm-docs). Therefore any changes must be made to `README.md.gotmpl` and not `README.md`. To update all templated README.md's, run the following from the root of the repo:
 
 ```bash
-helm-docs
+make helm-docs
 ```
 Any changes to the version or to the `values.yaml` file are automatically reflected in the generated `README.md`. 
 
