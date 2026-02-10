@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.9](https://github.com/leg100/otf/compare/v0.5.8...v0.5.9) (2026-02-10)
+
+
+### Bug Fixes
+
+* force otfd helm chart release ([a4f6e6c](https://github.com/leg100/otf/commit/a4f6e6cd363738255984b51e2013de8ce6495a54))
+* remove unnecessary string casting ([facada8](https://github.com/leg100/otf/commit/facada8c07bbe4b206b571fd7b2df2639d6b53af))
+
 ## [0.5.8](https://github.com/leg100/otf/compare/v0.5.7...v0.5.8) (2026-02-09)
 
 
