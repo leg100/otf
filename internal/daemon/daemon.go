@@ -110,7 +110,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	listener := sql.NewListener(logger, db)
 
 	// responder responds to TFE API requests
-	responder := tfeapi.NewResponder()
+	responder := tfeapi.NewResponder(logger)
 
 	// Setup url signer
 	signer := internal.NewSigner(cfg.Secret)
