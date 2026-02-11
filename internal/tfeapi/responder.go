@@ -33,6 +33,24 @@ func (res *Responder) RespondWithPage(w http.ResponseWriter, r *http.Request, it
 }
 
 func (res *Responder) Respond(w http.ResponseWriter, r *http.Request, payload any, status int, opts ...jsonapi.MarshalOption) {
+	// JSON:API spec forbids '@' in member names. But in OTF it is
+	// legitimate, such as when terraform state contains an output with map
+	// value that has '@' in a key:
+	//
+	//  output "test" {
+	//    description = "test"
+	//    value = {
+	//      "test.asdf@test" = "asdf"
+	//    }
+	//  }
+	//
+	//  This would normally prompt the JSON:API marshaler to deem it invalid. It
+	//  does so when the agent - which talks to otfd using JSON:API - retrieves
+	//  the current state from otfd.
+	//
+	//  Therefore we disable this validation.
+	opts = append(opts, jsonapi.MarshalSetNameValidation(jsonapi.DisableValidation))
+
 	if err := res.do(w, r, payload, status, opts...); err != nil {
 		res.logger.Error(err, "sending API response", "url", r.URL)
 
