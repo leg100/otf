@@ -105,7 +105,12 @@ func NewClient(config ClientConfig) (*Client, error) {
 				// The http response is nil when there is a problem with the
 				// request and there is no response, e.g. socket timeout.
 				if resp != nil && resp.Request != nil {
-					config.Logger.Error(err, "retrying request", "url", resp.Request.URL)
+					// Try to decode more informative error message from
+					// response body.
+					if jsonapiErr := tryUnmarshalJSONAPIError(resp.Body); jsonapiErr != nil {
+						err = jsonapiErr
+					}
+					config.Logger.Error(err, "retrying request", "url", resp.Request.URL, "status", resp.StatusCode)
 				} else {
 					config.Logger.Error(err, "retrying request")
 				}
@@ -339,21 +344,26 @@ func checkResponseCode(r *http.Response) error {
 	case 409:
 		return internal.ErrConflict
 	}
-	// get contents of body and log that in the error message so we know
-	// what it is choking on.
-	contents, err := io.ReadAll(r.Body)
-	if err != nil {
+	if err := tryUnmarshalJSONAPIError(r.Body); err != nil {
 		return err
 	}
+	// get contents of body and log that in the error message so we know
+	// what it is choking on.
+	return errors.New(r.Status)
+}
+
+// tryUnmarshalJSONAPIError tries to unmarshal from the reader an error in
+// JSON:API format. If it fails then it returns nil.
+func tryUnmarshalJSONAPIError(r io.Reader) error {
 	// Decode the error payload.
 	var payload struct {
 		Errors []*jsonapi.Error `json:"errors"`
 	}
-	if err := json.Unmarshal(contents, &payload); err != nil {
-		return fmt.Errorf("unable to decode errors payload: %s: %w", string(contents), err)
+	if err := json.NewDecoder(r).Decode(&payload); err != nil {
+		return nil
 	}
 	if len(payload.Errors) == 0 {
-		return errors.New(r.Status)
+		return nil
 	}
 	// Parse and format the errors.
 	var errs []string
