@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.5.10](https://github.com/leg100/otf/compare/v0.5.9...v0.5.10) (2026-02-11)
+
+
+### Bug Fixes
+
+* allow '@' in state output map keys ([9f838ee](https://github.com/leg100/otf/commit/9f838eed1ed7d3502d6f5f9c193f7c30b559aae7))
+* **api-client:** provide more informative error logging ([27d7888](https://github.com/leg100/otf/commit/27d7888da0c2f07283e682cc07d7876b589ed461))
+* **api:** log error when response cannot be marshaled ([fef1bc7](https://github.com/leg100/otf/commit/fef1bc79ddc13a6b0d23d820badacdc009b8cf2a))
+
 ## [0.5.9](https://github.com/leg100/otf/compare/v0.5.8...v0.5.9) (2026-02-10)
 
 
