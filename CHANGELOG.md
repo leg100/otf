@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.12](https://github.com/leg100/otf/compare/v0.5.11...v0.5.12) (2026-02-12)
+
+
+### Bug Fixes
+
+* don't append api. to github enterprise URLs ([b8c9b06](https://github.com/leg100/otf/commit/b8c9b062ab21abf7ec6111f484762094f2a5060d))
+
 ## [0.5.11](https://github.com/leg100/otf/compare/v0.5.10...v0.5.11) (2026-02-12)
 
 
