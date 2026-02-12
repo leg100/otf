@@ -1,6 +1,17 @@
 // Package github provides github related code
 package github
 
-import "github.com/leg100/otf/internal"
+import (
+	"net/url"
 
-var DefaultBaseURL = internal.MustWebURL("https://github.com")
+	"github.com/leg100/otf/internal"
+)
+
+func DefaultBaseURL() *internal.WebURL {
+	return &internal.WebURL{
+		URL: url.URL{
+			Scheme: "https",
+			Host:   "github.com",
+		},
+	}
+}

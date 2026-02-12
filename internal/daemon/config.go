@@ -68,7 +68,7 @@ func NewConfig() Config {
 		CacheConfig:     &inmem.CacheConfig{},
 		MaxConfigSize:   configversion.DefaultConfigMaxSize,
 		DefaultEngine:   engine.Default,
-		GithubHostname:  github.DefaultBaseURL,
+		GithubHostname:  github.DefaultBaseURL(),
 		GitlabHostname:  gitlab.DefaultBaseURL,
 		ForgejoHostname: forgejo.DefaultBaseURL,
 	}

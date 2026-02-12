@@ -123,8 +123,9 @@ func NewClient(cfg ClientOptions) (*Client, error) {
 
 func setClientURLs(githubURL *internal.WebURL) (*internal.WebURL, *internal.WebURL) {
 	cloned := *githubURL
+
 	// If using public github (github.com) then use api.github.com
-	if cloned.Host == DefaultBaseURL.Host {
+	if cloned.Host == DefaultBaseURL().Host {
 		cloned.Host = "api." + cloned.Host
 	}
 

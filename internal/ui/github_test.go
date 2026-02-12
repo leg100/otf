@@ -88,7 +88,7 @@ func TestGithubHandlers_deleteApp(t *testing.T) {
 	h := &Handlers{
 		GithubApp: &fakeGithubService{
 			app: &github.App{
-				GithubURL: github.DefaultBaseURL,
+				GithubURL: github.DefaultBaseURL(),
 			},
 		},
 	}
