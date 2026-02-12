@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.11](https://github.com/leg100/otf/compare/v0.5.10...v0.5.11) (2026-02-12)
+
+
+### Bug Fixes
+
+* **api-client:** allow '@' in state output map keys ([79458e6](https://github.com/leg100/otf/commit/79458e648541824970ccc7344b511cc8815b14c8))
+
 ## [0.5.10](https://github.com/leg100/otf/compare/v0.5.9...v0.5.10) (2026-02-11)
 
 
