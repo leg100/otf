@@ -284,7 +284,10 @@ func (c *Client) Do(ctx context.Context, req *retryablehttp.Request, v interface
 		return err
 	}
 
-	return unmarshalResponse(resp.Body, v)
+	if err := unmarshalResponse(resp.Body, v); err != nil {
+		return fmt.Errorf("unmarshalling response: %w", err)
+	}
+	return nil
 }
 
 func unmarshalResponse(r io.Reader, v any) error {
@@ -297,7 +300,7 @@ func unmarshalResponse(r io.Reader, v any) error {
 	dst := reflect.Indirect(reflect.ValueOf(v))
 
 	if dst.Kind() == reflect.Slice {
-		return jsonapi.Unmarshal(b, v)
+		return doUnmarshal(b, v, internal.DefaultJSONAPIUnmarshalOptions...)
 	}
 
 	// Return an error if model is not a struct, slice or an io.Writer.
@@ -312,7 +315,7 @@ func unmarshalResponse(r io.Reader, v any) error {
 	// Unmarshal a single value if v does not contain the
 	// Items and Pagination struct fields.
 	if !items.IsValid() || !pagination.IsValid() {
-		return jsonapi.Unmarshal(b, v)
+		return doUnmarshal(b, v)
 	}
 
 	// Return an error if v.Items is not a slice.
@@ -320,12 +323,17 @@ func unmarshalResponse(r io.Reader, v any) error {
 		return fmt.Errorf("v.Items must be a slice")
 	}
 
-	err = jsonapi.Unmarshal(b, items.Addr().Interface(), jsonapi.UnmarshalMeta(pagination.Addr().Interface()))
+	err = doUnmarshal(b, items.Addr().Interface(), jsonapi.UnmarshalMeta(pagination.Addr().Interface()))
 	if err != nil {
-		return err
+		return fmt.Errorf("unmarshalling response: %w", err)
 	}
 
 	return nil
+}
+
+func doUnmarshal(b []byte, v any, opts ...jsonapi.UnmarshalOption) error {
+	opts = append(opts, internal.DefaultJSONAPIUnmarshalOptions...)
+	return jsonapi.Unmarshal(b, v, opts...)
 }
 
 // checkResponseCode can be used to check the status code of an HTTP request.

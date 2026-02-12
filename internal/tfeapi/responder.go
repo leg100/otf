@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/DataDog/jsonapi"
+	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/resource"
 )
@@ -33,23 +34,6 @@ func (res *Responder) RespondWithPage(w http.ResponseWriter, r *http.Request, it
 }
 
 func (res *Responder) Respond(w http.ResponseWriter, r *http.Request, payload any, status int, opts ...jsonapi.MarshalOption) {
-	// JSON:API spec forbids '@' in member names. But in OTF it is
-	// legitimate, such as when terraform state contains an output with map
-	// value that has '@' in a key:
-	//
-	//  output "test" {
-	//    description = "test"
-	//    value = {
-	//      "test.asdf@test" = "asdf"
-	//    }
-	//  }
-	//
-	//  This would normally prompt the JSON:API marshaler to deem it invalid. It
-	//  does so when the agent - which talks to otfd using JSON:API - retrieves
-	//  the current state from otfd.
-	//
-	//  Therefore we disable this validation.
-	opts = append(opts, jsonapi.MarshalSetNameValidation(jsonapi.DisableValidation))
 
 	if err := res.do(w, r, payload, status, opts...); err != nil {
 		res.logger.Error(err, "sending API response", "url", r.URL)
@@ -64,6 +48,7 @@ func (res *Responder) do(w http.ResponseWriter, r *http.Request, payload any, st
 	if err != nil {
 		return err
 	}
+	opts = append(internal.DefaultJSONAPIMarshalOptions, opts...)
 	if len(includes) > 0 {
 		opts = append(opts, jsonapi.MarshalInclude(includes...))
 	}
