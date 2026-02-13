@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"net/http"
 	"net/url"
 	"path"
@@ -140,7 +141,7 @@ func (c *Client) Hostname() string {
 // If v is supplied, the value will be JSONAPI encoded and included as the
 // request body. If the method is GET, the value will be parsed and added as
 // query parameters.
-func (c *Client) NewRequest(method, path string, v interface{}) (*retryablehttp.Request, error) {
+func (c *Client) NewRequest(method, path string, v any) (*retryablehttp.Request, error) {
 	u, err := c.baseURL.Parse(path)
 	if err != nil {
 		return nil, err
@@ -150,7 +151,7 @@ func (c *Client) NewRequest(method, path string, v interface{}) (*retryablehttp.
 	reqHeaders := make(http.Header)
 	reqHeaders.Set("Authorization", "Bearer "+c.Token)
 
-	var body interface{}
+	var body any
 	switch method {
 	case "GET":
 		reqHeaders.Set("Accept", "application/vnd.api+json")
@@ -183,14 +184,10 @@ func (c *Client) NewRequest(method, path string, v interface{}) (*retryablehttp.
 	}
 
 	// Set the default headers.
-	for k, v := range c.headers {
-		req.Header[k] = v
-	}
+	maps.Copy(req.Header, c.headers)
 
 	// Set the request specific headers.
-	for k, v := range reqHeaders {
-		req.Header[k] = v
-	}
+	maps.Copy(req.Header, reqHeaders)
 
 	return req, nil
 }
@@ -198,7 +195,7 @@ func (c *Client) NewRequest(method, path string, v interface{}) (*retryablehttp.
 // Helper method that serializes the given ptr or ptr slice into a JSON
 // request. It automatically uses jsonapi or json serialization, depending
 // on the body type's tags.
-func serializeRequestBody(v interface{}) (interface{}, error) {
+func serializeRequestBody(v any) (any, error) {
 	// The body can be a slice of pointers or a pointer. In either
 	// case we want to choose the serialization type based on the
 	// individual record type. To determine that type, we need
@@ -212,11 +209,11 @@ func serializeRequestBody(v interface{}) (interface{}, error) {
 	switch bodyType.Kind() {
 	case reflect.Slice:
 		sliceElem := bodyType.Elem()
-		if sliceElem.Kind() != reflect.Ptr {
+		if sliceElem.Kind() != reflect.Pointer {
 			return nil, invalidBodyError
 		}
 		modelType = sliceElem.Elem()
-	case reflect.Ptr:
+	case reflect.Pointer:
 		modelType = reflect.ValueOf(v).Elem().Type()
 	default:
 		return nil, invalidBodyError
@@ -225,8 +222,7 @@ func serializeRequestBody(v interface{}) (interface{}, error) {
 	// Infer whether the request uses jsonapi or regular json
 	// serialization based on how the fields are tagged.
 	jsonAPIFields := 0
-	for i := 0; i < modelType.NumField(); i++ {
-		structField := modelType.Field(i)
+	for structField := range modelType.Fields() {
 		if structField.Tag.Get("jsonapi") != "" {
 			jsonAPIFields++
 		}
@@ -250,7 +246,7 @@ func serializeRequestBody(v interface{}) (interface{}, error) {
 //
 // The provided ctx must be non-nil. If it is canceled or times out, ctx.Err()
 // will be returned.
-func (c *Client) Do(ctx context.Context, req *retryablehttp.Request, v interface{}) error {
+func (c *Client) Do(ctx context.Context, req *retryablehttp.Request, v any) error {
 	// Add the context to the request.
 	req = req.WithContext(ctx)
 

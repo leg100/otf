@@ -82,22 +82,22 @@ func TestDynamicCredentialsGCP(t *testing.T) {
 
 	// create an organization with a specific name that matches the assertion
 	// condition in GCP, e.g. `attribute.terraform_organization_name="acme"`
-	org, err := daemon.Organizations.Create(ctx, organization.CreateOptions{Name: internal.Ptr(orgName)})
+	org, err := daemon.Organizations.Create(ctx, organization.CreateOptions{Name: new(orgName)})
 	require.NoError(t, err)
 
 	ws1 := daemon.createWorkspace(t, ctx, org)
 	_ = daemon.createVariable(t, ctx, ws1, &variable.CreateVariableOptions{
-		Key:      internal.Ptr("TFC_GCP_PROVIDER_AUTH"),
-		Value:    internal.Ptr("true"),
+		Key:      new("TFC_GCP_PROVIDER_AUTH"),
+		Value:    new("true"),
 		Category: internal.Ptr(variable.CategoryEnv),
 	})
 	_ = daemon.createVariable(t, ctx, ws1, &variable.CreateVariableOptions{
-		Key:      internal.Ptr("TFC_GCP_RUN_SERVICE_ACCOUNT_EMAIL"),
+		Key:      new("TFC_GCP_RUN_SERVICE_ACCOUNT_EMAIL"),
 		Value:    &serviceAccount,
 		Category: internal.Ptr(variable.CategoryEnv),
 	})
 	_ = daemon.createVariable(t, ctx, ws1, &variable.CreateVariableOptions{
-		Key:      internal.Ptr("TFC_GCP_WORKLOAD_PROVIDER_NAME"),
+		Key:      new("TFC_GCP_WORKLOAD_PROVIDER_NAME"),
 		Value:    &workload,
 		Category: internal.Ptr(variable.CategoryEnv),
 	})

@@ -24,7 +24,7 @@ func TestIntegration_StateService(t *testing.T) {
 			State:       file,
 			WorkspaceID: ws.ID,
 			// serial matches that in ./testdata/terraform.tfstate
-			Serial: internal.Ptr[int64](9),
+			Serial: new(int64(9)),
 		})
 		require.NoError(t, err)
 	})

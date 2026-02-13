@@ -23,7 +23,7 @@ func Test_newHook(t *testing.T) {
 			opts: newRepohookOptions{
 				id:              &id,
 				vcsKindID:       vcs.KindID("test"),
-				secret:          internal.Ptr("top-secret"),
+				secret:          new("top-secret"),
 				HostnameService: internal.NewHostnameService("fakehost.org"),
 			},
 			want: &hook{

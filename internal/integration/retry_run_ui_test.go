@@ -3,7 +3,6 @@ package integration
 import (
 	"testing"
 
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/playwright-community/playwright-go"
@@ -17,7 +16,7 @@ func TestIntegration_RetryRunUI(t *testing.T) {
 	daemon, _, ctx := setup(t)
 	ws := daemon.createWorkspace(t, ctx, nil)
 	cv := daemon.createAndUploadConfigurationVersion(t, ctx, ws, &configversion.CreateOptions{
-		Speculative: internal.Ptr(true),
+		Speculative: new(true),
 	})
 	// create a run and wait for it reach planned-and-finished state
 	r := daemon.createRun(t, ctx, ws, cv, nil)

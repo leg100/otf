@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/configversion/source"
 	"github.com/leg100/otf/internal/http/decode"
@@ -48,8 +47,8 @@ func (h *Handlers) createRun(w http.ResponseWriter, r *http.Request) {
 	}
 
 	createdRun, err := h.Runs.Create(r.Context(), params.WorkspaceID, runpkg.CreateOptions{
-		IsDestroy: internal.Ptr(params.Operation == runpkg.DestroyAllOperation),
-		PlanOnly:  internal.Ptr(params.Operation == runpkg.PlanOnlyOperation),
+		IsDestroy: new(params.Operation == runpkg.DestroyAllOperation),
+		PlanOnly:  new(params.Operation == runpkg.PlanOnlyOperation),
 		Source:    source.UI,
 	})
 	if err != nil {

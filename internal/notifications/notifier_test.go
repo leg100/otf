@@ -4,7 +4,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
@@ -31,29 +30,29 @@ func TestNotifier_handleRun(t *testing.T) {
 		WorkspaceID: ws1,
 	}}
 	disabledConfig := &Config{
-		URL:         internal.Ptr(""),
+		URL:         new(""),
 		WorkspaceID: ws1,
 		Triggers:    []Trigger{TriggerPlanning},
 	}
 	enabledConfig := &Config{
-		URL:         internal.Ptr(""),
+		URL:         new(""),
 		WorkspaceID: ws1,
 		Enabled:     true,
 		Triggers:    []Trigger{TriggerPlanning},
 	}
 	configWithNoTriggers := &Config{
-		URL:         internal.Ptr(""),
+		URL:         new(""),
 		Enabled:     true,
 		WorkspaceID: ws1,
 	}
 	configWithDifferentTriggers := &Config{
-		URL:         internal.Ptr(""),
+		URL:         new(""),
 		Enabled:     true,
 		WorkspaceID: ws1,
 		Triggers:    []Trigger{TriggerApplying},
 	}
 	configForDifferentWorkspace := &Config{
-		URL:         internal.Ptr(""),
+		URL:         new(""),
 		WorkspaceID: ws2,
 		Enabled:     true,
 		Triggers:    []Trigger{TriggerPlanning},

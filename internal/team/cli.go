@@ -6,7 +6,6 @@ import (
 
 	otfhttp "github.com/leg100/otf/internal/http"
 
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 
@@ -53,7 +52,7 @@ func (a *teamCLI) teamNewCommand() *cobra.Command {
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			team, err := a.client.Create(cmd.Context(), orgName, CreateTeamOptions{
-				Name: internal.Ptr(args[0]),
+				Name: new(args[0]),
 			})
 			if err != nil {
 				return err

@@ -7,7 +7,6 @@ import (
 	"time"
 
 	tfe "github.com/hashicorp/go-tfe"
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -45,8 +44,8 @@ func TestHelm(t *testing.T) {
 	})
 
 	org, err := kdeploy.Organizations.Create(t.Context(), tfe.OrganizationCreateOptions{
-		Name:  internal.Ptr("acme"),
-		Email: internal.Ptr("bollocks@morebollocks.bollocks"),
+		Name:  new("acme"),
+		Email: new("bollocks@morebollocks.bollocks"),
 	})
 	require.NoError(t, err)
 
@@ -54,7 +53,7 @@ func TestHelm(t *testing.T) {
 		t.Parallel()
 
 		ws, err := kdeploy.Workspaces.Create(t.Context(), org.Name, tfe.WorkspaceCreateOptions{
-			Name: internal.Ptr("dev"),
+			Name: new("dev"),
 		})
 		require.NoError(t, err)
 
@@ -91,13 +90,13 @@ func TestHelm(t *testing.T) {
 
 		// Create agent pool and agent token
 		pool, err := kdeploy.AgentPools.Create(t.Context(), org.Name, tfe.AgentPoolCreateOptions{
-			Name:               internal.Ptr("test-pool"),
-			OrganizationScoped: internal.Ptr(true),
+			Name:               new("test-pool"),
+			OrganizationScoped: new(true),
 		})
 		require.NoError(t, err)
 
 		token, err := kdeploy.AgentTokens.Create(t.Context(), pool.ID, tfe.AgentTokenCreateOptions{
-			Description: internal.Ptr("my fancy token"),
+			Description: new("my fancy token"),
 		})
 		require.NoError(t, err)
 
@@ -105,9 +104,9 @@ func TestHelm(t *testing.T) {
 		require.NoError(t, err, debug(t.Context()))
 
 		ws, err := kdeploy.Workspaces.Create(t.Context(), org.Name, tfe.WorkspaceCreateOptions{
-			Name:          internal.Ptr("dev-agent"),
-			ExecutionMode: internal.Ptr("agent"),
-			AgentPoolID:   internal.Ptr(pool.ID),
+			Name:          new("dev-agent"),
+			ExecutionMode: new("agent"),
+			AgentPoolID:   new(pool.ID),
 		})
 		require.NoError(t, err)
 

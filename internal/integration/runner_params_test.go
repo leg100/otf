@@ -20,7 +20,7 @@ func TestIntegration_RunnerParams(t *testing.T) {
 
 	ws := svc.createWorkspace(t, ctx, org)
 
-	config := []byte(fmt.Sprintf(`terraform {
+	config := fmt.Appendf(nil, `terraform {
   cloud {
     hostname = "%s"
     organization = "%s"
@@ -33,7 +33,7 @@ func TestIntegration_RunnerParams(t *testing.T) {
 resource "random_uuid" "id1" {}
 resource "random_uuid" "id2" {}
 resource "random_uuid" "id3" {}
-`, svc.System.Hostname(), org.Name, ws.Name))
+`, svc.System.Hostname(), org.Name, ws.Name)
 
 	true_ := true
 

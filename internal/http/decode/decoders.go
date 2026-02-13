@@ -3,6 +3,7 @@ package decode
 
 import (
 	"errors"
+	"maps"
 	"net/http"
 	"net/url"
 
@@ -26,7 +27,7 @@ func init() {
 }
 
 // Form decodes an HTTP request's POST form contents into dst.
-func Form(dst interface{}, r *http.Request) error {
+func Form(dst any, r *http.Request) error {
 	if err := r.ParseForm(); err != nil {
 		return err
 	}
@@ -37,7 +38,7 @@ func Form(dst interface{}, r *http.Request) error {
 }
 
 // Query unmarshals a query string (k1=v1&k2=v2...) into dst.
-func Query(dst interface{}, query url.Values) error {
+func Query(dst any, query url.Values) error {
 	if err := Decode(dst, query); err != nil {
 		return err
 	}
@@ -45,7 +46,7 @@ func Query(dst interface{}, query url.Values) error {
 }
 
 // Route decodes a mux route parameters (e.g. /foo/{bar}) into dst.
-func Route(dst interface{}, r *http.Request) error {
+func Route(dst any, r *http.Request) error {
 	// decoder only takes map[string][]string, not map[string]string
 	vars := convertStrMapToStrSliceMap(mux.Vars(r))
 	if err := Decode(dst, vars); err != nil {
@@ -61,15 +62,13 @@ func Route(dst interface{}, r *http.Request) error {
 // 2. path variables
 // 3. body params
 // 4. query params
-func All(dst interface{}, r *http.Request) error {
+func All(dst any, r *http.Request) error {
 	// Parses both query and req body if POST/PUT/PATCH
 	if err := r.ParseForm(); err != nil {
 		return err
 	}
 	vars := make(map[string][]string, len(r.Form))
-	for k, v := range r.Form {
-		vars[k] = v
-	}
+	maps.Copy(vars, r.Form)
 	// Merge in request path variables
 	for k, v := range mux.Vars(r) {
 		vars[k] = []string{v}
@@ -110,7 +109,7 @@ func ID(name string, r *http.Request) (resource.TfeID, error) {
 	return resource.ParseTfeID(s)
 }
 
-func Decode(dst interface{}, src map[string][]string) error {
+func Decode(dst any, src map[string][]string) error {
 	if err := decoder.Decode(dst, src); err != nil {
 		var emptyField schema.EmptyFieldError
 		if errors.As(err, &emptyField) {

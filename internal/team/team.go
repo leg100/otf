@@ -85,7 +85,7 @@ func newTeam(organization organization.Name, opts CreateTeamOptions) (*Team, err
 	}
 	// default parameters
 	if opts.Visibility == nil {
-		opts.Visibility = internal.Ptr("secret")
+		opts.Visibility = new("secret")
 	}
 
 	team := &Team{

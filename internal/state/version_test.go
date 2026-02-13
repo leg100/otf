@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -19,7 +18,7 @@ func TestFactory(t *testing.T) {
 		f := factory{&fakeDB{}}
 
 		got, err := f.new(ctx, CreateStateVersionOptions{
-			Serial:      internal.Ptr[int64](1),
+			Serial:      new(int64(1)),
 			State:       state,
 			WorkspaceID: testutils.ParseID(t, "ws-123"),
 		})
@@ -68,7 +67,7 @@ func TestFactory(t *testing.T) {
 		f := factory{&fakeDB{}}
 
 		got, err := f.new(ctx, CreateStateVersionOptions{
-			Serial:      internal.Ptr[int64](1),
+			Serial:      new(int64(1)),
 			WorkspaceID: testutils.ParseID(t, "ws-123"),
 		})
 		require.NoError(t, err)
@@ -85,7 +84,7 @@ func TestFactory(t *testing.T) {
 		f := factory{&fakeDB{current: &Version{Serial: 0}}}
 
 		got, err := f.new(ctx, CreateStateVersionOptions{
-			Serial:      internal.Ptr[int64](1),
+			Serial:      new(int64(1)),
 			State:       state,
 			WorkspaceID: testutils.ParseID(t, "ws-123"),
 		})
@@ -103,7 +102,7 @@ func TestFactory(t *testing.T) {
 		f := factory{&fakeDB{current: &Version{Serial: 1, State: state}}}
 
 		_, err := f.new(ctx, CreateStateVersionOptions{
-			Serial:      internal.Ptr[int64](1),
+			Serial:      new(int64(1)),
 			State:       state,
 			WorkspaceID: testutils.ParseID(t, "ws-123"),
 		})
@@ -124,7 +123,7 @@ func TestFactory(t *testing.T) {
 
 		// try to create another state version, same serial but different state
 		_, err = f.new(ctx, CreateStateVersionOptions{
-			Serial:      internal.Ptr[int64](1),
+			Serial:      new(int64(1)),
 			State:       state2,
 			WorkspaceID: testutils.ParseID(t, "ws-123"),
 		})
@@ -135,7 +134,7 @@ func TestFactory(t *testing.T) {
 		f := factory{&fakeDB{current: &Version{Serial: 99}}}
 
 		_, err := f.new(ctx, CreateStateVersionOptions{
-			Serial:      internal.Ptr[int64](1),
+			Serial:      new(int64(1)),
 			State:       state,
 			WorkspaceID: testutils.ParseID(t, "ws-123"),
 		})

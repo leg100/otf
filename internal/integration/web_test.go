@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/team"
 	userpkg "github.com/leg100/otf/internal/user"
 	"github.com/playwright-community/playwright-go"
@@ -19,7 +18,7 @@ func TestWeb(t *testing.T) {
 	user := userFromContext(t, ctx)
 
 	team, err := daemon.Teams.Create(ctx, org.Name, team.CreateTeamOptions{
-		Name: internal.Ptr("devops"),
+		Name: new("devops"),
 	})
 	require.NoError(t, err)
 	err = daemon.Users.AddTeamMembership(ctx, team.ID, []userpkg.Username{user.Username})

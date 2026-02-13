@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/configversion/source"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
@@ -167,7 +166,7 @@ WHERE configuration_versions.workspace_id = $1
 	if err != nil {
 		return nil, err
 	}
-	return resource.NewPage(items, opts.PageOptions, internal.Ptr(count)), nil
+	return resource.NewPage(items, opts.PageOptions, new(count)), nil
 }
 
 func (db *pgdb) listOlderThan(ctx context.Context, t time.Time) ([]*ConfigurationVersion, error) {

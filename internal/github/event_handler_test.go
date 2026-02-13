@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/google/go-github/v65/github"
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -56,7 +55,7 @@ func TestEventHandler(t *testing.T) {
 				SenderUsername:     "leg100",
 				SenderAvatarURL:    "https://avatars.githubusercontent.com/u/75728?v=4",
 				SenderHTMLURL:      "https://github.com/leg100",
-				GithubAppInstallID: internal.Ptr[int64](42997659),
+				GithubAppInstallID: new(int64(42997659)),
 			},
 			false,
 		},

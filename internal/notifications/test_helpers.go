@@ -45,10 +45,10 @@ func newTestCache(t *testing.T, f clientFactory, configs ...*Config) *cache {
 
 func newTestConfig(t *testing.T, workspaceID resource.TfeID, dst Destination, url string, triggers ...Trigger) *Config {
 	cfg, err := NewConfig(workspaceID, CreateConfigOptions{
-		Name:            internal.Ptr(uuid.NewString()),
+		Name:            new(uuid.NewString()),
 		DestinationType: dst,
-		Enabled:         internal.Ptr(true),
-		URL:             internal.Ptr(url),
+		Enabled:         new(true),
+		URL:             new(url),
 		Triggers:        triggers,
 	})
 	require.NoError(t, err)

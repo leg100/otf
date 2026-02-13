@@ -21,7 +21,7 @@ type Client struct {
 }
 
 // newRequest constructs a new API request
-func (c *Client) newRequest(method, path string, v interface{}) (*retryablehttp.Request, error) {
+func (c *Client) newRequest(method, path string, v any) (*retryablehttp.Request, error) {
 	req, err := c.Client.NewRequest(method, path, v)
 	if err != nil {
 		return nil, err

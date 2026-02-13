@@ -6,7 +6,6 @@ import (
 
 	otfhttp "github.com/leg100/otf/internal/http"
 
-	"github.com/leg100/otf/internal"
 	"github.com/spf13/cobra"
 )
 
@@ -50,7 +49,7 @@ func (a *CLI) newOrganizationCommand() *cobra.Command {
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			org, err := a.CreateOrganization(cmd.Context(), CreateOptions{
-				Name: internal.Ptr(args[0]),
+				Name: new(args[0]),
 			})
 			if err != nil {
 				return err

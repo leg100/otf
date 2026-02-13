@@ -7,7 +7,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/github"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -25,7 +24,7 @@ func Test_getLatestVersion(t *testing.T) {
 		}),
 		github.WithDisableTLS(),
 	)
-	got, err := getLatestTofuVersion(context.Background(), internal.Ptr(u.String()))
+	got, err := getLatestTofuVersion(context.Background(), new(u.String()))
 	require.NoError(t, err)
 	assert.Equal(t, "1.9.0", got)
 }

@@ -21,9 +21,9 @@ func TestRemoteStateSharing(t *testing.T) {
 	daemon, org, ctx := setup(t)
 	// producer is the workspace sharing its state
 	producer, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
-		Name:              internal.Ptr("producer"),
+		Name:              new("producer"),
 		Organization:      &org.Name,
-		GlobalRemoteState: internal.Ptr(true),
+		GlobalRemoteState: new(true),
 	})
 	require.NoError(t, err)
 	// consumer is the workspace consuming the state of the producer

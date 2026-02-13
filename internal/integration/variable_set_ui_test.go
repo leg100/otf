@@ -122,8 +122,8 @@ func TestIntegration_VariableSetUI_VariableDelete(t *testing.T) {
 	require.NoError(t, err)
 
 	_, err = svc.Variables.CreateVariableSetVariable(ctx, set.ID, variable.CreateVariableOptions{
-		Key:      internal.Ptr("varset-var-1"),
-		Value:    internal.Ptr("foo"),
+		Key:      new("varset-var-1"),
+		Value:    new("foo"),
 		Category: internal.Ptr(variable.CategoryTerraform),
 	})
 	require.NoError(t, err)
@@ -239,8 +239,8 @@ func TestIntegration_VariableSetUI_WorkspaceVariables(t *testing.T) {
 
 	// create variable for global set
 	_, err = svc.Variables.CreateVariableSetVariable(ctx, globalSet.ID, variable.CreateVariableOptions{
-		Key:      internal.Ptr("foo"),
-		Value:    internal.Ptr("bar"),
+		Key:      new("foo"),
+		Value:    new("bar"),
 		Category: internal.Ptr(variable.CategoryTerraform),
 	})
 	require.NoError(t, err)
@@ -254,8 +254,8 @@ func TestIntegration_VariableSetUI_WorkspaceVariables(t *testing.T) {
 
 	// create variable for workspace-scoped set
 	_, err = svc.Variables.CreateVariableSetVariable(ctx, workspaceScopedSet.ID, variable.CreateVariableOptions{
-		Key:      internal.Ptr("foo"),
-		Value:    internal.Ptr("bar"),
+		Key:      new("foo"),
+		Value:    new("bar"),
 		Category: internal.Ptr(variable.CategoryTerraform),
 	})
 	require.NoError(t, err)

@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/engine"
 	"github.com/leg100/otf/internal/organization"
@@ -25,7 +24,7 @@ func NewTestWorkspace(t *testing.T, opts *CreateOptions) *Workspace {
 		opts.Organization = &name
 	}
 	if opts.Name == nil {
-		opts.Name = internal.Ptr(uuid.NewString())
+		opts.Name = new(uuid.NewString())
 	}
 
 	factory := &factory{

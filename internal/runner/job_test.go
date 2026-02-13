@@ -4,7 +4,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/stretchr/testify/assert"
@@ -48,7 +47,7 @@ func TestJob_cancel(t *testing.T) {
 		{
 			name:       "cancel active job",
 			status:     JobRunning,
-			run:        &run.Run{Status: runstatus.Planning, CancelSignaledAt: internal.Ptr(time.Now())},
+			run:        &run.Run{Status: runstatus.Planning, CancelSignaledAt: new(time.Now())},
 			wantStatus: JobRunning,
 			wantSignal: true,
 			wantForce:  false,

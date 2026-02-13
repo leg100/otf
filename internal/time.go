@@ -26,7 +26,7 @@ import (
 // a deterministic time. If it's nil then time.Now() is used.
 func CurrentTimestamp(now *time.Time) time.Time {
 	if now == nil {
-		now = Ptr(time.Now())
+		now = new(time.Now())
 	}
 	return now.Round(time.Millisecond).UTC()
 }

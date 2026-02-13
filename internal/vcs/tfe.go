@@ -82,7 +82,7 @@ func (a *tfe) createOAuthClient(w http.ResponseWriter, r *http.Request) {
 
 	// default parameters
 	if params.Name == nil {
-		params.Name = internal.Ptr("")
+		params.Name = new("")
 	}
 
 	oauthClient, err := a.Create(r.Context(), CreateOptions{

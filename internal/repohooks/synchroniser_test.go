@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal/logr"
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -28,11 +27,11 @@ func TestSynchroniser(t *testing.T) {
 				Endpoint: "fake-host.org/xyz",
 			},
 			got: &hook{
-				cloudID:  internal.Ptr("123"),
+				cloudID:  new("123"),
 				endpoint: "fake-host.org/xyz",
 			},
 			want: &hook{
-				cloudID:  internal.Ptr("123"),
+				cloudID:  new("123"),
 				endpoint: "fake-host.org/xyz",
 			},
 		},
@@ -44,7 +43,7 @@ func TestSynchroniser(t *testing.T) {
 			},
 			want: &hook{
 				endpoint: "fake-host.org/xyz",
-				cloudID:  internal.Ptr("123"),
+				cloudID:  new("123"),
 			},
 		},
 		{
@@ -55,11 +54,11 @@ func TestSynchroniser(t *testing.T) {
 			},
 			got: &hook{
 				endpoint: "fake-host.org/xyz",
-				cloudID:  internal.Ptr("123"),
+				cloudID:  new("123"),
 			},
 			want: &hook{
 				endpoint: "fake-host.org/xyz",
-				cloudID:  internal.Ptr("123"),
+				cloudID:  new("123"),
 			},
 		},
 	}

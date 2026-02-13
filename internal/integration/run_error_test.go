@@ -45,9 +45,9 @@ func TestRunError(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// create workspace
 			ws, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
-				Name:          internal.Ptr("ws-" + string(tt.mode)),
+				Name:          new("ws-" + string(tt.mode)),
 				Organization:  &org.Name,
-				ExecutionMode: internal.Ptr(tt.mode),
+				ExecutionMode: new(tt.mode),
 				AgentPoolID:   tt.poolID,
 			})
 			require.NoError(t, err)

@@ -3,7 +3,6 @@ package resource
 import (
 	"testing"
 
-	"github.com/leg100/otf/internal"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -33,8 +32,8 @@ func TestPagination(t *testing.T) {
 			count: 101,
 			want: &Pagination{
 				CurrentPage:  3,
-				PreviousPage: internal.Ptr(2),
-				NextPage:     internal.Ptr(4),
+				PreviousPage: new(2),
+				NextPage:     new(4),
 				TotalCount:   101,
 				TotalPages:   6,
 			},
@@ -64,7 +63,7 @@ func TestPagination(t *testing.T) {
 func TestNewPage(t *testing.T) {
 	// construct a slice of numbers from 1 through 101
 	s := make([]int, 101)
-	for i := 0; i < len(s); i++ {
+	for i := range s {
 		s[i] = i + 1
 	}
 
@@ -84,7 +83,7 @@ func TestNewPage(t *testing.T) {
 					CurrentPage: 1,
 					TotalCount:  101,
 					TotalPages:  6,
-					NextPage:    internal.Ptr(2),
+					NextPage:    new(2),
 				},
 			},
 		},
@@ -98,8 +97,8 @@ func TestNewPage(t *testing.T) {
 					CurrentPage:  2,
 					TotalCount:   101,
 					TotalPages:   11,
-					PreviousPage: internal.Ptr(1),
-					NextPage:     internal.Ptr(3),
+					PreviousPage: new(1),
+					NextPage:     new(3),
 				},
 			},
 		},
@@ -113,7 +112,7 @@ func TestNewPage(t *testing.T) {
 					CurrentPage:  11,
 					TotalCount:   101,
 					TotalPages:   11,
-					PreviousPage: internal.Ptr(10),
+					PreviousPage: new(10),
 				},
 			},
 		},
@@ -127,14 +126,14 @@ func TestNewPage(t *testing.T) {
 					CurrentPage:  99,
 					TotalCount:   101,
 					TotalPages:   11,
-					PreviousPage: internal.Ptr(98),
+					PreviousPage: new(98),
 				},
 			},
 		},
 		{
 			"page from database",
 			PageOptions{PageSize: 100, PageNumber: 1},
-			internal.Ptr[int64](201),
+			new(int64(201)),
 			Page[int]{
 				// note s is now a segment within a larger result set of 201
 				// items.
@@ -143,7 +142,7 @@ func TestNewPage(t *testing.T) {
 					CurrentPage: 1,
 					TotalCount:  201,
 					TotalPages:  3,
-					NextPage:    internal.Ptr(2),
+					NextPage:    new(2),
 				},
 			},
 		},
@@ -170,7 +169,7 @@ func TestListAll(t *testing.T) {
 		return &Page[foo]{
 			Items: []foo{foo(page)},
 			Pagination: &Pagination{
-				NextPage: internal.Ptr(page),
+				NextPage: new(page),
 			},
 		}, nil
 	})
@@ -187,7 +186,7 @@ func TestListAll_infinite_pagination(t *testing.T) {
 		return &Page[foo]{
 			Items: []foo{0},
 			Pagination: &Pagination{
-				NextPage: internal.Ptr(1),
+				NextPage: new(1),
 			},
 		}, nil
 	})

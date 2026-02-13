@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/a-h/templ"
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/configversion/source"
 	"github.com/leg100/otf/internal/engine"
@@ -60,7 +59,7 @@ func TestFactory(t *testing.T) {
 			&configversion.ConfigurationVersion{},
 		)
 
-		got, err := f.NewRun(ctx, resource.TfeID{}, CreateOptions{PlanOnly: internal.Ptr(true)})
+		got, err := f.NewRun(ctx, resource.TfeID{}, CreateOptions{PlanOnly: new(true)})
 		require.NoError(t, err)
 
 		assert.True(t, got.PlanOnly)
@@ -69,7 +68,7 @@ func TestFactory(t *testing.T) {
 	t.Run("workspace auto-apply", func(t *testing.T) {
 		f := newTestFactory(
 			&organization.Organization{},
-			workspace.NewTestWorkspace(t, &workspace.CreateOptions{AutoApply: internal.Ptr(true)}),
+			workspace.NewTestWorkspace(t, &workspace.CreateOptions{AutoApply: new(true)}),
 			&configversion.ConfigurationVersion{},
 		)
 
@@ -87,7 +86,7 @@ func TestFactory(t *testing.T) {
 		)
 
 		got, err := f.NewRun(ctx, resource.TfeID{}, CreateOptions{
-			AutoApply: internal.Ptr(true),
+			AutoApply: new(true),
 		})
 		require.NoError(t, err)
 

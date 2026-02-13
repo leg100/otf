@@ -3,7 +3,6 @@ package integration
 import (
 	"testing"
 
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/leg100/otf/internal/vcs"
@@ -28,12 +27,12 @@ func TestGithubPullRequest(t *testing.T) {
 
 	provider := daemon.createVCSProvider(t, ctx, org, nil)
 	ws, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
-		Name:            internal.Ptr("dev"),
+		Name:            new("dev"),
 		Organization:    &org.Name,
 		TriggerPatterns: []string{"/foo/**/*.tf"},
 		ConnectOptions: &workspace.ConnectOptions{
 			VCSProviderID: &provider.ID,
-			RepoPath:      internal.Ptr(vcs.NewMustRepo("leg100", "otf-workspaces")),
+			RepoPath:      new(vcs.NewMustRepo("leg100", "otf-workspaces")),
 		},
 	})
 	require.NoError(t, err)

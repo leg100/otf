@@ -28,7 +28,7 @@ func TestLockFile(t *testing.T) {
 	// create root module with only a variable and no resources - this should
 	// result in *no* lock file being created.
 	root := t.TempDir()
-	config := []byte(fmt.Sprintf(`
+	config := fmt.Appendf(nil, `
 terraform {
   cloud {
 	hostname = "%s"
@@ -43,7 +43,7 @@ terraform {
 variable "foo" {
 	default = "bar"
 }
-`, svc.System.Hostname(), org.Name, "my-test-workspace"))
+`, svc.System.Hostname(), org.Name, "my-test-workspace")
 	err := os.WriteFile(filepath.Join(root, "main.tf"), []byte(config), 0o600)
 	require.NoError(t, err)
 

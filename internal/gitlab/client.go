@@ -110,7 +110,7 @@ func (g *Client) ListRepositories(ctx context.Context, lopts vcs.ListRepositorie
 		},
 		// limit results to those repos the authenticated user is a member of,
 		// otherwise we'll get *all* accessible repos, public and private.
-		Membership: internal.Ptr(true),
+		Membership: new(true),
 	}
 	projects, _, err := g.client.Projects.ListProjects(opts, nil)
 	if err != nil {
@@ -126,7 +126,7 @@ func (g *Client) ListRepositories(ctx context.Context, lopts vcs.ListRepositorie
 
 func (g *Client) ListTags(ctx context.Context, opts vcs.ListTagsOptions) ([]string, error) {
 	results, _, err := g.client.Tags.ListTags(opts.Repo, &gitlab.ListTagsOptions{
-		Search: internal.Ptr("^" + opts.Prefix),
+		Search: new("^" + opts.Prefix),
 	})
 	if err != nil {
 		return nil, err
@@ -141,7 +141,7 @@ func (g *Client) ListTags(ctx context.Context, opts vcs.ListTagsOptions) ([]stri
 
 func (g *Client) GetRepoTarball(ctx context.Context, opts vcs.GetRepoTarballOptions) ([]byte, string, error) {
 	tarball, _, err := g.client.Repositories.Archive(opts.Repo.String(), &gitlab.ArchiveOptions{
-		Format: internal.Ptr("tar.gz"),
+		Format: new("tar.gz"),
 		SHA:    opts.Ref,
 	})
 	if err != nil {
@@ -181,17 +181,17 @@ func (g *Client) GetRepoTarball(ctx context.Context, opts vcs.GetRepoTarballOpti
 
 func (g *Client) CreateWebhook(ctx context.Context, opts vcs.CreateWebhookOptions) (string, error) {
 	addOpts := &gitlab.AddProjectHookOptions{
-		EnableSSLVerification: internal.Ptr(true),
-		PushEvents:            internal.Ptr(true),
-		Token:                 internal.Ptr(opts.Secret),
-		URL:                   internal.Ptr(opts.Endpoint),
+		EnableSSLVerification: new(true),
+		PushEvents:            new(true),
+		Token:                 new(opts.Secret),
+		URL:                   new(opts.Endpoint),
 	}
 	for _, event := range opts.Events {
 		switch event {
 		case vcs.EventTypePush:
-			addOpts.PushEvents = internal.Ptr(true)
+			addOpts.PushEvents = new(true)
 		case vcs.EventTypePull:
-			addOpts.MergeRequestsEvents = internal.Ptr(true)
+			addOpts.MergeRequestsEvents = new(true)
 		}
 	}
 
@@ -209,16 +209,16 @@ func (g *Client) UpdateWebhook(ctx context.Context, id string, opts vcs.UpdateWe
 	}
 
 	editOpts := &gitlab.EditProjectHookOptions{
-		EnableSSLVerification: internal.Ptr(true),
-		Token:                 internal.Ptr(opts.Secret),
-		URL:                   internal.Ptr(opts.Endpoint),
+		EnableSSLVerification: new(true),
+		Token:                 new(opts.Secret),
+		URL:                   new(opts.Endpoint),
 	}
 	for _, event := range opts.Events {
 		switch event {
 		case vcs.EventTypePush:
-			editOpts.PushEvents = internal.Ptr(true)
+			editOpts.PushEvents = new(true)
 		case vcs.EventTypePull:
-			editOpts.MergeRequestsEvents = internal.Ptr(true)
+			editOpts.MergeRequestsEvents = new(true)
 		}
 	}
 

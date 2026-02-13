@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/coreos/go-oidc/v3/oidc"
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/user"
 	"github.com/lestrrat-go/jwx/v2/jwa"
 	"github.com/lestrrat-go/jwx/v2/jwt"
@@ -43,7 +42,7 @@ func Test_idtokenHandler_parseUserInfo(t *testing.T) {
 			NameClaim,
 			UserInfo{
 				Username:  user.MustUsername("bobby"),
-				AvatarURL: internal.Ptr("https://mypic.com"),
+				AvatarURL: new("https://mypic.com"),
 			},
 		},
 		{

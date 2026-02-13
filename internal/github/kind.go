@@ -41,7 +41,7 @@ func registerVCSKinds(
 		NewClient:  provider.NewClient,
 		// Github apps don't need webhooks on repositories.
 		SkipRepohook: true,
-		Source:       internal.Ptr(Source),
+		Source:       new(Source),
 		TFEServiceProviders: []vcs.TFEServiceProviderType{
 			vcs.ServiceProviderGithubApp,
 		},
@@ -59,7 +59,7 @@ func registerVCSKinds(
 			vcs.ServiceProviderGithub,
 			vcs.ServiceProviderGithubEE,
 		},
-		Source: internal.Ptr(Source),
+		Source: new(Source),
 	})
 }
 

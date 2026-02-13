@@ -468,7 +468,7 @@ func (ws *Workspace) Update(opts UpdateOptions) (*bool, error) {
 			return nil, errors.New("cannot disconnect an already disconnected workspace")
 		}
 		// workspace is to be disconnected
-		connect = internal.Ptr(false)
+		connect = new(false)
 		updated = true
 	}
 	if opts.ConnectOptions != nil {
@@ -477,7 +477,7 @@ func (ws *Workspace) Update(opts UpdateOptions) (*bool, error) {
 			if err := ws.addConnection(opts.ConnectOptions); err != nil {
 				return nil, err
 			}
-			connect = internal.Ptr(true)
+			connect = new(true)
 			updated = true
 		} else {
 			// modify existing connection

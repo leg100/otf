@@ -4,7 +4,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/sync/errgroup"
@@ -29,7 +28,7 @@ func TestSubsystem(t *testing.T) {
 			}
 			if tt.exclusive {
 				sub.DB = &fakeWaitAndLock{}
-				sub.LockID = internal.Ptr[int64](123)
+				sub.LockID = new(int64(123))
 			}
 			err := sub.Start(ctx, &errgroup.Group{})
 			require.NoError(t, err)

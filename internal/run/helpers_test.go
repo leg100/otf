@@ -4,7 +4,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/workspace"
@@ -12,7 +11,7 @@ import (
 )
 
 func newTestRun(t *testing.T, ctx context.Context, opts CreateOptions) *Run {
-	org, err := organization.NewOrganization(organization.CreateOptions{Name: internal.Ptr("acme-corp")})
+	org, err := organization.NewOrganization(organization.CreateOptions{Name: new("acme-corp")})
 	require.NoError(t, err)
 
 	ws := workspace.NewTestWorkspace(t, nil)

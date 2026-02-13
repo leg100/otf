@@ -485,7 +485,7 @@ AND (($9::timestamptz IS NULL) OR runs.created_at < $9::timestamptz)
 	if err != nil {
 		return nil, fmt.Errorf("counting runs: %w", err)
 	}
-	return resource.NewPage(items, opts.PageOptions, internal.Ptr(count)), nil
+	return resource.NewPage(items, opts.PageOptions, new(count)), nil
 }
 
 // listStatuses lists the ID and status of every run.

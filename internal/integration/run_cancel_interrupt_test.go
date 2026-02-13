@@ -54,7 +54,7 @@ func TestIntegration_RunCancelInterrupt(t *testing.T) {
 
 	// create workspace specifying that it use an external agent.
 	ws, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
-		Name:          internal.Ptr("ws-1"),
+		Name:          new("ws-1"),
 		Organization:  &org.Name,
 		ExecutionMode: internal.Ptr(workspace.AgentExecutionMode),
 		AgentPoolID:   &agent.AgentPool.ID,
@@ -64,8 +64,8 @@ func TestIntegration_RunCancelInterrupt(t *testing.T) {
 	// create a variable so that the fake bin knows the url of the temp http
 	// server
 	_, err = daemon.Variables.CreateWorkspaceVariable(ctx, ws.ID, variable.CreateVariableOptions{
-		Key:      internal.Ptr("URL"),
-		Value:    internal.Ptr(srv.URL),
+		Key:      new("URL"),
+		Value:    new(srv.URL),
 		Category: internal.Ptr(variable.CategoryEnv),
 	})
 	require.NoError(t, err)

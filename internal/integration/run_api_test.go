@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	tfe "github.com/hashicorp/go-tfe"
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/testutils"
@@ -40,7 +39,7 @@ func TestIntegration_RunAPI(t *testing.T) {
 	t.Run("create run using config from repo", func(t *testing.T) {
 		vcsProvider := daemon.createVCSProvider(t, ctx, org, nil)
 		ws, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
-			Name:         internal.Ptr("connected-workspace"),
+			Name:         new("connected-workspace"),
 			Organization: &org.Name,
 			ConnectOptions: &workspace.ConnectOptions{
 				RepoPath:      &repo,

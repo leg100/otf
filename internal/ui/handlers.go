@@ -260,8 +260,8 @@ func withOrganization(org resource.ID) renderPageOption {
 
 func withWorkspace(ws *workspace.Workspace) renderPageOption {
 	return func(opts *helpers.LayoutProps) {
-		opts.Organization = internal.Ptr(ws.Organization)
-		opts.Workspace = internal.Ptr(ws.Info())
+		opts.Organization = new(ws.Organization)
+		opts.Workspace = new(ws.Info())
 	}
 }
 

@@ -88,7 +88,7 @@ func TestGetWebhook(t *testing.T) {
 		WithHook(hook{
 			Hook: &github.Hook{
 				Config: &github.HookConfig{
-					URL: internal.Ptr("https://otf-server/hooks"),
+					URL: new("https://otf-server/hooks"),
 				},
 			},
 		}),

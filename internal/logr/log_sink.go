@@ -42,7 +42,7 @@ func (ls *logSink) Info(level int, msg string, keysAndValues ...any) {
 }
 
 // Error logs an error, with the given message and key/value pairs as context.
-func (ls *logSink) Error(err error, msg string, keysAndValues ...interface{}) {
+func (ls *logSink) Error(err error, msg string, keysAndValues ...any) {
 	r := slog.Record{Time: time.Now(), Level: slog.LevelError, Message: msg}
 	r.Add("error", err)
 	r.Add(keysAndValues...)
@@ -50,7 +50,7 @@ func (ls *logSink) Error(err error, msg string, keysAndValues ...interface{}) {
 }
 
 // WithValues returns a new LogSink with additional key/value pairs.
-func (ls *logSink) WithValues(args ...interface{}) logr.LogSink {
+func (ls *logSink) WithValues(args ...any) logr.LogSink {
 	// NOTE: code borrowed from https://cs.opensource.google/go/x/exp/+/10a50721:slog/logger.go;l=97
 	var (
 		attr  slog.Attr

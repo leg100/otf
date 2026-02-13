@@ -5,10 +5,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/leg100/otf/internal/logr"
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
+	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
@@ -69,7 +68,7 @@ func NewService(opts Options) *Service {
 		// is skipped.
 		ctx = authz.AddSkipAuthz(ctx)
 		_, err := svc.Create(ctx, organization.Name, CreateTeamOptions{
-			Name: internal.Ptr("owners"),
+			Name: new("owners"),
 		})
 		if err != nil {
 			return fmt.Errorf("creating owners team: %w", err)

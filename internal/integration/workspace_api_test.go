@@ -9,7 +9,6 @@ import (
 
 	"github.com/DataDog/jsonapi"
 	tfe "github.com/hashicorp/go-tfe"
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/github"
 	otfrun "github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/runstatus"
@@ -83,17 +82,17 @@ func TestIntegration_WorkspaceAPI_CreateConnected(t *testing.T) {
 
 	oauth, err := client.OAuthClients.Create(ctx, org.Name.String(), tfe.OAuthClientCreateOptions{
 		OAuthToken:      provider.Token,
-		APIURL:          internal.Ptr(daemon.GithubHostname.String()),
-		HTTPURL:         internal.Ptr(daemon.GithubHostname.String()),
+		APIURL:          new(daemon.GithubHostname.String()),
+		HTTPURL:         new(daemon.GithubHostname.String()),
 		ServiceProvider: tfe.ServiceProvider(tfe.ServiceProviderGithub),
 	})
 	require.NoError(t, err)
 
 	ws, err := client.Workspaces.Create(ctx, org.Name.String(), tfe.WorkspaceCreateOptions{
-		Name: internal.Ptr("testing"),
+		Name: new("testing"),
 		VCSRepo: &tfe.VCSRepoOptions{
-			OAuthTokenID: internal.Ptr(oauth.ID),
-			Identifier:   internal.Ptr(repo.String()),
+			OAuthTokenID: new(oauth.ID),
+			Identifier:   new(repo.String()),
 		},
 	})
 	require.NoError(t, err)

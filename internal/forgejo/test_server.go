@@ -267,8 +267,7 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) (*TestServer, *url.UR
 		srv.mux.HandleFunc("/api/v1/repos/"+srv.repo.String()+"/tags", func(w http.ResponseWriter, r *http.Request) {
 			var tags []*forgejo.Tag
 			for _, ref := range srv.refs {
-				if strings.HasPrefix(ref.ref, "refs/tags/") {
-					refname := strings.TrimPrefix(ref.ref, "refs/tags/")
+				if refname, ok := strings.CutPrefix(ref.ref, "refs/tags/"); ok {
 					tags = append(tags, &forgejo.Tag{
 						Name: refname,
 						Commit: &forgejo.CommitMeta{

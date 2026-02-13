@@ -47,7 +47,7 @@ type (
 
 	PhaseStartOptions struct {
 		Type    string         `jsonapi:"primary,phase"`
-		AgentID resource.TfeID `jsonapi:"attribute" json:"agent-id,omitempty"`
+		AgentID resource.TfeID `jsonapi:"attribute" json:"agent-id"`
 	}
 
 	// PhaseFinishOptions report the status of a phase upon finishing.

@@ -27,9 +27,9 @@ func TestIntegration_VCSProviderTFEAPI(t *testing.T) {
 		require.NoError(t, err)
 
 		created, err := client.OAuthClients.Create(ctx, org.Name.String(), tfe.OAuthClientCreateOptions{
-			OAuthToken:      internal.Ptr("my-pat"),
-			HTTPURL:         internal.Ptr("http://gitlab.com"),
-			APIURL:          internal.Ptr("http://gitlab.com/api/v4"),
+			OAuthToken:      new("my-pat"),
+			HTTPURL:         new("http://gitlab.com"),
+			APIURL:          new("http://gitlab.com/api/v4"),
 			ServiceProvider: internal.Ptr(tfe.ServiceProviderGitlab),
 		})
 		require.NoError(t, err)

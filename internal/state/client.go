@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"net/url"
 
-	"github.com/leg100/otf/internal"
 	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/resource"
 )
@@ -20,9 +19,9 @@ type Client struct {
 func (c *Client) Create(ctx context.Context, opts CreateStateVersionOptions) (*Version, error) {
 	u := fmt.Sprintf("workspaces/%s/state-versions", url.QueryEscape(opts.WorkspaceID.String()))
 	req, err := c.NewRequest("POST", u, &TFEStateVersionCreateVersionOptions{
-		MD5:    internal.Ptr(fmt.Sprintf("%x", md5.Sum(opts.State))),
+		MD5:    new(fmt.Sprintf("%x", md5.Sum(opts.State))),
 		Serial: opts.Serial,
-		State:  internal.Ptr(base64.StdEncoding.EncodeToString(opts.State)),
+		State:  new(base64.StdEncoding.EncodeToString(opts.State)),
 	})
 	if err != nil {
 		return nil, err

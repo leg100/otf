@@ -22,7 +22,7 @@ func (a *Service) StartSession(w http.ResponseWriter, r *http.Request, userID re
 		return err
 	}
 	// Set cookie to expire at same time as token
-	html.SetCookie(w, SessionCookie, string(token), internal.Ptr(expiry))
+	html.SetCookie(w, SessionCookie, string(token), new(expiry))
 	html.ReturnUserOriginalPage(w, r)
 
 	// TODO: log username instead

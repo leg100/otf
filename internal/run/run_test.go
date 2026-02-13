@@ -107,7 +107,7 @@ func TestRun_States(t *testing.T) {
 	})
 
 	t.Run("finish plan with changes on run with autoapply enabled", func(t *testing.T) {
-		run := newTestRun(t, ctx, CreateOptions{AutoApply: internal.Ptr(true)})
+		run := newTestRun(t, ctx, CreateOptions{AutoApply: new(true)})
 		run.Status = runstatus.Planning
 
 		run.Plan.ResourceReport = &Report{Additions: 1}
@@ -227,7 +227,7 @@ func TestRun_States(t *testing.T) {
 		run := newTestRun(t, ctx, CreateOptions{})
 		run.Status = runstatus.Planning
 		// gracefully canceled 11 seconds ago
-		run.CancelSignaledAt = internal.Ptr(time.Now().Add(-11 * time.Second))
+		run.CancelSignaledAt = new(time.Now().Add(-11 * time.Second))
 		// force cancel now
 		err := run.Cancel(true, true)
 		require.NoError(t, err)
@@ -274,8 +274,8 @@ func TestRun_StatusReport(t *testing.T) {
 				// 1 second in plan queued state
 				// 2 seconds in planning state
 				return createRun(ago(4)).
-					updateStatus(runstatus.PlanQueued, internal.Ptr(ago(3))).
-					updateStatus(runstatus.Planning, internal.Ptr(ago(2)))
+					updateStatus(runstatus.PlanQueued, new(ago(3))).
+					updateStatus(runstatus.Planning, new(ago(2)))
 			},
 			[]StatusPeriod{
 				{Status: runstatus.Pending, Period: time.Second},
@@ -291,8 +291,8 @@ func TestRun_StatusReport(t *testing.T) {
 				// 2 seconds in planning state
 				// finished
 				return createRun(ago(4)).
-					updateStatus(runstatus.PlanQueued, internal.Ptr(ago(3))).
-					updateStatus(runstatus.Planning, internal.Ptr(ago(2))).
+					updateStatus(runstatus.PlanQueued, new(ago(3))).
+					updateStatus(runstatus.Planning, new(ago(2))).
 					updateStatus(runstatus.PlannedAndFinished, &now)
 			},
 			[]StatusPeriod{
@@ -311,10 +311,10 @@ func TestRun_StatusReport(t *testing.T) {
 				// 5 second in applying state
 				// finished
 				return createRun(ago(10)).
-					updateStatus(runstatus.PlanQueued, internal.Ptr(ago(9))).
-					updateStatus(runstatus.Planning, internal.Ptr(ago(8))).
-					updateStatus(runstatus.Planned, internal.Ptr(ago(6))).
-					updateStatus(runstatus.Applying, internal.Ptr(ago(5))).
+					updateStatus(runstatus.PlanQueued, new(ago(9))).
+					updateStatus(runstatus.Planning, new(ago(8))).
+					updateStatus(runstatus.Planned, new(ago(6))).
+					updateStatus(runstatus.Applying, new(ago(5))).
 					updateStatus(runstatus.PlannedAndFinished, &now)
 			},
 			[]StatusPeriod{

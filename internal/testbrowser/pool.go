@@ -74,13 +74,13 @@ func NewPool(secret []byte) (*Pool, func(), error) {
 		browser: browser,
 		tests:   make(map[*testing.T]int),
 	}
-	for i := 0; i < poolSize; i++ {
+	for range poolSize {
 		p.pool <- nil
 	}
 
 	// Terminate all provisioned browsers and then terminate their allocator
 	cleanup := func() {
-		for i := 0; i < poolSize; i++ {
+		for range poolSize {
 			if b := <-p.pool; b != nil {
 				// TODO: handle error
 				_ = b.Close()
@@ -102,7 +102,7 @@ func (p *Pool) New(t *testing.T, user context.Context, fn func(playwright.Page))
 
 	// Construct new ctx
 	browserCtx, err := p.browser.NewContext(playwright.BrowserNewContextOptions{
-		IgnoreHttpsErrors: internal.Ptr(true),
+		IgnoreHttpsErrors: new(true),
 	})
 	require.NoError(t, err)
 
@@ -114,8 +114,8 @@ func (p *Pool) New(t *testing.T, user context.Context, fn func(playwright.Page))
 
 	// Setup tracing for debugging purposes.
 	browserCtx.Tracing().Start(playwright.TracingStartOptions{
-		Screenshots: playwright.Bool(true),
-		Snapshots:   playwright.Bool(true),
+		Screenshots: new(true),
+		Snapshots:   new(true),
 	})
 	defer func() {
 		// Save trace to a unique path for each call of this func
@@ -160,8 +160,8 @@ func (p *Pool) New(t *testing.T, user context.Context, fn func(playwright.Page))
 			{
 				Name:   "session",
 				Value:  string(token),
-				Domain: internal.Ptr("127.0.0.1"),
-				Path:   internal.Ptr("/"),
+				Domain: new("127.0.0.1"),
+				Path:   new("/"),
 			},
 		})
 		require.NoError(t, err)

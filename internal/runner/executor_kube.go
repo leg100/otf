@@ -169,7 +169,7 @@ func (s *kubeExecutor) SpawnOperation(ctx context.Context, _ *errgroup.Group, jo
 			Namespace: s.Config.Namespace,
 			Labels:    labels,
 		},
-		Immutable: internal.Ptr(true),
+		Immutable: new(true),
 		StringData: map[string]string{
 			jobTokenSecretKey: string(jobToken),
 		},
@@ -190,8 +190,8 @@ func (s *kubeExecutor) SpawnOperation(ctx context.Context, _ *errgroup.Group, jo
 		Spec: batchv1.JobSpec{
 			// A job by default will re-create pods upon failure (up to 6 times
 			// with backoff), but we can't guarantee idempotency.
-			BackoffLimit:            internal.Ptr(int32(0)),
-			TTLSecondsAfterFinished: internal.Ptr(int32(s.Config.TTLAfterFinish.Seconds())),
+			BackoffLimit:            new(int32(0)),
+			TTLSecondsAfterFinished: new(int32(s.Config.TTLAfterFinish.Seconds())),
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: labels,

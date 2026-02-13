@@ -316,7 +316,7 @@ type TFEWorkspaceUpdateOptions struct {
 	// the keys below you wish to modify. To add a new VCS repo to a workspace
 	// that didn't previously have one, include at least the oauth-token-id and
 	// identifier keys.
-	VCSRepo VCSRepoOptionsJSON `jsonapi:"attribute" json:"vcs-repo,omitempty"`
+	VCSRepo VCSRepoOptionsJSON `jsonapi:"attribute" json:"vcs-repo"`
 
 	// A relative path that Terraform will execute within. This defaults to the
 	// root of your repository and is typically set to a subdirectory matching

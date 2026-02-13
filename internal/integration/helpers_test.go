@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -53,7 +54,8 @@ func organizationURL(hostname string, org organization.Name) string {
 func newRootModule(t *testing.T, hostname string, organization organization.Name, workspace string, additionalConfig ...string) string {
 	t.Helper()
 
-	config := fmt.Sprintf(`
+	var config strings.Builder
+	config.WriteString(fmt.Sprintf(`
 terraform {
   cloud {
 	hostname = "%s"
@@ -65,13 +67,13 @@ terraform {
   }
 }
 resource "null_resource" "e2e" {}
-`, hostname, organization, workspace)
+`, hostname, organization, workspace))
 	for _, cfg := range additionalConfig {
-		config += "\n"
-		config += cfg
+		config.WriteString("\n")
+		config.WriteString(cfg)
 	}
 
-	return createRootModule(t, config)
+	return createRootModule(t, config.String())
 }
 
 func createRootModule(t *testing.T, tfconfig string) string {

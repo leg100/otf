@@ -19,7 +19,7 @@ func TestVCSProvider(t *testing.T) {
 
 		_, err := svc.VCSProviders.Create(ctx, vcs.CreateOptions{
 			Organization: org.Name,
-			Token:        internal.Ptr(uuid.NewString()),
+			Token:        new(uuid.NewString()),
 			KindID:       github.TokenKindID,
 		})
 		require.NoError(t, err)
@@ -33,7 +33,7 @@ func TestVCSProvider(t *testing.T) {
 		// it returns the provider from the provider.Update() function but we
 		// want the updated provider from the *database*.
 		_, err := svc.VCSProviders.Update(ctx, provider.ID, vcs.UpdateOptions{
-			Token:   internal.Ptr("somethingelse"),
+			Token:   new("somethingelse"),
 			BaseURL: internal.MustWebURL("https://my-updated-server/api"),
 		})
 		require.NoError(t, err)

@@ -10,7 +10,6 @@ import (
 	"cloud.google.com/go/pubsub/v2"
 	"cloud.google.com/go/pubsub/v2/apiv1/pubsubpb"
 	"github.com/google/uuid"
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/notifications"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/testutils"
@@ -66,9 +65,9 @@ func TestIntegration_NotificationGCPPubSub(t *testing.T) {
 
 	_, err = daemon.Notifications.Create(ctx, ws.ID, notifications.CreateConfigOptions{
 		DestinationType: notifications.DestinationGCPPubSub,
-		Enabled:         internal.Ptr(true),
-		Name:            internal.Ptr("testing"),
-		URL:             internal.Ptr("gcppubsub://abc123/" + topicID),
+		Enabled:         new(true),
+		Name:            new("testing"),
+		URL:             new("gcppubsub://abc123/" + topicID),
 		Triggers: []notifications.Trigger{
 			notifications.TriggerCreated,
 			notifications.TriggerPlanning,

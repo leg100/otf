@@ -35,8 +35,8 @@ func (cb *CacheBuster) Open(fname string) (http.File, error) {
 	var partsSansHash []string
 
 	// Reconstruct filename without hash
-	parts := strings.Split(fname, ".")
-	for _, p := range parts {
+	parts := strings.SplitSeq(fname, ".")
+	for p := range parts {
 		if !sha256re.MatchString(p) {
 			partsSansHash = append(partsSansHash, p)
 		}

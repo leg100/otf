@@ -3,7 +3,6 @@ package integration
 import (
 	"testing"
 
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/leg100/otf/internal/vcs"
@@ -26,7 +25,7 @@ func TestIntegration_AllowCLIApply(t *testing.T) {
 
 	vcsProvider := daemon.createVCSProvider(t, ctx, org, nil)
 	ws, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
-		Name:         internal.Ptr("connected-workspace"),
+		Name:         new("connected-workspace"),
 		Organization: &org.Name,
 		ConnectOptions: &workspace.ConnectOptions{
 			RepoPath:      &repo,
@@ -44,7 +43,7 @@ func TestIntegration_AllowCLIApply(t *testing.T) {
 
 	_, err = daemon.Workspaces.Update(ctx, ws.ID, workspace.UpdateOptions{
 		ConnectOptions: &workspace.ConnectOptions{
-			AllowCLIApply: internal.Ptr(true),
+			AllowCLIApply: new(true),
 		},
 	})
 	require.NoError(t, err)

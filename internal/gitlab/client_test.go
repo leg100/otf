@@ -30,7 +30,7 @@ func TestClient_GetCurrentUser(t *testing.T) {
 
 	want := authenticator.UserInfo{
 		Username:  user.MustUsername("bobby"),
-		AvatarURL: internal.Ptr("https://mymugshot.com"),
+		AvatarURL: new("https://mymugshot.com"),
 	}
 	assert.Equal(t, want, got)
 }

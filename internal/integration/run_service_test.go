@@ -4,7 +4,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/resource"
@@ -42,7 +41,7 @@ func TestRunService(t *testing.T) {
 		org := daemon.createOrganization(t, ctx)
 		vcsProvider := daemon.createVCSProvider(t, ctx, org, nil)
 		ws, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
-			Name:         internal.Ptr("connected-workspace"),
+			Name:         new("connected-workspace"),
 			Organization: &org.Name,
 			ConnectOptions: &workspace.ConnectOptions{
 				RepoPath:      &repo,
@@ -140,7 +139,7 @@ func TestRunService(t *testing.T) {
 		ws2 := svc.createWorkspace(t, ctx, nil)
 		cv1 := svc.createConfigurationVersion(t, ctx, ws1, nil)
 		cv2, err := svc.Configs.Create(ctx, ws2.ID, configversion.CreateOptions{
-			Speculative: internal.Ptr(true),
+			Speculative: new(true),
 		})
 		require.NoError(t, err)
 
@@ -187,7 +186,7 @@ func TestRunService(t *testing.T) {
 			},
 			{
 				name: "by workspace name and organization",
-				opts: otfrun.ListOptions{WorkspaceName: internal.Ptr(ws1.Name), Organization: &ws1.Organization},
+				opts: otfrun.ListOptions{WorkspaceName: new(ws1.Name), Organization: &ws1.Organization},
 				want: func(t *testing.T, l *resource.Page[*otfrun.Run]) {
 					assert.Equal(t, 2, len(l.Items))
 					assertContainsRun(t, l.Items, run1)
@@ -212,7 +211,7 @@ func TestRunService(t *testing.T) {
 			},
 			{
 				name: "filter out speculative runs in org1",
-				opts: otfrun.ListOptions{Organization: &ws1.Organization, PlanOnly: internal.Ptr(false)},
+				opts: otfrun.ListOptions{Organization: &ws1.Organization, PlanOnly: new(false)},
 				want: func(t *testing.T, l *resource.Page[*otfrun.Run]) {
 					// org1 has no speculative runs, so should return both runs
 					assert.Equal(t, 2, len(l.Items))
@@ -221,7 +220,7 @@ func TestRunService(t *testing.T) {
 			},
 			{
 				name: "filter out speculative runs in org2",
-				opts: otfrun.ListOptions{Organization: &ws2.Organization, PlanOnly: internal.Ptr(false)},
+				opts: otfrun.ListOptions{Organization: &ws2.Organization, PlanOnly: new(false)},
 				want: func(t *testing.T, l *resource.Page[*otfrun.Run]) {
 					// org2 only has speculative runs, so should return zero
 					assert.Equal(t, 0, len(l.Items))

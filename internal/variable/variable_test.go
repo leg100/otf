@@ -5,7 +5,6 @@ import (
 	"path"
 	"testing"
 
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/testutils"
@@ -37,7 +36,7 @@ func TestVariable_Update(t *testing.T) {
 		},
 		{
 			name: "key",
-			opts: UpdateVariableOptions{Key: internal.Ptr("teddy")},
+			opts: UpdateVariableOptions{Key: new("teddy")},
 			before: Variable{
 				Key:      "foo",
 				Value:    "bar",
@@ -51,7 +50,7 @@ func TestVariable_Update(t *testing.T) {
 		},
 		{
 			name: "value",
-			opts: UpdateVariableOptions{Value: internal.Ptr("baz")},
+			opts: UpdateVariableOptions{Value: new("baz")},
 			before: Variable{
 				Key:      "foo",
 				Value:    "bar",
@@ -65,7 +64,7 @@ func TestVariable_Update(t *testing.T) {
 		},
 		{
 			name: "non-sensitive to sensitive",
-			opts: UpdateVariableOptions{Sensitive: internal.Ptr(true)},
+			opts: UpdateVariableOptions{Sensitive: new(true)},
 			before: Variable{
 				Key:      "foo",
 				Value:    "bar",
@@ -80,7 +79,7 @@ func TestVariable_Update(t *testing.T) {
 		},
 		{
 			name: "non-hcl to hcl",
-			opts: UpdateVariableOptions{HCL: internal.Ptr(true)},
+			opts: UpdateVariableOptions{HCL: new(true)},
 			before: Variable{
 				Key:      "foo",
 				Value:    "bar",
@@ -95,7 +94,7 @@ func TestVariable_Update(t *testing.T) {
 		},
 		{
 			name: "sensitive to non-sensitive",
-			opts: UpdateVariableOptions{Sensitive: internal.Ptr(false)},
+			opts: UpdateVariableOptions{Sensitive: new(false)},
 			before: Variable{
 				Key:       "foo",
 				Value:     "bar",
@@ -123,35 +122,35 @@ func TestWriteTerraformVariables(t *testing.T) {
 	dir := t.TempDir()
 
 	v1, err := newVariable(nil, CreateVariableOptions{
-		Key:      internal.Ptr("foo"),
-		Value:    internal.Ptr("bar"),
-		Category: internal.Ptr(CategoryTerraform),
+		Key:      new("foo"),
+		Value:    new("bar"),
+		Category: new(CategoryTerraform),
 	})
 	require.NoError(t, err)
 
 	v2, err := newVariable(nil, CreateVariableOptions{
-		Key: internal.Ptr("images"),
-		Value: internal.Ptr(`{
+		Key: new("images"),
+		Value: new(`{
     us-east-1 = "image-1234"
     us-west-2 = "image-4567"
 }
 `),
-		Category: internal.Ptr(CategoryTerraform),
-		HCL:      internal.Ptr(true),
+		Category: new(CategoryTerraform),
+		HCL:      new(true),
 	})
 	require.NoError(t, err)
 
 	v3, err := newVariable(nil, CreateVariableOptions{
-		Key:      internal.Ptr("multiline-foo"),
-		Value:    internal.Ptr("foo\nbar\nbaz"),
-		Category: internal.Ptr(CategoryTerraform),
+		Key:      new("multiline-foo"),
+		Value:    new("foo\nbar\nbaz"),
+		Category: new(CategoryTerraform),
 	})
 	require.NoError(t, err)
 
 	v4, err := newVariable(nil, CreateVariableOptions{
-		Key:      internal.Ptr("multiline-foo-with-delimiter"),
-		Value:    internal.Ptr("EOTfoo\nbar\nbaz"),
-		Category: internal.Ptr(CategoryTerraform),
+		Key:      new("multiline-foo-with-delimiter"),
+		Value:    new("EOTfoo\nbar\nbaz"),
+		Category: new(CategoryTerraform),
 	})
 	require.NoError(t, err)
 

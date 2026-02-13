@@ -6,7 +6,6 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/notifications"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -23,9 +22,9 @@ func TestIntegration_NotificationSlack(t *testing.T) {
 	ws := daemon.createWorkspace(t, ctx, nil)
 	_, err := daemon.Notifications.Create(ctx, ws.ID, notifications.CreateConfigOptions{
 		DestinationType: notifications.DestinationSlack,
-		Enabled:         internal.Ptr(true),
-		Name:            internal.Ptr("testing"),
-		URL:             internal.Ptr(url),
+		Enabled:         new(true),
+		Name:            new("testing"),
+		URL:             new(url),
 		Triggers: []notifications.Trigger{
 			notifications.TriggerCreated,
 			notifications.TriggerPlanning,

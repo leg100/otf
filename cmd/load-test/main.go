@@ -12,7 +12,6 @@ import (
 	petname "github.com/dustinkirkland/golang-petname"
 	"github.com/hashicorp/go-tfe"
 	cmdutil "github.com/leg100/otf/cmd"
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/integration"
 )
 
@@ -54,8 +53,8 @@ func run(ctx context.Context) error {
 	// Create randomly named organization.
 	orgName := petname.Generate(1, "")
 	org, err := deploy.Organizations.Create(ctx, tfe.OrganizationCreateOptions{
-		Name:  internal.Ptr(orgName),
-		Email: internal.Ptr("bollocks@morebollocks.bollocks"),
+		Name:  new(orgName),
+		Email: new("bollocks@morebollocks.bollocks"),
 	})
 	if err != nil {
 		return err
@@ -66,7 +65,7 @@ func run(ctx context.Context) error {
 	workspaces := make([]*tfe.Workspace, numWorkspaces)
 	for i := range numWorkspaces {
 		ws, err := deploy.Workspaces.Create(ctx, org.Name, tfe.WorkspaceCreateOptions{
-			Name: internal.Ptr(petname.Generate(2, "-")),
+			Name: new(petname.Generate(2, "-")),
 		})
 		if err != nil {
 			return err

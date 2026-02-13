@@ -18,7 +18,7 @@ func GenerateRandomString(size int) string {
 // using characters from the given alphabet.
 func GenerateRandomStringFromAlphabet(size int, alphabet string) string {
 	buf := make([]byte, size)
-	for i := 0; i < size; i++ {
+	for i := range size {
 		buf[i] = alphabet[rand.Intn(len(alphabet))]
 	}
 	return string(buf)

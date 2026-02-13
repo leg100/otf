@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"slices"
 
 	"github.com/gobwas/glob"
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/logr"
@@ -191,7 +191,7 @@ func (s *Spawner) handleWithError(logger logr.Logger, event vcs.Event) error {
 	for _, ws := range workspaces {
 		cvOpts := configversion.CreateOptions{
 			// pull request events trigger speculative runs
-			Speculative: internal.Ptr(event.Type == vcs.EventTypePull),
+			Speculative: new(event.Type == vcs.EventTypePull),
 			IngressAttributes: &configversion.IngressAttributes{
 				// ID     resource.TfeID
 				Branch: event.Branch,
@@ -239,11 +239,9 @@ func globMatch(paths []string, patterns []string) bool {
 	}
 	for _, pattern := range patterns {
 		g := glob.MustCompile(pattern)
-		for _, path := range paths {
-			if g.Match(path) {
-				// only one match is necessary
-				return true
-			}
+		if slices.ContainsFunc(paths, g.Match) {
+			// only one match is necessary
+			return true
 		}
 	}
 	return false

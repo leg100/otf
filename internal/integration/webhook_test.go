@@ -3,7 +3,6 @@ package integration
 import (
 	"testing"
 
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
@@ -111,7 +110,7 @@ func TestWebhook_Purger(t *testing.T) {
 			org := daemon.createOrganization(t, ctx)
 			provider := daemon.createVCSProvider(t, ctx, org, nil)
 			ws, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
-				Name:         internal.Ptr("workspace-1"),
+				Name:         new("workspace-1"),
 				Organization: &org.Name,
 				ConnectOptions: &workspace.ConnectOptions{
 					VCSProviderID: &provider.ID,

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/engine"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/runstatus"
@@ -96,7 +95,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 		for i := range 101 {
 			// create workspaces workspaces-{1-101}
 			ws, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
-				Name:         internal.Ptr(fmt.Sprintf("workspace-%d", i+1)),
+				Name:         new(fmt.Sprintf("workspace-%d", i+1)),
 				Organization: &org.Name,
 			})
 			require.NoError(t, err)

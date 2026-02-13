@@ -143,7 +143,7 @@ func (a *tfe) listRuns(w http.ResponseWriter, r *http.Request) {
 	operations := internal.SplitCSV(params.Operation)
 	var planOnly *bool
 	if slices.Contains(operations, string(RunOperationPlanOnly)) {
-		planOnly = internal.Ptr(true)
+		planOnly = new(true)
 	}
 
 	a.listRunsWithOptions(w, r, ListOptions{

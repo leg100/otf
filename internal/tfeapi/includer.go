@@ -105,9 +105,9 @@ func (i *includer) addIncludes(r *http.Request, v any) ([]any, error) {
 		return children, nil
 	}
 	var includes []any
-	for _, relation := range strings.Split(q, ",") {
+	for relation := range strings.SplitSeq(q, ",") {
 		parents := []any{v}
-		for _, resource := range strings.Split(relation, ".") {
+		for resource := range strings.SplitSeq(relation, ".") {
 			funcs, ok := i.registrations[IncludeName(resource)]
 			if !ok {
 				continue
