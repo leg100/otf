@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.13](https://github.com/leg100/otf/compare/v0.5.12...v0.5.13) (2026-02-13)
+
+
+### Miscellaneous
+
+* bump to go1.26 and adopt new func ([25c12ec](https://github.com/leg100/otf/commit/25c12ec064046154f137d7d2381a1a74082df3ec))
+
 ## [0.5.12](https://github.com/leg100/otf/compare/v0.5.11...v0.5.12) (2026-02-12)
 
 
