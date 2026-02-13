@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.5.13](https://github.com/leg100/otf/compare/v0.5.12...v0.5.13) (2026-02-13)
+
+
+### Bug Fixes
+
+* broken github workflow ([bf659cc](https://github.com/leg100/otf/commit/bf659cc65d60593ef4c4e95bd6501460d29b1716))
+* helm charts not being automatically updated upon release ([bb35d8d](https://github.com/leg100/otf/commit/bb35d8d9fce25f4536577271e00e4c5ed521eaed))
+
+
+### Miscellaneous
+
+* bump dependencies ([6168747](https://github.com/leg100/otf/commit/616874790518d905ddda66c6b585bedb23780c37))
+* bump to go1.26 and adopt new func ([25c12ec](https://github.com/leg100/otf/commit/25c12ec064046154f137d7d2381a1a74082df3ec))
+
 ## [0.5.12](https://github.com/leg100/otf/compare/v0.5.11...v0.5.12) (2026-02-12)
 
 
