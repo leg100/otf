@@ -126,6 +126,13 @@ jobs:
       - name: Lint check
         run: |
           make helm-lint
+      - name: Commit new helm chart versions
+          # stage changes and commit
+          git config --global user.email "chart-bumper@otf.ninja"
+          git config --global user.name "Chart bumper"
+          git add -A
+          git commit -m "chore: bump helm charts with app version ${{ needs.release-please.outputs.tag_name }}"
+          git push origin master
       - name: Checkout charts repo
         uses: actions/checkout@v6
         with:
