@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.5.14](https://github.com/leg100/otf/compare/v0.5.13...v0.5.14) (2026-02-14)
+
+
+### Bug Fixes
+
+* force helm chart release ([16fb604](https://github.com/leg100/otf/commit/16fb604008e6cb84ad740eb40ed957ff1e1c3470))
+
+
+### Miscellaneous
+
+* bump helm charts with app version v0.5.13 ([bdf950f](https://github.com/leg100/otf/commit/bdf950fddbed894c2fe0ebee16e96ac9a6e6ae1c))
+
 ## [0.5.13](https://github.com/leg100/otf/compare/v0.5.12...v0.5.13) (2026-02-13)
 
 
