@@ -55,6 +55,9 @@ type (
 		Engine                     *engine.Engine    `jsonapi:"attribute" json:"engine"`
 		EngineVersion              *Version          `jsonapi:"attribute" json:"engine_version"`
 
+		// SSHKeyID is the ID of the SSH key assigned to this workspace, if any.
+		SSHKeyID *resource.TfeID
+
 		// VCS Connection; nil means the workspace is not connected.
 		Connection *Connection
 
@@ -121,6 +124,7 @@ type (
 		TriggerPatterns            []string
 		WorkingDirectory           *string
 		Organization               *organization.Name
+		SSHKeyID                   *resource.TfeID
 
 		// Always trigger runs. A value of true is mutually exclusive with
 		// setting TriggerPatterns or ConnectOptions.TagsRegex.
@@ -146,6 +150,7 @@ type (
 		TriggerPatterns            []string
 		WorkingDirectory           *string
 		Engine                     *engine.Engine
+		SSHKeyID                   *resource.TfeID
 
 		// Always trigger runs. A value of true is mutually exclusive with
 		// setting TriggerPatterns or ConnectOptions.TagsRegex.
@@ -254,6 +259,9 @@ func (f *factory) NewWorkspace(ctx context.Context, opts CreateOptions) (*Worksp
 	}
 	if opts.WorkingDirectory != nil {
 		ws.WorkingDirectory = *opts.WorkingDirectory
+	}
+	if opts.SSHKeyID != nil {
+		ws.SSHKeyID = opts.SSHKeyID
 	}
 	// TriggerPrefixes are not used but OTF persists it in order to pass go-tfe
 	// integration tests.
@@ -421,6 +429,10 @@ func (ws *Workspace) Update(opts UpdateOptions) (*bool, error) {
 	}
 	if opts.WorkingDirectory != nil {
 		ws.WorkingDirectory = *opts.WorkingDirectory
+		updated = true
+	}
+	if opts.SSHKeyID != nil {
+		ws.SSHKeyID = opts.SSHKeyID
 		updated = true
 	}
 	// TriggerPrefixes are not used but OTF persists it in order to pass go-tfe

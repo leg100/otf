@@ -27,6 +27,7 @@ import (
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/resource"
 	runpkg "github.com/leg100/otf/internal/run"
+	"github.com/leg100/otf/internal/sshkey"
 	"github.com/leg100/otf/internal/state"
 	"github.com/leg100/otf/internal/variable"
 	"github.com/leg100/otf/internal/workspace"
@@ -57,6 +58,7 @@ type (
 
 		job           *Job
 		run           *runpkg.Run
+		ws            *workspace.Workspace
 		canceled      bool
 		ctx           context.Context
 		cancelfn      context.CancelFunc
@@ -165,6 +167,7 @@ func NewRemoteOperationClient(jobToken []byte, url string, logger logr.Logger) (
 		State:      &state.Client{Client: client},
 		Configs:    &configversion.Client{Client: client},
 		Server:     client,
+		SSHKeys:    &sshkey.Client{Client: client},
 	}, nil
 }
 
@@ -287,6 +290,7 @@ func (o *operation) do() error {
 	if err != nil {
 		return fmt.Errorf("retreiving workspace: %w", err)
 	}
+	o.ws = ws
 	wd, err := newWorkdir(ws.WorkingDirectory, o.job.RunID.String())
 	if err != nil {
 		return fmt.Errorf("constructing working directory: %w", err)
@@ -327,6 +331,7 @@ func (o *operation) do() error {
 		o.downloadConfig,
 		o.readVars,
 		o.setupDynamicCredentials,
+		o.setupSSHKey,
 		o.writeTerraformVars,
 		o.deleteBackendConfig,
 		o.downloadState,
@@ -556,6 +561,24 @@ func (o *operation) setupDynamicCredentials(ctx context.Context) error {
 		return fmt.Errorf("setting up dynamic provider credentials: %w", err)
 	}
 	o.envs = append(o.envs, envs...)
+	return nil
+}
+
+func (o *operation) setupSSHKey(ctx context.Context) error {
+	if o.ws.SSHKeyID == nil || o.client.SSHKeys == nil {
+		return nil
+	}
+	key, err := o.client.SSHKeys.GetSSHKey(ctx, *o.ws.SSHKeyID)
+	if err != nil {
+		return fmt.Errorf("getting SSH key: %w", err)
+	}
+	keyPath := filepath.Join(o.root, "ssh_key")
+	if err := os.WriteFile(keyPath, []byte(key.PrivateKey), 0600); err != nil {
+		return fmt.Errorf("writing SSH key: %w", err)
+	}
+	o.envs = append(o.envs,
+		fmt.Sprintf("GIT_SSH_COMMAND=ssh -i %s -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null", keyPath),
+	)
 	return nil
 }
 

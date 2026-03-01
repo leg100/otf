@@ -236,6 +236,9 @@ type TFEWorkspaceCreateOptions struct {
 	// A list of tags to attach to the workspace. If the tag does not already
 	// exist, it is created and added to the workspace.
 	Tags []*TFETag `jsonapi:"relationship" json:"tags,omitempty"`
+
+	// The ID of the SSH key to assign to the workspace.
+	SSHKeyID *resource.TfeID `jsonapi:"attribute" json:"ssh-key-id,omitempty"`
 }
 
 // TFEWorkspaceUpdateOptions represents the options for updating a workspace.
@@ -323,6 +326,9 @@ type TFEWorkspaceUpdateOptions struct {
 	// the environment when multiple environments exist within the same
 	// repository.
 	WorkingDirectory *string `jsonapi:"attribute" json:"working-directory,omitempty"`
+
+	// The ID of the SSH key to assign to the workspace.
+	SSHKeyID *resource.TfeID `jsonapi:"attribute" json:"ssh-key-id,omitempty"`
 }
 
 func (opts *TFEWorkspaceUpdateOptions) Validate() error {

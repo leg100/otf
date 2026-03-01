@@ -151,4 +151,10 @@ const (
 	DeleteGithubAppAction
 	CreateGithubAppInstallAction
 	DeleteGithubAppInstallAction
+
+	CreateSSHKeyAction
+	GetSSHKeyAction
+	ListSSHKeysAction
+	UpdateSSHKeyAction
+	DeleteSSHKeyAction
 )

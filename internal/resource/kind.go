@@ -32,4 +32,6 @@ const (
 	UserTokenKind         Kind = "ut"
 	TeamTokenKind         Kind = "tt"
 	AgentTokenKind        Kind = "at"
+
+	SSHKeyKind Kind = "sshkey"
 )

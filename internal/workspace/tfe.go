@@ -82,6 +82,7 @@ func (a *tfe) createWorkspace(w http.ResponseWriter, r *http.Request) {
 		TriggerPrefixes:            params.TriggerPrefixes,
 		TriggerPatterns:            params.TriggerPatterns,
 		WorkingDirectory:           params.WorkingDirectory,
+		SSHKeyID:                   params.SSHKeyID,
 	}
 	// convert from json:api structs to tag specs
 	opts.Tags = make([]TagSpec, len(params.Tags))
@@ -379,6 +380,7 @@ func (a *tfe) updateWorkspace(w http.ResponseWriter, r *http.Request, workspaceI
 		TriggerPrefixes:            params.TriggerPrefixes,
 		TriggerPatterns:            params.TriggerPatterns,
 		WorkingDirectory:           params.WorkingDirectory,
+		SSHKeyID:                   params.SSHKeyID,
 	}
 
 	// If file-triggers-enabled is set to false and tags regex is unspecified
