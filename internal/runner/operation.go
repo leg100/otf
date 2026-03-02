@@ -10,7 +10,6 @@ import (
 	"io/fs"
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -431,7 +430,6 @@ func (o *operation) execute(args []string, funcs ...executionOptionFunc) error {
 	}
 	cmd := exec.Command(args[0], args[1:]...)
 	cmd.Dir = o.workdir.String()
-	cmd.Env = os.Environ()
 	cmd.Env = append(os.Environ(), o.envs...)
 
 	if opts.redirectStdout != nil {
@@ -581,9 +579,26 @@ func (o *operation) setupSSHKey(ctx context.Context) error {
 	if err := os.WriteFile(keyPath, key, 0600); err != nil {
 		return fmt.Errorf("writing SSH key: %w", err)
 	}
-	o.envs = append(o.envs,
-		fmt.Sprintf("GIT_SSH_COMMAND=ssh -i %s -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null", keyPath),
-	)
+
+	sshCmd := fmt.Sprintf("ssh -i %s -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null", keyPath)
+	// Set GIT_SSH_COMMAND for engine versions that honour it.
+	o.envs = append(o.envs, "GIT_SSH_COMMAND="+sshCmd)
+
+	// Also write a git config file and point GIT_CONFIG_GLOBAL at it.
+	//
+	// Older versions of go-getter (used by terraform module downloads)
+	// explicitly cleared GIT_SSH_COMMAND for git-clone, but did not clear
+	// GIT_CONFIG_GLOBAL, so core.sshCommand in the config file survives and git
+	// picks it up.
+	//
+	// Issue: https://github.com/hashicorp/go-getter/pull/300
+	gitConfigPath := filepath.Join(o.root, "git_config")
+	gitConfigContent := fmt.Sprintf("[core]\n\tsshCommand = %s\n", sshCmd)
+	if err := os.WriteFile(gitConfigPath, []byte(gitConfigContent), 0600); err != nil {
+		return fmt.Errorf("writing git config: %w", err)
+	}
+	o.envs = append(o.envs, "GIT_CONFIG_GLOBAL="+gitConfigPath)
+
 	return nil
 }
 
