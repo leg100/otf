@@ -433,7 +433,7 @@ func (o *operation) execute(args []string, funcs ...executionOptionFunc) error {
 	cmd.Env = append(os.Environ(), o.envs...)
 
 	if opts.redirectStdout != nil {
-		dst, err := os.Create(path.Join(o.workdir.String(), *opts.redirectStdout))
+		dst, err := os.Create(filepath.Join(o.workdir.String(), *opts.redirectStdout))
 		if err != nil {
 			return err
 		}
