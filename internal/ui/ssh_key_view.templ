@@ -1,0 +1,63 @@
+package ui
+
+import (
+	"github.com/leg100/otf/internal/organization"
+	"github.com/leg100/otf/internal/sshkey"
+	"github.com/leg100/otf/internal/ui/helpers"
+	"github.com/leg100/otf/internal/ui/paths"
+)
+
+type listSSHKeysProps struct {
+	organization organization.Name
+	keys         []*sshkey.SSHKey
+}
+
+templ (t *templates) listSSHKeys(props listSSHKeysProps) {
+	<p>
+		OTF uses these private SSH keys for downloading private modules with Git-based sources during a run. SSH keys for downloading modules are assigned per-workspace.
+	</p>
+	<p class="text-lg font-bold">Add an SSH Key</p>
+	<form class="flex flex-col gap-2" action={ paths.CreateSSHKey(props.organization) } method="POST">
+		<div class="field">
+			<label for="name">Name</label>
+			<input class="input w-80" type="text" name="name" id="name" required/>
+		</div>
+		<div class="field">
+			<label class="font-semibold" for="value">Value</label>
+			<textarea
+				class="textarea w-120"
+				rows="10"
+				type="text"
+				name="private-key"
+				id="private-key"
+			></textarea>
+			<span class="description">
+				Generate a new key with <span class="bg-base-300">ssh-keygen</span>, and paste the private key.
+			</span>
+		</div>
+		<div>
+			<button class="btn" id="create-button">Add SSH key</button>
+		</div>
+	</form>
+	<p></p>
+	<p class="text-lg font-bold">Existing SSH Keys</p>
+	@helpers.UnpaginatedTable(&sshKeysTable{}, props.keys)
+}
+
+type sshKeysTable struct{}
+
+templ (t sshKeysTable) Header() {
+	<th>Name</th>
+	<th>Actions</th>
+}
+
+templ (t sshKeysTable) Row(key *sshkey.SSHKey) {
+	<tr id={ "ssh-key-item-" + key.Name }>
+		<td>{ key.Name } </td>
+		<td>
+			<form action={ paths.DeleteSSHKey(key.ID) } method="POST">
+				@helpers.DeleteButton()
+			</form>
+		</td>
+	</tr>
+}

@@ -236,9 +236,6 @@ type TFEWorkspaceCreateOptions struct {
 	// A list of tags to attach to the workspace. If the tag does not already
 	// exist, it is created and added to the workspace.
 	Tags []*TFETag `jsonapi:"relationship" json:"tags,omitempty"`
-
-	// The ID of the SSH key to assign to the workspace.
-	SSHKeyID *resource.TfeID `jsonapi:"attribute" json:"ssh-key-id,omitempty"`
 }
 
 // TFEWorkspaceUpdateOptions represents the options for updating a workspace.
@@ -326,9 +323,6 @@ type TFEWorkspaceUpdateOptions struct {
 	// the environment when multiple environments exist within the same
 	// repository.
 	WorkingDirectory *string `jsonapi:"attribute" json:"working-directory,omitempty"`
-
-	// The ID of the SSH key to assign to the workspace.
-	SSHKeyID *resource.TfeID `jsonapi:"attribute" json:"ssh-key-id,omitempty"`
 }
 
 func (opts *TFEWorkspaceUpdateOptions) Validate() error {
@@ -418,4 +412,17 @@ func (t *TFETag) UnmarshalID(id string) error {
 	}
 	t.ID = &resource.TfeID{}
 	return t.ID.UnmarshalText([]byte(id))
+}
+
+// tfeAssignSSHKeyOptions represents the options to assign an SSH key to a
+// workspace.
+type tfeAssignSSHKeyOptions struct {
+	// Type is a public field utilized by JSON:API to
+	// set the resource type via the field tag.
+	// It is not a user-defined value and does not need to be set.
+	// https://jsonapi.org/format/#crud-creating
+	Type string `jsonapi:"primary,workspaces"`
+
+	// The SSH key ID to assign.
+	SSHKeyID *resource.TfeID `jsonapi:"attr,id"`
 }

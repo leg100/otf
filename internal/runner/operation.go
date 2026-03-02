@@ -132,6 +132,11 @@ type (
 	hostnameClient interface {
 		Hostname() string
 	}
+
+	// sshKeyClient fetches SSH key data for an operation.
+	sshKeyClient interface {
+		GetPrivateKey(ctx context.Context, id resource.TfeID) ([]byte, error)
+	}
 )
 
 func defaultOperationConfig() OperationConfig {
@@ -565,15 +570,15 @@ func (o *operation) setupDynamicCredentials(ctx context.Context) error {
 }
 
 func (o *operation) setupSSHKey(ctx context.Context) error {
-	if o.ws.SSHKeyID == nil || o.client.SSHKeys == nil {
+	if o.ws.SSHKeyID == nil {
 		return nil
 	}
-	key, err := o.client.SSHKeys.GetSSHKey(ctx, *o.ws.SSHKeyID)
+	key, err := o.client.SSHKeys.GetPrivateKey(ctx, *o.ws.SSHKeyID)
 	if err != nil {
 		return fmt.Errorf("getting SSH key: %w", err)
 	}
 	keyPath := filepath.Join(o.root, "ssh_key")
-	if err := os.WriteFile(keyPath, []byte(key.PrivateKey), 0600); err != nil {
+	if err := os.WriteFile(keyPath, key, 0600); err != nil {
 		return fmt.Errorf("writing SSH key: %w", err)
 	}
 	o.envs = append(o.envs,

@@ -1,9 +1,7 @@
 CREATE TABLE ssh_keys (
     ssh_key_id        TEXT PRIMARY KEY,
-    created_at        TIMESTAMPTZ NOT NULL,
-    updated_at        TIMESTAMPTZ NOT NULL,
     name              TEXT NOT NULL,
-    private_key       TEXT NOT NULL,
+    private_key       BYTEA NOT NULL,
     organization_name TEXT NOT NULL REFERENCES organizations(name) ON UPDATE CASCADE ON DELETE CASCADE
 );
 

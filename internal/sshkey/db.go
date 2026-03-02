@@ -13,19 +13,15 @@ type pgdb struct {
 	*sql.DB
 }
 
-func (db *pgdb) create(ctx context.Context, key *SSHKey) error {
+func (db *pgdb) create(ctx context.Context, key *SSHKey, privateKey []byte) error {
 	_, err := db.Exec(ctx, `
 INSERT INTO ssh_keys (
     ssh_key_id,
-    created_at,
-    updated_at,
     name,
     private_key,
     organization_name
 ) VALUES (
     @id,
-    @created_at,
-    @updated_at,
     @name,
     @private_key,
     @organization_name
@@ -33,10 +29,8 @@ INSERT INTO ssh_keys (
 `,
 		pgx.NamedArgs{
 			"id":                key.ID,
-			"created_at":        key.CreatedAt,
-			"updated_at":        key.UpdatedAt,
 			"name":              key.Name,
-			"private_key":       key.PrivateKey,
+			"private_key":       privateKey,
 			"organization_name": key.Organization,
 		},
 	)
@@ -60,17 +54,12 @@ FOR UPDATE
 		func(ctx context.Context, key *SSHKey) error {
 			_, err := db.Exec(ctx, `
 UPDATE ssh_keys
-SET
-    updated_at  = @updated_at,
-    name        = @name,
-    private_key = @private_key
+SET name = @name
 WHERE ssh_key_id = @id
 `,
 				pgx.NamedArgs{
-					"id":         key.ID,
-					"updated_at": key.UpdatedAt,
-					"name":       key.Name,
-					"private_key": key.PrivateKey,
+					"id":   key.ID,
+					"name": key.Name,
 				},
 			)
 			return err
@@ -79,17 +68,26 @@ WHERE ssh_key_id = @id
 }
 
 func (db *pgdb) get(ctx context.Context, id resource.TfeID) (*SSHKey, error) {
-	rows := db.Query(ctx, `
-SELECT *
+	row := db.Query(ctx, `
+SELECT ssh_key_id, name, organization_name
 FROM ssh_keys
 WHERE ssh_key_id = $1
 `, id)
-	return sql.CollectOneRow(rows, pgx.RowToAddrOfStructByName[SSHKey])
+	return sql.CollectOneRow(row, pgx.RowToAddrOfStructByName[SSHKey])
+}
+
+func (db *pgdb) getPrivateKey(ctx context.Context, id resource.TfeID) ([]byte, error) {
+	row := db.Query(ctx, `
+SELECT private_key
+FROM ssh_keys
+WHERE ssh_key_id = $1
+`, id)
+	return sql.CollectOneType[[]byte](row)
 }
 
 func (db *pgdb) list(ctx context.Context, org organization.Name) ([]*SSHKey, error) {
 	rows := db.Query(ctx, `
-SELECT *
+SELECT ssh_key_id, name, organization_name
 FROM ssh_keys
 WHERE organization_name = $1
 ORDER BY name
@@ -97,10 +95,11 @@ ORDER BY name
 	return sql.CollectRows(rows, pgx.RowToAddrOfStructByName[SSHKey])
 }
 
-func (db *pgdb) delete(ctx context.Context, id resource.TfeID) error {
-	_, err := db.Exec(ctx, `
+func (db *pgdb) delete(ctx context.Context, id resource.TfeID) (*SSHKey, error) {
+	row := db.Query(ctx, `
 DELETE FROM ssh_keys
 WHERE ssh_key_id = $1
+RETURNING ssh_key_id, name, organization_name
 `, id)
-	return err
+	return sql.CollectOneRow(row, pgx.RowToAddrOfStructByName[SSHKey])
 }

@@ -62,8 +62,7 @@ INSERT INTO workspaces (
     vcs_tags_regex,
     working_directory,
     organization_name,
-	engine,
-    ssh_key_id
+	engine
 ) VALUES (
     $1,
     $2,
@@ -91,8 +90,7 @@ INSERT INTO workspaces (
     $24,
     $25,
     $26,
-	$27,
-    $28
+	$27
 )
 `,
 		ws.ID,
@@ -122,7 +120,6 @@ INSERT INTO workspaces (
 		ws.WorkingDirectory,
 		ws.Organization,
 		ws.Engine,
-		ws.SSHKeyID,
 	)
 	return err
 }

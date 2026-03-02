@@ -150,7 +150,6 @@ type (
 		TriggerPatterns            []string
 		WorkingDirectory           *string
 		Engine                     *engine.Engine
-		SSHKeyID                   *resource.TfeID
 
 		// Always trigger runs. A value of true is mutually exclusive with
 		// setting TriggerPatterns or ConnectOptions.TagsRegex.
@@ -164,6 +163,16 @@ type (
 		// disconnected workspace, or modifies a connection if already
 		// connected.
 		*ConnectOptions
+
+		// updateSSHKeyOptions, if non-nil, either assigns or unassigns an SSH
+		// key to the workspace.
+		*UpdateSSHKeyOptions
+	}
+
+	UpdateSSHKeyOptions struct {
+		// SSHKeyID, if non-nil, is assigned to workspace; if nil it is
+		// unassigned.
+		SSHKeyID *resource.TfeID
 	}
 
 	// ListOptions are options for paginating and filtering a list of
@@ -431,8 +440,8 @@ func (ws *Workspace) Update(opts UpdateOptions) (*bool, error) {
 		ws.WorkingDirectory = *opts.WorkingDirectory
 		updated = true
 	}
-	if opts.SSHKeyID != nil {
-		ws.SSHKeyID = opts.SSHKeyID
+	if opts.UpdateSSHKeyOptions != nil {
+		ws.SSHKeyID = opts.UpdateSSHKeyOptions.SSHKeyID
 		updated = true
 	}
 	// TriggerPrefixes are not used but OTF persists it in order to pass go-tfe

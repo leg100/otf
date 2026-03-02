@@ -29,10 +29,10 @@ import (
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/repohooks"
 	"github.com/leg100/otf/internal/resource"
-	"github.com/leg100/otf/internal/sshkey"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/runner"
 	"github.com/leg100/otf/internal/sql"
+	"github.com/leg100/otf/internal/sshkey"
 	"github.com/leg100/otf/internal/state"
 	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/tfeapi"
@@ -423,6 +423,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 			authenticatorService,
 			variableService,
 			cfg.GithubHostname,
+			sshkeyService,
 			cfg.SkipTLSVerification,
 			cfg.SiteToken,
 			cfg.RestrictOrganizationCreation,

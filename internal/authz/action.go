@@ -154,6 +154,7 @@ const (
 
 	CreateSSHKeyAction
 	GetSSHKeyAction
+	GetPrivateKeySSHKeyAction
 	ListSSHKeysAction
 	UpdateSSHKeyAction
 	DeleteSSHKeyAction

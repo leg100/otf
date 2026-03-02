@@ -50,6 +50,9 @@ func (a *tfe) addHandlers(r *mux.Router) {
 	r.HandleFunc("/workspaces/{workspace_id}/actions/lock", a.lockWorkspace).Methods("POST")
 	r.HandleFunc("/workspaces/{workspace_id}/actions/unlock", a.unlockWorkspace).Methods("POST")
 	r.HandleFunc("/workspaces/{workspace_id}/actions/force-unlock", a.forceUnlockWorkspace).Methods("POST")
+
+	r.HandleFunc("/workspaces/{workspace_id}/relationships/ssh-key", a.assignSSHKey).Methods("PATCH")
+	r.HandleFunc("/workspaces/{workspace_id}/relationships/ssh-key", a.unassignSSHKey).Methods("PATCH")
 }
 
 func (a *tfe) createWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -82,7 +85,6 @@ func (a *tfe) createWorkspace(w http.ResponseWriter, r *http.Request) {
 		TriggerPrefixes:            params.TriggerPrefixes,
 		TriggerPatterns:            params.TriggerPatterns,
 		WorkingDirectory:           params.WorkingDirectory,
-		SSHKeyID:                   params.SSHKeyID,
 	}
 	// convert from json:api structs to tag specs
 	opts.Tags = make([]TagSpec, len(params.Tags))
@@ -380,7 +382,6 @@ func (a *tfe) updateWorkspace(w http.ResponseWriter, r *http.Request, workspaceI
 		TriggerPrefixes:            params.TriggerPrefixes,
 		TriggerPatterns:            params.TriggerPatterns,
 		WorkingDirectory:           params.WorkingDirectory,
-		SSHKeyID:                   params.SSHKeyID,
 	}
 
 	// If file-triggers-enabled is set to false and tags regex is unspecified
@@ -429,6 +430,51 @@ func (a *tfe) updateWorkspace(w http.ResponseWriter, r *http.Request, workspaceI
 	}
 
 	a.Respond(w, r, converted, http.StatusOK)
+}
+
+func (a *tfe) assignSSHKey(w http.ResponseWriter, r *http.Request) {
+	workspaceID, err := decode.ID("workspace_id", r)
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+	opts := tfeAssignSSHKeyOptions{}
+	if err := tfeapi.Unmarshal(r.Body, &opts); err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+
+	ws, err := a.Update(r.Context(), workspaceID, UpdateOptions{
+		UpdateSSHKeyOptions: &UpdateSSHKeyOptions{
+			SSHKeyID: opts.SSHKeyID,
+		},
+	})
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+
+	a.Respond(w, r, ws, http.StatusOK)
+}
+
+func (a *tfe) unassignSSHKey(w http.ResponseWriter, r *http.Request) {
+	workspaceID, err := decode.ID("workspace_id", r)
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+
+	ws, err := a.Update(r.Context(), workspaceID, UpdateOptions{
+		UpdateSSHKeyOptions: &UpdateSSHKeyOptions{
+			SSHKeyID: nil,
+		},
+	})
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+
+	a.Respond(w, r, ws, http.StatusOK)
 }
 
 func (a *tfe) convert(from *Workspace, r *http.Request) (*TFEWorkspace, error) {
