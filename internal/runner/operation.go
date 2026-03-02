@@ -287,15 +287,11 @@ func (o *operation) do() error {
 	}
 
 	// Get workspace in order to get working directory path
-	//
-	// TODO: add working directory to run.Run so we skip having to retrieve
-	// workspace.
-	ws, err := o.client.Workspaces.Get(o.ctx, o.job.WorkspaceID)
+	o.ws, err = o.client.Workspaces.Get(o.ctx, o.job.WorkspaceID)
 	if err != nil {
 		return fmt.Errorf("retreiving workspace: %w", err)
 	}
-	o.ws = ws
-	wd, err := newWorkdir(ws.WorkingDirectory, o.job.RunID.String())
+	wd, err := newWorkdir(o.ws.WorkingDirectory, o.job.RunID.String())
 	if err != nil {
 		return fmt.Errorf("constructing working directory: %w", err)
 	}

@@ -7,6 +7,7 @@ import (
 
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/sshkey"
 	"github.com/leg100/otf/internal/tfeapi/types"
 	"github.com/leg100/otf/internal/vcs"
 )
@@ -58,6 +59,7 @@ type TFEWorkspace struct {
 	CurrentRun   *TFERun                       `jsonapi:"relationship" json:"current-run"`
 	Organization *organization.TFEOrganization `jsonapi:"relationship" json:"organization"`
 	Outputs      []*TFEWorkspaceOutput         `jsonapi:"relationship" json:"outputs"`
+	SSHKey       *sshkey.TFESSHKey             `jsonapi:"relationship" json:"ssh-key"`
 }
 
 type TFERun struct {
@@ -424,5 +426,5 @@ type tfeAssignSSHKeyOptions struct {
 	Type string `jsonapi:"primary,workspaces"`
 
 	// The SSH key ID to assign.
-	SSHKeyID *resource.TfeID `jsonapi:"attr,id"`
+	SSHKeyID *resource.TfeID `jsonapi:"attribute" json:"id"`
 }

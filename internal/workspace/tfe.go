@@ -14,6 +14,7 @@ import (
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/sshkey"
 	"github.com/leg100/otf/internal/tfeapi"
 )
 
@@ -454,7 +455,13 @@ func (a *tfe) assignSSHKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.Respond(w, r, ws, http.StatusOK)
+	converted, err := a.convert(ws, r)
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+
+	a.Respond(w, r, converted, http.StatusOK)
 }
 
 func (a *tfe) unassignSSHKey(w http.ResponseWriter, r *http.Request) {
@@ -474,7 +481,13 @@ func (a *tfe) unassignSSHKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.Respond(w, r, ws, http.StatusOK)
+	converted, err := a.convert(ws, r)
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+
+	a.Respond(w, r, converted, http.StatusOK)
 }
 
 func (a *tfe) convert(from *Workspace, r *http.Request) (*TFEWorkspace, error) {
@@ -535,6 +548,9 @@ func ToTFE(a *authz.Authorizer, from *Workspace, r *http.Request) (*TFEWorkspace
 	}
 	if from.LatestRun != nil {
 		to.CurrentRun = &TFERun{ID: from.LatestRun.ID}
+	}
+	if from.SSHKeyID != nil {
+		to.SSHKey = &sshkey.TFESSHKey{ID: *from.SSHKeyID}
 	}
 
 	// Add VCS repo to json:api struct if connected. NOTE: the terraform CLI

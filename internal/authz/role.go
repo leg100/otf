@@ -23,6 +23,7 @@ var (
 			GetVariableSetAction:   true,
 			WatchRunnersAction:     true,
 			ListRunnersAction:      true,
+			GetSSHKeyAction:        true,
 			ListSSHKeysAction:      true,
 		},
 	}
@@ -128,17 +129,6 @@ var (
 			CreateModuleVersionAction: true,
 			UpdateModuleAction:        true,
 			DeleteModuleAction:        true,
-		},
-	}
-
-	// SSHManagerRole is scoped to an organization and permits management of SSH keys.
-	SSHManagerRole = Role{
-		name: "ssh-manager",
-		permissions: map[Action]bool{
-			CreateSSHKeyAction: true,
-			GetSSHKeyAction:    true,
-			UpdateSSHKeyAction: true,
-			DeleteSSHKeyAction: true,
 		},
 	}
 )

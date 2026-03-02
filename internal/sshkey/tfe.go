@@ -16,8 +16,8 @@ type tfe struct {
 	*tfeapi.Responder
 }
 
-// tfeSSHKey represents an SSH key in the TFE API.
-type tfeSSHKey struct {
+// TFESSHKey represents an SSH key in the TFE API.
+type TFESSHKey struct {
 	ID        resource.TfeID `jsonapi:"primary,ssh-keys"`
 	CreatedAt time.Time      `jsonapi:"attribute" json:"created-at"`
 	UpdatedAt time.Time      `jsonapi:"attribute" json:"updated-at"`
@@ -93,7 +93,7 @@ func (a *tfe) listSSHKeys(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	to := make([]*tfeSSHKey, len(keys))
+	to := make([]*TFESSHKey, len(keys))
 	for i, k := range keys {
 		to[i] = a.convert(k)
 	}
@@ -149,8 +149,8 @@ func (a *tfe) deleteSSHKey(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (a *tfe) convert(from *SSHKey) *tfeSSHKey {
-	return &tfeSSHKey{
+func (a *tfe) convert(from *SSHKey) *TFESSHKey {
+	return &TFESSHKey{
 		ID:   from.ID,
 		Name: from.Name,
 	}

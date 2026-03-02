@@ -43,7 +43,7 @@ func (db *pgdb) update(ctx context.Context, id resource.TfeID, updateFunc func(c
 		db.DB,
 		func(ctx context.Context) (*SSHKey, error) {
 			rows := db.Query(ctx, `
-SELECT *
+SELECT ssh_key_id, name, organization_name
 FROM ssh_keys
 WHERE ssh_key_id = $1
 FOR UPDATE
