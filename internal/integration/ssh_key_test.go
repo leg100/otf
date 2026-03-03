@@ -15,6 +15,7 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/configversion"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/sshkey"
 	"github.com/leg100/otf/internal/workspace"
@@ -26,8 +27,6 @@ import (
 // successfully download a private terraform module via SSH git during a run.
 func TestSSHKeyPrivateModule(t *testing.T) {
 	integrationTest(t)
-
-	svc, org, ctx := setup(t)
 
 	// Generate an ED25519 key pair: the private key goes into OTF, the public
 	// key authorises access to our test SSH git server.
@@ -61,27 +60,51 @@ func TestSSHKeyPrivateModule(t *testing.T) {
 	// Start an in-process SSH git server that only accepts the generated key.
 	sshAddr := startSSHGitServer(t, repoDir, sshPub)
 
+	daemon, org, ctx := setup(t)
+	agent, _ := daemon.startAgent(t, ctx, org.Name, nil, "")
+
 	// Register the SSH key with OTF.
-	key, err := svc.SSHKeys.Create(ctx, sshkey.CreateOptions{
+	key, err := daemon.SSHKeys.Create(ctx, sshkey.CreateOptions{
 		Organization: org.Name,
 		Name:         "test-key",
 		PrivateKey:   string(privKeyBytes),
 	})
 	require.NoError(t, err)
 
-	// Create a workspace and assign the SSH key to it.
-	ws := svc.createWorkspace(t, ctx, org)
-	_, err = svc.Workspaces.Update(ctx, ws.ID, workspace.UpdateOptions{
-		UpdateSSHKeyOptions: &workspace.UpdateSSHKeyOptions{
-			SSHKeyID: &key.ID,
+	// two tests: one run on the daemon, one via the agent.
+	tests := []struct {
+		name   string
+		mode   workspace.ExecutionMode
+		poolID *resource.TfeID
+	}{
+		{
+			"execute run via daemon", workspace.RemoteExecutionMode, nil,
 		},
-	})
-	require.NoError(t, err)
+		{
+			"execute run via agent", workspace.AgentExecutionMode, &agent.AgentPool.ID,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
 
-	// Build a terraform config that sources the private module over SSH.  The
-	// module itself has no resources, so no providers need to be downloaded;
-	// the sole purpose of init is to clone the module via the SSH key.
-	tfconfig := fmt.Sprintf(`
+			// Create a workspace and assign the SSH key to it.
+			ws, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
+				Name:          new("ws-" + string(tt.mode)),
+				Organization:  &org.Name,
+				ExecutionMode: new(tt.mode),
+				AgentPoolID:   tt.poolID,
+			})
+			_, err = daemon.Workspaces.Update(ctx, ws.ID, workspace.UpdateOptions{
+				UpdateSSHKeyOptions: &workspace.UpdateSSHKeyOptions{
+					SSHKeyID: &key.ID,
+				},
+			})
+			require.NoError(t, err)
+
+			// Build a terraform config that sources the private module over SSH.  The
+			// module itself has no resources, so no providers need to be downloaded;
+			// the sole purpose of init is to clone the module via the SSH key.
+			tfconfig := fmt.Sprintf(`
 terraform {
   cloud {
     hostname     = "%s"
@@ -95,25 +118,27 @@ terraform {
 module "private" {
   source = "git::ssh://git@%s/"
 }
-`, svc.System.Hostname(), org.Name, ws.Name, sshAddr)
+`, daemon.System.Hostname(), org.Name, ws.Name, sshAddr)
 
-	// Pack and upload the config directly so the OTF runner executes the init.
-	root := t.TempDir()
-	err = os.WriteFile(filepath.Join(root, "main.tf"), []byte(tfconfig), 0o600)
-	require.NoError(t, err)
-	tarball, err := internal.Pack(root)
-	require.NoError(t, err)
+			// Pack and upload the config directly so the OTF runner executes the init.
+			root := t.TempDir()
+			err = os.WriteFile(filepath.Join(root, "main.tf"), []byte(tfconfig), 0o600)
+			require.NoError(t, err)
+			tarball, err := internal.Pack(root)
+			require.NoError(t, err)
 
-	cv := svc.createConfigurationVersion(t, ctx, ws, &configversion.CreateOptions{})
-	err = svc.Configs.UploadConfig(ctx, cv.ID, tarball)
-	require.NoError(t, err)
+			cv := daemon.createConfigurationVersion(t, ctx, ws, &configversion.CreateOptions{})
+			err = daemon.Configs.UploadConfig(ctx, cv.ID, tarball)
+			require.NoError(t, err)
 
-	// Trigger a run.  If the SSH key is wired up correctly, the runner will set
-	// GIT_SSH_COMMAND and terraform init will successfully clone the module.
-	// The plan will show no changes (the module has no resources) and the run
-	// will reach PlannedAndFinished.
-	run := svc.createRun(t, ctx, ws, cv, nil)
-	svc.waitRunStatus(t, ctx, run.ID, runstatus.PlannedAndFinished)
+			// Trigger a run.  If the SSH key is wired up correctly, the runner will set
+			// GIT_SSH_COMMAND and terraform init will successfully clone the module.
+			// The plan will show no changes (the module has no resources) and the run
+			// will reach PlannedAndFinished.
+			run := daemon.createRun(t, ctx, ws, cv, nil)
+			daemon.waitRunStatus(t, ctx, run.ID, runstatus.PlannedAndFinished)
+		})
+	}
 }
 
 // mustRunGit runs a git command and fails the test on error.
