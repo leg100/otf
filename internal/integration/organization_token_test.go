@@ -5,7 +5,7 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/client"
-	otfhttp "github.com/leg100/otf/internal/http"
+	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/assert"
@@ -25,10 +25,11 @@ func TestIntegration_OrganizationTokens(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, org.Name, ot.Organization)
 
-	client, err := client.New(otfhttp.ClientConfig{
-		URL:   daemon.System.URL("/"),
-		Token: string(token),
-	})
+	client, err := client.New(
+		logr.Discard(),
+		daemon.System.URL("/"),
+		string(token),
+	)
 	require.NoError(t, err)
 
 	// create some workspaces and attempt to list them using client
