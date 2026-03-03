@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.5.15](https://github.com/leg100/otf/compare/v0.5.14...v0.5.15) (2026-03-03)
+
+
+### Features
+
+* ssh keys ([#900](https://github.com/leg100/otf/issues/900)) ([9bf1dbb](https://github.com/leg100/otf/commit/9bf1dbbb3626644fc756f17b35b860e3fd299241)), closes [#899](https://github.com/leg100/otf/issues/899)
+
+
+### Miscellaneous
+
+* bump helm charts with app version v0.5.14 ([4b34e68](https://github.com/leg100/otf/commit/4b34e68fe4edd1dbd663dff3fbab88c2f7f7f4ed))
+
 ## [0.5.14](https://github.com/leg100/otf/compare/v0.5.13...v0.5.14) (2026-02-14)
 
 
