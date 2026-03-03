@@ -56,7 +56,7 @@ type (
 		EngineVersion              *Version          `jsonapi:"attribute" json:"engine_version"`
 
 		// SSHKeyID is the ID of the SSH key assigned to this workspace, if any.
-		SSHKeyID *resource.TfeID
+		SSHKeyID *resource.TfeID `jsonapi:"attribute" json:"ssh_key_id"`
 
 		// VCS Connection; nil means the workspace is not connected.
 		Connection *Connection

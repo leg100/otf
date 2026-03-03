@@ -4,9 +4,11 @@ package client
 import (
 	"github.com/leg100/otf/internal/configversion"
 	otfhttp "github.com/leg100/otf/internal/http"
+	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/runner"
+	"github.com/leg100/otf/internal/sshkey"
 	"github.com/leg100/otf/internal/state"
 	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/user"
@@ -27,11 +29,21 @@ type (
 		Configs       *configversion.Client
 		Variables     *variable.Client
 		Runners       *runner.Client
+		SSHKeys       *sshkey.Client
 	}
 )
 
-func New(config otfhttp.ClientConfig) (*Client, error) {
-	httpClient, err := otfhttp.NewClient(config)
+func New(
+	logger logr.Logger,
+	url string,
+	token string,
+) (*Client, error) {
+	httpClient, err := otfhttp.NewClient(otfhttp.ClientConfig{
+		URL:           url,
+		Logger:        logger,
+		Token:         token,
+		RetryRequests: true,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -57,5 +69,6 @@ func (c *Client) new(httpClient *otfhttp.Client) *Client {
 		Configs:       &configversion.Client{Client: httpClient},
 		Variables:     &variable.Client{Client: httpClient},
 		Runners:       &runner.Client{Client: httpClient},
+		SSHKeys:       &sshkey.Client{Client: httpClient},
 	}
 }

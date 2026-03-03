@@ -19,14 +19,11 @@ import (
 	"github.com/fatih/color"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
-	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/dynamiccreds"
 	"github.com/leg100/otf/internal/engine"
-	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/resource"
 	runpkg "github.com/leg100/otf/internal/run"
-	"github.com/leg100/otf/internal/sshkey"
 	"github.com/leg100/otf/internal/state"
 	"github.com/leg100/otf/internal/variable"
 	"github.com/leg100/otf/internal/workspace"
@@ -150,29 +147,6 @@ func RegisterOperationFlags(flags *pflag.FlagSet, cfg *OperationConfig) {
 	flags.BoolVar(&cfg.PluginCache, "plugin-cache", cfg.PluginCache, "Enable shared plugin cache for provider plugins.")
 	flags.StringVar(&cfg.PluginCacheDir, "plugin-cache-dir", cfg.PluginCacheDir, "Directory for shared plugin cache.")
 	flags.StringVar(&cfg.EngineBinDir, "engine-bins-dir", cfg.EngineBinDir, "Destination directory for engine binary downloads.")
-}
-
-// NewRemoteOperationClient constructs a remote API client for an operation.
-func NewRemoteOperationClient(jobToken []byte, url string, logger logr.Logger) (OperationClient, error) {
-	client, err := otfhttp.NewClient(otfhttp.ClientConfig{
-		URL:           url,
-		Token:         string(jobToken),
-		Logger:        logger,
-		RetryRequests: true,
-	})
-	if err != nil {
-		return OperationClient{}, err
-	}
-	return OperationClient{
-		Runs:       &runpkg.Client{Client: client},
-		Jobs:       &Client{Client: client},
-		Workspaces: &workspace.Client{Client: client},
-		Variables:  &variable.Client{Client: client},
-		State:      &state.Client{Client: client},
-		Configs:    &configversion.Client{Client: client},
-		Server:     client,
-		SSHKeys:    &sshkey.Client{Client: client},
-	}, nil
 }
 
 func DoOperation(runnerCtx context.Context, g *errgroup.Group, opts OperationOptions) {

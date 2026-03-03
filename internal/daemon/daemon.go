@@ -357,16 +357,16 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		logger,
 		runnerService,
 		func(_ string) runner.OperationClient {
-			return runner.OperationClient{
-				Workspaces: workspaceService,
-				Variables:  variableService,
-				State:      stateService,
-				Configs:    configService,
-				Runs:       runService,
-				Jobs:       runnerService,
-				Server:     hostnameService,
-				SSHKeys:    sshkeyService,
-			}
+			return runner.NewOperationClient(
+				runService,
+				workspaceService,
+				variableService,
+				stateService,
+				configService,
+				hostnameService,
+				runnerService,
+				sshkeyService,
+			)
 		},
 		cfg.RunnerConfig,
 	)

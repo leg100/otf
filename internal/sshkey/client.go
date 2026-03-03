@@ -1,6 +1,7 @@
 package sshkey
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 
@@ -19,9 +20,9 @@ func (c *Client) GetPrivateKey(ctx context.Context, id resource.TfeID) ([]byte, 
 	if err != nil {
 		return nil, err
 	}
-	var key []byte
-	if err := c.Do(ctx, req, &key); err != nil {
+	buf := bytes.Buffer{}
+	if err := c.Do(ctx, req, &buf); err != nil {
 		return nil, err
 	}
-	return key, nil
+	return buf.Bytes(), nil
 }

@@ -51,12 +51,11 @@ func run(ctx context.Context, args []string) error {
 			if err != nil {
 				return err
 			}
-			client, err := client.New(otfhttp.ClientConfig{
-				URL:           url,
-				Token:         string(jobToken),
-				Logger:        logger,
-				RetryRequests: true,
-			})
+			client, err := client.New(
+				logger,
+				url,
+				string(jobToken),
+			)
 			if err != nil {
 				return err
 			}
@@ -71,15 +70,16 @@ func run(ctx context.Context, args []string) error {
 				OperationConfig: operationConfig,
 				Job:             job,
 				JobToken:        []byte(jobToken),
-				Client: runner.OperationClient{
-					Runs:       client.Runs,
-					Workspaces: client.Workspaces,
-					Variables:  client.Variables,
-					State:      client.States,
-					Configs:    client.Configs,
-					Server:     client,
-					Jobs:       client.Runners,
-				},
+				Client: runner.NewOperationClient(
+					client.Runs,
+					client.Workspaces,
+					client.Variables,
+					client.States,
+					client.Configs,
+					client,
+					client.Runners,
+					client.SSHKeys,
+				),
 			})
 			return nil
 		},
