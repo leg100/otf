@@ -22,6 +22,7 @@ import (
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/runner"
+	"github.com/leg100/otf/internal/sshkey"
 	"github.com/leg100/otf/internal/state"
 	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/tokens"
@@ -54,6 +55,7 @@ type Handlers struct {
 	AuthenticatorService         loginService
 	VariablesService             *variable.Service
 	GithubHostname               *internal.WebURL
+	SSHKeys                      *sshkey.Service
 	SkipTLSVerification          bool
 	SiteToken                    string
 	RestrictOrganizationCreation bool
@@ -178,6 +180,7 @@ func NewHandlers(
 	AuthenticatorService *authenticator.Service,
 	VariablesService *variable.Service,
 	GithubHostname *internal.WebURL,
+	SSHKeys *sshkey.Service,
 	SkipTLSVerification bool,
 	SiteToken string,
 	RestrictOrganizationCreation bool,
@@ -205,6 +208,7 @@ func NewHandlers(
 		SkipTLSVerification:          SkipTLSVerification,
 		SiteToken:                    SiteToken,
 		RestrictOrganizationCreation: RestrictOrganizationCreation,
+		SSHKeys:                      SSHKeys,
 		templates: &templates{
 			Authorizer: Authorizer,
 			configs:    Configs,
@@ -235,6 +239,7 @@ func (h *Handlers) AddHandlers(r *mux.Router) {
 	addStateHandlers(r, h)
 	addVCSHandlers(r, h)
 	addGithubAppHandlers(r, h)
+	addSSHKeyHandlers(r, h)
 }
 
 func (h *Handlers) renderPage(comp templ.Component, title string, w http.ResponseWriter, r *http.Request, opts ...renderPageOption) {

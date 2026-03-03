@@ -87,3 +87,11 @@ func StateWorkspace(workspace any) string {
 func PoolsWorkspace(workspace any) string {
 	return fmt.Sprintf("/app/workspaces/%v/pools", workspace)
 }
+
+func EditSSHKeyWorkspace(workspace any) string {
+	return fmt.Sprintf("/app/workspaces/%v/edit-ssh-key", workspace)
+}
+
+func UpdateSSHKeyWorkspace(workspace any) string {
+	return fmt.Sprintf("/app/workspaces/%v/update-ssh-key", workspace)
+}

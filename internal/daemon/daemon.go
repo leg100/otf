@@ -32,6 +32,7 @@ import (
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/runner"
 	"github.com/leg100/otf/internal/sql"
+	"github.com/leg100/otf/internal/sshkey"
 	"github.com/leg100/otf/internal/state"
 	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/tfeapi"
@@ -68,6 +69,7 @@ type (
 		Runners       *runner.Service
 		Connections   *connections.Service
 		System        *internal.HostnameService
+		SSHKeys       *sshkey.Service
 
 		// ListenAddress is the listening address of the daemon's http server,
 		// e.g. localhost:8080
@@ -344,19 +346,27 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		return nil, fmt.Errorf("registering github oauth client: %w", err)
 	}
 
+	sshkeyService := sshkey.NewService(sshkey.Options{
+		Logger:     logger,
+		Authorizer: authorizer,
+		DB:         db,
+		Responder:  responder,
+	})
+
 	serverRunner, err := runner.New(
 		logger,
 		runnerService,
 		func(_ string) runner.OperationClient {
-			return runner.OperationClient{
-				Workspaces: workspaceService,
-				Variables:  variableService,
-				State:      stateService,
-				Configs:    configService,
-				Runs:       runService,
-				Jobs:       runnerService,
-				Server:     hostnameService,
-			}
+			return runner.NewOperationClient(
+				runService,
+				workspaceService,
+				variableService,
+				stateService,
+				configService,
+				hostnameService,
+				runnerService,
+				sshkeyService,
+			)
 		},
 		cfg.RunnerConfig,
 	)
@@ -413,6 +423,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 			authenticatorService,
 			variableService,
 			cfg.GithubHostname,
+			sshkeyService,
 			cfg.SkipTLSVerification,
 			cfg.SiteToken,
 			cfg.RestrictOrganizationCreation,
@@ -424,6 +435,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 			VCSService: vcsService,
 		},
 		dynamiccredsService,
+		sshkeyService,
 	}
 
 	return &Daemon{
@@ -447,6 +459,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		GithubApp:     githubAppService,
 		Connections:   connectionService,
 		Runners:       runnerService,
+		SSHKeys:       sshkeyService,
 		DB:            db,
 		runner:        serverRunner,
 		listener:      listener,

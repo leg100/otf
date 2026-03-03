@@ -158,14 +158,15 @@ func (db *pgdb) update(ctx context.Context, workspaceID resource.TfeID, fn func(
 					queue_all_runs                = $10,
 					speculative_enabled           = $11,
 					structured_run_output_enabled = $12,
-					engine_version             = $13,
+					engine_version                = $13,
 					trigger_prefixes              = $14,
 					trigger_patterns              = $15,
 					vcs_tags_regex                = $16,
 					working_directory             = $17,
 					updated_at                    = $18,
-					engine                        = $19
-				WHERE workspace_id = $20
+					engine                        = $19,
+					ssh_key_id                    = $20
+				WHERE workspace_id = $21
 			`,
 				ws.AgentPoolID,
 				ws.AllowDestroyPlan,
@@ -186,6 +187,7 @@ func (db *pgdb) update(ctx context.Context, workspaceID resource.TfeID, fn func(
 				ws.WorkingDirectory,
 				ws.UpdatedAt,
 				ws.Engine,
+				ws.SSHKeyID,
 				ws.ID,
 			)
 			return err
@@ -571,6 +573,7 @@ func scan(row pgx.CollectableRow) (*Workspace, error) {
 		LockUsername               *user.Username    `db:"lock_username"`
 		LockRunID                  *resource.TfeID   `db:"lock_run_id"`
 		CurrentStateVersionID      *resource.TfeID   `db:"current_state_version_id"`
+		SSHKeyID                   *resource.TfeID   `db:"ssh_key_id"`
 		Connection                 *connections.Connection
 		Engine                     *engine.Engine `db:"engine"`
 	}
@@ -604,6 +607,7 @@ func scan(row pgx.CollectableRow) (*Workspace, error) {
 		TriggerPatterns:            m.TriggerPatterns,
 		TriggerPrefixes:            m.TriggerPrefixes,
 		Engine:                     m.Engine,
+		SSHKeyID:                   m.SSHKeyID,
 	}
 	if m.Connection != nil {
 		ws.Connection = &Connection{

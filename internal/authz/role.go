@@ -23,6 +23,8 @@ var (
 			GetVariableSetAction:   true,
 			WatchRunnersAction:     true,
 			ListRunnersAction:      true,
+			GetSSHKeyAction:        true,
+			ListSSHKeysAction:      true,
 		},
 	}
 

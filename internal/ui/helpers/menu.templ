@@ -17,6 +17,7 @@ templ WorkspaceMenu(workspace resource.Info, organization resource.ID, authorize
 			@MenuItem("Variables", paths.Variables(workspace.ID), "/app/variables", paths.Variables(workspace.ID))
 			if authorizer.CanAccess(ctx, authz.UpdateWorkspaceAction, workspace.ID) {
 				@MenuItem("Settings", paths.EditWorkspace(workspace.ID), paths.Workspace(workspace.ID)+"/setup-connection")
+				@MenuItem("SSH Key", paths.EditSSHKeyWorkspace(workspace.ID))
 			}
 		</ul>
 		<div class="">
@@ -53,6 +54,7 @@ templ OrganizationMenu(organization resource.ID) {
 		if IsOwner(ctx, organization) || IsSiteAdmin(ctx) {
 			@MenuItem("Organization Token", paths.OrganizationToken(organization))
 			@MenuItem("Settings", paths.EditOrganization(organization))
+			@MenuItem("SSH Keys", paths.SSHKeys(organization))
 		}
 	</ul>
 }

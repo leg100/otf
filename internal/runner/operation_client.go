@@ -13,4 +13,27 @@ type OperationClient struct {
 	Configs    configClient
 	Server     hostnameClient
 	Jobs       operationJobsClient
+	SSHKeys    sshKeyClient
+}
+
+func NewOperationClient(
+	Runs runClient,
+	Workspaces workspaceClient,
+	Variables variablesClient,
+	State stateClient,
+	Configs configClient,
+	Server hostnameClient,
+	Jobs operationJobsClient,
+	SSHKeys sshKeyClient,
+) OperationClient {
+	return OperationClient{
+		Workspaces: Workspaces,
+		Variables:  Variables,
+		State:      State,
+		Configs:    Configs,
+		Runs:       Runs,
+		Jobs:       Jobs,
+		Server:     Server,
+		SSHKeys:    SSHKeys,
+	}
 }

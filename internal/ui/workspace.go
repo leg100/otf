@@ -66,6 +66,9 @@ func addWorkspaceHandlers(r *mux.Router, h *Handlers) {
 	r.HandleFunc("/workspaces/{workspace_id}/create-tag", h.createTag).Methods("POST")
 	r.HandleFunc("/workspaces/{workspace_id}/delete-tag", h.deleteTag).Methods("POST")
 
+	r.HandleFunc("/workspaces/{workspace_id}/edit-ssh-key", h.editWorkspaceSSHKey).Methods("GET")
+	r.HandleFunc("/workspaces/{workspace_id}/update-ssh-key", h.updateWorkspaceSSHKey).Methods("POST")
+
 }
 
 func (h *Handlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
@@ -503,6 +506,69 @@ func (h *Handlers) updateWorkspace(w http.ResponseWriter, r *http.Request) {
 	html.FlashSuccess(w, "updated workspace")
 	// User may have updated workspace name so path references updated workspace
 	http.Redirect(w, r, paths.EditWorkspace(ws.ID), http.StatusFound)
+}
+
+func (h *Handlers) editWorkspaceSSHKey(w http.ResponseWriter, r *http.Request) {
+	workspaceID, err := decode.ID("workspace_id", r)
+	if err != nil {
+		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
+		return
+	}
+
+	ws, err := h.Workspaces.Get(r.Context(), workspaceID)
+	if err != nil {
+		html.Error(r, w, err.Error())
+		return
+	}
+
+	keys, err := h.SSHKeys.List(r.Context(), ws.Organization)
+	if err != nil {
+		html.Error(r, w, err.Error())
+		return
+	}
+
+	props := workspaceEditSSHKeyProps{
+		ws:   ws,
+		keys: keys,
+	}
+	h.renderPage(
+		h.templates.workspaceEditSSHKey(props),
+		"workspace ssh key | "+ws.ID.String(),
+		w,
+		r,
+		withWorkspace(ws),
+		withBreadcrumbs(
+			helpers.Breadcrumb{Name: "SSH Key"},
+		),
+	)
+}
+
+func (h *Handlers) updateWorkspaceSSHKey(w http.ResponseWriter, r *http.Request) {
+	var params struct {
+		SSHKeyID    resource.TfeID `schema:"ssh_key_id"`
+		WorkspaceID resource.TfeID `schema:"workspace_id,required"`
+	}
+	if err := decode.All(&params, r); err != nil {
+		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
+		return
+	}
+
+	opts := &workspace.UpdateSSHKeyOptions{}
+	if !params.SSHKeyID.IsZero() {
+		opts.SSHKeyID = &params.SSHKeyID
+	}
+
+	ws, err := h.Workspaces.Update(r.Context(), params.WorkspaceID, workspace.UpdateOptions{
+		UpdateSSHKeyOptions: opts,
+	})
+	if err != nil {
+		html.Error(r, w, err.Error())
+		return
+	}
+
+	html.FlashSuccess(w, "updated workspace")
+	// User may have updated workspace name so path references updated workspace
+	http.Redirect(w, r, paths.EditSSHKeyWorkspace(ws.ID), http.StatusFound)
 }
 
 func (h *Handlers) deleteWorkspace(w http.ResponseWriter, r *http.Request) {

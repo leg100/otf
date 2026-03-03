@@ -10,7 +10,6 @@ import (
 	"io/fs"
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -20,10 +19,8 @@ import (
 	"github.com/fatih/color"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
-	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/dynamiccreds"
 	"github.com/leg100/otf/internal/engine"
-	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/resource"
 	runpkg "github.com/leg100/otf/internal/run"
@@ -57,6 +54,7 @@ type (
 
 		job           *Job
 		run           *runpkg.Run
+		ws            *workspace.Workspace
 		canceled      bool
 		ctx           context.Context
 		cancelfn      context.CancelFunc
@@ -130,6 +128,11 @@ type (
 	hostnameClient interface {
 		Hostname() string
 	}
+
+	// sshKeyClient fetches SSH key data for an operation.
+	sshKeyClient interface {
+		GetPrivateKey(ctx context.Context, id resource.TfeID) ([]byte, error)
+	}
 )
 
 func defaultOperationConfig() OperationConfig {
@@ -144,28 +147,6 @@ func RegisterOperationFlags(flags *pflag.FlagSet, cfg *OperationConfig) {
 	flags.BoolVar(&cfg.PluginCache, "plugin-cache", cfg.PluginCache, "Enable shared plugin cache for provider plugins.")
 	flags.StringVar(&cfg.PluginCacheDir, "plugin-cache-dir", cfg.PluginCacheDir, "Directory for shared plugin cache.")
 	flags.StringVar(&cfg.EngineBinDir, "engine-bins-dir", cfg.EngineBinDir, "Destination directory for engine binary downloads.")
-}
-
-// NewRemoteOperationClient constructs a remote API client for an operation.
-func NewRemoteOperationClient(jobToken []byte, url string, logger logr.Logger) (OperationClient, error) {
-	client, err := otfhttp.NewClient(otfhttp.ClientConfig{
-		URL:           url,
-		Token:         string(jobToken),
-		Logger:        logger,
-		RetryRequests: true,
-	})
-	if err != nil {
-		return OperationClient{}, err
-	}
-	return OperationClient{
-		Runs:       &runpkg.Client{Client: client},
-		Jobs:       &Client{Client: client},
-		Workspaces: &workspace.Client{Client: client},
-		Variables:  &variable.Client{Client: client},
-		State:      &state.Client{Client: client},
-		Configs:    &configversion.Client{Client: client},
-		Server:     client,
-	}, nil
 }
 
 func DoOperation(runnerCtx context.Context, g *errgroup.Group, opts OperationOptions) {
@@ -280,14 +261,11 @@ func (o *operation) do() error {
 	}
 
 	// Get workspace in order to get working directory path
-	//
-	// TODO: add working directory to run.Run so we skip having to retrieve
-	// workspace.
-	ws, err := o.client.Workspaces.Get(o.ctx, o.job.WorkspaceID)
+	o.ws, err = o.client.Workspaces.Get(o.ctx, o.job.WorkspaceID)
 	if err != nil {
 		return fmt.Errorf("retreiving workspace: %w", err)
 	}
-	wd, err := newWorkdir(ws.WorkingDirectory, o.job.RunID.String())
+	wd, err := newWorkdir(o.ws.WorkingDirectory, o.job.RunID.String())
 	if err != nil {
 		return fmt.Errorf("constructing working directory: %w", err)
 	}
@@ -327,6 +305,7 @@ func (o *operation) do() error {
 		o.downloadConfig,
 		o.readVars,
 		o.setupDynamicCredentials,
+		o.setupSSHKey,
 		o.writeTerraformVars,
 		o.deleteBackendConfig,
 		o.downloadState,
@@ -421,11 +400,10 @@ func (o *operation) execute(args []string, funcs ...executionOptionFunc) error {
 	}
 	cmd := exec.Command(args[0], args[1:]...)
 	cmd.Dir = o.workdir.String()
-	cmd.Env = os.Environ()
 	cmd.Env = append(os.Environ(), o.envs...)
 
 	if opts.redirectStdout != nil {
-		dst, err := os.Create(path.Join(o.workdir.String(), *opts.redirectStdout))
+		dst, err := os.Create(filepath.Join(o.workdir.String(), *opts.redirectStdout))
 		if err != nil {
 			return err
 		}
@@ -556,6 +534,41 @@ func (o *operation) setupDynamicCredentials(ctx context.Context) error {
 		return fmt.Errorf("setting up dynamic provider credentials: %w", err)
 	}
 	o.envs = append(o.envs, envs...)
+	return nil
+}
+
+func (o *operation) setupSSHKey(ctx context.Context) error {
+	if o.ws.SSHKeyID == nil {
+		return nil
+	}
+	key, err := o.client.SSHKeys.GetPrivateKey(ctx, *o.ws.SSHKeyID)
+	if err != nil {
+		return fmt.Errorf("getting SSH key: %w", err)
+	}
+	keyPath := filepath.Join(o.root, "ssh_key")
+	if err := os.WriteFile(keyPath, key, 0600); err != nil {
+		return fmt.Errorf("writing SSH key: %w", err)
+	}
+
+	sshCmd := fmt.Sprintf("ssh -i %s -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null", keyPath)
+	// Set GIT_SSH_COMMAND for engine versions that honour it.
+	o.envs = append(o.envs, "GIT_SSH_COMMAND="+sshCmd)
+
+	// Also write a git config file and point GIT_CONFIG_GLOBAL at it.
+	//
+	// Older versions of go-getter (used by terraform module downloads)
+	// explicitly cleared GIT_SSH_COMMAND for git-clone, but did not clear
+	// GIT_CONFIG_GLOBAL, so core.sshCommand in the config file survives and git
+	// picks it up.
+	//
+	// Issue: https://github.com/hashicorp/go-getter/pull/300
+	gitConfigPath := filepath.Join(o.root, "git_config")
+	gitConfigContent := fmt.Sprintf("[core]\n\tsshCommand = %s\n", sshCmd)
+	if err := os.WriteFile(gitConfigPath, []byte(gitConfigContent), 0600); err != nil {
+		return fmt.Errorf("writing git config: %w", err)
+	}
+	o.envs = append(o.envs, "GIT_CONFIG_GLOBAL="+gitConfigPath)
+
 	return nil
 }
 

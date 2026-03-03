@@ -27,9 +27,9 @@ const (
 	VariableSetKind               Kind = "varset"
 	VariableKind                  Kind = "var"
 	VCSProviderKind               Kind = "vcs"
-
-	OrganizationTokenKind Kind = "ot"
-	UserTokenKind         Kind = "ut"
-	TeamTokenKind         Kind = "tt"
-	AgentTokenKind        Kind = "at"
+	OrganizationTokenKind         Kind = "ot"
+	UserTokenKind                 Kind = "ut"
+	TeamTokenKind                 Kind = "tt"
+	AgentTokenKind                Kind = "at"
+	SSHKeyKind                    Kind = "sshkey"
 )

@@ -86,7 +86,7 @@ func (j *Job) CanAccess(action authz.Action, req authz.Request) bool {
 	}
 	// Permissible organization actions on same organization
 	switch action {
-	case authz.GetOrganizationAction, authz.GetEntitlementsAction, authz.GetModuleAction, authz.ListModulesAction:
+	case authz.GetOrganizationAction, authz.GetEntitlementsAction, authz.GetModuleAction, authz.ListModulesAction, authz.GetPrivateKeySSHKeyAction:
 		return true
 	}
 	// Permissible workspace actions on same workspace.

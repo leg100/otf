@@ -55,6 +55,9 @@ type (
 		Engine                     *engine.Engine    `jsonapi:"attribute" json:"engine"`
 		EngineVersion              *Version          `jsonapi:"attribute" json:"engine_version"`
 
+		// SSHKeyID is the ID of the SSH key assigned to this workspace, if any.
+		SSHKeyID *resource.TfeID `jsonapi:"attribute" json:"ssh_key_id"`
+
 		// VCS Connection; nil means the workspace is not connected.
 		Connection *Connection
 
@@ -121,6 +124,7 @@ type (
 		TriggerPatterns            []string
 		WorkingDirectory           *string
 		Organization               *organization.Name
+		SSHKeyID                   *resource.TfeID
 
 		// Always trigger runs. A value of true is mutually exclusive with
 		// setting TriggerPatterns or ConnectOptions.TagsRegex.
@@ -159,6 +163,16 @@ type (
 		// disconnected workspace, or modifies a connection if already
 		// connected.
 		*ConnectOptions
+
+		// updateSSHKeyOptions, if non-nil, either assigns or unassigns an SSH
+		// key to the workspace.
+		*UpdateSSHKeyOptions
+	}
+
+	UpdateSSHKeyOptions struct {
+		// SSHKeyID, if non-nil, is assigned to workspace; if nil it is
+		// unassigned.
+		SSHKeyID *resource.TfeID
 	}
 
 	// ListOptions are options for paginating and filtering a list of
@@ -254,6 +268,9 @@ func (f *factory) NewWorkspace(ctx context.Context, opts CreateOptions) (*Worksp
 	}
 	if opts.WorkingDirectory != nil {
 		ws.WorkingDirectory = *opts.WorkingDirectory
+	}
+	if opts.SSHKeyID != nil {
+		ws.SSHKeyID = opts.SSHKeyID
 	}
 	// TriggerPrefixes are not used but OTF persists it in order to pass go-tfe
 	// integration tests.
@@ -421,6 +438,10 @@ func (ws *Workspace) Update(opts UpdateOptions) (*bool, error) {
 	}
 	if opts.WorkingDirectory != nil {
 		ws.WorkingDirectory = *opts.WorkingDirectory
+		updated = true
+	}
+	if opts.UpdateSSHKeyOptions != nil {
+		ws.SSHKeyID = opts.UpdateSSHKeyOptions.SSHKeyID
 		updated = true
 	}
 	// TriggerPrefixes are not used but OTF persists it in order to pass go-tfe

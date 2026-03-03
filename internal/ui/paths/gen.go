@@ -14,6 +14,13 @@ import (
 	"github.com/iancoleman/strcase"
 )
 
+// TODO: refactor this so that it is driven by the yaml.
+func init() {
+	strcase.ConfigureAcronym("ssh_key", "SSHKey")
+	strcase.ConfigureAcronym("edit-ssh-key", "EditSSHKey")
+	strcase.ConfigureAcronym("update-ssh-key", "UpdateSSHKey")
+}
+
 type controllerType int
 
 const (
@@ -34,6 +41,7 @@ const (
 type action struct {
 	Name       string
 	Collection bool `yaml:",omitempty"` // whether action acts on collection of resources or a single resource
+	Override   string
 }
 
 // defaultActions are the default set of actions for a controller of type
@@ -170,6 +178,9 @@ func (r controller) FormatArgs(action action) string {
 
 // HelperName returns the path helper function name for the given action.
 func (r controller) HelperName(action action) string {
+	if action.Override != "" {
+		return action.Override
+	}
 	switch action.Name {
 	case "show":
 		// show path helper is merely the singular form of the resource name
@@ -226,12 +237,7 @@ func main() {
 	// convert specifications to controllers
 	controllers := buildControllers(nil, specs)
 
-	funcmap := template.FuncMap{
-		"kebab":      strcase.ToKebab,
-		"camel":      strcase.ToCamel,
-		"lowerCamel": strcase.ToLowerCamel,
-	}
-	tmpl, err := template.New("resource.go.tmpl").Funcs(funcmap).ParseFiles("resource.go.tmpl")
+	tmpl, err := template.New("resource.go.tmpl").ParseFiles("resource.go.tmpl")
 	if err != nil {
 		log.Fatal("Error parsing template: ", err.Error())
 	}
