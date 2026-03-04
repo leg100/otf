@@ -154,6 +154,21 @@ func (a *Service) GetCurrent(ctx context.Context, workspaceID resource.TfeID) (*
 	return sv, nil
 }
 
+// GetPrevious returns the finalized state version that immediately precedes sv
+// (by serial) in the same workspace. Returns ErrResourceNotFound when sv is
+// the first version.
+func (a *Service) GetPrevious(ctx context.Context, sv *Version) (*Version, error) {
+	if _, err := a.Authorize(ctx, authz.GetStateVersionAction, sv.WorkspaceID); err != nil {
+		return nil, err
+	}
+	prev, err := a.db.getPreviousVersion(ctx, sv)
+	if err != nil {
+		return nil, err
+	}
+	a.V(9).Info("retrieved previous state version", "state_version", prev)
+	return prev, nil
+}
+
 func (a *Service) Get(ctx context.Context, versionID resource.TfeID) (*Version, error) {
 	subject, err := a.Authorize(ctx, authz.GetStateVersionAction, versionID)
 	if err != nil {
