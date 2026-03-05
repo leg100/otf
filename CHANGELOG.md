@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.5.16](https://github.com/leg100/otf/compare/v0.5.15...v0.5.16) (2026-03-05)
+
+
+### Features
+
+* **ui:** state viewer ([#904](https://github.com/leg100/otf/issues/904)) ([158172a](https://github.com/leg100/otf/commit/158172aa88f533393d9465059d883399e9bfb926)), closes [#863](https://github.com/leg100/otf/issues/863)
+
+
+### Miscellaneous
+
+* bump helm charts with app version v0.5.15 ([a370a82](https://github.com/leg100/otf/commit/a370a823583ff0e519618175619a5e2a09450a3d))
+
 ## [0.5.15](https://github.com/leg100/otf/compare/v0.5.14...v0.5.15) (2026-03-03)
 
 
