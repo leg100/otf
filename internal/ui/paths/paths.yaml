@@ -46,6 +46,10 @@
             - name: watch-latest
               collection: true
         - name: variable
+        - name: state_version
+          actions:
+            - name: rollback
+            - name: diff
       actions:
         - name: lock
         - name: unlock

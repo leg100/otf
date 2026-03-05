@@ -35,6 +35,7 @@ import (
 	"github.com/leg100/otf/internal/variable"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/workspace"
+	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/require"
 )
 
@@ -561,4 +562,10 @@ func (s *testDaemon) getLocalURL(t *testing.T, path string) *http.Response {
 	resp, err := http.Get(localURL.String())
 	require.NoError(t, err)
 	return resp
+}
+
+func (s *testDaemon) gotoPath(t *testing.T, page playwright.Page, path string) {
+	url := fmt.Sprintf("https://%s%s", s.System.Hostname(), path)
+	_, err := page.Goto(url)
+	require.NoError(t, err)
 }

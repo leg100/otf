@@ -219,6 +219,28 @@ WHERE state_version_id = $1
 	return sql.CollectOneRow(rows, pgx.RowTo[[]byte])
 }
 
+// getPreviousVersion returns the finalized state version with the highest
+// serial strictly less than sv.Serial for the same workspace.
+func (db *pgdb) getPreviousVersion(ctx context.Context, sv *Version) (*Version, error) {
+	rows := db.Query(ctx, `
+SELECT
+    sv.state_version_id, sv.created_at, sv.serial, sv.state, sv.workspace_id, sv.status,
+    (
+        SELECT array_agg(svo.*)::state_version_outputs[]
+        FROM state_version_outputs svo
+        WHERE svo.state_version_id = sv.state_version_id
+        GROUP BY svo.state_version_id
+    ) AS state_version_outputs
+FROM state_versions sv
+WHERE sv.workspace_id = $1
+AND   sv.serial < $2
+AND   sv.status = 'finalized'
+ORDER BY sv.serial DESC
+LIMIT 1
+`, sv.WorkspaceID, sv.Serial)
+	return sql.CollectOneRow(rows, scanVersion)
+}
+
 // deleteVersion deletes a state version from the DB
 func (db *pgdb) deleteVersion(ctx context.Context, id resource.TfeID) error {
 	_, err := db.Exec(ctx, `
