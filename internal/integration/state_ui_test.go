@@ -78,6 +78,8 @@ func TestIntegration_StateUI(t *testing.T) {
 			err = expect.Locator(rowLocator).ToContainText(fmt.Sprintf("%d", sv.Serial))
 			require.NoError(t, err)
 
+			screenshot(t, page, "state_versions_list")
+
 			// click View link to navigate to the state version detail page
 			err = rowLocator.Locator(`a`, playwright.LocatorLocatorOptions{
 				HasText: "View",
@@ -109,6 +111,8 @@ func TestIntegration_StateUI(t *testing.T) {
 
 			err = expect.Locator(jsonLocator).ToContainText(`null_resource`)
 			require.NoError(t, err)
+
+			screenshot(t, page, "state_versions_json")
 		})
 	})
 
@@ -126,6 +130,8 @@ func TestIntegration_StateUI(t *testing.T) {
 			// the resource added should appear in the diff
 			err = expect.Locator(page.Locator(`body`)).ToContainText(`null_resource`)
 			require.NoError(t, err)
+
+			screenshot(t, page, "state_versions_diff")
 		})
 	})
 }
