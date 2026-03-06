@@ -14,13 +14,13 @@ FROM --platform=$BUILDPLATFORM alpine:3.23.3 AS base
 # /etc/apk/cache with type=cache lets the image build system handle apk's cache
 # for us, without leaving any cache files in the image itself.
 
-# To Do: 
+# To Do:
 #   - Update base image after CVEs are fixed
 #   - Remove apk update && apk upgrade (When the CVEs are fixed, this is no longer relevant)
 RUN --mount=type=cache,target=/etc/apk/cache \
   apk update && \
   apk upgrade --no-cache && \
-  apk add --no-cache --upgrade git gcompat
+  apk add --no-cache --upgrade git gcompat openssh
 
 # Create non-root user and group, which will be used in the final image. We
 # can't switch to it now, because the change only lasts until the end of the
