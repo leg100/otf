@@ -2,6 +2,8 @@ package gitlab
 
 import (
 	"bytes"
+	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"path"
@@ -178,4 +180,74 @@ func TestClient_GetCommit(t *testing.T) {
 		URL: "https://gitlab.com/commits/abc123",
 	}
 	assert.Equal(t, want, got)
+}
+
+func TestClient_SetStatus(t *testing.T) {
+	tests := []struct {
+		name       string
+		vcsStatus  vcs.Status
+		wantState  string
+		statusCode int
+	}{
+		{
+			name:       "pending",
+			vcsStatus:  vcs.PendingStatus,
+			wantState:  "pending",
+			statusCode: http.StatusCreated,
+		},
+		{
+			name:       "success",
+			vcsStatus:  vcs.SuccessStatus,
+			wantState:  "success",
+			statusCode: http.StatusCreated,
+		},
+		{
+			name:       "error",
+			vcsStatus:  vcs.ErrorStatus,
+			wantState:  "failed",
+			statusCode: http.StatusCreated,
+		},
+		{
+			name:       "failure",
+			vcsStatus:  vcs.FailureStatus,
+			wantState:  "failed",
+			statusCode: http.StatusCreated,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mux, client := setup(t)
+
+			mux.HandleFunc("/api/v4/projects/acme%2Fterraform/statuses/abc123", func(w http.ResponseWriter, r *http.Request) {
+				require.Equal(t, "POST", r.Method)
+				require.Equal(t, "application/json", r.Header.Get("Content-Type"))
+
+				// Read and verify JSON body
+				var body map[string]interface{}
+				err := json.NewDecoder(r.Body).Decode(&body)
+				require.NoError(t, err)
+
+				// Verify the status parameters
+				assert.Equal(t, tt.wantState, body["state"])
+				assert.Equal(t, "otf/my-workspace", body["context"])
+				assert.Equal(t, "https://app.terraform.io/runs/run-123", body["target_url"])
+				assert.Equal(t, "Run is pending", body["description"])
+
+				w.WriteHeader(tt.statusCode)
+				fmt.Fprint(w, `{"id":1,"status":"pending"}`)
+			})
+
+			repo := vcs.NewMustRepo("acme", "terraform")
+			err := client.SetStatus(context.Background(), vcs.SetStatusOptions{
+				Workspace:   "my-workspace",
+				Repo:        repo,
+				Ref:         "abc123",
+				Status:      tt.vcsStatus,
+				TargetURL:   "https://app.terraform.io/runs/run-123",
+				Description: "Run is pending",
+			})
+			require.NoError(t, err)
+		})
+	}
 }

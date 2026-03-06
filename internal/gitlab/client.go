@@ -270,8 +270,30 @@ func (g *Client) DeleteWebhook(ctx context.Context, opts vcs.DeleteWebhookOption
 }
 
 func (g *Client) SetStatus(ctx context.Context, opts vcs.SetStatusOptions) error {
-	// unsupported
-	return nil
+	state := vcsStatusToGitlab(opts.Status)
+
+	_, _, err := g.client.Commits.SetCommitStatus(opts.Repo.String(), opts.Ref, &gitlab.SetCommitStatusOptions{
+		State:       state,
+		Context:     internal.Ptr(fmt.Sprintf("otf/%s", opts.Workspace)),
+		TargetURL:   internal.Ptr(opts.TargetURL),
+		Description: internal.Ptr(opts.Description),
+	})
+	return err
+}
+
+func vcsStatusToGitlab(s vcs.Status) gitlab.BuildStateValue {
+	switch s {
+	case vcs.PendingStatus:
+		return gitlab.Pending
+	case vcs.SuccessStatus:
+		return gitlab.Success
+	case vcs.ErrorStatus:
+		return gitlab.Failed
+	case vcs.FailureStatus:
+		return gitlab.Failed
+	default:
+		return gitlab.Failed
+	}
 }
 
 func (g *Client) ListPullRequestFiles(ctx context.Context, repo vcs.Repo, pull int) ([]string, error) {
