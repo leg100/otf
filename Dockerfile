@@ -20,7 +20,7 @@ FROM --platform=$BUILDPLATFORM alpine:3.23.3 AS base
 RUN --mount=type=cache,target=/etc/apk/cache \
   apk update && \
   apk upgrade --no-cache && \
-  apk add --no-cache --upgrade git gcompat openssh
+  apk add --no-cache --upgrade git gcompat openssh-client
 
 # Create non-root user and group, which will be used in the final image. We
 # can't switch to it now, because the change only lasts until the end of the
