@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.5.17](https://github.com/leg100/otf/compare/v0.5.16...v0.5.17) (2026-03-07)
+
+
+### Bug Fixes
+
+* add openssh to Docker image for SSH module sources ([#906](https://github.com/leg100/otf/issues/906)) ([60525fa](https://github.com/leg100/otf/commit/60525fa6d6155b7199920429d2765dfbebe292d6))
+
+
+### Miscellaneous
+
+* bump helm charts with app version v0.5.16 ([ee9cfe0](https://github.com/leg100/otf/commit/ee9cfe023f815b89325ff33c6e4828af51a5511e))
+
 ## [0.5.16](https://github.com/leg100/otf/compare/v0.5.15...v0.5.16) (2026-03-05)
 
 
