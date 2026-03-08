@@ -357,7 +357,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 
 			// set vcs branch
 			//
-			_, err = page.Goto(daemon.URL(workspaceURL))
+			_, err = page.Goto(workspaceURL)
 			require.NoError(t, err)
 
 			// go to workspace settings
