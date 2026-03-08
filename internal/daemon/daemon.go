@@ -69,14 +69,12 @@ type (
 		System        *internal.HostnameService
 		SSHKeys       *sshkey.Service
 
-		// ListenAddress is the listening address of the daemon's http server,
-		// e.g. localhost:8080
-		ListenAddress *net.TCPAddr
-
-		handlers []internal.Handlers
-		listener *sql.Listener
-		runner   *runner.Runner
-		server   *http.Server
+		handlers    []internal.Handlers
+		sqlListener *sql.Listener
+		netListener net.Listener
+		runner      *runner.Runner
+		server      *http.Server
+		subsystems  []*Subsystem
 	}
 )
 
@@ -96,16 +94,25 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	}
 	logger.V(1).Info("set default engine", "engine", cfg.DefaultEngine)
 
-	hostnameService := internal.NewHostnameService(cfg.Host)
-	hostnameService.SetWebhookHostname(cfg.WebhookHost)
-
 	db, err := sql.New(ctx, logger, cfg.Database)
 	if err != nil {
 		return nil, fmt.Errorf("creating database pool: %w", err)
 	}
 
-	// listener listens to database events
-	listener := sql.NewListener(logger, db)
+	// sqlListener listens to database events
+	sqlListener := sql.NewListener(logger, db)
+
+	netListener, err := net.Listen("tcp", cfg.Address)
+	if err != nil {
+		return nil, err
+	}
+
+	hostnameService := internal.NewHostnameService(
+		logger,
+		cfg.Host,
+		cfg.WebhookHost,
+		netListener.Addr().(*net.TCPAddr),
+	)
 
 	// responder responds to TFE API requests
 	responder := tfeapi.NewResponder(logger)
@@ -128,7 +135,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Logger:                       logger,
 		Authorizer:                   authorizer,
 		DB:                           db,
-		Listener:                     listener,
+		Listener:                     sqlListener,
 		Responder:                    responder,
 		RestrictOrganizationCreation: cfg.RestrictOrganizationCreation,
 		TokensService:                tokensService,
@@ -215,7 +222,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Logger:              logger,
 		Authorizer:          authorizer,
 		DB:                  db,
-		Listener:            listener,
+		Listener:            sqlListener,
 		Responder:           responder,
 		ConnectionService:   connectionService,
 		TeamService:         teamService,
@@ -230,7 +237,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Logger:               logger,
 		Authorizer:           authorizer,
 		DB:                   db,
-		Listener:             listener,
+		Listener:             sqlListener,
 		Responder:            responder,
 		OrganizationService:  orgService,
 		WorkspaceService:     workspaceService,
@@ -287,7 +294,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		RunService:                runService,
 		WorkspaceService:          workspaceService,
 		TokensService:             tokensService,
-		Listener:                  listener,
+		Listener:                  sqlListener,
 		DynamicCredentialsService: dynamiccredsService,
 		HostnameService:           hostnameService,
 	})
@@ -371,7 +378,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Logger:     logger,
 		Authorizer: authorizer,
 		DB:         db,
-		Listener:   listener,
+		Listener:   sqlListener,
 		Responder:  responder,
 	})
 
@@ -431,6 +438,127 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		sshkeyService,
 	}
 
+	// Start subsystems. Subsystems are started in order.
+	subsystems := []*Subsystem{
+		// The listener is started first because it is responsible for listening
+		// for database events, and other subsystems rely on it to be listening
+		// before they start, such as the runner (which generates a new runner
+		// event), and the allocator (which receives the new runner event).
+		{
+			Name:   "listener",
+			Logger: logger,
+			System: sqlListener,
+		},
+		{
+			Name:   "reporter",
+			Logger: logger,
+			DB:     db,
+			LockID: internal.Ptr(sql.ReporterLockID),
+			System: &run.Reporter{
+				Logger:          logger.WithValues("component", "reporter"),
+				VCS:             vcsService,
+				HostnameService: hostnameService,
+				Workspaces:      workspaceService,
+				Runs:            runService,
+				Configs:         configService,
+				Cache:           make(map[resource.TfeID]vcs.Status),
+			},
+		},
+		{
+			Name:   "run_metrics",
+			Logger: logger,
+			System: runService.MetricsCollector,
+		},
+		{
+			Name:   "timeout",
+			Logger: logger,
+			DB:     db,
+			LockID: internal.Ptr(sql.TimeoutLockID),
+			System: &run.Timeout{
+				Logger:                logger.WithValues("component", "timeout"),
+				OverrideCheckInterval: cfg.OverrideTimeoutCheckInterval,
+				PlanningTimeout:       cfg.PlanningTimeout,
+				ApplyingTimeout:       cfg.ApplyingTimeout,
+				Runs:                  runService,
+			},
+		},
+		{
+			Name:   "run-deleter",
+			Logger: logger,
+			System: &resource.Deleter[*run.Run]{
+				Logger:                logger.WithValues("component", "run-deleter"),
+				OverrideCheckInterval: cfg.OverrideDeleterInterval,
+				Client:                runService,
+				AgeThreshold:          cfg.DeleteRunsAfter,
+			},
+		},
+		{
+			Name:   "config-deleter",
+			Logger: logger,
+			System: &resource.Deleter[*configversion.ConfigurationVersion]{
+				Logger:                logger.WithValues("component", "config-deleter"),
+				OverrideCheckInterval: cfg.OverrideDeleterInterval,
+				Client:                configService,
+				AgeThreshold:          cfg.DeleteConfigsAfter,
+			},
+		},
+		{
+			Name:   "notifier",
+			Logger: logger,
+			DB:     db,
+			LockID: internal.Ptr(sql.NotifierLockID),
+			System: notifications.NewNotifier(notifications.NotifierOptions{
+				Logger:             logger,
+				HostnameService:    hostnameService,
+				WorkspaceClient:    workspaceService,
+				RunClient:          runService,
+				NotificationClient: notificationService,
+				DB:                 db,
+			}),
+		},
+		{
+			Name:   "job-allocator",
+			Logger: logger,
+			DB:     db,
+			LockID: internal.Ptr(sql.AllocatorLockID),
+			System: runnerService.NewAllocator(logger),
+		},
+		{
+			Name:   "runner-manager",
+			Logger: logger,
+			DB:     db,
+			LockID: internal.Ptr(sql.RunnerManagerLockID),
+			System: runnerService.NewManager(),
+		},
+		{
+			Name:   "job-signaler",
+			Logger: logger,
+			DB:     db,
+			System: runnerService.Signaler,
+		},
+	}
+	if !cfg.DisableRunner {
+		subsystems = append(subsystems, &Subsystem{
+			Name:   "runner-daemon",
+			Logger: logger,
+			DB:     db,
+			System: serverRunner,
+		})
+	}
+	if !cfg.DisableScheduler {
+		subsystems = append(subsystems, &Subsystem{
+			Name:   "scheduler",
+			Logger: logger,
+			DB:     db,
+			LockID: internal.Ptr(sql.SchedulerLockID),
+			System: run.NewScheduler(run.SchedulerOptions{
+				Logger:          logger,
+				WorkspaceClient: workspaceService,
+				RunClient:       runService,
+			}),
+		})
+	}
+
 	// Construct web server and start listening on port
 	server, err := http.NewServer(logger, http.ServerConfig{
 		SSL:                  cfg.SSL,
@@ -468,8 +596,10 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		SSHKeys:       sshkeyService,
 		DB:            db,
 		runner:        serverRunner,
-		listener:      listener,
+		sqlListener:   sqlListener,
+		netListener:   netListener,
 		server:        server,
+		subsystems:    subsystems,
 	}, nil
 }
 
@@ -479,147 +609,7 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 	// Cancel context the first time a func started with g.Go() fails
 	g, ctx := errgroup.WithContext(ctx)
 
-	// close all db connections upon exit
-	defer d.DB.Close()
-
-	ln, err := net.Listen("tcp", d.Address)
-	if err != nil {
-		return err
-	}
-	d.ListenAddress = ln.Addr().(*net.TCPAddr)
-
-	defer ln.Close()
-
-	// Unless user has set a hostname, set the hostname to the listening address
-	// of the http server.
-	if d.Host == "" {
-		d.System.SetHostname(internal.NormalizeAddress(d.ListenAddress))
-	}
-
-	d.V(0).Info("set system hostname", "hostname", d.System.Hostname())
-	d.V(0).Info("set webhook hostname", "webhook_hostname", d.System.WebhookHostname())
-
-	// Start subsystems. Subsystems are started in order.
-	subsystems := []*Subsystem{
-		// The listener is started first because it is responsible for listening
-		// for database events, and other subsystems rely on it to be listening
-		// before they start, such as the runner (which generates a new runner
-		// event), and the allocator (which receives the new runner event).
-		{
-			Name:   "listener",
-			Logger: d.Logger,
-			System: d.listener,
-		},
-		{
-			Name:   "reporter",
-			Logger: d.Logger,
-			DB:     d.DB,
-			LockID: internal.Ptr(sql.ReporterLockID),
-			System: &run.Reporter{
-				Logger:          d.Logger.WithValues("component", "reporter"),
-				VCS:             d.VCSProviders,
-				HostnameService: d.System,
-				Workspaces:      d.Workspaces,
-				Runs:            d.Runs,
-				Configs:         d.Configs,
-				Cache:           make(map[resource.TfeID]vcs.Status),
-			},
-		},
-		{
-			Name:   "run_metrics",
-			Logger: d.Logger,
-			System: d.Runs.MetricsCollector,
-		},
-		{
-			Name:   "timeout",
-			Logger: d.Logger,
-			DB:     d.DB,
-			LockID: internal.Ptr(sql.TimeoutLockID),
-			System: &run.Timeout{
-				Logger:                d.Logger.WithValues("component", "timeout"),
-				OverrideCheckInterval: d.OverrideTimeoutCheckInterval,
-				PlanningTimeout:       d.PlanningTimeout,
-				ApplyingTimeout:       d.ApplyingTimeout,
-				Runs:                  d.Runs,
-			},
-		},
-		{
-			Name:   "run-deleter",
-			Logger: d.Logger,
-			System: &resource.Deleter[*run.Run]{
-				Logger:                d.Logger.WithValues("component", "run-deleter"),
-				OverrideCheckInterval: d.OverrideDeleterInterval,
-				Client:                d.Runs,
-				AgeThreshold:          d.DeleteRunsAfter,
-			},
-		},
-		{
-			Name:   "config-deleter",
-			Logger: d.Logger,
-			System: &resource.Deleter[*configversion.ConfigurationVersion]{
-				Logger:                d.Logger.WithValues("component", "config-deleter"),
-				OverrideCheckInterval: d.OverrideDeleterInterval,
-				Client:                d.Configs,
-				AgeThreshold:          d.DeleteConfigsAfter,
-			},
-		},
-		{
-			Name:   "notifier",
-			Logger: d.Logger,
-			DB:     d.DB,
-			LockID: internal.Ptr(sql.NotifierLockID),
-			System: notifications.NewNotifier(notifications.NotifierOptions{
-				Logger:             d.Logger,
-				HostnameService:    d.System,
-				WorkspaceClient:    d.Workspaces,
-				RunClient:          d.Runs,
-				NotificationClient: d.Notifications,
-				DB:                 d.DB,
-			}),
-		},
-		{
-			Name:   "job-allocator",
-			Logger: d.Logger,
-			DB:     d.DB,
-			LockID: internal.Ptr(sql.AllocatorLockID),
-			System: d.Runners.NewAllocator(d.Logger),
-		},
-		{
-			Name:   "runner-manager",
-			Logger: d.Logger,
-			DB:     d.DB,
-			LockID: internal.Ptr(sql.RunnerManagerLockID),
-			System: d.Runners.NewManager(),
-		},
-		{
-			Name:   "job-signaler",
-			Logger: d.Logger,
-			DB:     d.DB,
-			System: d.Runners.Signaler,
-		},
-	}
-	if !d.DisableRunner {
-		subsystems = append(subsystems, &Subsystem{
-			Name:   "runner-daemon",
-			Logger: d.Logger,
-			DB:     d.DB,
-			System: d.runner,
-		})
-	}
-	if !d.DisableScheduler {
-		subsystems = append(subsystems, &Subsystem{
-			Name:   "scheduler",
-			Logger: d.Logger,
-			DB:     d.DB,
-			LockID: internal.Ptr(sql.SchedulerLockID),
-			System: run.NewScheduler(run.SchedulerOptions{
-				Logger:          d.Logger,
-				WorkspaceClient: d.Workspaces,
-				RunClient:       d.Runs,
-			}),
-		})
-	}
-	for _, ss := range subsystems {
+	for _, ss := range d.subsystems {
 		if err := ss.Start(ctx, g); err != nil {
 			return err
 		}
@@ -639,7 +629,7 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 
 	// Run HTTP/JSON-API server and web app
 	g.Go(func() error {
-		if err := d.server.Start(ctx, ln); err != nil {
+		if err := d.server.Start(ctx, d.netListener); err != nil {
 			return fmt.Errorf("http server terminated: %w", err)
 		}
 		return nil
@@ -650,4 +640,10 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 
 	// Block until error or Ctrl-C received.
 	return g.Wait()
+}
+
+func (d *Daemon) Close() {
+	// close all db connections upon exit
+	d.DB.Close()
+	d.netListener.Close()
 }
