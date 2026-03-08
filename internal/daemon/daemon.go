@@ -78,13 +78,13 @@ type (
 	}
 )
 
-// New builds a new daemon and establishes a connection to the database and
-// migrates it to the latest schema. Close() should be called to close this
-// connection.
+// New builds a new daemon, establishes a connection to the database and
+// migrates it to the latest schema, constructs services and subsystems and
+// returns the daemon.
 //
-// New starts the main daemon, establishing connection the database, performs
-// migrations, sets up services, starts subsystems and returns the daemon along
-// with a channel that closes when the daemon has finished starting up.
+// Start() is then expected to be called to start the daemon.
+//
+// Close() must be called to release resources.
 func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	if internal.DevMode {
 		logger.Info("enabled developer mode")
