@@ -21,7 +21,7 @@ import (
 func TestIntegration_TerraformCLICancel(t *testing.T) {
 	integrationTest(t)
 
-	svc, org, ctx := setup(t)
+	daemon, org, ctx := setup(t)
 
 	// Canceling a run is not straight-forward, because to do so reliably the
 	// terraform apply should be interrupted precisely when it is in mid-flow,
@@ -35,25 +35,25 @@ func TestIntegration_TerraformCLICancel(t *testing.T) {
 	}))
 
 	// create some config and run terraform init
-	config := newRootModule(t, svc.System.Hostname(), org.Name, t.Name(), fmt.Sprintf(`
+	config := newRootModule(t, daemon.System.Hostname(), org.Name, t.Name(), fmt.Sprintf(`
 data "http" "wait" {
 	url = "%s"
 }
 `, srv.URL))
-	svc.engineCLI(t, ctx, "", "init", config)
+	daemon.engineCLI(t, ctx, "", "init", config)
 
 	out, err := os.CreateTemp(t.TempDir(), "cli-cancel.out")
 	require.NoError(t, err)
 
 	// Invoke terraform apply
-	_, token := svc.createToken(t, ctx, nil)
+	_, token := daemon.createToken(t, ctx, nil)
 	e, tferr, err := goexpect.SpawnWithArgs(
 		[]string{terraformPath, "-chdir=" + config, "apply", "-no-color"},
 		time.Minute,
 		goexpect.PartialMatch(true),
 		goexpect.Tee(out),
 		goexpect.SetEnv(
-			append(sharedEnvs, internal.CredentialEnv(svc.System.Hostname(), token)),
+			append(sharedEnvs, internal.CredentialEnv(daemon.System.Hostname(), token)),
 		),
 	)
 	require.NoError(t, err)
@@ -77,7 +77,7 @@ data "http" "wait" {
 	require.NoError(t, <-tferr, string(testutils.ReadFile(t, out.Name())))
 	t.Log(string(testutils.ReadFile(t, out.Name())))
 
-	for event := range svc.runEvents {
+	for event := range daemon.runEvents {
 		r := event.Payload
 		if r.Status == runstatus.Canceled {
 			break

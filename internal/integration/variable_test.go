@@ -13,10 +13,10 @@ func TestVariable(t *testing.T) {
 	integrationTest(t)
 
 	t.Run("create", func(t *testing.T) {
-		svc, _, ctx := setup(t)
-		ws := svc.createWorkspace(t, ctx, nil)
+		daemon, _, ctx := setup(t)
+		ws := daemon.createWorkspace(t, ctx, nil)
 
-		_, err := svc.Variables.CreateWorkspaceVariable(ctx, ws.ID, variable.CreateVariableOptions{
+		_, err := daemon.Variables.CreateWorkspaceVariable(ctx, ws.ID, variable.CreateVariableOptions{
 			Key:      new("foo"),
 			Value:    new("bar"),
 			Category: internal.Ptr(variable.CategoryTerraform),
@@ -25,10 +25,10 @@ func TestVariable(t *testing.T) {
 	})
 
 	t.Run("update", func(t *testing.T) {
-		svc, _, ctx := setup(t)
-		v := svc.createVariable(t, ctx, nil, nil)
+		daemon, _, ctx := setup(t)
+		v := daemon.createVariable(t, ctx, nil, nil)
 
-		got, err := svc.Variables.UpdateWorkspaceVariable(ctx, v.ID, variable.UpdateVariableOptions{
+		got, err := daemon.Variables.UpdateWorkspaceVariable(ctx, v.ID, variable.UpdateVariableOptions{
 			Value: new("luxembourg"),
 		})
 		require.NoError(t, err)
@@ -37,12 +37,12 @@ func TestVariable(t *testing.T) {
 	})
 
 	t.Run("list", func(t *testing.T) {
-		svc, _, ctx := setup(t)
-		ws := svc.createWorkspace(t, ctx, nil)
-		v1 := svc.createVariable(t, ctx, ws, nil)
-		v2 := svc.createVariable(t, ctx, ws, nil)
+		daemon, _, ctx := setup(t)
+		ws := daemon.createWorkspace(t, ctx, nil)
+		v1 := daemon.createVariable(t, ctx, ws, nil)
+		v2 := daemon.createVariable(t, ctx, ws, nil)
 
-		got, err := svc.Variables.ListWorkspaceVariables(ctx, ws.ID)
+		got, err := daemon.Variables.ListWorkspaceVariables(ctx, ws.ID)
 		require.NoError(t, err)
 
 		if assert.Equal(t, 2, len(got)) {
@@ -52,20 +52,20 @@ func TestVariable(t *testing.T) {
 	})
 
 	t.Run("get", func(t *testing.T) {
-		svc, _, ctx := setup(t)
-		want := svc.createVariable(t, ctx, nil, nil)
+		daemon, _, ctx := setup(t)
+		want := daemon.createVariable(t, ctx, nil, nil)
 
-		got, err := svc.Variables.GetWorkspaceVariable(ctx, want.ID)
+		got, err := daemon.Variables.GetWorkspaceVariable(ctx, want.ID)
 		require.NoError(t, err)
 
 		assert.Equal(t, want, got.Variable)
 	})
 
 	t.Run("delete", func(t *testing.T) {
-		svc, _, ctx := setup(t)
-		want := svc.createVariable(t, ctx, nil, nil)
+		daemon, _, ctx := setup(t)
+		want := daemon.createVariable(t, ctx, nil, nil)
 
-		got, err := svc.Variables.DeleteWorkspaceVariable(ctx, want.ID)
+		got, err := daemon.Variables.DeleteWorkspaceVariable(ctx, want.ID)
 		require.NoError(t, err)
 		assert.Equal(t, want, got.Variable)
 	})

@@ -15,7 +15,7 @@ import (
 func TestCloudBlock(t *testing.T) {
 	integrationTest(t)
 
-	svc, org, ctx := setup(t)
+	daemon, org, ctx := setup(t)
 
 	// create terraform root module with a cloud configuration block.
 	config := fmt.Sprintf(`terraform {
@@ -29,13 +29,13 @@ func TestCloudBlock(t *testing.T) {
   }
 }
 resource "null_resource" "e2e" {}
-`, svc.System.Hostname(), org.Name)
+`, daemon.System.Hostname(), org.Name)
 	root := t.TempDir()
 	err := os.WriteFile(filepath.Join(root, "main.tf"), []byte(config), 0o600)
 	require.NoError(t, err)
 
 	// a successful 'terraform init' sufficiently demonstrates support for the
 	// 'cloud' block.
-	out := svc.engineCLI(t, ctx, "", "init", root)
+	out := daemon.engineCLI(t, ctx, "", "init", root)
 	require.Contains(t, out, "Terraform Cloud has been successfully initialized!")
 }

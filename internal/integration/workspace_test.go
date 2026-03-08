@@ -80,10 +80,10 @@ func TestWorkspace(t *testing.T) {
 	})
 
 	t.Run("deleting connected workspace also deletes webhook", func(t *testing.T) {
-		svc, org, ctx := setup(t, withGithubOption(github.WithRepo(vcs.NewMustRepo("test", "dummy"))))
+		daemon, org, ctx := setup(t, withGithubOption(github.WithRepo(vcs.NewMustRepo("test", "dummy"))))
 
-		vcsprov := svc.createVCSProvider(t, ctx, org, nil)
-		ws, err := svc.Workspaces.Create(ctx, workspace.CreateOptions{
+		vcsprov := daemon.createVCSProvider(t, ctx, org, nil)
+		ws, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
 			Name:         new(uuid.NewString()),
 			Organization: &org.Name,
 			ConnectOptions: &workspace.ConnectOptions{
@@ -94,24 +94,24 @@ func TestWorkspace(t *testing.T) {
 		require.NoError(t, err)
 
 		// webhook should be registered with github
-		hook := <-svc.WebhookEvents
+		hook := <-daemon.WebhookEvents
 		require.Equal(t, github.WebhookCreated, hook.Action)
 
-		_, err = svc.Workspaces.Delete(ctx, ws.ID)
+		_, err = daemon.Workspaces.Delete(ctx, ws.ID)
 		require.NoError(t, err)
 
 		// webhook should now have been deleted from github
-		hook = <-svc.WebhookEvents
+		hook = <-daemon.WebhookEvents
 		require.Equal(t, github.WebhookDeleted, hook.Action)
 	})
 
 	t.Run("connect workspace", func(t *testing.T) {
-		svc, org, ctx := setup(t, withGithubOption(github.WithRepo(vcs.NewMustRepo("test", "dummy"))))
+		daemon, org, ctx := setup(t, withGithubOption(github.WithRepo(vcs.NewMustRepo("test", "dummy"))))
 
-		ws := svc.createWorkspace(t, ctx, org)
-		vcsprov := svc.createVCSProvider(t, ctx, org, nil)
+		ws := daemon.createWorkspace(t, ctx, org)
+		vcsprov := daemon.createVCSProvider(t, ctx, org, nil)
 
-		got, err := svc.Connections.Connect(ctx, connections.ConnectOptions{
+		got, err := daemon.Connections.Connect(ctx, connections.ConnectOptions{
 			VCSProviderID: vcsprov.ID,
 			ResourceID:    ws.ID,
 			RepoPath:      vcs.NewMustRepo("test", "dummy"),
@@ -121,7 +121,7 @@ func TestWorkspace(t *testing.T) {
 		assert.Equal(t, want, got)
 
 		t.Run("delete workspace connection", func(t *testing.T) {
-			err := svc.Connections.Disconnect(ctx, connections.DisconnectOptions{
+			err := daemon.Connections.Disconnect(ctx, connections.DisconnectOptions{
 				ResourceID: ws.ID,
 			})
 			require.NoError(t, err)
@@ -155,36 +155,36 @@ func TestWorkspace(t *testing.T) {
 	})
 
 	t.Run("get by id", func(t *testing.T) {
-		svc, _, ctx := setup(t)
-		want := svc.createWorkspace(t, ctx, nil)
+		daemon, _, ctx := setup(t)
+		want := daemon.createWorkspace(t, ctx, nil)
 
-		got, err := svc.Workspaces.Get(ctx, want.ID)
+		got, err := daemon.Workspaces.Get(ctx, want.ID)
 		require.NoError(t, err)
 		assert.Equal(t, want, got)
 	})
 
 	t.Run("get by name", func(t *testing.T) {
-		svc, _, ctx := setup(t)
-		want := svc.createWorkspace(t, ctx, nil)
+		daemon, _, ctx := setup(t)
+		want := daemon.createWorkspace(t, ctx, nil)
 
-		got, err := svc.Workspaces.GetByName(ctx, want.Organization, want.Name)
+		got, err := daemon.Workspaces.GetByName(ctx, want.Organization, want.Name)
 		require.NoError(t, err)
 		assert.Equal(t, want, got)
 	})
 
 	t.Run("list", func(t *testing.T) {
-		svc, org, ctx := setup(t)
-		ws1, err := svc.Workspaces.Create(ctx, workspace.CreateOptions{
+		daemon, org, ctx := setup(t)
+		ws1, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
 			Organization: &org.Name,
 			Name:         new("workspace-1"),
 		})
 		require.NoError(t, err)
-		ws2, err := svc.Workspaces.Create(ctx, workspace.CreateOptions{
+		ws2, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
 			Organization: &org.Name,
 			Name:         new("workspace-2"),
 		})
 		require.NoError(t, err)
-		wsTagged, err := svc.Workspaces.Create(ctx, workspace.CreateOptions{
+		wsTagged, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
 			Organization: &org.Name,
 			Name:         new("workspace-3"),
 			Tags:         []workspace.TagSpec{{Name: "foo"}, {Name: "bar"}},
@@ -268,7 +268,7 @@ func TestWorkspace(t *testing.T) {
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				// call endpoint using admin to avoid authz errors.
-				results, err := svc.Workspaces.List(adminCtx, tt.opts)
+				results, err := daemon.Workspaces.List(adminCtx, tt.opts)
 				require.NoError(t, err)
 
 				tt.want(t, results)
@@ -277,14 +277,14 @@ func TestWorkspace(t *testing.T) {
 	})
 
 	t.Run("list by tag", func(t *testing.T) {
-		svc, org, ctx := setup(t)
-		ws1, err := svc.Workspaces.Create(ctx, workspace.CreateOptions{
+		daemon, org, ctx := setup(t)
+		ws1, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
 			Name:         new(uuid.NewString()),
 			Organization: &org.Name,
 			Tags:         []workspace.TagSpec{{Name: "foo"}},
 		})
 		require.NoError(t, err)
-		ws2, err := svc.Workspaces.Create(ctx, workspace.CreateOptions{
+		ws2, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
 			Name:         new(uuid.NewString()),
 			Organization: &org.Name,
 			Tags:         []workspace.TagSpec{{Name: "foo"}, {Name: "bar"}},
@@ -323,7 +323,7 @@ func TestWorkspace(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				results, err := svc.Workspaces.List(ctx, workspace.ListOptions{
+				results, err := daemon.Workspaces.List(ctx, workspace.ListOptions{
 					Organization: &org.Name,
 					Tags:         tt.tags,
 				})
@@ -335,16 +335,16 @@ func TestWorkspace(t *testing.T) {
 	})
 
 	t.Run("list by user", func(t *testing.T) {
-		svc, org, ctx := setup(t)
-		ws1 := svc.createWorkspace(t, ctx, org)
-		ws2 := svc.createWorkspace(t, ctx, org)
+		daemon, org, ctx := setup(t)
+		ws1 := daemon.createWorkspace(t, ctx, org)
+		ws2 := daemon.createWorkspace(t, ctx, org)
 
-		team1 := svc.createTeam(t, ctx, org)
-		team2 := svc.createTeam(t, ctx, org)
-		_ = svc.Workspaces.SetPermission(ctx, ws1.ID, team1.ID, authz.WorkspacePlanRole)
-		_ = svc.Workspaces.SetPermission(ctx, ws2.ID, team2.ID, authz.WorkspacePlanRole)
-		user1 := svc.createUser(t, user.WithTeams(team1, team2))
-		user2 := svc.createUser(t)
+		team1 := daemon.createTeam(t, ctx, org)
+		team2 := daemon.createTeam(t, ctx, org)
+		_ = daemon.Workspaces.SetPermission(ctx, ws1.ID, team1.ID, authz.WorkspacePlanRole)
+		_ = daemon.Workspaces.SetPermission(ctx, ws2.ID, team2.ID, authz.WorkspacePlanRole)
+		user1 := daemon.createUser(t, user.WithTeams(team1, team2))
+		user2 := daemon.createUser(t)
 
 		nonExistentOrganization := organization.NewTestName(t)
 
@@ -403,7 +403,7 @@ func TestWorkspace(t *testing.T) {
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				ctx := authz.AddSubjectToContext(ctx, tt.user)
-				results, err := svc.Workspaces.List(ctx, tt.opts)
+				results, err := daemon.Workspaces.List(ctx, tt.opts)
 				require.NoError(t, err)
 
 				tt.want(t, results)
@@ -412,25 +412,25 @@ func TestWorkspace(t *testing.T) {
 	})
 
 	t.Run("list by latest run status", func(t *testing.T) {
-		svc, org, ctx := setup(t)
-		ws1 := svc.createWorkspace(t, ctx, org)
-		ws2 := svc.createWorkspace(t, ctx, org)
-		ws3 := svc.createWorkspace(t, ctx, org)
-		cv1 := svc.createAndUploadConfigurationVersion(t, ctx, ws1, nil)
-		cv2 := svc.createAndUploadConfigurationVersion(t, ctx, ws2, nil)
-		cv3 := svc.createAndUploadConfigurationVersion(t, ctx, ws3, nil)
+		daemon, org, ctx := setup(t)
+		ws1 := daemon.createWorkspace(t, ctx, org)
+		ws2 := daemon.createWorkspace(t, ctx, org)
+		ws3 := daemon.createWorkspace(t, ctx, org)
+		cv1 := daemon.createAndUploadConfigurationVersion(t, ctx, ws1, nil)
+		cv2 := daemon.createAndUploadConfigurationVersion(t, ctx, ws2, nil)
+		cv3 := daemon.createAndUploadConfigurationVersion(t, ctx, ws3, nil)
 
-		ws1run1planned := svc.createRun(t, ctx, ws1, cv1, nil)
-		_ = svc.waitRunStatus(t, ctx, ws1run1planned.ID, runstatus.Planned)
+		ws1run1planned := daemon.createRun(t, ctx, ws1, cv1, nil)
+		_ = daemon.waitRunStatus(t, ctx, ws1run1planned.ID, runstatus.Planned)
 
-		ws2run1planned := svc.createRun(t, ctx, ws2, cv2, nil)
-		_ = svc.waitRunStatus(t, ctx, ws2run1planned.ID, runstatus.Planned)
+		ws2run1planned := daemon.createRun(t, ctx, ws2, cv2, nil)
+		_ = daemon.waitRunStatus(t, ctx, ws2run1planned.ID, runstatus.Planned)
 
-		ws3run1applied := svc.createRun(t, ctx, ws3, cv3, nil)
-		_ = svc.waitRunStatus(t, ctx, ws3run1applied.ID, runstatus.Planned)
-		err := svc.Runs.Apply(ctx, ws3run1applied.ID)
+		ws3run1applied := daemon.createRun(t, ctx, ws3, cv3, nil)
+		_ = daemon.waitRunStatus(t, ctx, ws3run1applied.ID, runstatus.Planned)
+		err := daemon.Runs.Apply(ctx, ws3run1applied.ID)
 		require.NoError(t, err)
-		_ = svc.waitRunStatus(t, ctx, ws3run1applied.ID, runstatus.Applied)
+		_ = daemon.waitRunStatus(t, ctx, ws3run1applied.ID, runstatus.Applied)
 
 		tests := []struct {
 			name     string
@@ -468,7 +468,7 @@ func TestWorkspace(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				results, err := svc.Workspaces.List(ctx, workspace.ListOptions{
+				results, err := daemon.Workspaces.List(ctx, workspace.ListOptions{
 					Organization: &org.Name,
 					Status:       tt.statuses,
 				})
@@ -480,15 +480,15 @@ func TestWorkspace(t *testing.T) {
 	})
 
 	t.Run("lock", func(t *testing.T) {
-		svc, org, ctx := setup(t)
-		ws := svc.createWorkspace(t, ctx, org)
+		daemon, org, ctx := setup(t)
+		ws := daemon.createWorkspace(t, ctx, org)
 
-		got, err := svc.Workspaces.Lock(ctx, ws.ID, nil)
+		got, err := daemon.Workspaces.Lock(ctx, ws.ID, nil)
 		require.NoError(t, err)
 		assert.True(t, got.Locked())
 
 		t.Run("unlock", func(t *testing.T) {
-			got, err := svc.Workspaces.Unlock(ctx, ws.ID, nil, false)
+			got, err := daemon.Workspaces.Unlock(ctx, ws.ID, nil, false)
 			require.NoError(t, err)
 			assert.False(t, got.Locked())
 		})

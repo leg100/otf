@@ -17,12 +17,12 @@ func TestUser(t *testing.T) {
 	// role of site admin when starting the daemon.
 	t.Run("set site admins", func(t *testing.T) {
 		connstr := sql.NewTestDB(t)
-		svc, _, _ := setup(t, withDatabase(connstr), withSiteAdmins("bob", "alice", "sue"))
+		daemon, _, _ := setup(t, withDatabase(connstr), withSiteAdmins("bob", "alice", "sue"))
 
 		areSiteAdmins := func(want bool) {
 			for _, usernameStr := range []string{"bob", "alice", "sue"} {
 				username := otfuser.MustUsername(usernameStr)
-				admin, err := svc.Users.GetUser(adminCtx, otfuser.UserSpec{Username: &username})
+				admin, err := daemon.Users.GetUser(adminCtx, otfuser.UserSpec{Username: &username})
 				require.NoError(t, err)
 				assert.Equal(t, want, admin.IsSiteAdmin())
 			}
@@ -32,7 +32,7 @@ func TestUser(t *testing.T) {
 		// Start another daemon with *no* site admins specified, which should
 		// relegate the users back to normal users.
 		t.Run("reset", func(t *testing.T) {
-			svc, _, _ = setup(t, withDatabase(connstr))
+			daemon, _, _ = setup(t, withDatabase(connstr))
 			areSiteAdmins(false)
 		})
 	})
@@ -40,17 +40,17 @@ func TestUser(t *testing.T) {
 	// Create a user and a user token and test retrieving the user using their ID, username and
 	// token.
 	t.Run("get", func(t *testing.T) {
-		svc, _, ctx := setup(t)
+		daemon, _, ctx := setup(t)
 
-		org1 := svc.createOrganization(t, ctx)
-		org2 := svc.createOrganization(t, ctx)
-		team1 := svc.createTeam(t, ctx, org1)
-		team2 := svc.createTeam(t, ctx, org2)
+		org1 := daemon.createOrganization(t, ctx)
+		org2 := daemon.createOrganization(t, ctx)
+		team1 := daemon.createTeam(t, ctx, org1)
+		team2 := daemon.createTeam(t, ctx, org2)
 
-		user := svc.createUser(t, otfuser.WithTeams(team1, team2))
+		user := daemon.createUser(t, otfuser.WithTeams(team1, team2))
 
-		token1, _ := svc.createToken(t, ctx, user)
-		_, _ = svc.createToken(t, ctx, user)
+		token1, _ := daemon.createToken(t, ctx, user)
+		_, _ = daemon.createToken(t, ctx, user)
 
 		tests := []struct {
 			name string
@@ -72,7 +72,7 @@ func TestUser(t *testing.T) {
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				// only admin can retrieve user info
-				got, err := svc.Users.GetUser(adminCtx, tt.spec)
+				got, err := daemon.Users.GetUser(adminCtx, tt.spec)
 				require.NoError(t, err)
 
 				assert.Equal(t, got.ID, user.ID)
@@ -86,21 +86,21 @@ func TestUser(t *testing.T) {
 	})
 
 	t.Run("get not found error", func(t *testing.T) {
-		svc, _, _ := setup(t)
+		daemon, _, _ := setup(t)
 		unknown := otfuser.NewTestUsername(t)
-		_, err := svc.Users.GetUser(adminCtx, otfuser.UserSpec{Username: &unknown})
+		_, err := daemon.Users.GetUser(adminCtx, otfuser.UserSpec{Username: &unknown})
 		assert.ErrorIs(t, err, internal.ErrResourceNotFound)
 	})
 
 	t.Run("list users", func(t *testing.T) {
-		svc, _, ctx := setup(t)
+		daemon, _, ctx := setup(t)
 		user1 := userFromContext(t, ctx)
-		user2 := svc.createUser(t)
-		user3 := svc.createUser(t)
+		user2 := daemon.createUser(t)
+		user3 := daemon.createUser(t)
 		// only admin can retrieve its own user account
-		admin := svc.getUser(t, adminCtx, otfuser.SiteAdminUsername)
+		admin := daemon.getUser(t, adminCtx, otfuser.SiteAdminUsername)
 
-		got, err := svc.Users.List(adminCtx)
+		got, err := daemon.Users.List(adminCtx)
 		require.NoError(t, err)
 
 		assert.Equal(t, 4, len(got))
@@ -118,20 +118,20 @@ func TestUser(t *testing.T) {
 	// once.
 	t.Run("list organization users", func(t *testing.T) {
 		// automatically creates owners team consisting of one owner
-		svc, org, ctx := setup(t)
+		daemon, org, ctx := setup(t)
 		owner := userFromContext(t, ctx)
-		owners := svc.getTeam(t, ctx, org.Name, "owners")
+		owners := daemon.getTeam(t, ctx, org.Name, "owners")
 
 		// create developers team
-		developers := svc.createTeam(t, ctx, org)
+		developers := daemon.createTeam(t, ctx, org)
 
 		// create dev user and add to both teams
-		dev := svc.createUser(t, otfuser.WithTeams(owners, developers))
+		dev := daemon.createUser(t, otfuser.WithTeams(owners, developers))
 
 		// create guest user, member of no team
-		guest := svc.createUser(t)
+		guest := daemon.createUser(t)
 
-		got, err := svc.Users.ListOrganizationUsers(ctx, org.Name)
+		got, err := daemon.Users.ListOrganizationUsers(ctx, org.Name)
 		require.NoError(t, err)
 
 		// should get list of two users: owner and dev
@@ -142,26 +142,26 @@ func TestUser(t *testing.T) {
 	})
 
 	t.Run("delete", func(t *testing.T) {
-		svc, _, _ := setup(t)
-		user := svc.createUser(t)
+		daemon, _, _ := setup(t)
+		user := daemon.createUser(t)
 
 		// only admin can delete user
-		err := svc.Users.Delete(adminCtx, user.Username)
+		err := daemon.Users.Delete(adminCtx, user.Username)
 		require.NoError(t, err)
 
-		_, err = svc.Users.GetUser(adminCtx, otfuser.UserSpec{Username: &user.Username})
+		_, err = daemon.Users.GetUser(adminCtx, otfuser.UserSpec{Username: &user.Username})
 		assert.ErrorIs(t, err, internal.ErrResourceNotFound)
 	})
 
 	t.Run("add team membership", func(t *testing.T) {
-		svc, org, ctx := setup(t)
-		team := svc.createTeam(t, ctx, org)
-		user := svc.createUser(t)
+		daemon, org, ctx := setup(t)
+		team := daemon.createTeam(t, ctx, org)
+		user := daemon.createUser(t)
 
-		err := svc.Users.AddTeamMembership(ctx, team.ID, []otfuser.Username{user.Username})
+		err := daemon.Users.AddTeamMembership(ctx, team.ID, []otfuser.Username{user.Username})
 		require.NoError(t, err)
 
-		got, err := svc.Users.GetUser(adminCtx, otfuser.UserSpec{Username: &user.Username})
+		got, err := daemon.Users.GetUser(adminCtx, otfuser.UserSpec{Username: &user.Username})
 		require.NoError(t, err)
 
 		assert.Contains(t, got.Teams, team)
@@ -170,25 +170,25 @@ func TestUser(t *testing.T) {
 		// the user.
 		t.Run("create new user", func(t *testing.T) {
 			username := otfuser.MustUsername("new-kid")
-			err := svc.Users.AddTeamMembership(ctx, team.ID, []otfuser.Username{username})
+			err := daemon.Users.AddTeamMembership(ctx, team.ID, []otfuser.Username{username})
 			require.NoError(t, err)
 
-			got, err := svc.Users.GetUser(adminCtx, otfuser.UserSpec{Username: &username})
+			got, err := daemon.Users.GetUser(adminCtx, otfuser.UserSpec{Username: &username})
 			require.NoError(t, err)
 			assert.Contains(t, got.Teams, team)
 		})
 	})
 
 	t.Run("remove team membership", func(t *testing.T) {
-		svc, _, ctx := setup(t)
-		org := svc.createOrganization(t, ctx)
-		team := svc.createTeam(t, ctx, org)
-		user := svc.createUser(t, otfuser.WithTeams(team))
+		daemon, _, ctx := setup(t)
+		org := daemon.createOrganization(t, ctx)
+		team := daemon.createTeam(t, ctx, org)
+		user := daemon.createUser(t, otfuser.WithTeams(team))
 
-		err := svc.Users.RemoveTeamMembership(ctx, team.ID, []otfuser.Username{user.Username})
+		err := daemon.Users.RemoveTeamMembership(ctx, team.ID, []otfuser.Username{user.Username})
 		require.NoError(t, err)
 
-		got, err := svc.Users.GetUser(adminCtx, otfuser.UserSpec{Username: &user.Username})
+		got, err := daemon.Users.GetUser(adminCtx, otfuser.UserSpec{Username: &user.Username})
 		require.NoError(t, err)
 
 		assert.NotContains(t, got.Teams, team)
@@ -196,16 +196,16 @@ func TestUser(t *testing.T) {
 
 	t.Run("cannot remove last owner", func(t *testing.T) {
 		// automatically creates org and owners team
-		svc, org, ctx := setup(t)
+		daemon, org, ctx := setup(t)
 		owner := userFromContext(t, ctx)
 
-		owners, err := svc.Teams.Get(ctx, org.Name, "owners")
+		owners, err := daemon.Teams.Get(ctx, org.Name, "owners")
 		require.NoError(t, err)
 		// add another owner
-		another := svc.createUser(t, otfuser.WithTeams(owners))
+		another := daemon.createUser(t, otfuser.WithTeams(owners))
 
 		// try to delete both members from the owners team
-		err = svc.Users.RemoveTeamMembership(ctx, owners.ID, []otfuser.Username{owner.Username, another.Username})
+		err = daemon.Users.RemoveTeamMembership(ctx, owners.ID, []otfuser.Username{owner.Username, another.Username})
 		assert.Equal(t, otfuser.ErrCannotDeleteOnlyOwner, err)
 	})
 }

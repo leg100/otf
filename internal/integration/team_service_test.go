@@ -15,15 +15,15 @@ func TestIntegation_TeamService(t *testing.T) {
 	integrationTest(t)
 
 	t.Run("create", func(t *testing.T) {
-		svc, org, ctx := setup(t)
+		daemon, org, ctx := setup(t)
 
-		team, err := svc.Teams.Create(ctx, org.Name, otfteam.CreateTeamOptions{
+		team, err := daemon.Teams.Create(ctx, org.Name, otfteam.CreateTeamOptions{
 			Name: new(uuid.NewString()),
 		})
 		require.NoError(t, err)
 
 		t.Run("already exists error", func(t *testing.T) {
-			_, err := svc.Teams.Create(ctx, org.Name, otfteam.CreateTeamOptions{
+			_, err := daemon.Teams.Create(ctx, org.Name, otfteam.CreateTeamOptions{
 				Name: new(team.Name),
 			})
 			require.Equal(t, internal.ErrResourceAlreadyExists, err)
@@ -31,10 +31,10 @@ func TestIntegation_TeamService(t *testing.T) {
 	})
 
 	t.Run("update", func(t *testing.T) {
-		svc, _, ctx := setup(t)
-		team := svc.createTeam(t, ctx, nil)
+		daemon, _, ctx := setup(t)
+		team := daemon.createTeam(t, ctx, nil)
 
-		_, err := svc.Teams.Update(ctx, team.ID, otfteam.UpdateTeamOptions{
+		_, err := daemon.Teams.Update(ctx, team.ID, otfteam.UpdateTeamOptions{
 			OrganizationAccessOptions: otfteam.OrganizationAccessOptions{
 				ManageWorkspaces: new(true),
 				ManageVCS:        new(true),
@@ -43,7 +43,7 @@ func TestIntegation_TeamService(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		got, err := svc.Teams.Get(ctx, team.Organization, team.Name)
+		got, err := daemon.Teams.Get(ctx, team.Organization, team.Name)
 		require.NoError(t, err)
 
 		assert.True(t, got.ManageWorkspaces)
@@ -52,33 +52,33 @@ func TestIntegation_TeamService(t *testing.T) {
 	})
 
 	t.Run("get", func(t *testing.T) {
-		svc, _, ctx := setup(t)
-		team := svc.createTeam(t, ctx, nil)
+		daemon, _, ctx := setup(t)
+		team := daemon.createTeam(t, ctx, nil)
 
-		got, err := svc.Teams.Get(ctx, team.Organization, team.Name)
+		got, err := daemon.Teams.Get(ctx, team.Organization, team.Name)
 		require.NoError(t, err)
 
 		assert.Equal(t, team, got)
 	})
 
 	t.Run("get by id", func(t *testing.T) {
-		svc, _, ctx := setup(t)
-		want := svc.createTeam(t, ctx, nil)
+		daemon, _, ctx := setup(t)
+		want := daemon.createTeam(t, ctx, nil)
 
-		got, err := svc.Teams.GetByID(ctx, want.ID)
+		got, err := daemon.Teams.GetByID(ctx, want.ID)
 		require.NoError(t, err)
 
 		assert.Equal(t, want, got)
 	})
 
 	t.Run("list", func(t *testing.T) {
-		svc, _, ctx := setup(t)
-		org := svc.createOrganization(t, ctx)
-		team1 := svc.createTeam(t, ctx, org)
-		team2 := svc.createTeam(t, ctx, org)
-		team3 := svc.createTeam(t, ctx, org)
+		daemon, _, ctx := setup(t)
+		org := daemon.createOrganization(t, ctx)
+		team1 := daemon.createTeam(t, ctx, org)
+		team2 := daemon.createTeam(t, ctx, org)
+		team3 := daemon.createTeam(t, ctx, org)
 
-		got, err := svc.Teams.List(ctx, org.Name)
+		got, err := daemon.Teams.List(ctx, org.Name)
 		require.NoError(t, err)
 
 		assert.Contains(t, got, team1)
@@ -87,16 +87,16 @@ func TestIntegation_TeamService(t *testing.T) {
 	})
 
 	t.Run("list members", func(t *testing.T) {
-		svc, _, ctx := setup(t)
-		org := svc.createOrganization(t, ctx)
+		daemon, _, ctx := setup(t)
+		org := daemon.createOrganization(t, ctx)
 
-		team := svc.createTeam(t, ctx, org)
-		otherteam := svc.createTeam(t, ctx, org)
-		user1 := svc.createUser(t)
-		user2 := svc.createUser(t, user.WithTeams(team))
-		user3 := svc.createUser(t, user.WithTeams(team, otherteam))
+		team := daemon.createTeam(t, ctx, org)
+		otherteam := daemon.createTeam(t, ctx, org)
+		user1 := daemon.createUser(t)
+		user2 := daemon.createUser(t, user.WithTeams(team))
+		user3 := daemon.createUser(t, user.WithTeams(team, otherteam))
 
-		got, err := svc.Users.ListTeamUsers(ctx, team.ID)
+		got, err := daemon.Users.ListTeamUsers(ctx, team.ID)
 		require.NoError(t, err)
 
 		assert.Equal(t, 2, len(got), got)
@@ -106,21 +106,21 @@ func TestIntegation_TeamService(t *testing.T) {
 	})
 
 	t.Run("delete", func(t *testing.T) {
-		svc, _, ctx := setup(t)
-		team := svc.createTeam(t, ctx, nil)
+		daemon, _, ctx := setup(t)
+		team := daemon.createTeam(t, ctx, nil)
 
-		err := svc.Teams.Delete(ctx, team.ID)
+		err := daemon.Teams.Delete(ctx, team.ID)
 		require.NoError(t, err)
 	})
 
 	t.Run("disallow deleting owners team", func(t *testing.T) {
-		svc, _, ctx := setup(t)
-		org := svc.createOrganization(t, ctx) // creates owners team
+		daemon, _, ctx := setup(t)
+		org := daemon.createOrganization(t, ctx) // creates owners team
 
-		owners, err := svc.Teams.Get(ctx, org.Name, "owners")
+		owners, err := daemon.Teams.Get(ctx, org.Name, "owners")
 		require.NoError(t, err)
 
-		err = svc.Teams.Delete(ctx, owners.ID)
+		err = daemon.Teams.Delete(ctx, owners.ID)
 		assert.Equal(t, otfteam.ErrRemovingOwnersTeamNotPermitted, err)
 	})
 }

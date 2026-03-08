@@ -19,12 +19,12 @@ func TestIntegration_Timeout(t *testing.T) {
 	integrationTest(t)
 
 	// Set a very low planning timeout and check very frequently.
-	svc, org, ctx := setup(t, withTimeouts(
+	daemon, org, ctx := setup(t, withTimeouts(
 		time.Second,
 		time.Second,
 		100*time.Millisecond,
 	))
-	ws := svc.createWorkspace(t, ctx, org)
+	ws := daemon.createWorkspace(t, ctx, org)
 
 	// Setup a http server, to which the terraform 'http' data source will
 	// connect, causing it to hang, thereby keeping OTF run in the planning
@@ -39,20 +39,20 @@ func TestIntegration_Timeout(t *testing.T) {
 	}))
 
 	// create some config and upload
-	cv := svc.createConfigurationVersion(t, ctx, ws, nil)
-	config := newRootModule(t, svc.System.Hostname(), org.Name, ws.Name, fmt.Sprintf(`
+	cv := daemon.createConfigurationVersion(t, ctx, ws, nil)
+	config := newRootModule(t, daemon.System.Hostname(), org.Name, ws.Name, fmt.Sprintf(`
 data "http" "wait" {
 	url = "%s"
 }
 `, srv.URL))
 	tarball, err := internal.Pack(config)
 	require.NoError(t, err)
-	err = svc.Configs.UploadConfig(ctx, cv.ID, tarball)
+	err = daemon.Configs.UploadConfig(ctx, cv.ID, tarball)
 	require.NoError(t, err)
 
 	// create run and wait for it to enter canceled state
-	run := svc.createRun(t, ctx, ws, cv, nil)
-	run = svc.waitRunStatus(t, ctx, run.ID, runstatus.Canceled)
+	run := daemon.createRun(t, ctx, ws, cv, nil)
+	run = daemon.waitRunStatus(t, ctx, run.ID, runstatus.Canceled)
 
 	// run should have reached planning state before being timed out and being
 	// forced into a canceled state.

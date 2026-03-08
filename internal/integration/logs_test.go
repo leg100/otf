@@ -14,10 +14,10 @@ func TestLogs(t *testing.T) {
 	integrationTest(t)
 
 	t.Run("upload chunk", func(t *testing.T) {
-		svc, _, ctx := setup(t)
-		run := svc.createRun(t, ctx, nil, nil, nil)
+		daemon, _, ctx := setup(t)
+		run := daemon.createRun(t, ctx, nil, nil, nil)
 
-		err := svc.Runs.PutChunk(ctx, runpkg.PutChunkOptions{
+		err := daemon.Runs.PutChunk(ctx, runpkg.PutChunkOptions{
 			RunID: run.ID,
 			Phase: runpkg.PlanPhase,
 			Data:  []byte("\x02hello world\x03"),
@@ -26,10 +26,10 @@ func TestLogs(t *testing.T) {
 	})
 
 	t.Run("reject empty chunk", func(t *testing.T) {
-		svc, _, ctx := setup(t)
-		run := svc.createRun(t, ctx, nil, nil, nil)
+		daemon, _, ctx := setup(t)
+		run := daemon.createRun(t, ctx, nil, nil, nil)
 
-		err := svc.Runs.PutChunk(ctx, runpkg.PutChunkOptions{
+		err := daemon.Runs.PutChunk(ctx, runpkg.PutChunkOptions{
 			RunID: run.ID,
 			Phase: runpkg.PlanPhase,
 		})
@@ -37,10 +37,10 @@ func TestLogs(t *testing.T) {
 	})
 
 	t.Run("get chunk", func(t *testing.T) {
-		svc, _, ctx := setup(t)
-		run := svc.createRun(t, ctx, nil, nil, nil)
+		daemon, _, ctx := setup(t)
+		run := daemon.createRun(t, ctx, nil, nil, nil)
 
-		err := svc.Runs.PutChunk(ctx, runpkg.PutChunkOptions{
+		err := daemon.Runs.PutChunk(ctx, runpkg.PutChunkOptions{
 			RunID: run.ID,
 			Phase: runpkg.PlanPhase,
 			Data:  []byte("\x02hello world\x03"),
@@ -111,7 +111,7 @@ func TestLogs(t *testing.T) {
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				got, err := svc.Runs.GetChunk(ctx, tt.opts)
+				got, err := daemon.Runs.GetChunk(ctx, tt.opts)
 				require.NoError(t, err)
 
 				assert.Equal(t, tt.want, got)

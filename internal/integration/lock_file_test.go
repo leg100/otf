@@ -18,11 +18,11 @@ import (
 func TestLockFile(t *testing.T) {
 	integrationTest(t)
 
-	svc, org, ctx := setup(t)
+	daemon, org, ctx := setup(t)
 
 	// in a browser, create workspace
 	browser.New(t, ctx, func(page playwright.Page) {
-		createWorkspace(t, page, svc, org.Name, "my-test-workspace")
+		createWorkspace(t, page, daemon, org.Name, "my-test-workspace")
 	})
 
 	// create root module with only a variable and no resources - this should
@@ -43,11 +43,11 @@ terraform {
 variable "foo" {
 	default = "bar"
 }
-`, svc.System.Hostname(), org.Name, "my-test-workspace")
+`, daemon.System.Hostname(), org.Name, "my-test-workspace")
 	err := os.WriteFile(filepath.Join(root, "main.tf"), []byte(config), 0o600)
 	require.NoError(t, err)
 
 	// verify terraform init and plan run without error
-	svc.engineCLI(t, ctx, "", "init", root)
-	svc.engineCLI(t, ctx, "", "plan", root)
+	daemon.engineCLI(t, ctx, "", "init", root)
+	daemon.engineCLI(t, ctx, "", "plan", root)
 }

@@ -14,12 +14,12 @@ import (
 func TestVariableE2E(t *testing.T) {
 	integrationTest(t)
 
-	svc, org, ctx := setup(t)
+	daemon, org, ctx := setup(t)
 
 	// Create variable in browser
 	var workspaceURL string
 	browser.New(t, ctx, func(page playwright.Page) {
-		workspaceURL = createWorkspace(t, page, svc, org.Name, "my-test-workspace")
+		workspaceURL = createWorkspace(t, page, daemon, org.Name, "my-test-workspace")
 
 		// go to workspace
 		_, err := page.Goto(workspaceURL)
@@ -59,7 +59,7 @@ func TestVariableE2E(t *testing.T) {
 	})
 
 	// write some terraform config that declares and outputs the variable
-	root := newRootModule(t, svc.System.Hostname(), org.Name, "my-test-workspace")
+	root := newRootModule(t, daemon.System.Hostname(), org.Name, "my-test-workspace")
 	config := `
 variable "foo" {
   default = "overwrite_this"
@@ -73,10 +73,10 @@ output "foo" {
 	require.NoError(t, err)
 
 	// run terraform init, plan, and apply
-	svc.engineCLI(t, ctx, "", "init", root)
-	out := svc.engineCLI(t, ctx, "", "plan", root)
+	daemon.engineCLI(t, ctx, "", "init", root)
+	out := daemon.engineCLI(t, ctx, "", "plan", root)
 	require.Contains(t, out, `+ foo = "bar"`)
-	out = svc.engineCLI(t, ctx, "", "apply", root, "-auto-approve")
+	out = daemon.engineCLI(t, ctx, "", "apply", root, "-auto-approve")
 	require.Contains(t, out, `foo = "bar"`)
 
 	// Edit variable and delete it

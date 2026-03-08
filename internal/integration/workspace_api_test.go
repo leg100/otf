@@ -24,11 +24,11 @@ import (
 func TestIntegration_WorkspaceAPI_IncludeOutputs(t *testing.T) {
 	integrationTest(t)
 
-	svc, _, ctx := setup(t)
-	sv := svc.createStateVersion(t, ctx, nil)
-	_, token := svc.createToken(t, ctx, nil)
+	daemon, _, ctx := setup(t)
+	sv := daemon.createStateVersion(t, ctx, nil)
+	_, token := daemon.createToken(t, ctx, nil)
 
-	u := fmt.Sprintf("https://%s/api/v2/workspaces/%s?include=outputs", svc.System.Hostname(), sv.WorkspaceID)
+	u := fmt.Sprintf("https://%s/api/v2/workspaces/%s?include=outputs", daemon.System.Hostname(), sv.WorkspaceID)
 	r, err := http.NewRequest("GET", u, nil)
 	require.NoError(t, err)
 	r.Header.Add("Authorization", "Bearer "+string(token))

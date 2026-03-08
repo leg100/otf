@@ -15,57 +15,57 @@ func TestConfigurationVersion(t *testing.T) {
 	integrationTest(t)
 
 	t.Run("create", func(t *testing.T) {
-		svc, _, ctx := setup(t)
-		ws := svc.createWorkspace(t, ctx, nil)
+		daemon, _, ctx := setup(t)
+		ws := daemon.createWorkspace(t, ctx, nil)
 
-		_, err := svc.Configs.Create(ctx, ws.ID, configversion.CreateOptions{})
+		_, err := daemon.Configs.Create(ctx, ws.ID, configversion.CreateOptions{})
 		require.NoError(t, err)
 	})
 
 	t.Run("upload config", func(t *testing.T) {
-		svc, _, ctx := setup(t)
-		cv := svc.createConfigurationVersion(t, ctx, nil, nil)
+		daemon, _, ctx := setup(t)
+		cv := daemon.createConfigurationVersion(t, ctx, nil, nil)
 		tarball, err := os.ReadFile("./testdata/tarball.tar.gz")
 		require.NoError(t, err)
 
-		err = svc.Configs.UploadConfig(ctx, cv.ID, tarball)
+		err = daemon.Configs.UploadConfig(ctx, cv.ID, tarball)
 		require.NoError(t, err)
 
-		got, err := svc.Configs.Get(ctx, cv.ID)
+		got, err := daemon.Configs.Get(ctx, cv.ID)
 		require.NoError(t, err)
 
 		assert.Equal(t, configversion.ConfigurationUploaded, got.Status)
 
 		t.Run("download config", func(t *testing.T) {
-			gotConfig, err := svc.Configs.DownloadConfig(ctx, cv.ID)
+			gotConfig, err := daemon.Configs.DownloadConfig(ctx, cv.ID)
 			require.NoError(t, err)
 			assert.Equal(t, tarball, gotConfig)
 		})
 	})
 
 	t.Run("get", func(t *testing.T) {
-		svc, _, ctx := setup(t)
-		want := svc.createConfigurationVersion(t, ctx, nil, nil)
+		daemon, _, ctx := setup(t)
+		want := daemon.createConfigurationVersion(t, ctx, nil, nil)
 
-		got, err := svc.Configs.Get(ctx, want.ID)
+		got, err := daemon.Configs.Get(ctx, want.ID)
 		require.NoError(t, err)
 		assert.Equal(t, want, got)
 	})
 
 	t.Run("get latest", func(t *testing.T) {
-		svc, _, ctx := setup(t)
-		want := svc.createConfigurationVersion(t, ctx, nil, nil)
+		daemon, _, ctx := setup(t)
+		want := daemon.createConfigurationVersion(t, ctx, nil, nil)
 
-		got, err := svc.Configs.GetLatest(ctx, want.WorkspaceID)
+		got, err := daemon.Configs.GetLatest(ctx, want.WorkspaceID)
 		require.NoError(t, err)
 		assert.Equal(t, want, got)
 	})
 
 	t.Run("list", func(t *testing.T) {
-		svc, _, ctx := setup(t)
-		ws := svc.createWorkspace(t, ctx, nil)
-		cv1 := svc.createConfigurationVersion(t, ctx, ws, nil)
-		cv2 := svc.createConfigurationVersion(t, ctx, ws, nil)
+		daemon, _, ctx := setup(t)
+		ws := daemon.createWorkspace(t, ctx, nil)
+		cv1 := daemon.createConfigurationVersion(t, ctx, ws, nil)
+		cv2 := daemon.createConfigurationVersion(t, ctx, ws, nil)
 
 		tests := []struct {
 			name        string
@@ -116,7 +116,7 @@ func TestConfigurationVersion(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				results, err := svc.Configs.List(ctx, tt.workspaceID, tt.opts)
+				results, err := daemon.Configs.List(ctx, tt.workspaceID, tt.opts)
 				tt.want(t, results, err)
 			})
 		}

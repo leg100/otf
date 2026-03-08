@@ -16,15 +16,15 @@ func TestStartRunUI(t *testing.T) {
 
 	for _, tt := range engineTestSpecs() {
 		t.Run(tt.name, func(t *testing.T) {
-			svc, _, ctx := setup(t, withDefaultEngine(tt.Engine))
+			daemon, _, ctx := setup(t, withDefaultEngine(tt.Engine))
 
-			ws := svc.createWorkspace(t, ctx, nil)
-			_ = svc.createAndUploadConfigurationVersion(t, ctx, ws, nil)
+			ws := daemon.createWorkspace(t, ctx, nil)
+			_ = daemon.createAndUploadConfigurationVersion(t, ctx, ws, nil)
 
 			// now we have a config version, start a run with the plan-and-apply
 			// operation
 			browser.New(t, ctx, func(page playwright.Page) {
-				workspaceURL := svc.URL(paths.Workspace(ws.ID))
+				workspaceURL := daemon.URL(paths.Workspace(ws.ID))
 				startRun(t, page, workspaceURL, run.PlanAndApplyOperation, true)
 
 				// now destroy resources with the destroy-all operation

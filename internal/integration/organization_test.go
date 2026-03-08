@@ -15,25 +15,25 @@ func TestIntegration_Organization(t *testing.T) {
 	integrationTest(t)
 
 	t.Run("create", func(t *testing.T) {
-		svc, _, ctx := setup(t, skipDefaultOrganization())
-		org, err := svc.Organizations.Create(ctx, organization.CreateOptions{
+		daemon, _, ctx := setup(t, skipDefaultOrganization())
+		org, err := daemon.Organizations.Create(ctx, organization.CreateOptions{
 			Name: new(uuid.NewString()),
 		})
 		require.NoError(t, err)
 
 		t.Run("duplicate error", func(t *testing.T) {
-			_, err := svc.Organizations.Create(ctx, organization.CreateOptions{
+			_, err := daemon.Organizations.Create(ctx, organization.CreateOptions{
 				Name: new(org.Name.String()),
 			})
 			require.Equal(t, internal.ErrResourceAlreadyExists, err)
 		})
 
 		t.Run("owners team should be created", func(t *testing.T) {
-			owners, err := svc.Teams.Get(ctx, org.Name, "owners")
+			owners, err := daemon.Teams.Get(ctx, org.Name, "owners")
 			require.NoError(t, err)
 
 			t.Run("creator should be a member", func(t *testing.T) {
-				members, err := svc.Users.ListTeamUsers(ctx, owners.ID)
+				members, err := daemon.Users.ListTeamUsers(ctx, owners.ID)
 				require.NoError(t, err)
 				if assert.Equal(t, 1, len(members)) {
 					user := userFromContext(t, ctx)
@@ -57,26 +57,26 @@ func TestIntegration_Organization(t *testing.T) {
 	})
 
 	t.Run("list with pagination", func(t *testing.T) {
-		svc, _, ctx := setup(t)
-		_ = svc.createOrganization(t, ctx)
-		_ = svc.createOrganization(t, ctx)
+		daemon, _, ctx := setup(t)
+		_ = daemon.createOrganization(t, ctx)
+		_ = daemon.createOrganization(t, ctx)
 
 		t.Run("page one, two items per page", func(t *testing.T) {
-			orgs, err := svc.Organizations.List(ctx, organization.ListOptions{PageOptions: resource.PageOptions{PageNumber: 1, PageSize: 2}})
+			orgs, err := daemon.Organizations.List(ctx, organization.ListOptions{PageOptions: resource.PageOptions{PageNumber: 1, PageSize: 2}})
 			require.NoError(t, err)
 
 			assert.Equal(t, 2, len(orgs.Items))
 		})
 
 		t.Run("page one, one item per page", func(t *testing.T) {
-			orgs, err := svc.Organizations.List(ctx, organization.ListOptions{PageOptions: resource.PageOptions{PageNumber: 1, PageSize: 1}})
+			orgs, err := daemon.Organizations.List(ctx, organization.ListOptions{PageOptions: resource.PageOptions{PageNumber: 1, PageSize: 1}})
 			require.NoError(t, err)
 
 			assert.Equal(t, 1, len(orgs.Items))
 		})
 
 		t.Run("page two, one item per page", func(t *testing.T) {
-			orgs, err := svc.Organizations.List(ctx, organization.ListOptions{PageOptions: resource.PageOptions{PageNumber: 2, PageSize: 1}})
+			orgs, err := daemon.Organizations.List(ctx, organization.ListOptions{PageOptions: resource.PageOptions{PageNumber: 2, PageSize: 1}})
 			require.NoError(t, err)
 
 			assert.Equal(t, 1, len(orgs.Items))
@@ -84,11 +84,11 @@ func TestIntegration_Organization(t *testing.T) {
 	})
 
 	t.Run("list user's organizations", func(t *testing.T) {
-		svc, want1, ctx := setup(t)
-		want2 := svc.createOrganization(t, ctx)
-		_ = svc.createOrganization(t, adminCtx) // org not belonging to user
+		daemon, want1, ctx := setup(t)
+		want2 := daemon.createOrganization(t, ctx)
+		_ = daemon.createOrganization(t, adminCtx) // org not belonging to user
 
-		got, err := svc.Organizations.List(ctx, organization.ListOptions{})
+		got, err := daemon.Organizations.List(ctx, organization.ListOptions{})
 		require.NoError(t, err)
 
 		assert.Equal(t, 2, len(got.Items))
@@ -97,22 +97,22 @@ func TestIntegration_Organization(t *testing.T) {
 	})
 
 	t.Run("new user should see zero orgs", func(t *testing.T) {
-		svc, _, ctx := setup(t)
-		_ = svc.createOrganization(t, ctx)
-		_ = svc.createOrganization(t, ctx)
+		daemon, _, ctx := setup(t)
+		_ = daemon.createOrganization(t, ctx)
+		_ = daemon.createOrganization(t, ctx)
 
-		_, newUserCtx := svc.createUserCtx(t)
+		_, newUserCtx := daemon.createUserCtx(t)
 
-		got, err := svc.Organizations.List(newUserCtx, organization.ListOptions{})
+		got, err := daemon.Organizations.List(newUserCtx, organization.ListOptions{})
 		require.NoError(t, err)
 		assert.Equal(t, 0, len(got.Items))
 	})
 
 	t.Run("get", func(t *testing.T) {
-		svc, _, ctx := setup(t)
-		want := svc.createOrganization(t, ctx)
+		daemon, _, ctx := setup(t)
+		want := daemon.createOrganization(t, ctx)
 
-		got, err := svc.Organizations.Get(ctx, want.Name)
+		got, err := daemon.Organizations.Get(ctx, want.Name)
 		require.NoError(t, err)
 
 		assert.Equal(t, want, got)
@@ -131,11 +131,11 @@ func TestIntegration_Organization(t *testing.T) {
 	})
 
 	t.Run("delete non-existent org", func(t *testing.T) {
-		svc, _, _ := setup(t)
+		daemon, _, _ := setup(t)
 
 		// delete using site admin otherwise a not authorized error is returned
 		// to normal users
-		err := svc.Organizations.Delete(adminCtx, organization.NewTestName(t))
+		err := daemon.Organizations.Delete(adminCtx, organization.NewTestName(t))
 		require.ErrorIs(t, err, internal.ErrResourceNotFound)
 	})
 }

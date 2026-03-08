@@ -15,7 +15,7 @@ func TestGithubLogin(t *testing.T) {
 	integrationTest(t)
 
 	// Start daemon with a stub github server populated with a user.
-	svc, _, _ := setup(t,
+	daemon, _, _ := setup(t,
 		// specifying oauth credentials turns on the option to login via
 		// github
 		withGithubOAuthCredentials("stub-client-id", "stub-client-secret"),
@@ -24,7 +24,7 @@ func TestGithubLogin(t *testing.T) {
 
 	browser.New(t, nil, func(page playwright.Page) {
 		// go to login page
-		_, err := page.Goto(svc.URL(paths.Login()))
+		_, err := page.Goto(daemon.URL(paths.Login()))
 		require.NoError(t, err)
 		screenshot(t, page, "github_login_button")
 

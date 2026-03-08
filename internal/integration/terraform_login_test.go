@@ -24,7 +24,7 @@ func TestTerraformLogin(t *testing.T) {
 
 	for _, tt := range engineTestSpecs() {
 		t.Run(tt.name, func(t *testing.T) {
-			svc, _, ctx := setup(t)
+			daemon, _, ctx := setup(t)
 
 			out, err := os.CreateTemp(t.TempDir(), "terraform-login.out")
 			require.NoError(t, err)
@@ -35,7 +35,7 @@ func TestTerraformLogin(t *testing.T) {
 			killBrowserPath := path.Join(wd, "./fixtures/kill-browser")
 
 			e, tferr, err := goexpect.SpawnWithArgs(
-				[]string{tt.path, "login", svc.System.Hostname()},
+				[]string{tt.path, "login", daemon.System.Hostname()},
 				time.Minute,
 				goexpect.PartialMatch(true),
 				goexpect.Verbose(testing.Verbose()),
@@ -111,8 +111,8 @@ func TestTerraformLogin(t *testing.T) {
 			// create some terraform config and run engine's init cmd to
 			// demonstrate user has authenticated successfully.
 			{
-				org := svc.createOrganization(t, ctx)
-				configPath := newRootModule(t, svc.System.Hostname(), org.Name, "my-workspace")
+				org := daemon.createOrganization(t, ctx)
+				configPath := newRootModule(t, daemon.System.Hostname(), org.Name, "my-workspace")
 				cmd := exec.Command(tt.path, "init")
 				cmd.Dir = configPath
 				out, err := cmd.CombinedOutput()

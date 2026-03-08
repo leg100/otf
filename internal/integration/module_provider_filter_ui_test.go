@@ -11,7 +11,7 @@ import (
 
 func TestModuleProviderFilterUI(t *testing.T) {
 	integrationTest(t)
-	svc, org, ctx := setup(t)
+	daemon, org, ctx := setup(t)
 
 	// create umpteen modules
 	mods := []struct {
@@ -26,7 +26,7 @@ func TestModuleProviderFilterUI(t *testing.T) {
 		{"k8s", "azure"},
 	}
 	for _, mod := range mods {
-		_, err := svc.Modules.CreateModule(ctx, module.CreateOptions{
+		_, err := daemon.Modules.CreateModule(ctx, module.CreateOptions{
 			Organization: org.Name,
 			Name:         mod.name,
 			Provider:     mod.provider,
@@ -37,7 +37,7 @@ func TestModuleProviderFilterUI(t *testing.T) {
 	// check provider filtering capabilities on UI
 	browser.New(t, ctx, func(page playwright.Page) {
 		// go to org
-		_, err := page.Goto(svc.URL(paths.Organization(org.Name)))
+		_, err := page.Goto(daemon.URL(paths.Organization(org.Name)))
 		require.NoError(t, err)
 
 		// go to modules

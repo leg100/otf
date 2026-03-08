@@ -16,12 +16,12 @@ import (
 func TestIntegration_VariableSetUI_New(t *testing.T) {
 	integrationTest(t)
 
-	svc, org, ctx := setup(t)
+	daemon, org, ctx := setup(t)
 
 	// Create global variable set in browser
 	browser.New(t, ctx, func(page playwright.Page) {
 		// go to org
-		_, err := page.Goto(svc.URL(paths.Organization(org.Name)))
+		_, err := page.Goto(daemon.URL(paths.Organization(org.Name)))
 		require.NoError(t, err)
 
 		// go to variable sets
@@ -57,9 +57,9 @@ func TestIntegration_VariableSetUI_New(t *testing.T) {
 func TestIntegration_VariableSetUI_Edit(t *testing.T) {
 	integrationTest(t)
 
-	svc, org, ctx := setup(t)
+	daemon, org, ctx := setup(t)
 
-	set, err := svc.Variables.CreateVariableSet(ctx, org.Name, variable.CreateVariableSetOptions{
+	set, err := daemon.Variables.CreateVariableSet(ctx, org.Name, variable.CreateVariableSetOptions{
 		Name:   "global-1",
 		Global: true,
 	})
@@ -68,7 +68,7 @@ func TestIntegration_VariableSetUI_Edit(t *testing.T) {
 	// Edit global variable set in browser
 	browser.New(t, ctx, func(page playwright.Page) {
 		// go to variable set's page
-		_, err := page.Goto(svc.URL(paths.EditVariableSet(set.ID)))
+		_, err := page.Goto(daemon.URL(paths.EditVariableSet(set.ID)))
 		require.NoError(t, err)
 
 		// edit description
@@ -113,15 +113,15 @@ func TestIntegration_VariableSetUI_Edit(t *testing.T) {
 func TestIntegration_VariableSetUI_VariableDelete(t *testing.T) {
 	integrationTest(t)
 
-	svc, org, ctx := setup(t)
+	daemon, org, ctx := setup(t)
 
-	set, err := svc.Variables.CreateVariableSet(ctx, org.Name, variable.CreateVariableSetOptions{
+	set, err := daemon.Variables.CreateVariableSet(ctx, org.Name, variable.CreateVariableSetOptions{
 		Name:   "global-1",
 		Global: true,
 	})
 	require.NoError(t, err)
 
-	_, err = svc.Variables.CreateVariableSetVariable(ctx, set.ID, variable.CreateVariableOptions{
+	_, err = daemon.Variables.CreateVariableSetVariable(ctx, set.ID, variable.CreateVariableOptions{
 		Key:      new("varset-var-1"),
 		Value:    new("foo"),
 		Category: internal.Ptr(variable.CategoryTerraform),
@@ -131,7 +131,7 @@ func TestIntegration_VariableSetUI_VariableDelete(t *testing.T) {
 	// Delete variable set variable set in browser
 	browser.New(t, ctx, func(page playwright.Page) {
 		// go to variable set's page
-		_, err := page.Goto(svc.URL(paths.EditVariableSet(set.ID)))
+		_, err := page.Goto(daemon.URL(paths.EditVariableSet(set.ID)))
 		require.NoError(t, err)
 
 		// delete variable
@@ -149,15 +149,15 @@ func TestIntegration_VariableSetUI_VariableDelete(t *testing.T) {
 func TestIntegration_VariableSetUI_New_WorkspaceScoped(t *testing.T) {
 	integrationTest(t)
 
-	svc, org, ctx := setup(t)
-	ws1 := svc.createWorkspace(t, ctx, org)
-	ws2 := svc.createWorkspace(t, ctx, org)
-	ws3 := svc.createWorkspace(t, ctx, org)
+	daemon, org, ctx := setup(t)
+	ws1 := daemon.createWorkspace(t, ctx, org)
+	ws2 := daemon.createWorkspace(t, ctx, org)
+	ws3 := daemon.createWorkspace(t, ctx, org)
 
 	// Create workspace-scoped variable set in browser, and add a variable.
 	browser.New(t, ctx, func(page playwright.Page) {
 		// go to org
-		_, err := page.Goto(svc.URL(paths.Organization(org.Name)))
+		_, err := page.Goto(daemon.URL(paths.Organization(org.Name)))
 		require.NoError(t, err)
 
 		// go to variable sets
@@ -225,19 +225,19 @@ func TestIntegration_VariableSetUI_New_WorkspaceScoped(t *testing.T) {
 func TestIntegration_VariableSetUI_WorkspaceVariables(t *testing.T) {
 	integrationTest(t)
 
-	svc, org, ctx := setup(t)
+	daemon, org, ctx := setup(t)
 
-	ws1 := svc.createWorkspace(t, ctx, org)
+	ws1 := daemon.createWorkspace(t, ctx, org)
 
 	// create global set
-	globalSet, err := svc.Variables.CreateVariableSet(ctx, org.Name, variable.CreateVariableSetOptions{
+	globalSet, err := daemon.Variables.CreateVariableSet(ctx, org.Name, variable.CreateVariableSetOptions{
 		Name:   "global-1",
 		Global: true,
 	})
 	require.NoError(t, err)
 
 	// create variable for global set
-	_, err = svc.Variables.CreateVariableSetVariable(ctx, globalSet.ID, variable.CreateVariableOptions{
+	_, err = daemon.Variables.CreateVariableSetVariable(ctx, globalSet.ID, variable.CreateVariableOptions{
 		Key:      new("foo"),
 		Value:    new("bar"),
 		Category: internal.Ptr(variable.CategoryTerraform),
@@ -245,14 +245,14 @@ func TestIntegration_VariableSetUI_WorkspaceVariables(t *testing.T) {
 	require.NoError(t, err)
 
 	// create workspace-scoped set
-	workspaceScopedSet, err := svc.Variables.CreateVariableSet(ctx, org.Name, variable.CreateVariableSetOptions{
+	workspaceScopedSet, err := daemon.Variables.CreateVariableSet(ctx, org.Name, variable.CreateVariableSetOptions{
 		Name:       "workspace-scoped-1",
 		Workspaces: []resource.TfeID{ws1.ID},
 	})
 	require.NoError(t, err)
 
 	// create variable for workspace-scoped set
-	_, err = svc.Variables.CreateVariableSetVariable(ctx, workspaceScopedSet.ID, variable.CreateVariableOptions{
+	_, err = daemon.Variables.CreateVariableSetVariable(ctx, workspaceScopedSet.ID, variable.CreateVariableOptions{
 		Key:      new("foo"),
 		Value:    new("bar"),
 		Category: internal.Ptr(variable.CategoryTerraform),
@@ -261,7 +261,7 @@ func TestIntegration_VariableSetUI_WorkspaceVariables(t *testing.T) {
 
 	browser.New(t, ctx, func(page playwright.Page) {
 		// go to variables page for workspace ws1
-		_, err = page.Goto(svc.URL(paths.Variables(ws1.ID)))
+		_, err = page.Goto(daemon.URL(paths.Variables(ws1.ID)))
 		require.NoError(t, err)
 
 		err = page.Locator(`//li[@id='menu-item-variables']/a`).Click()

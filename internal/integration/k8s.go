@@ -288,7 +288,7 @@ func (k *KubeDeploy) WaitJobAndSecretDeleted(ctx context.Context, runID string) 
 }
 
 func (k *KubeDeploy) InstallAgentChart(ctx context.Context, token string) (debugFunc, error) {
-	svc, err := k.clientset.CoreV1().Services(k.Namespace).Get(ctx, "otfd", metav1.GetOptions{})
+	daemon, err := k.clientset.CoreV1().Services(k.Namespace).Get(ctx, "otfd", metav1.GetOptions{})
 	if err != nil {
 		return k.debug("otfd"), err
 	}
@@ -301,7 +301,7 @@ func (k *KubeDeploy) InstallAgentChart(ctx context.Context, token string) (debug
 		"--namespace", k.Namespace,
 		"--set", "image.tag=edge",
 		// agent talks to otfd via its service ip
-		"--set", "url=http://" + svc.Spec.ClusterIP,
+		"--set", "url=http://" + daemon.Spec.ClusterIP,
 		"--set", "token=" + token,
 		"--set", "logging.http=true",
 		"--set", "logging.verbosity=9",

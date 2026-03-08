@@ -15,36 +15,36 @@ import (
 func TestIntegration_MinimumPermissions(t *testing.T) {
 	integrationTest(t)
 
-	svc, org, ctx := setup(t)
-	ws := svc.createWorkspace(t, ctx, org)
+	daemon, org, ctx := setup(t)
+	ws := daemon.createWorkspace(t, ctx, org)
 
 	// Create user and add as member of guests team
-	guest := svc.createUser(t)
-	guests := svc.createTeam(t, ctx, org)
-	err := svc.Users.AddTeamMembership(ctx, guests.ID, []user.Username{guest.Username})
+	guest := daemon.createUser(t)
+	guests := daemon.createTeam(t, ctx, org)
+	err := daemon.Users.AddTeamMembership(ctx, guests.ID, []user.Username{guest.Username})
 	require.NoError(t, err)
 	// Refresh guest user context to include new team membership
-	_, guestCtx := svc.getUserCtx(t, adminCtx, guest.Username)
+	_, guestCtx := daemon.getUserCtx(t, adminCtx, guest.Username)
 
 	// Assign read role to guests team. Guests now receive a minimum set of
 	// permissions across the workspace's organization.
-	err = svc.Workspaces.SetPermission(ctx, ws.ID, guests.ID, authz.WorkspaceReadRole)
+	err = daemon.Workspaces.SetPermission(ctx, ws.ID, guests.ID, authz.WorkspaceReadRole)
 	require.NoError(t, err)
 
 	// Guest should be able to get org
-	_, err = svc.Organizations.Get(guestCtx, org.Name)
+	_, err = daemon.Organizations.Get(guestCtx, org.Name)
 	require.NoError(t, err)
 
 	// Guest should be able to list teams
-	_, err = svc.Teams.List(guestCtx, org.Name)
+	_, err = daemon.Teams.List(guestCtx, org.Name)
 	require.NoError(t, err)
 
 	// Guest should be able to list providers
-	_, err = svc.VCSProviders.List(guestCtx, org.Name)
+	_, err = daemon.VCSProviders.List(guestCtx, org.Name)
 	require.NoError(t, err)
 
 	// Guest should be able to get a provider
-	provider := svc.createVCSProvider(t, ctx, org, nil)
-	_, err = svc.VCSProviders.Get(guestCtx, provider.ID)
+	provider := daemon.createVCSProvider(t, ctx, org, nil)
+	_, err = daemon.VCSProviders.Get(guestCtx, provider.ID)
 	require.NoError(t, err)
 }

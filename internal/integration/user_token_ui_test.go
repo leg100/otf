@@ -13,10 +13,10 @@ import (
 func TestIntegration_UserTokenUI(t *testing.T) {
 	integrationTest(t)
 
-	svc, _, ctx := setup(t)
+	daemon, _, ctx := setup(t)
 	browser.New(t, ctx, func(page playwright.Page) {
 		// go to profile
-		_, err := page.Goto(svc.URL(paths.Profile()))
+		_, err := page.Goto(daemon.URL(paths.Profile()))
 		require.NoError(t, err)
 
 		// go to user tokens

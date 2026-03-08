@@ -15,9 +15,9 @@ func TestModule(t *testing.T) {
 	integrationTest(t)
 
 	t.Run("create", func(t *testing.T) {
-		svc, org, ctx := setup(t)
+		daemon, org, ctx := setup(t)
 
-		_, err := svc.Modules.CreateModule(ctx, module.CreateOptions{
+		_, err := daemon.Modules.CreateModule(ctx, module.CreateOptions{
 			Name:         uuid.NewString(),
 			Provider:     uuid.NewString(),
 			Organization: org.Name,
@@ -26,35 +26,35 @@ func TestModule(t *testing.T) {
 	})
 
 	t.Run("create connected module", func(t *testing.T) {
-		svc, org, ctx := setup(t, withGithubOption(github.WithRepo(vcs.NewMustRepo("leg100", "terraform-aws-stuff"))))
+		daemon, org, ctx := setup(t, withGithubOption(github.WithRepo(vcs.NewMustRepo("leg100", "terraform-aws-stuff"))))
 
-		vcsprov := svc.createVCSProvider(t, ctx, org, nil)
+		vcsprov := daemon.createVCSProvider(t, ctx, org, nil)
 
-		mod, err := svc.Modules.PublishModule(ctx, module.PublishOptions{
+		mod, err := daemon.Modules.PublishModule(ctx, module.PublishOptions{
 			VCSProviderID: vcsprov.ID,
 			Repo:          module.Repo(vcs.NewMustRepo("leg100", "terraform-aws-stuff")),
 		})
 		require.NoError(t, err)
 
 		// webhook should be registered with github
-		hook := <-svc.WebhookEvents
+		hook := <-daemon.WebhookEvents
 		require.Equal(t, github.WebhookCreated, hook.Action)
 
 		t.Run("delete module", func(t *testing.T) {
-			_, err := svc.Modules.DeleteModule(ctx, mod.ID)
+			_, err := daemon.Modules.DeleteModule(ctx, mod.ID)
 			require.NoError(t, err)
 		})
 
 		// webhook should now have been deleted from github
-		hook = <-svc.WebhookEvents
+		hook = <-daemon.WebhookEvents
 		require.Equal(t, github.WebhookDeleted, hook.Action)
 	})
 
 	t.Run("get", func(t *testing.T) {
-		svc, _, ctx := setup(t)
-		want := svc.createModule(t, ctx, nil)
+		daemon, _, ctx := setup(t)
+		want := daemon.createModule(t, ctx, nil)
 
-		got, err := svc.Modules.GetModule(ctx, module.GetModuleOptions{
+		got, err := daemon.Modules.GetModule(ctx, module.GetModuleOptions{
 			Organization: want.Organization,
 			Provider:     want.Provider,
 			Name:         want.Name,
@@ -65,23 +65,23 @@ func TestModule(t *testing.T) {
 	})
 
 	t.Run("get by id", func(t *testing.T) {
-		svc, _, ctx := setup(t)
-		want := svc.createModule(t, ctx, nil)
+		daemon, _, ctx := setup(t)
+		want := daemon.createModule(t, ctx, nil)
 
-		got, err := svc.Modules.GetModuleByID(ctx, want.ID)
+		got, err := daemon.Modules.GetModuleByID(ctx, want.ID)
 		require.NoError(t, err)
 
 		assert.Equal(t, want, got)
 	})
 
 	t.Run("list", func(t *testing.T) {
-		svc, _, ctx := setup(t)
-		org := svc.createOrganization(t, ctx)
-		module1 := svc.createModule(t, ctx, org)
-		module2 := svc.createModule(t, ctx, org)
-		module3 := svc.createModule(t, ctx, org)
+		daemon, _, ctx := setup(t)
+		org := daemon.createOrganization(t, ctx)
+		module1 := daemon.createModule(t, ctx, org)
+		module2 := daemon.createModule(t, ctx, org)
+		module3 := daemon.createModule(t, ctx, org)
 
-		got, err := svc.Modules.ListModules(ctx, module.ListOptions{
+		got, err := daemon.Modules.ListModules(ctx, module.ListOptions{
 			Organization: org.Name,
 		})
 		require.NoError(t, err)
@@ -92,10 +92,10 @@ func TestModule(t *testing.T) {
 	})
 
 	t.Run("delete", func(t *testing.T) {
-		svc, _, ctx := setup(t)
-		want := svc.createModule(t, ctx, nil)
+		daemon, _, ctx := setup(t)
+		want := daemon.createModule(t, ctx, nil)
 
-		got, err := svc.Modules.DeleteModule(ctx, want.ID)
+		got, err := daemon.Modules.DeleteModule(ctx, want.ID)
 		require.NoError(t, err)
 
 		assert.Equal(t, want, got)

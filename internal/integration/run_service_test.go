@@ -21,10 +21,10 @@ func TestRunService(t *testing.T) {
 	integrationTest(t)
 
 	t.Run("create", func(t *testing.T) {
-		svc, _, ctx := setup(t, disableScheduler())
-		cv := svc.createConfigurationVersion(t, ctx, nil, nil)
+		daemon, _, ctx := setup(t, disableScheduler())
+		cv := daemon.createConfigurationVersion(t, ctx, nil, nil)
 
-		run, err := svc.Runs.Create(ctx, cv.WorkspaceID, otfrun.CreateOptions{})
+		run, err := daemon.Runs.Create(ctx, cv.WorkspaceID, otfrun.CreateOptions{})
 		require.NoError(t, err)
 
 		assertRunCreatedByCurrentUser(t, ctx, run)
@@ -55,7 +55,7 @@ func TestRunService(t *testing.T) {
 	})
 
 	t.Run("enqueue plan", func(t *testing.T) {
-		svc, _, ctx := setup(t, disableScheduler())
+		daemon, _, ctx := setup(t, disableScheduler())
 
 		tests := []struct {
 			name      string
@@ -78,14 +78,14 @@ func TestRunService(t *testing.T) {
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				run := svc.createRun(t, ctx, nil, nil, &otfrun.CreateOptions{
+				run := daemon.createRun(t, ctx, nil, nil, &otfrun.CreateOptions{
 					PlanOnly: &tt.planOnly,
 				})
 
-				got, err := svc.Runs.EnqueuePlan(ctx, run.ID)
+				got, err := daemon.Runs.EnqueuePlan(ctx, run.ID)
 				require.NoError(t, err)
 
-				ws := svc.getWorkspace(t, ctx, run.WorkspaceID)
+				ws := daemon.getWorkspace(t, ctx, run.WorkspaceID)
 				if tt.latestRun {
 					assert.Equal(t, run.ID, ws.LatestRun.ID)
 				} else {
@@ -106,13 +106,13 @@ func TestRunService(t *testing.T) {
 	})
 
 	t.Run("cancel pending run", func(t *testing.T) {
-		svc, _, ctx := setup(t, disableScheduler())
-		run := svc.createRun(t, ctx, nil, nil, nil)
+		daemon, _, ctx := setup(t, disableScheduler())
+		run := daemon.createRun(t, ctx, nil, nil, nil)
 
-		err := svc.Runs.Cancel(ctx, run.ID)
+		err := daemon.Runs.Cancel(ctx, run.ID)
 		require.NoError(t, err)
 
-		got, err := svc.Runs.Get(ctx, run.ID)
+		got, err := daemon.Runs.Get(ctx, run.ID)
 		require.NoError(t, err)
 
 		assert.Equal(t, runstatus.Canceled, got.Status)
@@ -122,10 +122,10 @@ func TestRunService(t *testing.T) {
 	})
 
 	t.Run("get", func(t *testing.T) {
-		svc, _, ctx := setup(t, disableScheduler())
-		want := svc.createRun(t, ctx, nil, nil, nil)
+		daemon, _, ctx := setup(t, disableScheduler())
+		want := daemon.createRun(t, ctx, nil, nil, nil)
 
-		got, err := svc.Runs.Get(ctx, want.ID)
+		got, err := daemon.Runs.Get(ctx, want.ID)
 		require.NoError(t, err)
 
 		assertEqualRuns(t, want, got)
@@ -133,20 +133,20 @@ func TestRunService(t *testing.T) {
 	})
 
 	t.Run("list", func(t *testing.T) {
-		svc, _, ctx := setup(t, disableScheduler())
+		daemon, _, ctx := setup(t, disableScheduler())
 
-		ws1 := svc.createWorkspace(t, ctx, nil)
-		ws2 := svc.createWorkspace(t, ctx, nil)
-		cv1 := svc.createConfigurationVersion(t, ctx, ws1, nil)
-		cv2, err := svc.Configs.Create(ctx, ws2.ID, configversion.CreateOptions{
+		ws1 := daemon.createWorkspace(t, ctx, nil)
+		ws2 := daemon.createWorkspace(t, ctx, nil)
+		cv1 := daemon.createConfigurationVersion(t, ctx, ws1, nil)
+		cv2, err := daemon.Configs.Create(ctx, ws2.ID, configversion.CreateOptions{
 			Speculative: new(true),
 		})
 		require.NoError(t, err)
 
-		run1 := svc.createRun(t, ctx, ws1, cv1, nil)
-		run2 := svc.createRun(t, ctx, ws1, cv1, nil)
-		run3 := svc.createRun(t, ctx, ws2, cv2, nil)
-		run4 := svc.createRun(t, ctx, ws2, cv2, nil)
+		run1 := daemon.createRun(t, ctx, ws1, cv1, nil)
+		run2 := daemon.createRun(t, ctx, ws1, cv1, nil)
+		run3 := daemon.createRun(t, ctx, ws2, cv2, nil)
+		run4 := daemon.createRun(t, ctx, ws2, cv2, nil)
 
 		tests := []struct {
 			name string
@@ -232,7 +232,7 @@ func TestRunService(t *testing.T) {
 			t.Run(tt.name, func(t *testing.T) {
 				// call endpoint using admin to avoid authz errors (particularly
 				// when listing runs across a site).
-				got, err := svc.Runs.List(adminCtx, tt.opts)
+				got, err := daemon.Runs.List(adminCtx, tt.opts)
 				require.NoError(t, err)
 
 				tt.want(t, got)

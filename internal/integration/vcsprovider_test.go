@@ -15,9 +15,9 @@ func TestVCSProvider(t *testing.T) {
 	integrationTest(t)
 
 	t.Run("create", func(t *testing.T) {
-		svc, org, ctx := setup(t)
+		daemon, org, ctx := setup(t)
 
-		_, err := svc.VCSProviders.Create(ctx, vcs.CreateOptions{
+		_, err := daemon.VCSProviders.Create(ctx, vcs.CreateOptions{
 			Organization: org.Name,
 			Token:        new(uuid.NewString()),
 			KindID:       github.TokenKindID,
@@ -26,20 +26,20 @@ func TestVCSProvider(t *testing.T) {
 	})
 
 	t.Run("update", func(t *testing.T) {
-		svc, org, ctx := setup(t)
-		provider := svc.createVCSProvider(t, ctx, org, nil)
+		daemon, org, ctx := setup(t)
+		provider := daemon.createVCSProvider(t, ctx, org, nil)
 
 		// Don't trust the provider returned from the Update function because
 		// it returns the provider from the provider.Update() function but we
 		// want the updated provider from the *database*.
-		_, err := svc.VCSProviders.Update(ctx, provider.ID, vcs.UpdateOptions{
+		_, err := daemon.VCSProviders.Update(ctx, provider.ID, vcs.UpdateOptions{
 			Token:   new("somethingelse"),
 			BaseURL: internal.MustWebURL("https://my-updated-server/api"),
 		})
 		require.NoError(t, err)
 
 		// Retrieve provider from database.
-		updated, err := svc.VCSProviders.Get(ctx, provider.ID)
+		updated, err := daemon.VCSProviders.Get(ctx, provider.ID)
 		require.NoError(t, err)
 
 		assert.NotEqual(t, updated.Token, provider.Token)
@@ -47,22 +47,22 @@ func TestVCSProvider(t *testing.T) {
 	})
 
 	t.Run("get", func(t *testing.T) {
-		svc, _, ctx := setup(t)
-		want := svc.createVCSProvider(t, ctx, nil, nil)
+		daemon, _, ctx := setup(t)
+		want := daemon.createVCSProvider(t, ctx, nil, nil)
 
-		got, err := svc.VCSProviders.Get(ctx, want.ID)
+		got, err := daemon.VCSProviders.Get(ctx, want.ID)
 		require.NoError(t, err)
 
 		vcsProviderIsEqual(t, want, got)
 	})
 
 	t.Run("list", func(t *testing.T) {
-		svc, org, ctx := setup(t)
-		provider1 := svc.createVCSProvider(t, ctx, org, &vcs.CreateOptions{Name: "alpha"})
-		provider2 := svc.createVCSProvider(t, ctx, org, &vcs.CreateOptions{Name: "beta"})
-		provider3 := svc.createVCSProvider(t, ctx, org, &vcs.CreateOptions{Name: "gamma"})
+		daemon, org, ctx := setup(t)
+		provider1 := daemon.createVCSProvider(t, ctx, org, &vcs.CreateOptions{Name: "alpha"})
+		provider2 := daemon.createVCSProvider(t, ctx, org, &vcs.CreateOptions{Name: "beta"})
+		provider3 := daemon.createVCSProvider(t, ctx, org, &vcs.CreateOptions{Name: "gamma"})
 
-		got, err := svc.VCSProviders.List(ctx, org.Name)
+		got, err := daemon.VCSProviders.List(ctx, org.Name)
 		require.NoError(t, err)
 
 		vcsProviderIsEqual(t, got[0], provider1)
@@ -71,10 +71,10 @@ func TestVCSProvider(t *testing.T) {
 	})
 
 	t.Run("delete", func(t *testing.T) {
-		svc, _, ctx := setup(t)
-		want := svc.createVCSProvider(t, ctx, nil, nil)
+		daemon, _, ctx := setup(t)
+		want := daemon.createVCSProvider(t, ctx, nil, nil)
 
-		got, err := svc.VCSProviders.Delete(ctx, want.ID)
+		got, err := daemon.VCSProviders.Delete(ctx, want.ID)
 		require.NoError(t, err)
 
 		vcsProviderIsEqual(t, want, got)

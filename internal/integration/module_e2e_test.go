@@ -23,20 +23,20 @@ func TestModuleE2E(t *testing.T) {
 	// create an otf daemon with a fake github backend, ready to serve up a repo
 	// and its contents via tarball.
 	repo := vcs.NewRandomModuleRepo("aws", "mod")
-	svc, org, ctx := setup(t, withGithubOptions(
+	daemon, org, ctx := setup(t, withGithubOptions(
 		github.WithRepo(repo),
 		github.WithRefs("tags/v0.0.1", "tags/v0.0.2", "tags/v0.1.0"),
 		github.WithArchive(testutils.ReadFile(t, "./fixtures/github.module.tar.gz")),
 	))
 	// create vcs provider for module to authenticate to github backend
-	provider := svc.createVCSProvider(t, ctx, org, nil)
+	provider := daemon.createVCSProvider(t, ctx, org, nil)
 
 	var moduleURL string // captures url for module page
 
 	browser.New(t, ctx, func(page playwright.Page) {
 		// publish module
 		// go to org
-		_, err := page.Goto(svc.URL(paths.Organization(org.Name)))
+		_, err := page.Goto(daemon.URL(paths.Organization(org.Name)))
 		require.NoError(t, err)
 
 		// go to modules
@@ -86,7 +86,7 @@ module "mod" {
 	source = "%s/%s/mod/aws"
 	version = "0.1.0"
 }
-`, svc.System.Hostname(), org.Name))
+`, daemon.System.Hostname(), org.Name))
 		require.NoError(t, err)
 	})
 
@@ -97,7 +97,7 @@ module "mod" {
 	// generate and send push tag event for v1.0.0
 	pushTpl := testutils.ReadFile(t, "fixtures/github_push_tag.json")
 	push := fmt.Sprintf(string(pushTpl), "v1.0.0", repo.Name(), repo.Owner())
-	svc.SendEvent(t, github.PushEvent, []byte(push))
+	daemon.SendEvent(t, github.PushEvent, []byte(push))
 
 	workspaceName := "module-test"
 	browser.New(t, ctx, func(page playwright.Page) {
@@ -110,35 +110,35 @@ module "mod" {
 
 		// Now run terraform with some config that sources the module. First we need
 		// a workspace...
-		createWorkspace(t, page, svc, org.Name, workspaceName)
+		createWorkspace(t, page, daemon, org.Name, workspaceName)
 	})
 
 	// generate some terraform config that sources our module
-	root := newRootModule(t, svc.System.Hostname(), org.Name, workspaceName)
+	root := newRootModule(t, daemon.System.Hostname(), org.Name, workspaceName)
 	config := fmt.Sprintf(`
 module "mod" {
   source  = "%s/%s/%s/%s"
   version = "1.0.0"
 }
-`, svc.System.Hostname(), org.Name, "mod", "aws")
+`, daemon.System.Hostname(), org.Name, "mod", "aws")
 	err := os.WriteFile(filepath.Join(root, "sourcing.tf"), []byte(config), 0o600)
 	require.NoError(t, err)
 
 	// run terraform init, plan, and apply
-	svc.engineCLI(t, ctx, "", "init", root)
-	out := svc.engineCLI(t, ctx, "", "plan", root)
+	daemon.engineCLI(t, ctx, "", "init", root)
+	out := daemon.engineCLI(t, ctx, "", "plan", root)
 	require.Contains(t, out, "Plan: 2 to add, 0 to change, 0 to destroy.")
-	out = svc.engineCLI(t, ctx, "", "apply", root, "-auto-approve")
+	out = daemon.engineCLI(t, ctx, "", "apply", root, "-auto-approve")
 	require.Contains(t, string(out), "Apply complete! Resources: 2 added, 0 changed, 0 destroyed.")
 
 	// delete vcs provider and visit the module page; it should be no longer
 	// connected. Then delete the module.
-	_, err = svc.VCSProviders.Delete(ctx, provider.ID)
+	_, err = daemon.VCSProviders.Delete(ctx, provider.ID)
 	require.NoError(t, err)
 
 	browser.New(t, ctx, func(page playwright.Page) {
 		// go to org
-		_, err = page.Goto(svc.URL(paths.Organization(org.Name)))
+		_, err = page.Goto(daemon.URL(paths.Organization(org.Name)))
 		require.NoError(t, err)
 
 		// go to modules

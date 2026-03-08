@@ -14,7 +14,7 @@ func TestIntegration_OIDC(t *testing.T) {
 	integrationTest(t)
 
 	// Start daemon configured to use a google OIDC test stub.
-	svc, _, _ := setup(t, withOIDConfig(
+	daemon, _, _ := setup(t, withOIDConfig(
 		authenticator.OIDCConfig{
 			Name:                "google",
 			IssuerURL:           authenticator.NewTestOIDCIssuer(t, "bobby", "stub-client-id", "google"),
@@ -27,7 +27,7 @@ func TestIntegration_OIDC(t *testing.T) {
 
 	browser.New(t, nil, func(page playwright.Page) {
 		// go to login page
-		_, err := page.Goto(svc.URL(paths.Login()))
+		_, err := page.Goto(daemon.URL(paths.Login()))
 		require.NoError(t, err)
 		screenshot(t, page, "oidc_login_button")
 

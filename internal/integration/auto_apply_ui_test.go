@@ -11,11 +11,11 @@ import (
 func TestAutoApply(t *testing.T) {
 	integrationTest(t)
 
-	svc, org, ctx := setup(t)
+	daemon, org, ctx := setup(t)
 
 	// create workspace and enable auto-apply
 	browser.New(t, ctx, func(page playwright.Page) {
-		workspaceURL := createWorkspace(t, page, svc, org.Name, t.Name())
+		workspaceURL := createWorkspace(t, page, daemon, org.Name, t.Name())
 		// go to workspace
 		_, err := page.Goto(workspaceURL)
 		require.NoError(t, err)
@@ -32,7 +32,7 @@ func TestAutoApply(t *testing.T) {
 		err = expect.Locator(page.GetByRole("alert")).ToHaveText("updated workspace")
 		require.NoError(t, err)
 		// check UI has correctly updated the workspace resource
-		ws, err := svc.Workspaces.GetByName(ctx, org.Name, t.Name())
+		ws, err := daemon.Workspaces.GetByName(ctx, org.Name, t.Name())
 		require.NoError(t, err)
 		require.Equal(t, true, ws.AutoApply)
 	})

@@ -13,11 +13,11 @@ import (
 func TestIntegration_OrganizationTokenUI(t *testing.T) {
 	integrationTest(t)
 
-	svc, org, ctx := setup(t)
+	daemon, org, ctx := setup(t)
 
 	browser.New(t, ctx, func(page playwright.Page) {
 		// go to organization
-		_, err := page.Goto(svc.URL(paths.Organization(org.Name)))
+		_, err := page.Goto(daemon.URL(paths.Organization(org.Name)))
 		require.NoError(t, err)
 
 		// go to organization token page

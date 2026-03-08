@@ -15,42 +15,42 @@ import (
 func TestIntegration_WorkspacePermissionsService(t *testing.T) {
 	integrationTest(t)
 
-	svc, org, ctx := setup(t)
+	daemon, org, ctx := setup(t)
 
 	t.Run("set permission", func(t *testing.T) {
-		ws := svc.createWorkspace(t, ctx, org)
-		team := svc.createTeam(t, ctx, org)
-		err := svc.Workspaces.SetPermission(ctx, ws.ID, team.ID, authz.WorkspacePlanRole)
+		ws := daemon.createWorkspace(t, ctx, org)
+		team := daemon.createTeam(t, ctx, org)
+		err := daemon.Workspaces.SetPermission(ctx, ws.ID, team.ID, authz.WorkspacePlanRole)
 		require.NoError(t, err)
 	})
 
 	t.Run("unset permission", func(t *testing.T) {
-		ws := svc.createWorkspace(t, ctx, org)
-		team := svc.createTeam(t, ctx, org)
-		err := svc.Workspaces.SetPermission(ctx, ws.ID, team.ID, authz.WorkspacePlanRole)
+		ws := daemon.createWorkspace(t, ctx, org)
+		team := daemon.createTeam(t, ctx, org)
+		err := daemon.Workspaces.SetPermission(ctx, ws.ID, team.ID, authz.WorkspacePlanRole)
 		require.NoError(t, err)
 
-		err = svc.Workspaces.UnsetPermission(ctx, ws.ID, team.ID)
+		err = daemon.Workspaces.UnsetPermission(ctx, ws.ID, team.ID)
 		require.NoError(t, err)
 
-		policy, err := svc.Workspaces.GetWorkspacePolicy(ctx, ws.ID)
+		policy, err := daemon.Workspaces.GetWorkspacePolicy(ctx, ws.ID)
 		require.NoError(t, err)
 		assert.Empty(t, policy.Permissions)
 	})
 
 	t.Run("get policy", func(t *testing.T) {
-		ws := svc.createWorkspace(t, ctx, org)
-		scum := svc.createTeam(t, ctx, org)
-		skates := svc.createTeam(t, ctx, org)
-		cherries := svc.createTeam(t, ctx, org)
-		err := svc.Workspaces.SetPermission(ctx, ws.ID, scum.ID, authz.WorkspaceAdminRole)
+		ws := daemon.createWorkspace(t, ctx, org)
+		scum := daemon.createTeam(t, ctx, org)
+		skates := daemon.createTeam(t, ctx, org)
+		cherries := daemon.createTeam(t, ctx, org)
+		err := daemon.Workspaces.SetPermission(ctx, ws.ID, scum.ID, authz.WorkspaceAdminRole)
 		require.NoError(t, err)
-		err = svc.Workspaces.SetPermission(ctx, ws.ID, skates.ID, authz.WorkspaceReadRole)
+		err = daemon.Workspaces.SetPermission(ctx, ws.ID, skates.ID, authz.WorkspaceReadRole)
 		require.NoError(t, err)
-		err = svc.Workspaces.SetPermission(ctx, ws.ID, cherries.ID, authz.WorkspacePlanRole)
+		err = daemon.Workspaces.SetPermission(ctx, ws.ID, cherries.ID, authz.WorkspacePlanRole)
 		require.NoError(t, err)
 
-		got, err := svc.Workspaces.GetWorkspacePolicy(ctx, ws.ID)
+		got, err := daemon.Workspaces.GetWorkspacePolicy(ctx, ws.ID)
 		require.NoError(t, err)
 
 		assert.Equal(t, 3, len(got.Permissions))
@@ -70,7 +70,7 @@ func TestIntegration_WorkspacePermissionsService(t *testing.T) {
 
 	t.Run("workspace not found", func(t *testing.T) {
 		nonExistentID := resource.NewTfeID(resource.WorkspaceKind)
-		_, err := svc.Workspaces.GetWorkspacePolicy(ctx, nonExistentID)
+		_, err := daemon.Workspaces.GetWorkspacePolicy(ctx, nonExistentID)
 		require.True(t, errors.Is(err, internal.ErrResourceNotFound))
 	})
 }

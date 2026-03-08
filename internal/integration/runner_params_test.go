@@ -16,9 +16,9 @@ import (
 func TestIntegration_RunnerParams(t *testing.T) {
 	integrationTest(t)
 
-	svc, org, ctx := setup(t)
+	daemon, org, ctx := setup(t)
 
-	ws := svc.createWorkspace(t, ctx, org)
+	ws := daemon.createWorkspace(t, ctx, org)
 
 	config := fmt.Appendf(nil, `terraform {
   cloud {
@@ -33,27 +33,27 @@ func TestIntegration_RunnerParams(t *testing.T) {
 resource "random_uuid" "id1" {}
 resource "random_uuid" "id2" {}
 resource "random_uuid" "id3" {}
-`, svc.System.Hostname(), org.Name, ws.Name)
+`, daemon.System.Hostname(), org.Name, ws.Name)
 
 	true_ := true
 
 	applyThing := func(t *testing.T, opt *runpkg.CreateOptions) *runpkg.Report {
 		// upload config
-		cv := svc.createConfigurationVersion(t, ctx, ws, nil)
+		cv := daemon.createConfigurationVersion(t, ctx, ws, nil)
 		path := t.TempDir()
 		err := os.WriteFile(filepath.Join(path, "main.tf"), []byte(config), 0o777)
 		require.NoError(t, err)
 		tarball, err := internal.Pack(path)
 		require.NoError(t, err)
-		err = svc.Configs.UploadConfig(ctx, cv.ID, tarball)
+		err = daemon.Configs.UploadConfig(ctx, cv.ID, tarball)
 		require.NoError(t, err)
 
 		// create run
 		opt.AutoApply = &true_
-		run := svc.createRun(t, ctx, ws, cv, opt)
+		run := daemon.createRun(t, ctx, ws, cv, opt)
 
 		// let it run to completion
-		rv := svc.waitRunStatus(t, ctx, run.ID, runstatus.Applied)
+		rv := daemon.waitRunStatus(t, ctx, run.ID, runstatus.Applied)
 		return rv.Plan.ResourceReport
 	}
 

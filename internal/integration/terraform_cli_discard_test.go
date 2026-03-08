@@ -19,21 +19,21 @@ import (
 func TestIntegration_TerraformCLIDiscard(t *testing.T) {
 	integrationTest(t)
 
-	svc, org, ctx := setup(t)
+	daemon, org, ctx := setup(t)
 
 	// create some config and run terraform init
-	configPath := newRootModule(t, svc.System.Hostname(), org.Name, t.Name())
-	svc.engineCLI(t, ctx, "", "init", configPath)
+	configPath := newRootModule(t, daemon.System.Hostname(), org.Name, t.Name())
+	daemon.engineCLI(t, ctx, "", "init", configPath)
 
 	// Create user token expressly for terraform apply
-	_, token := svc.createToken(t, ctx, nil)
+	_, token := daemon.createToken(t, ctx, nil)
 
 	// Invoke terraform apply
 	e, tferr, err := goexpect.SpawnWithArgs(
 		[]string{terraformPath, "-chdir=" + configPath, "apply", "-no-color"},
 		time.Minute,
 		goexpect.PartialMatch(true),
-		goexpect.SetEnv(internal.SafeAppend(sharedEnvs, internal.CredentialEnv(svc.System.Hostname(), token))),
+		goexpect.SetEnv(internal.SafeAppend(sharedEnvs, internal.CredentialEnv(daemon.System.Hostname(), token))),
 	)
 	require.NoError(t, err)
 	defer e.Close()
@@ -49,7 +49,7 @@ func TestIntegration_TerraformCLIDiscard(t *testing.T) {
 	require.True(t, errors.As(<-tferr, &exitError))
 	require.Equal(t, 1, exitError.ExitCode())
 
-	runs, err := svc.Runs.List(ctx, run.ListOptions{Organization: &org.Name})
+	runs, err := daemon.Runs.List(ctx, run.ListOptions{Organization: &org.Name})
 	require.NoError(t, err)
 	require.Equal(t, 1, len(runs.Items))
 	require.Equal(t, runstatus.Discarded, runs.Items[0].Status)
