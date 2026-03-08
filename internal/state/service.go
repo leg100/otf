@@ -3,12 +3,11 @@ package state
 import (
 	"context"
 	"errors"
-	"fmt"
 
-	"github.com/leg100/otf/internal/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
+	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/tfeapi"
@@ -18,16 +17,12 @@ import (
 
 var ErrCurrentVersionDeletionAttempt = errors.New("deleting the current state version is not allowed")
 
-// cacheKey generates a key for caching state files
-func cacheKey(svID resource.TfeID) string { return fmt.Sprintf("%s.json", svID) }
-
 type (
 	// Service provides access to state and state versions
 	Service struct {
 		logr.Logger
 
 		db     *pgdb
-		cache  internal.Cache // cache state file
 		tfeapi *tfe
 		api    *api
 
@@ -37,7 +32,6 @@ type (
 
 	Options struct {
 		logr.Logger
-		internal.Cache
 		*sql.DB
 		*tfeapi.Responder
 		*surl.Signer
@@ -52,7 +46,6 @@ func NewService(opts Options) *Service {
 	svc := Service{
 		Logger:     opts.Logger,
 		Authorizer: opts.Authorizer,
-		cache:      opts.Cache,
 		db:         db,
 		factory:    &factory{db},
 	}
@@ -101,10 +94,6 @@ func (a *Service) Create(ctx context.Context, opts CreateStateVersionOptions) (*
 	if err != nil {
 		a.Error(err, "creating state version", "subject", subject)
 		return nil, err
-	}
-
-	if err := a.cache.Set(cacheKey(sv.ID), sv.State); err != nil {
-		a.Error(err, "caching state file")
 	}
 
 	a.V(0).Info("created state version", "state_version", sv, "subject", subject)
@@ -225,9 +214,6 @@ func (a *Service) Upload(ctx context.Context, svID resource.TfeID, state []byte)
 		if err != nil {
 			return err
 		}
-		if err := a.cache.Set(cacheKey(svID), state); err != nil {
-			a.Error(err, "caching state file")
-		}
 		return nil
 	})
 	if err != nil {
@@ -243,17 +229,10 @@ func (a *Service) Download(ctx context.Context, svID resource.TfeID) ([]byte, er
 	if err != nil {
 		return nil, err
 	}
-	if state, err := a.cache.Get(cacheKey(svID)); err == nil {
-		a.V(9).Info("downloaded state", "id", svID, "subject", subject)
-		return state, nil
-	}
 	state, err := a.db.getState(ctx, svID)
 	if err != nil {
 		a.Error(err, "downloading state", "id", svID, "subject", subject)
 		return nil, err
-	}
-	if err := a.cache.Set(cacheKey(svID), state); err != nil {
-		a.Error(err, "caching state file")
 	}
 	a.V(9).Info("downloaded state", "id", svID, "subject", subject)
 	return state, nil

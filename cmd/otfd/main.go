@@ -80,15 +80,17 @@ func parseFlags(ctx context.Context, args []string, out io.Writer) error {
 	cmd.Flags().Int64Var(&cfg.MaxConfigSize, "max-config-size", cfg.MaxConfigSize, "Maximum permitted configuration size in bytes.")
 	cmd.Flags().StringVar(&cfg.WebhookHost, "webhook-hostname", "", "External hostname for otf webhooks")
 
-	// TODO: remove after given amount of time
 	_ = cmd.Flags().String("allowed-origins", "", "Allowed origins for websocket upgrades")
 	cmd.Flags().MarkDeprecated("allowed-origins", "websockets no longer implemented so this flag has no effect")
 
 	cmd.Flags().StringVar(&cfg.PublicKeyPath, "public-key-path", "", "Path to public key for dynamic credentials.")
 	cmd.Flags().StringVar(&cfg.PrivateKeyPath, "private-key-path", "", "Path to private key for dynamic credentials.")
 
-	cmd.Flags().IntVar(&cfg.CacheConfig.Size, "cache-size", 0, "Maximum cache size in MB. 0 means unlimited size.")
-	cmd.Flags().DurationVar(&cfg.CacheConfig.TTL, "cache-expiry", internal.DefaultCacheTTL, "Cache entry TTL.")
+	// TODO: remove after given amount of time
+	_ = cmd.Flags().Int("cache-size", 0, "Maximum cache size in MB. 0 means unlimited size.")
+	cmd.Flags().MarkDeprecated("cache-size", "cache no longer implemented so this flag has no effect")
+	_ = cmd.Flags().Duration("cache-expiry", internal.DefaultCacheTTL, "Cache entry TTL.")
+	cmd.Flags().MarkDeprecated("cache-expiry", "cache no longer implemented so this flag has no effect")
 
 	cmd.Flags().DurationVar(&cfg.DeleteRunsAfter, "delete-runs-after", 0, "Delete runs older than the specified age. Specifying 0 disables run deletion.")
 	cmd.Flags().DurationVar(&cfg.DeleteConfigsAfter, "delete-configs-after", 0, "Delete configs older than the specified age. Specifying 0 disables config deletion.")

@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/engine"
@@ -36,7 +35,6 @@ type (
 		*MetricsCollector
 
 		workspaces             *workspace.Service
-		cache                  internal.Cache
 		db                     *pgdb
 		tfeapi                 *tfe
 		api                    *api
@@ -65,7 +63,6 @@ type (
 		UsersService         *user.Service
 
 		logr.Logger
-		internal.Cache
 		*sql.DB
 		*tfeapi.Responder
 		*surl.Signer
@@ -79,7 +76,6 @@ func NewService(opts Options) *Service {
 		Logger:     opts.Logger,
 		workspaces: opts.WorkspaceService,
 		db:         db,
-		cache:      opts.Cache,
 		Interface:  opts.Authorizer,
 		daemonCtx:  opts.DaemonCtx,
 	}
@@ -497,10 +493,6 @@ func (s *Service) AfterForceCancelRun(hook func(context.Context, *Run) error) {
 	s.afterForceCancelHooks = append(s.afterForceCancelHooks, hook)
 }
 
-func planFileCacheKey(f PlanFormat, id resource.TfeID) string {
-	return fmt.Sprintf("%s.%s", id, f)
-}
-
 // GetPlanFile returns the plan file for the run.
 func (s *Service) GetPlanFile(ctx context.Context, runID resource.TfeID, format PlanFormat) ([]byte, error) {
 	subject, err := s.Authorize(ctx, authz.GetPlanFileAction, runID)
@@ -508,18 +500,10 @@ func (s *Service) GetPlanFile(ctx context.Context, runID resource.TfeID, format 
 		return nil, err
 	}
 
-	if plan, err := s.cache.Get(planFileCacheKey(format, runID)); err == nil {
-		return plan, nil
-	}
-	// Cache is empty; retrieve from DB
 	file, err := s.db.GetPlanFile(ctx, runID, format)
 	if err != nil {
 		s.Error(err, "retrieving plan file", "id", runID, "format", format, "subject", subject)
 		return nil, err
-	}
-	// Cache plan before returning
-	if err := s.cache.Set(planFileCacheKey(format, runID), file); err != nil {
-		s.Error(err, "caching plan file")
 	}
 	return file, nil
 }
@@ -538,10 +522,6 @@ func (s *Service) UploadPlanFile(ctx context.Context, runID resource.TfeID, plan
 	}
 
 	s.V(1).Info("uploaded plan file", "id", runID, "format", format, "subject", subject)
-
-	if err := s.cache.Set(planFileCacheKey(format, runID), plan); err != nil {
-		s.Error(err, "caching plan file")
-	}
 
 	return nil
 }

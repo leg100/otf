@@ -23,23 +23,6 @@ otfd --address :0
 
 Sets the amount of time a run is permitted to be in the `applying` state before it is canceled.
 
-## `--cache-expiry`
-
-* System: `otfd`
-* Default: `10 minutes`
-
-Set the TTL for cache entries.
-
-## `--cache-size`
-
-* System: `otfd`
-* Default: `0` (unlimited)
-
-Cache size in MB. The cache is stored in RAM. Default is `0` which means it'll use an unlimited amount of RAM.
-
-It is recommended that you set this to an appropriate size in a production
-deployment, taking into consideration the [cache expiry](#-cache-expiry).
-
 ## `--concurrency`
 
 * System: `otfd`, `otf-agent`

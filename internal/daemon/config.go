@@ -11,7 +11,6 @@ import (
 	"github.com/leg100/otf/internal/forgejo"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/gitlab"
-	"github.com/leg100/otf/internal/inmem"
 	"github.com/leg100/otf/internal/runner"
 	"github.com/leg100/otf/internal/tokens"
 )
@@ -22,7 +21,6 @@ var ErrInvalidSecretLength = errors.New("secret must be 16 bytes in size")
 // the flag definitions in ./cmd/otfd
 type Config struct {
 	RunnerConfig                 *runner.Config
-	CacheConfig                  *inmem.CacheConfig
 	GithubHostname               *internal.WebURL
 	GithubClientID               string
 	GithubClientSecret           string
@@ -65,7 +63,6 @@ type Config struct {
 func NewConfig() Config {
 	return Config{
 		RunnerConfig:    runner.NewDefaultConfig(),
-		CacheConfig:     &inmem.CacheConfig{},
 		MaxConfigSize:   configversion.DefaultConfigMaxSize,
 		DefaultEngine:   engine.Default,
 		GithubHostname:  github.DefaultBaseURL(),

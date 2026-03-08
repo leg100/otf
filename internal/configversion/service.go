@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/configversion/source"
 	"github.com/leg100/otf/internal/logr"
@@ -22,7 +21,6 @@ type (
 		*source.IconDB
 
 		db     *pgdb
-		cache  internal.Cache
 		tfeapi *tfe
 		api    *api
 	}
@@ -33,7 +31,6 @@ type (
 		MaxConfigSize int64
 		Authorizer    *authz.Authorizer
 
-		internal.Cache
 		*sql.DB
 		*surl.Signer
 		*tfeapi.Responder
@@ -47,7 +44,6 @@ func NewService(opts Options) *Service {
 		IconDB:     source.NewIconDB(),
 	}
 	svc.db = &pgdb{opts.DB}
-	svc.cache = opts.Cache
 	svc.tfeapi = &tfe{
 		Logger:        opts.Logger,
 		tfeClient:     &svc,

@@ -7,7 +7,6 @@ import (
 	"net"
 	"time"
 
-	"github.com/allegro/bigcache"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authenticator"
@@ -21,7 +20,6 @@ import (
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/gitlab"
 	"github.com/leg100/otf/internal/http"
-	"github.com/leg100/otf/internal/inmem"
 	"github.com/leg100/otf/internal/loginserver"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/module"
@@ -78,7 +76,6 @@ type (
 		handlers []internal.Handlers
 		listener *sql.Listener
 		runner   *runner.Runner
-		cache    *bigcache.BigCache
 	}
 )
 
@@ -96,12 +93,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 
 	hostnameService := internal.NewHostnameService(cfg.Host)
 	hostnameService.SetWebhookHostname(cfg.WebhookHost)
-
-	cache, err := inmem.NewCache(*cfg.CacheConfig)
-	if err != nil {
-		return nil, err
-	}
-	logger.Info("started cache", "max_size", cfg.CacheConfig.Size, "ttl", cfg.CacheConfig.TTL)
 
 	db, err := sql.New(ctx, logger, cfg.Database)
 	if err != nil {
@@ -165,7 +156,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Authorizer:    authorizer,
 		DB:            db,
 		Responder:     responder,
-		Cache:         cache,
 		Signer:        signer,
 		MaxConfigSize: cfg.MaxConfigSize,
 	})
@@ -241,7 +231,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		WorkspaceService:     workspaceService,
 		ConfigVersionService: configService,
 		VCSProviderService:   vcsService,
-		Cache:                cache,
 		VCSEventSubscriber:   vcsEventBroker,
 		Signer:               signer,
 		EngineService:        engineService,
@@ -265,7 +254,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Authorizer:       authorizer,
 		DB:               db,
 		WorkspaceService: workspaceService,
-		Cache:            cache,
 		Responder:        responder,
 		Signer:           signer,
 	})
@@ -463,7 +451,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		DB:            db,
 		runner:        serverRunner,
 		listener:      listener,
-		cache:         cache,
 	}, nil
 }
 
@@ -475,13 +462,6 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 
 	// close all db connections upon exit
 	defer d.DB.Close()
-
-	// garbage collect cache upon exit
-	defer func() {
-		if err := d.cache.Close(); err != nil {
-			d.Error(err, "closing cache")
-		}
-	}()
 
 	// Construct web server and start listening on port
 	server, err := http.NewServer(d.Logger, http.ServerConfig{
