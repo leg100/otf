@@ -76,12 +76,17 @@ type (
 		handlers []internal.Handlers
 		listener *sql.Listener
 		runner   *runner.Runner
+		server   *http.Server
 	}
 )
 
 // New builds a new daemon and establishes a connection to the database and
 // migrates it to the latest schema. Close() should be called to close this
 // connection.
+//
+// New starts the main daemon, establishing connection the database, performs
+// migrations, sets up services, starts subsystems and returns the daemon along
+// with a channel that closes when the daemon has finished starting up.
 func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	if internal.DevMode {
 		logger.Info("enabled developer mode")
@@ -426,6 +431,19 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		sshkeyService,
 	}
 
+	// Construct web server and start listening on port
+	server, err := http.NewServer(logger, http.ServerConfig{
+		SSL:                  cfg.SSL,
+		CertFile:             cfg.CertFile,
+		KeyFile:              cfg.KeyFile,
+		EnableRequestLogging: cfg.EnableRequestLogging,
+		Middleware:           []mux.MiddlewareFunc{tokensService.Middleware()},
+		Handlers:             handlers,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("setting up http server: %w", err)
+	}
+
 	return &Daemon{
 		Config:        cfg,
 		Logger:        logger,
@@ -451,6 +469,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		DB:            db,
 		runner:        serverRunner,
 		listener:      listener,
+		server:        server,
 	}, nil
 }
 
@@ -463,18 +482,6 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 	// close all db connections upon exit
 	defer d.DB.Close()
 
-	// Construct web server and start listening on port
-	server, err := http.NewServer(d.Logger, http.ServerConfig{
-		SSL:                  d.SSL,
-		CertFile:             d.CertFile,
-		KeyFile:              d.KeyFile,
-		EnableRequestLogging: d.EnableRequestLogging,
-		Middleware:           []mux.MiddlewareFunc{d.Tokens.Middleware()},
-		Handlers:             d.handlers,
-	})
-	if err != nil {
-		return fmt.Errorf("setting up http server: %w", err)
-	}
 	ln, err := net.Listen("tcp", d.Address)
 	if err != nil {
 		return err
@@ -632,7 +639,7 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 
 	// Run HTTP/JSON-API server and web app
 	g.Go(func() error {
-		if err := server.Start(ctx, ln); err != nil {
+		if err := d.server.Start(ctx, ln); err != nil {
 			return fmt.Errorf("http server terminated: %w", err)
 		}
 		return nil
