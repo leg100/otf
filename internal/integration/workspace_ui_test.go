@@ -387,7 +387,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 
 			// permit applies from the CLI
 			//
-			_, err = page.Goto(daemon.URL(workspaceURL))
+			_, err = page.Goto(workspaceURL)
 			require.NoError(t, err)
 			// go to workspace settings
 			err = page.Locator(`//li[@id='menu-item-settings']/a`).Click()
@@ -414,7 +414,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 
 			// set description
 
-			_, err = page.Goto(daemon.URL(workspaceURL))
+			_, err = page.Goto(workspaceURL)
 			require.NoError(t, err)
 
 			// go to workspace settings
