@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.18](https://github.com/leg100/otf/compare/v0.5.17...v0.5.18) (2026-03-08)
+
+
+### Miscellaneous
+
+* bump helm charts with app version v0.5.17 ([ccb3d14](https://github.com/leg100/otf/commit/ccb3d142964da0ffaed400b35c7c7c46b561750d))
+
 ## [0.5.17](https://github.com/leg100/otf/compare/v0.5.16...v0.5.17) (2026-03-07)
 
 
