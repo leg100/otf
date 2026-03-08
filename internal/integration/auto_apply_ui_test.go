@@ -15,9 +15,9 @@ func TestAutoApply(t *testing.T) {
 
 	// create workspace and enable auto-apply
 	browser.New(t, ctx, func(page playwright.Page) {
-		createWorkspace(t, page, svc.System.Hostname(), org.Name, t.Name())
+		workspaceURL := createWorkspace(t, page, svc, org.Name, t.Name())
 		// go to workspace
-		_, err := page.Goto(workspaceURL(svc.System.Hostname(), org.Name, t.Name()))
+		_, err := page.Goto(workspaceURL)
 		require.NoError(t, err)
 		// go to workspace settings
 		err = page.Locator(`//li[@id='menu-item-settings']/a`).Click()

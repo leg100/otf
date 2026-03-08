@@ -35,7 +35,7 @@ func TestIntegration_StateUI(t *testing.T) {
 		t.Parallel()
 
 		browser.New(t, ctx, func(page playwright.Page) {
-			daemon.gotoPath(t, page, paths.Workspace(ws.ID))
+			page.Goto(daemon.URL(paths.Workspace(ws.ID)))
 
 			err = expect.Locator(page.Locator(`//input[@id='resources-label']`)).ToHaveAttribute(`aria-label`, regexp.MustCompile(`Resources \(1\)`))
 			require.NoError(t, err)
@@ -63,7 +63,7 @@ func TestIntegration_StateUI(t *testing.T) {
 		t.Parallel()
 
 		browser.New(t, ctx, func(page playwright.Page) {
-			daemon.gotoPath(t, page, paths.StateVersions(ws.ID))
+			page.Goto(daemon.URL(paths.StateVersions(ws.ID)))
 
 			// state version row should be present with correct serial
 			rowLocator := page.Locator(`#item-state-version-` + sv.ID.String())
@@ -98,7 +98,7 @@ func TestIntegration_StateUI(t *testing.T) {
 		t.Parallel()
 
 		browser.New(t, ctx, func(page playwright.Page) {
-			daemon.gotoPath(t, page, paths.StateVersion(sv.ID))
+			page.Goto(daemon.URL(paths.StateVersion(sv.ID)))
 
 			// raw JSON should be displayed
 			jsonLocator := page.Locator(`#state-version-json`)
@@ -121,7 +121,7 @@ func TestIntegration_StateUI(t *testing.T) {
 		t.Parallel()
 
 		browser.New(t, ctx, func(page playwright.Page) {
-			daemon.gotoPath(t, page, paths.DiffStateVersion(sv.ID))
+			page.Goto(daemon.URL(paths.DiffStateVersion(sv.ID)))
 
 			// initial state version: no previous serial, shows "Initial state"
 			err = expect.Locator(page.Locator(`body`)).ToContainText(`Initial state`)

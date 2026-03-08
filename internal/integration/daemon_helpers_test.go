@@ -35,7 +35,6 @@ import (
 	"github.com/leg100/otf/internal/variable"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/workspace"
-	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/require"
 )
 
@@ -47,6 +46,9 @@ type (
 		*github.TestServer
 		// run subscription for tests to check on run events
 		runEvents <-chan pubsub.Event[*run.Event]
+		// Nest the hostname service so that accessing URLs in tests isn't so
+		// verbose.
+		*internal.HostnameService
 	}
 )
 
@@ -135,9 +137,10 @@ func setup(t *testing.T, opts ...configOption) (*testDaemon, *organization.Organ
 	})
 
 	daemon := &testDaemon{
-		Daemon:     d,
-		TestServer: githubServer,
-		runEvents:  runEvents,
+		Daemon:          d,
+		TestServer:      githubServer,
+		runEvents:       runEvents,
+		HostnameService: d.System,
 	}
 
 	// create a dedicated user account and context for test to use.
@@ -562,10 +565,4 @@ func (s *testDaemon) getLocalURL(t *testing.T, path string) *http.Response {
 	resp, err := http.Get(localURL.String())
 	require.NoError(t, err)
 	return resp
-}
-
-func (s *testDaemon) gotoPath(t *testing.T, page playwright.Page, path string) {
-	url := fmt.Sprintf("https://%s%s", s.System.Hostname(), path)
-	_, err := page.Goto(url)
-	require.NoError(t, err)
 }

@@ -17,11 +17,12 @@ func TestVariableE2E(t *testing.T) {
 	svc, org, ctx := setup(t)
 
 	// Create variable in browser
+	var workspaceURL string
 	browser.New(t, ctx, func(page playwright.Page) {
-		createWorkspace(t, page, svc.System.Hostname(), org.Name, "my-test-workspace")
+		workspaceURL = createWorkspace(t, page, svc, org.Name, "my-test-workspace")
 
 		// go to workspace
-		_, err := page.Goto(workspaceURL(svc.System.Hostname(), org.Name, "my-test-workspace"))
+		_, err := page.Goto(workspaceURL)
 		require.NoError(t, err)
 
 		// go to variables
@@ -82,7 +83,7 @@ output "foo" {
 	browser.New(t, ctx, func(page playwright.Page) {
 		//
 		// go to workspace
-		_, err = page.Goto(workspaceURL(svc.System.Hostname(), org.Name, "my-test-workspace"))
+		_, err = page.Goto(workspaceURL)
 		require.NoError(t, err)
 		// go to variables
 		err = page.Locator(`//li[@id='menu-item-variables']/a`).Click()

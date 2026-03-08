@@ -13,7 +13,7 @@ func TestUITheme(t *testing.T) {
 
 	browser.New(t, ctx, func(page playwright.Page) {
 		// go to main page
-		_, err := page.Goto("https://" + daemon.System.Hostname())
+		_, err := page.Goto(daemon.URL(""))
 		require.NoError(t, err)
 
 		// select dark theme

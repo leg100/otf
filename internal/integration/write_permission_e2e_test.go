@@ -28,8 +28,8 @@ func TestWritePermissionE2E(t *testing.T) {
 	// Open browser, create workspace and assign write permissions to the
 	// engineer's team.
 	browser.New(t, ctx, func(page playwright.Page) {
-		createWorkspace(t, page, svc.System.Hostname(), org.Name, "my-test-workspace")
-		addWorkspacePermission(t, page, svc.System.Hostname(), org.Name, "my-test-workspace", team.ID, "write")
+		workspaceURL := createWorkspace(t, page, svc, org.Name, "my-test-workspace")
+		addWorkspacePermission(t, page, workspaceURL, team.ID, "write")
 	})
 
 	// As engineer, run terraform init

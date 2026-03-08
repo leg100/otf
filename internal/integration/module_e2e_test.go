@@ -9,6 +9,7 @@ import (
 
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/testutils"
+	"github.com/leg100/otf/internal/ui/paths"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/require"
@@ -35,7 +36,7 @@ func TestModuleE2E(t *testing.T) {
 	browser.New(t, ctx, func(page playwright.Page) {
 		// publish module
 		// go to org
-		_, err := page.Goto(organizationURL(svc.System.Hostname(), org.Name))
+		_, err := page.Goto(svc.URL(paths.Organization(org.Name)))
 		require.NoError(t, err)
 
 		// go to modules
@@ -109,7 +110,7 @@ module "mod" {
 
 		// Now run terraform with some config that sources the module. First we need
 		// a workspace...
-		createWorkspace(t, page, svc.System.Hostname(), org.Name, workspaceName)
+		createWorkspace(t, page, svc, org.Name, workspaceName)
 	})
 
 	// generate some terraform config that sources our module
@@ -137,7 +138,7 @@ module "mod" {
 
 	browser.New(t, ctx, func(page playwright.Page) {
 		// go to org
-		_, err = page.Goto(organizationURL(svc.System.Hostname(), org.Name))
+		_, err = page.Goto(svc.URL(paths.Organization(org.Name)))
 		require.NoError(t, err)
 
 		// go to modules
