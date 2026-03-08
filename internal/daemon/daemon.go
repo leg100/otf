@@ -99,9 +99,10 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		return nil, fmt.Errorf("creating database pool: %w", err)
 	}
 
-	// sqlListener listens to database events
+	// sqlListener listens to database events.
 	sqlListener := sql.NewListener(logger, db)
 
+	// netListener opens a TCP port for listening on.
 	netListener, err := net.Listen("tcp", cfg.Address)
 	if err != nil {
 		return nil, err
@@ -438,7 +439,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		sshkeyService,
 	}
 
-	// Start subsystems. Subsystems are started in order.
+	// Construct subsystems; ordered by start order
 	subsystems := []*Subsystem{
 		// The listener is started first because it is responsible for listening
 		// for database events, and other subsystems rely on it to be listening
