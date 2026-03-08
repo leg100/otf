@@ -91,7 +91,7 @@ func TestIntegration_TeamUI_Permissions(t *testing.T) {
 
 	browser.New(t, ctx, func(page playwright.Page) {
 		// go to team's page
-		_, err := page.Goto(daemon.URL(paths.Teams(team.ID)))
+		_, err := page.Goto(daemon.URL(paths.Team(team.ID)))
 		require.NoError(t, err)
 
 		// new team should have no permissions

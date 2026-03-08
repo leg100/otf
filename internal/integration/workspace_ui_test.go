@@ -314,7 +314,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 			require.Contains(t, ws.TriggerPatterns, "/baz/*.tf")
 
 			// set vcs trigger to use tag regex
-			_, err = page.Goto(daemon.URL(workspaceURL))
+			_, err = page.Goto(workspaceURL)
 			require.NoError(t, err)
 
 			// go to workspace settings

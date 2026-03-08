@@ -261,7 +261,7 @@ func TestIntegration_VariableSetUI_WorkspaceVariables(t *testing.T) {
 
 	browser.New(t, ctx, func(page playwright.Page) {
 		// go to variables page for workspace ws1
-		_, err = page.Goto(svc.URL(paths.Variables(ws1.Name)))
+		_, err = page.Goto(svc.URL(paths.Variables(ws1.ID)))
 		require.NoError(t, err)
 
 		err = page.Locator(`//li[@id='menu-item-variables']/a`).Click()
