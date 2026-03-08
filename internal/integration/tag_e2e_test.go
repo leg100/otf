@@ -7,6 +7,7 @@ import (
 
 	goexpect "github.com/google/goexpect"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/ui/paths"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/assert"
@@ -69,7 +70,7 @@ resource "null_resource" "tags_e2e" {}
 
 	// test UI management of tags
 	browser.New(t, ctx, func(page playwright.Page) {
-		_, err = page.Goto(workspaceURL(daemon.System.Hostname(), org.Name, "tagged"))
+		_, err = page.Goto(daemon.URL(paths.Workspace(ws.ID)))
 		require.NoError(t, err)
 		// confirm workspace page lists both tags
 		err = expect.Locator(page.Locator(`//*[@id='tags']//span[@id='tag-foo']`)).ToContainText("foo")

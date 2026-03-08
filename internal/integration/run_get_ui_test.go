@@ -3,6 +3,7 @@ package integration
 import (
 	"testing"
 
+	"github.com/leg100/otf/internal/ui/paths"
 	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -19,7 +20,7 @@ func TestIntegration_RunGetUI(t *testing.T) {
 
 	browser.New(t, ctx, func(page playwright.Page) {
 		// navigate to run page
-		_, err := page.Goto(runURL(daemon.System.Hostname(), run1.ID))
+		_, err := page.Goto(daemon.URL(paths.Run(run1.ID)))
 		require.NoError(t, err)
 
 		// click clipboard icon to copy run ID into clipboard

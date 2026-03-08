@@ -4,6 +4,7 @@ import (
 	"regexp"
 	"testing"
 
+	"github.com/leg100/otf/internal/ui/paths"
 	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/require"
 )
@@ -21,7 +22,7 @@ func TestIntegration_TeamUI(t *testing.T) {
 
 	browser.New(t, ctx, func(page playwright.Page) {
 		// go to org
-		_, err = page.Goto(organizationURL(daemon.System.Hostname(), org.Name))
+		_, err = page.Goto(daemon.URL(paths.Organization(org.Name)))
 		require.NoError(t, err)
 		// go to teams listing
 		err = page.Locator(`#menu-item-teams > a`).Click()
@@ -90,8 +91,7 @@ func TestIntegration_TeamUI_Permissions(t *testing.T) {
 
 	browser.New(t, ctx, func(page playwright.Page) {
 		// go to team's page
-		teamURL := "https://" + daemon.System.Hostname() + "/app/teams/" + team.ID.String()
-		_, err := page.Goto(teamURL)
+		_, err := page.Goto(daemon.URL(paths.Team(team.ID)))
 		require.NoError(t, err)
 
 		// new team should have no permissions

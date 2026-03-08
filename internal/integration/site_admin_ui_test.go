@@ -3,6 +3,7 @@ package integration
 import (
 	"testing"
 
+	"github.com/leg100/otf/internal/ui/paths"
 	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/require"
 )
@@ -16,7 +17,7 @@ func TestSiteAdminUI(t *testing.T) {
 	// nil ctx skips seeding browser with a session cookie
 	browser.New(t, nil, func(page playwright.Page) {
 		// login as site admin
-		_, err := page.Goto("https://" + daemon.System.Hostname() + "/login")
+		_, err := page.Goto(daemon.URL(paths.Login()))
 		require.NoError(t, err)
 		screenshot(t, page, "no_authenticators_site_admin_login")
 

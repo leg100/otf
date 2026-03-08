@@ -12,7 +12,6 @@ import (
 	"github.com/leg100/otf/internal/engine"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/pubsub"
-	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/user"
 	"github.com/stretchr/testify/require"
 )
@@ -24,30 +23,6 @@ func integrationTest(t *testing.T) {
 	if testing.Short() {
 		t.Skip()
 	}
-}
-
-func runURL(hostname string, runID resource.TfeID) string {
-	return fmt.Sprintf("https://%s/app/runs/%s", hostname, runID)
-}
-
-func organizationRunsURL(hostname string, organization organization.Name) string {
-	return fmt.Sprintf("https://%s/app/organizations/%s/runs", hostname, organization)
-}
-
-func workspaceRunsURL(hostname string, workspaceID resource.TfeID) string {
-	return fmt.Sprintf("https://%s/app/workspaces/%s/runs", hostname, workspaceID)
-}
-
-func workspaceURL(hostname string, org organization.Name, name string) string {
-	return "https://" + hostname + "/app/organizations/" + org.String() + "/workspaces/" + name
-}
-
-func workspacesURL(hostname string, org organization.Name) string {
-	return "https://" + hostname + "/app/organizations/" + org.String() + "/workspaces"
-}
-
-func organizationURL(hostname string, org organization.Name) string {
-	return "https://" + hostname + "/app/organizations/" + org.String()
 }
 
 // newRootModule creates a terraform root module, returning its directory path

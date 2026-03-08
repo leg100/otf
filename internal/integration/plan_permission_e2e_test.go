@@ -29,9 +29,10 @@ func TestIntegration_PlanPermission(t *testing.T) {
 
 	// Open tab and create a workspace and assign plan role to the
 	// engineer's team.
+	var workspaceURL string
 	browser.New(t, ctx, func(page playwright.Page) {
-		createWorkspace(t, page, svc.System.Hostname(), org.Name, "my-test-workspace")
-		addWorkspacePermission(t, page, svc.System.Hostname(), org.Name, "my-test-workspace", team.ID, "plan")
+		workspaceURL = createWorkspace(t, page, svc, org.Name, "my-test-workspace")
+		addWorkspacePermission(t, page, workspaceURL, team.ID, "plan")
 	})
 
 	// As engineer, run terraform init, and plan. This should succeed because
@@ -54,6 +55,6 @@ func TestIntegration_PlanPermission(t *testing.T) {
 
 	// Now demonstrate engineer can start a plan via the UI.
 	browser.New(t, ctx, func(page playwright.Page) {
-		startRunTasks(t, page, svc.System.Hostname(), org.Name, "my-test-workspace", run.PlanOnlyOperation, false)
+		startRun(t, page, workspaceURL, run.PlanOnlyOperation, false)
 	})
 }

@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal/run"
+	"github.com/leg100/otf/internal/ui/paths"
 	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/require"
 )
@@ -23,11 +24,12 @@ func TestStartRunUI(t *testing.T) {
 			// now we have a config version, start a run with the plan-and-apply
 			// operation
 			browser.New(t, ctx, func(page playwright.Page) {
-				startRunTasks(t, page, svc.System.Hostname(), ws.Organization, ws.Name, run.PlanAndApplyOperation, true)
+				workspaceURL := svc.URL(paths.Workspace(ws.ID))
+				startRun(t, page, workspaceURL, run.PlanAndApplyOperation, true)
 
 				// now destroy resources with the destroy-all operation
 				// go to workspace page
-				_, err := page.Goto(workspaceURL(svc.System.Hostname(), ws.Organization, ws.Name))
+				_, err := page.Goto(workspaceURL)
 				require.NoError(t, err)
 				screenshot(t, page, "workspace_page")
 				// navigate to workspace settings
@@ -38,7 +40,7 @@ func TestStartRunUI(t *testing.T) {
 				err = page.Locator(`//button[@id='queue-destroy-plan-button']`).Click()
 				require.NoError(t, err)
 
-				planWithOptionalApply(t, page, svc.System.Hostname(), true)
+				planWithOptionalApply(t, page, true)
 			})
 		})
 	}

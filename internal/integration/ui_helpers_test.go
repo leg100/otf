@@ -10,15 +10,17 @@ import (
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
+	"github.com/leg100/otf/internal/ui/paths"
 	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/require"
 )
 
-// createWorkspace creates a workspace via the UI
-func createWorkspace(t *testing.T, page playwright.Page, hostname string, org organization.Name, name string) {
+// createWorkspace creates a workspace via the UI and returns the workspace's
+// URL
+func createWorkspace(t *testing.T, page playwright.Page, daemon *testDaemon, org organization.Name, name string) string {
 	t.Helper()
 
-	_, err := page.Goto(organizationURL(hostname, org))
+	_, err := page.Goto(daemon.URL(paths.Organization(org)))
 	require.NoError(t, err)
 
 	err = page.Locator("#menu-item-workspaces > a").Click()
@@ -35,6 +37,8 @@ func createWorkspace(t *testing.T, page playwright.Page, hostname string, org or
 
 	err = expect.Locator(page.GetByRole("alert")).ToHaveText("created workspace: " + name)
 	require.NoError(t, err)
+
+	return page.URL()
 }
 
 // screenshot takes a screenshot of a browser and saves it to disk
@@ -70,11 +74,11 @@ func screenshot(t *testing.T, page playwright.Page, fname string) {
 
 // addWorkspacePermission adds a workspace permission via the UI, assigning
 // a role to a team.
-func addWorkspacePermission(t *testing.T, page playwright.Page, hostname string, org organization.Name, workspaceName string, teamID resource.TfeID, role string) {
+func addWorkspacePermission(t *testing.T, page playwright.Page, workspaceURL string, teamID resource.TfeID, role string) {
 	t.Helper()
 
 	// go to workspace
-	_, err := page.Goto(workspaceURL(hostname, org, workspaceName))
+	_, err := page.Goto(workspaceURL)
 	require.NoError(t, err)
 
 	// go to workspace settings
@@ -113,12 +117,12 @@ func addWorkspacePermission(t *testing.T, page playwright.Page, hostname string,
 	require.NoError(t, err)
 }
 
-// startRunTasks starts a run via the UI
-func startRunTasks(t *testing.T, page playwright.Page, hostname string, organization organization.Name, workspaceName string, op run.Operation, apply bool) {
+// startRun starts a run via the UI
+func startRun(t *testing.T, page playwright.Page, workspaceURL string, op run.Operation, apply bool) {
 	t.Helper()
 
 	// go to workspace page
-	_, err := page.Goto(workspaceURL(hostname, organization, workspaceName))
+	_, err := page.Goto(workspaceURL)
 	require.NoError(t, err)
 
 	screenshot(t, page, "connected_workspace_main_page")
@@ -134,10 +138,10 @@ func startRunTasks(t *testing.T, page playwright.Page, hostname string, organiza
 	page.WaitForLoadState()
 	screenshot(t, page, "run_page_started")
 
-	planWithOptionalApply(t, page, hostname, apply)
+	planWithOptionalApply(t, page, apply)
 }
 
-func planWithOptionalApply(t *testing.T, page playwright.Page, hostname string, apply bool) {
+func planWithOptionalApply(t *testing.T, page playwright.Page, apply bool) {
 	t.Helper()
 
 	// confirm plan begins and ends
@@ -213,11 +217,11 @@ func planWithOptionalApply(t *testing.T, page playwright.Page, hostname string, 
 	require.NoError(t, err)
 }
 
-func connectWorkspaceTasks(t *testing.T, page playwright.Page, hostname string, org organization.Name, name, provider string) {
+func connectWorkspaceTasks(t *testing.T, page playwright.Page, workspaceURL string, provider string) {
 	t.Helper()
 
 	// go to workspace
-	_, err := page.Goto(workspaceURL(hostname, org, name))
+	_, err := page.Goto(workspaceURL)
 	require.NoError(t, err)
 	screenshot(t, page, "workspace_main_page")
 
@@ -245,11 +249,11 @@ func connectWorkspaceTasks(t *testing.T, page playwright.Page, hostname string, 
 	require.NoError(t, err)
 }
 
-func disconnectWorkspaceTasks(t *testing.T, page playwright.Page, hostname string, org organization.Name, name string) {
+func disconnectWorkspaceTasks(t *testing.T, page playwright.Page, workspaceURL string) {
 	t.Helper()
 
 	// go to workspace
-	_, err := page.Goto(workspaceURL(hostname, org, name))
+	_, err := page.Goto(workspaceURL)
 	require.NoError(t, err)
 
 	// navigate to workspace settings

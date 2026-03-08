@@ -8,6 +8,7 @@ import (
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/testutils"
+	"github.com/leg100/otf/internal/ui/paths"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/playwright-community/playwright-go"
@@ -23,7 +24,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 
 		t.Run("create with no error", func(t *testing.T) {
 			browser.New(t, ctx, func(page playwright.Page) {
-				_, err := page.Goto(organizationURL(daemon.System.Hostname(), org.Name))
+				_, err := page.Goto(daemon.URL(paths.Organization(org.Name)))
 				require.NoError(t, err)
 
 				err = page.Locator("#menu-item-workspaces > a").Click()
@@ -45,7 +46,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 
 		t.Run("create with error", func(t *testing.T) {
 			browser.New(t, ctx, func(page playwright.Page) {
-				_, err := page.Goto(organizationURL(daemon.System.Hostname(), org.Name))
+				_, err := page.Goto(daemon.URL(paths.Organization(org.Name)))
 				require.NoError(t, err)
 
 				err = page.Locator("#menu-item-workspaces > a").Click()
@@ -75,7 +76,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 		run := daemon.createRun(t, ctx, ws, nil, nil)
 
 		browser.New(t, ctx, func(page playwright.Page) {
-			_, err := page.Goto(workspaceURL(daemon.System.Hostname(), org.Name, ws.Name))
+			_, err := page.Goto(daemon.URL(paths.Workspace(ws.ID)))
 			require.NoError(t, err)
 
 			err = expect.Locator(page.Locator("//div[@id='latest-run']//tbody/tr")).ToHaveId("run-item-" + run.ID.String())
@@ -122,7 +123,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 
 		// navigate through different pages and back
 		browser.New(t, ctx, func(page playwright.Page) {
-			_, err := page.Goto(workspacesURL(daemon.System.Hostname(), org.Name))
+			_, err := page.Goto(daemon.URL(paths.Workspaces(org.Name)))
 			require.NoError(t, err)
 
 			steps := []struct {
@@ -190,7 +191,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 
 		// demonstrate listing and searching
 		browser.New(t, ctx, func(page playwright.Page) {
-			_, err := page.Goto(workspacesURL(daemon.System.Hostname(), org.Name))
+			_, err := page.Goto(daemon.URL(paths.Workspaces(org.Name)))
 			require.NoError(t, err)
 
 			// search for 'workspace-1'
@@ -233,9 +234,10 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 		browser.New(t, ctx, func(page playwright.Page) {
 			// demonstrate setting vcs trigger patterns
 			//
-			connectWorkspaceTasks(t, page, daemon.System.Hostname(), org.Name, ws1.Name, provider.String())
+			workspaceURL := daemon.URL(paths.Workspace(ws1.ID))
+			connectWorkspaceTasks(t, page, workspaceURL, provider.String())
 
-			_, err := page.Goto(workspaceURL(daemon.System.Hostname(), org.Name, ws1.Name))
+			_, err := page.Goto(workspaceURL)
 			require.NoError(t, err)
 
 			// go to workspace settings
@@ -312,7 +314,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 			require.Contains(t, ws.TriggerPatterns, "/baz/*.tf")
 
 			// set vcs trigger to use tag regex
-			_, err = page.Goto(workspaceURL(daemon.System.Hostname(), org.Name, ws1.Name))
+			_, err = page.Goto(workspaceURL)
 			require.NoError(t, err)
 
 			// go to workspace settings
@@ -355,7 +357,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 
 			// set vcs branch
 			//
-			_, err = page.Goto(workspaceURL(daemon.System.Hostname(), org.Name, ws1.Name))
+			_, err = page.Goto(workspaceURL)
 			require.NoError(t, err)
 
 			// go to workspace settings
@@ -385,7 +387,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 
 			// permit applies from the CLI
 			//
-			_, err = page.Goto(workspaceURL(daemon.System.Hostname(), org.Name, ws1.Name))
+			_, err = page.Goto(workspaceURL)
 			require.NoError(t, err)
 			// go to workspace settings
 			err = page.Locator(`//li[@id='menu-item-settings']/a`).Click()
@@ -412,7 +414,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 
 			// set description
 
-			_, err = page.Goto(workspaceURL(daemon.System.Hostname(), org.Name, ws1.Name))
+			_, err = page.Goto(workspaceURL)
 			require.NoError(t, err)
 
 			// go to workspace settings
@@ -443,7 +445,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 
 			browser.New(t, ctx, func(page playwright.Page) {
 				// go to workspace settings
-				_, err := page.Goto(workspaceURL(daemon.System.Hostname(), org.Name, ws.Name))
+				_, err := page.Goto(daemon.URL(paths.Workspace(ws.ID)))
 				require.NoError(t, err)
 				err = page.Locator(`//li[@id='menu-item-settings']/a`).Click()
 				require.NoError(t, err)
@@ -504,7 +506,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 		ws1 := daemon.createWorkspace(t, ctx, org)
 
 		browser.New(t, ctx, func(page playwright.Page) {
-			_, err := page.Goto(workspaceURL(daemon.System.Hostname(), org.Name, ws1.Name))
+			_, err := page.Goto(daemon.URL(paths.Workspace(ws1.ID)))
 			require.NoError(t, err)
 
 			// expect workspace to be unlocked by default

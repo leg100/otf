@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal/authenticator"
+	"github.com/leg100/otf/internal/ui/paths"
 	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/require"
 )
@@ -26,7 +27,7 @@ func TestIntegration_OIDC(t *testing.T) {
 
 	browser.New(t, nil, func(page playwright.Page) {
 		// go to login page
-		_, err := page.Goto("https://" + svc.System.Hostname() + "/login")
+		_, err := page.Goto(svc.URL(paths.Login()))
 		require.NoError(t, err)
 		screenshot(t, page, "oidc_login_button")
 

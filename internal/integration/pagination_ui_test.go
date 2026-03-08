@@ -3,6 +3,7 @@ package integration
 import (
 	"testing"
 
+	"github.com/leg100/otf/internal/ui/paths"
 	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/require"
 )
@@ -20,7 +21,7 @@ func TestIntegration_PaginationUI(t *testing.T) {
 
 	browser.New(t, ctx, func(page playwright.Page) {
 		// go to the list of organizations
-		_, err := page.Goto("https://" + daemon.System.Hostname() + "/app/organizations")
+		_, err := page.Goto(daemon.URL(paths.Organizations()))
 		require.NoError(t, err)
 
 		// should be 20 orgs listed on page one

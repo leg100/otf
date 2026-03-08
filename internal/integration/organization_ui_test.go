@@ -3,6 +3,7 @@ package integration
 import (
 	"testing"
 
+	"github.com/leg100/otf/internal/ui/paths"
 	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/require"
 )
@@ -17,7 +18,7 @@ func TestIntegration_OrganizationUI(t *testing.T) {
 	browser.New(t, ctx, func(page playwright.Page) {
 
 		// go to the list of organizations
-		_, err := page.Goto("https://" + daemon.System.Hostname() + "/app/organizations")
+		_, err := page.Goto(daemon.URL(paths.Organizations()))
 		require.NoError(t, err)
 
 		// add an org
@@ -38,7 +39,7 @@ func TestIntegration_OrganizationUI(t *testing.T) {
 		screenshot(t, page, "new_org_created")
 
 		// go to the list of organizations
-		_, err = page.Goto("https://" + daemon.System.Hostname() + "/app/organizations")
+		_, err = page.Goto(daemon.URL(paths.Organizations()))
 		require.NoError(t, err)
 
 		// there should be one organization listed

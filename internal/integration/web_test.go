@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal/team"
+	"github.com/leg100/otf/internal/ui/paths"
 	userpkg "github.com/leg100/otf/internal/user"
 	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/require"
@@ -26,10 +27,10 @@ func TestWeb(t *testing.T) {
 
 	browser.New(t, ctx, func(page playwright.Page) {
 		// create workspace
-		createWorkspace(t, page, daemon.System.Hostname(), org.Name, "my-workspace")
+		workspaceURL := createWorkspace(t, page, daemon, org.Name, "my-workspace")
 		// assign workspace manager role to devops team
 		// go to org
-		_, err = page.Goto(organizationURL(daemon.System.Hostname(), org.Name))
+		_, err = page.Goto(daemon.URL(paths.Organization(org.Name)))
 		require.NoError(t, err)
 		// list teams
 		err = page.Locator("#menu-item-teams > a").Click()
@@ -48,11 +49,11 @@ func TestWeb(t *testing.T) {
 		err = expect.Locator(page.GetByRole("alert")).ToHaveText("team permissions updated")
 		require.NoError(t, err)
 		// add write permission on workspace to devops team
-		addWorkspacePermission(t, page, daemon.System.Hostname(), org.Name, "my-workspace", team.ID, "write")
+		addWorkspacePermission(t, page, workspaceURL, team.ID, "write")
 		// list users
 
 		// go to org
-		_, err = page.Goto(organizationURL(daemon.System.Hostname(), org.Name))
+		_, err = page.Goto(daemon.URL(paths.Organization(org.Name)))
 		require.NoError(t, err)
 
 		// list users
@@ -65,7 +66,7 @@ func TestWeb(t *testing.T) {
 		// list team members
 
 		// go to org
-		_, err = page.Goto(organizationURL(daemon.System.Hostname(), org.Name))
+		_, err = page.Goto(daemon.URL(paths.Organization(org.Name)))
 		require.NoError(t, err)
 
 		// list teams

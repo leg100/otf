@@ -19,11 +19,10 @@ func TestWorkingDirectory(t *testing.T) {
 
 	// create workspace and set working directory
 	browser.New(t, ctx, func(page playwright.Page) {
-
-		createWorkspace(t, page, daemon.System.Hostname(), org.Name, "my-workspace")
+		workspaceURL := createWorkspace(t, page, daemon, org.Name, "my-workspace")
 
 		// go to workspace
-		_, err := page.Goto(workspaceURL(daemon.System.Hostname(), org.Name, "my-workspace"))
+		_, err := page.Goto(workspaceURL)
 		require.NoError(t, err)
 
 		// go to workspace settings

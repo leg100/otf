@@ -22,7 +22,7 @@ func TestLockFile(t *testing.T) {
 
 	// in a browser, create workspace
 	browser.New(t, ctx, func(page playwright.Page) {
-		createWorkspace(t, page, svc.System.Hostname(), org.Name, "my-test-workspace")
+		createWorkspace(t, page, svc, org.Name, "my-test-workspace")
 	})
 
 	// create root module with only a variable and no resources - this should
