@@ -642,8 +642,10 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 	return g.Wait()
 }
 
+// Close releases daemon resources.
 func (d *Daemon) Close() {
+	// close active connections to http server
+	d.netListener.Close()
 	// close all db connections upon exit
 	d.DB.Close()
-	d.netListener.Close()
 }
