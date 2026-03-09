@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
+	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/vcs"
@@ -25,7 +25,6 @@ type (
 		*sql.DB
 		logr.Logger
 		vcs.Publisher
-		*internal.HostnameService
 
 		GithubAPIURL        *internal.WebURL
 		SkipTLSVerification bool

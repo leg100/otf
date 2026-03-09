@@ -79,7 +79,7 @@ func (s *Service) CreateRepohook(ctx context.Context, opts CreateRepohookOptions
 		repoPath:      opts.RepoPath,
 		vcsKindID:     vcsProvider.Kind.ID,
 		vcsProviderID: vcsProvider.ID,
-		urls:          s.HostnameService,
+		urls:          s.urls,
 	})
 	if err != nil {
 		return uuid.UUID{}, fmt.Errorf("constructing webhook: %w", err)

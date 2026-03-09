@@ -178,7 +178,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Authorizer:          authorizer,
 		DB:                  db,
 		Responder:           responder,
-		HostnameService:     hostnameService,
 		SourceIconRegistrar: configService,
 		SkipTLSVerification: cfg.SkipTLSVerification,
 	})
@@ -189,7 +188,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Logger:              logger,
 		Authorizer:          authorizer,
 		DB:                  db,
-		HostnameService:     hostnameService,
 		VCSService:          vcsService,
 		GithubAPIURL:        cfg.GithubHostname,
 		SkipTLSVerification: cfg.SkipTLSVerification,
@@ -255,7 +253,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Logger:             logger,
 		Authorizer:         authorizer,
 		DB:                 db,
-		HostnameService:    hostnameService,
 		VCSProviderService: vcsService,
 		Signer:             signer,
 		ConnectionsService: connectionService,
