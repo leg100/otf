@@ -3,10 +3,9 @@ package vcs
 import (
 	"context"
 
-	"github.com/leg100/otf/internal/logr"
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
+	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
@@ -22,13 +21,11 @@ type (
 		api               *tfe
 		beforeDeleteHooks []func(context.Context, *Provider) error
 
-		*internal.HostnameService
 		*factory
 		*kindDB
 	}
 
 	Options struct {
-		*internal.HostnameService
 		*sql.DB
 		*tfeapi.Responder
 		logr.Logger
@@ -43,10 +40,9 @@ func NewService(opts Options) *Service {
 	kindDB := newKindDB(opts.SourceIconRegistrar)
 	factory := factory{kinds: kindDB}
 	svc := Service{
-		Logger:          opts.Logger,
-		HostnameService: opts.HostnameService,
-		Authorizer:      opts.Authorizer,
-		factory:         &factory,
+		Logger:     opts.Logger,
+		Authorizer: opts.Authorizer,
+		factory:    &factory,
 		db: &pgdb{
 			DB:    opts.DB,
 			kinds: kindDB,
@@ -90,7 +86,7 @@ func (a *Service) Update(ctx context.Context, id resource.TfeID, opts UpdateOpti
 		after   *Provider
 	)
 	err := a.db.update(ctx, id, func(ctx context.Context, provider *Provider) (err error) {
-		subject, err = a.Authorize(ctx, authz.UpdateVariableSetAction, &provider.Organization)
+		subject, err = a.Authorize(ctx, authz.UpdateVCSProviderAction, &provider.Organization)
 		if err != nil {
 			return err
 		}

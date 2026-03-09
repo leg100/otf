@@ -6,11 +6,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/leg100/otf/internal/logr"
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/connections"
+	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/repohooks"
 	"github.com/leg100/otf/internal/resource"
@@ -37,7 +36,6 @@ type (
 		logr.Logger
 
 		*sql.DB
-		*internal.HostnameService
 		*surl.Signer
 
 		Authorizer         *authz.Authorizer

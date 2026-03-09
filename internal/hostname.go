@@ -5,28 +5,45 @@ import (
 	"net"
 	"net/url"
 	"strings"
+
+	"github.com/leg100/otf/internal/logr"
 )
 
 type HostnameService struct {
 	hostname        string
 	webhookHostname string
+	localPort       int
 }
 
-func NewHostnameService(hostname string) *HostnameService {
-	return &HostnameService{hostname, hostname}
-}
-
-func (s *HostnameService) Hostname() string { return s.hostname }
-func (s *HostnameService) WebhookHostname() string {
-	if s.webhookHostname == "" {
-		return s.hostname
+func NewHostnameService(
+	logger logr.Logger,
+	hostname,
+	webhookHostname string,
+	listenAddress *net.TCPAddr,
+) *HostnameService {
+	// Unless an explicit hostname has been set, set it to the listening address
+	// of the http server.
+	if hostname == "" {
+		hostname = normalizeAddress(listenAddress)
 	}
-	return s.webhookHostname
+	// Unless an explicit webhook hostname has been set, set it to whatever the
+	// hostname is set to.
+	if webhookHostname == "" {
+		webhookHostname = hostname
+	}
+
+	logger.V(0).Info("set system hostname", "hostname", hostname)
+	logger.V(0).Info("set webhook hostname", "webhook_hostname", webhookHostname)
+
+	return &HostnameService{
+		hostname:        hostname,
+		webhookHostname: webhookHostname,
+		localPort:       listenAddress.Port,
+	}
 }
-func (s *HostnameService) SetHostname(hostname string) { s.hostname = hostname }
-func (s *HostnameService) SetWebhookHostname(webhookHostname string) {
-	s.webhookHostname = webhookHostname
-}
+
+func (s *HostnameService) Hostname() string        { return s.hostname }
+func (s *HostnameService) WebhookHostname() string { return s.webhookHostname }
 
 func (s *HostnameService) URL(path string) string {
 	u := url.URL{
@@ -46,10 +63,22 @@ func (s *HostnameService) WebhookURL(path string) string {
 	return u.String()
 }
 
-// NormalizeAddress takes a host:port and converts it into a host:port
+// LocalURL returns an absolute URL for a path with the host set to
+// localhost. Useful for testing purposes where hostname might be set to
+// something that isn't routable from the local machine.
+func (s *HostnameService) LocalURL(path string) string {
+	u := url.URL{
+		Scheme: "https",
+		Host:   fmt.Sprintf("localhost:%d", s.localPort),
+		Path:   path,
+	}
+	return u.String()
+}
+
+// normalizeAddress takes a host:port and converts it into a host:port
 // appropriate for setting as the addressable hostname of otfd, e.g. converting
 // 0.0.0.0 to 127.0.0.1.
-func NormalizeAddress(addr *net.TCPAddr) string {
+func normalizeAddress(addr *net.TCPAddr) string {
 	// If ip is unspecified assume 127.0.0.1 - an IP is used instead of
 	// 'localhost' because terraform insists on a dot in the registry hostname.
 	if addr.IP.IsUnspecified() {

@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/tokens"
 	"github.com/leg100/otf/internal/user"
@@ -14,7 +13,7 @@ type (
 	Options struct {
 		logr.Logger
 
-		HostnameService      *internal.HostnameService
+		URLClient            urlClient
 		UserService          userService
 		TokensService        *tokens.Service
 		IDTokenHandlerConfig OIDCConfig
@@ -24,16 +23,20 @@ type (
 	Service struct {
 		logr.Logger
 
-		HostnameService *internal.HostnameService
-		UserService     userService
-		TokensService   *tokens.Service
-		clients         []*OAuthClient
+		urls          urlClient
+		UserService   userService
+		TokensService *tokens.Service
+		clients       []*OAuthClient
 	}
 
 	userService interface {
 		GetUser(ctx context.Context, spec user.UserSpec) (*user.User, error)
 		Create(ctx context.Context, username string, opts ...user.NewUserOption) (*user.User, error)
 		UpdateAvatar(ctx context.Context, username user.Username, avatarURL string) error
+	}
+
+	urlClient interface {
+		URL(string) string
 	}
 )
 
@@ -42,10 +45,10 @@ type (
 // opaque token, and one client that supports IDToken/OIDC.
 func NewAuthenticatorService(ctx context.Context, opts Options) (*Service, error) {
 	svc := Service{
-		Logger:          opts.Logger,
-		HostnameService: opts.HostnameService,
-		UserService:     opts.UserService,
-		TokensService:   opts.TokensService,
+		Logger:        opts.Logger,
+		UserService:   opts.UserService,
+		TokensService: opts.TokensService,
+		urls:          opts.URLClient,
 	}
 	// Construct client with OIDC IDToken handler
 	if opts.IDTokenHandlerConfig.ClientID == "" && opts.IDTokenHandlerConfig.ClientSecret == "" {
@@ -60,7 +63,7 @@ func NewAuthenticatorService(ctx context.Context, opts Options) (*Service, error
 	client, err := newOAuthClient(
 		opts.Logger,
 		handler,
-		opts.HostnameService,
+		opts.URLClient,
 		opts.TokensService,
 		opts.UserService,
 		OAuthConfig{
@@ -100,7 +103,7 @@ func (a *Service) RegisterOAuthClient(cfg OpaqueHandlerConfig) error {
 	client, err := newOAuthClient(
 		a.Logger,
 		&opaqueHandler{cfg},
-		a.HostnameService,
+		a.urls,
 		a.TokensService,
 		a.UserService,
 		cfg.OAuthConfig,

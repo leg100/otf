@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
@@ -32,9 +31,9 @@ type (
 		RunClient          notifierRunClient
 		WorkspaceClient    notifierWorkspaceClient
 		NotificationClient notifierNotificationClient
+		HostnamesClient    notifierHostnameClient
 
 		logr.Logger
-		*internal.HostnameService
 		*sql.DB
 	}
 
@@ -60,7 +59,7 @@ func NewNotifier(opts NotifierOptions) *Notifier {
 	return &Notifier{
 		Logger:        opts.Logger.WithValues("component", "notifier"),
 		workspaces:    opts.WorkspaceClient,
-		system:        opts.HostnameService,
+		system:        opts.HostnamesClient,
 		runs:          opts.RunClient,
 		notifications: opts.NotificationClient,
 		db:            &pgdb{opts.DB},

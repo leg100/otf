@@ -4,10 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/leg100/otf/internal/logr"
 	"github.com/google/uuid"
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/github"
+	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
@@ -32,9 +31,9 @@ type (
 		VCSService          *vcs.Service
 		GithubAppService    *github.Service
 		VCSEventBroker      *vcs.Broker
+		URLs                urlClient
 
 		*sql.DB
-		*internal.HostnameService
 	}
 
 	CreateRepohookOptions struct {
@@ -44,7 +43,7 @@ type (
 )
 
 func NewService(ctx context.Context, opts Options) *Service {
-	db := &db{opts.DB, opts.HostnameService}
+	db := &db{opts.DB, opts.URLs}
 	svc := &Service{
 		Logger:       opts.Logger,
 		vcsproviders: opts.VCSService,
@@ -77,10 +76,10 @@ func (s *Service) CreateRepohook(ctx context.Context, opts CreateRepohookOptions
 		return uuid.UUID{}, nil
 	}
 	hook, err := newRepohook(newRepohookOptions{
-		repoPath:        opts.RepoPath,
-		vcsKindID:       vcsProvider.Kind.ID,
-		vcsProviderID:   vcsProvider.ID,
-		HostnameService: s.HostnameService,
+		repoPath:      opts.RepoPath,
+		vcsKindID:     vcsProvider.Kind.ID,
+		vcsProviderID: vcsProvider.ID,
+		urls:          s.urls,
 	})
 	if err != nil {
 		return uuid.UUID{}, fmt.Errorf("constructing webhook: %w", err)

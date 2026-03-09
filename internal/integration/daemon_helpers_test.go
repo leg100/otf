@@ -3,8 +3,6 @@ package integration
 import (
 	"bytes"
 	"context"
-	"fmt"
-	"net/http"
 	"net/url"
 	"os"
 	"os/exec"
@@ -109,6 +107,7 @@ func setup(t *testing.T, opts ...configOption) (*testDaemon, *organization.Organ
 
 	d, err := daemon.New(ctx, logger, cfg.Config)
 	require.NoError(t, err)
+	t.Cleanup(d.Close)
 
 	// start daemon and upon test completion check that it exited cleanly
 	ctx, cancel := context.WithCancel(ctx)
@@ -470,16 +469,9 @@ func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, org organizat
 		fn(cfg)
 	}
 
-	// Set a routeable URL for the agent to locate the server. We can't reliably use the
-	// server hostname because in some tests that can be set to something
-	// unrouteable, e.g. the dynamic provider credential test sets it to
-	// something arbitrary.
-	routeableURL := url.URL{
-		Scheme: "https",
-		Host:   fmt.Sprintf("localhost:%d", s.ListenAddress.Port),
-	}
-
-	runner, err := agent.New(logger, routeableURL.String(), token, cfg)
+	// Use localhost URL for agent to contact server, in case test has set an
+	// unroutable hostname.
+	runner, err := agent.New(logger, s.LocalURL(""), token, cfg)
 	require.NoError(t, err)
 
 	ctx, cancel := context.WithCancel(ctx)
@@ -549,20 +541,4 @@ func (s *testDaemon) otfCLI(t *testing.T, ctx context.Context, args ...string) s
 
 	require.NoError(t, err, "otf cli failed: %s", buf.String())
 	return buf.String()
-}
-
-// getLocalURL retrieves a response from the URL of the daemon under test.
-//
-// NOTE: it takes care to use the local listening address rather than the
-// hostname that might have been assigned to the daemon, which might skew the
-// test.
-func (s *testDaemon) getLocalURL(t *testing.T, path string) *http.Response {
-	localURL := &url.URL{
-		Scheme: "https",
-		Host:   fmt.Sprintf("localhost:%d", s.ListenAddress.Port),
-		Path:   path,
-	}
-	resp, err := http.Get(localURL.String())
-	require.NoError(t, err)
-	return resp
 }

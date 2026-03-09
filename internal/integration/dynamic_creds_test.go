@@ -2,6 +2,7 @@ package integration
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"testing"
@@ -74,11 +75,13 @@ func TestDynamicCredentialsGCP(t *testing.T) {
 	)
 
 	// check endpoints are exposed
-	configResp := daemon.getLocalURL(t, "/.well-known/openid-configuration")
-	assert.Equal(t, 200, configResp.StatusCode)
+	resp, err := http.Get(daemon.LocalURL("/.well-known/openid-configuration"))
+	require.NoError(t, err)
+	assert.Equal(t, 200, resp.StatusCode)
 
-	jwksResp := daemon.getLocalURL(t, "/.well-known/jwks")
-	assert.Equal(t, 200, jwksResp.StatusCode)
+	resp, err = http.Get(daemon.LocalURL("/.well-known/jwks"))
+	require.NoError(t, err)
+	assert.Equal(t, 200, resp.StatusCode)
 
 	// create an organization with a specific name that matches the assertion
 	// condition in GCP, e.g. `attribute.terraform_organization_name="acme"`

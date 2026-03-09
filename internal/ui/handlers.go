@@ -49,7 +49,7 @@ type Handlers struct {
 	GithubApp                    GithubAppService
 	EngineService                *engine.Service
 	Configs                      ConfigVersionService
-	HostnameService              HostnameService
+	Hostnames                    HostnameClient
 	Tokens                       sessionService
 	Authorizer                   authz.Interface
 	AuthenticatorService         loginService
@@ -61,6 +61,12 @@ type Handlers struct {
 	RestrictOrganizationCreation bool
 
 	templates *templates
+}
+
+type HostnameClient interface {
+	Hostname() string
+	URL(path string) string
+	WebhookURL(path string) string
 }
 
 type OrganizationService interface {
@@ -199,7 +205,7 @@ func NewHandlers(
 		GithubApp:                    GithubApp,
 		EngineService:                EngineService,
 		Configs:                      Configs,
-		HostnameService:              HostnameService,
+		Hostnames:                    HostnameService,
 		Tokens:                       Tokens,
 		Authorizer:                   Authorizer,
 		AuthenticatorService:         AuthenticatorService,

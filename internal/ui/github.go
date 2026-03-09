@@ -48,10 +48,10 @@ func (h *Handlers) newGithubApp(w http.ResponseWriter, r *http.Request) {
 	)
 	m := manifest{
 		Name:        "otf-" + internal.GenerateRandomString(4),
-		URL:         h.HostnameService.URL(""),
-		SetupURL:    h.HostnameService.URL(paths.GithubApps()),
-		HookAttrs:   hookAttrs{URL: h.HostnameService.WebhookURL(github.AppEventsPath)},
-		Redirect:    h.HostnameService.URL(paths.ExchangeCodeGithubApp()),
+		URL:         h.Hostnames.URL(""),
+		SetupURL:    h.Hostnames.URL(paths.GithubApps()),
+		HookAttrs:   hookAttrs{URL: h.Hostnames.WebhookURL(github.AppEventsPath)},
+		Redirect:    h.Hostnames.URL(paths.ExchangeCodeGithubApp()),
 		Description: "Trigger terraform runs in OTF from GitHub",
 		Events:      []string{"push", "pull_request"},
 		Public:      false,

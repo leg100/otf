@@ -14,6 +14,7 @@ const (
 	DeleteOrganizationAction
 
 	CreateVCSProviderAction
+	UpdateVCSProviderAction
 	GetVCSProviderAction
 	ListVCSProvidersAction
 	DeleteVCSProviderAction

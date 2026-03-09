@@ -44,11 +44,12 @@ type (
 		OAuthConfig
 		// extract username from token
 		tokenHandler
-		// for retrieving OTF system hostname to construct redirect URLs
-		*internal.HostnameService
 
 		sessions sessionStarter
 		users    userService
+
+		// for retrieving OTF system hostname to construct redirect URLs
+		urls urlClient
 	}
 
 	// OAuthConfig is configuration for constructing an OAuth client
@@ -69,7 +70,7 @@ type (
 func newOAuthClient(
 	logger logr.Logger,
 	handler tokenHandler,
-	hostnameService *internal.HostnameService,
+	urls urlClient,
 	tokensService sessionStarter,
 	userService userService,
 	cfg OAuthConfig,
@@ -95,11 +96,11 @@ func newOAuthClient(
 		cfg.Endpoint.TokenURL = tokenURL
 	}
 	return &OAuthClient{
-		tokenHandler:    handler,
-		HostnameService: hostnameService,
-		sessions:        tokensService,
-		users:           userService,
-		OAuthConfig:     cfg,
+		tokenHandler: handler,
+		urls:         urls,
+		sessions:     tokensService,
+		users:        userService,
+		OAuthConfig:  cfg,
 	}, nil
 }
 
@@ -210,7 +211,7 @@ func (a *OAuthClient) config() *oauth2.Config {
 		Endpoint:     a.Endpoint,
 		ClientID:     a.ClientID,
 		ClientSecret: a.ClientSecret,
-		RedirectURL:  a.URL(a.callbackPath()),
+		RedirectURL:  a.urls.URL(a.callbackPath()),
 		Scopes:       a.Scopes,
 	}
 }

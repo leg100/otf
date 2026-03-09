@@ -19,10 +19,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestWebHandlers_new(t *testing.T) {
+func TestGithubHandlers(t *testing.T) {
 	h := &Handlers{
-		HostnameService: internal.NewHostnameService("example.com"),
-		GithubHostname:  internal.MustWebURL("github.com"),
+		Hostnames:      &fakeHostnamesClient{},
+		GithubHostname: internal.MustWebURL("github.com"),
 	}
 
 	r := httptest.NewRequest("GET", "/?", nil)
@@ -31,10 +31,10 @@ func TestWebHandlers_new(t *testing.T) {
 	assert.Equal(t, 200, w.Code, w.Body.String())
 }
 
-func TestWebHandlers_get(t *testing.T) {
+func TestGithubHandlers_Get(t *testing.T) {
 	h := &Handlers{
-		HostnameService: internal.NewHostnameService("example.com"),
-		GithubHostname:  internal.MustWebURL("github.com"),
+		Hostnames:      &fakeHostnamesClient{},
+		GithubHostname: internal.MustWebURL("github.com"),
 		GithubApp: &fakeGithubService{
 			app: &github.App{},
 			installs: []vcs.Installation{
@@ -51,7 +51,7 @@ func TestWebHandlers_get(t *testing.T) {
 	assert.Equal(t, 200, w.Code, w.Body.String())
 }
 
-func TestWebHandlers_exchangeCode(t *testing.T) {
+func TestGithubHandlers_exchangeCode(t *testing.T) {
 	// create stub github server with an exchange code handler
 	stubURL := func() *internal.WebURL {
 		mux := http.NewServeMux()
@@ -99,7 +99,7 @@ func TestGithubHandlers_deleteApp(t *testing.T) {
 	testutils.AssertRedirect(t, w, "/app/github-apps")
 }
 
-func TestWebHandlers_deleteInstall(t *testing.T) {
+func TestGithubHandlers_deleteInstall(t *testing.T) {
 	h := &Handlers{
 		GithubApp: &fakeGithubService{},
 	}

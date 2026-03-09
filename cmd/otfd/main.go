@@ -64,6 +64,8 @@ func parseFlags(ctx context.Context, args []string, out io.Writer) error {
 			if err != nil {
 				return err
 			}
+			defer d.Close()
+
 			// block until ^C received
 			return d.Start(ctx, make(chan struct{}))
 		},
