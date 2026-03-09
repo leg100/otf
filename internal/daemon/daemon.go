@@ -506,7 +506,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 			LockID: internal.Ptr(sql.NotifierLockID),
 			System: notifications.NewNotifier(notifications.NotifierOptions{
 				Logger:             logger,
-				HostnameService:    hostnameService,
+				HostnamesClient:    hostnameService,
 				WorkspaceClient:    workspaceService,
 				RunClient:          runService,
 				NotificationClient: notificationService,
