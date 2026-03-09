@@ -27,7 +27,7 @@ func TestOAuthClient_requestHandler(t *testing.T) {
 
 	loc, err := w.Result().Location()
 	require.NoError(t, err)
-	assert.Equal(t, "https://otf-server.com/oauth/fake-cloud/callback", loc.Query().Get("redirect_uri"))
+	assert.Equal(t, "/oauth/fake-cloud/callback", loc.Query().Get("redirect_uri"))
 
 	if assert.Equal(t, 1, len(w.Result().Cookies())) {
 		assert.Equal(t, w.Result().Cookies()[0].Value, loc.Query().Get("state"))
@@ -60,7 +60,7 @@ func newTestOAuthServerClient(t *testing.T, userID resource.TfeID) *OAuthClient 
 	client, err := newOAuthClient(
 		logr.Discard(),
 		fakeTokenHandler{},
-		internal.NewHostnameService("otf-server.com"),
+		&fakeURLClient{}, //("otf-server.com"),
 		&fakeTokensService{},
 		&fakeUserService{userID},
 		OAuthConfig{
@@ -76,3 +76,7 @@ func newTestOAuthServerClient(t *testing.T, userID resource.TfeID) *OAuthClient 
 	require.NoError(t, err)
 	return client
 }
+
+type fakeURLClient struct{}
+
+func (f *fakeURLClient) URL(path string) string { return path }

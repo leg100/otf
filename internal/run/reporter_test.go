@@ -4,7 +4,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/configversion/source"
 	"github.com/leg100/otf/internal/resource"
@@ -46,7 +45,7 @@ func TestReporter_HandleRun(t *testing.T) {
 				Ref:       "abc123",
 				Repo:      vcs.NewMustRepo("leg100", "otf"),
 				Status:    vcs.PendingStatus,
-				TargetURL: "https://otf-host.org/app/runs/run-123",
+				TargetURL: "/app/runs/run-123",
 			},
 		},
 		{
@@ -72,12 +71,12 @@ func TestReporter_HandleRun(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got := make(chan vcs.SetStatusOptions, 1)
 			reporter := &Reporter{
-				Workspaces:      &fakeReporterWorkspaceClient{ws: tt.ws},
-				Runs:            &fakeReporterRunClient{event: tt.event},
-				Configs:         &fakeReporterConfigurationVersionService{cv: tt.cv},
-				VCS:             &fakeReporterVCSProviderService{got: got},
-				HostnameService: internal.NewHostnameService("otf-host.org"),
-				Cache:           make(map[resource.TfeID]vcs.Status),
+				workspaces: &fakeReporterWorkspaceClient{ws: tt.ws},
+				runs:       &fakeReporterRunClient{event: tt.event},
+				configs:    &fakeReporterConfigurationVersionService{cv: tt.cv},
+				vcs:        &fakeReporterVCSProviderService{got: got},
+				urls:       &fakeReporterURLClient{},
+				cache:      make(map[resource.TfeID]vcs.Status),
 			}
 			err := reporter.handleRun(ctx, tt.event)
 			require.NoError(t, err)
@@ -110,12 +109,12 @@ func TestReporter_DontSetStatusTwice(t *testing.T) {
 
 	got := make(chan vcs.SetStatusOptions, 1)
 	reporter := &Reporter{
-		Workspaces:      &fakeReporterWorkspaceClient{ws: ws},
-		Configs:         &fakeReporterConfigurationVersionService{cv: cv},
-		VCS:             &fakeReporterVCSProviderService{got: got},
-		Runs:            &fakeReporterRunClient{event: event},
-		HostnameService: internal.NewHostnameService("otf-host.org"),
-		Cache:           make(map[resource.TfeID]vcs.Status),
+		workspaces: &fakeReporterWorkspaceClient{ws: ws},
+		configs:    &fakeReporterConfigurationVersionService{cv: cv},
+		vcs:        &fakeReporterVCSProviderService{got: got},
+		runs:       &fakeReporterRunClient{event: event},
+		urls:       &fakeReporterURLClient{},
+		cache:      make(map[resource.TfeID]vcs.Status),
 	}
 
 	// handle run the first time and expect status to be set
@@ -127,7 +126,7 @@ func TestReporter_DontSetStatusTwice(t *testing.T) {
 		Ref:       "abc123",
 		Repo:      vcs.NewMustRepo("leg100", "otf"),
 		Status:    vcs.PendingStatus,
-		TargetURL: "https://otf-host.org/app/runs/run-123",
+		TargetURL: "/app/runs/run-123",
 	}
 	assert.Equal(t, want, <-got)
 
@@ -139,8 +138,6 @@ func TestReporter_DontSetStatusTwice(t *testing.T) {
 }
 
 type fakeReporterConfigurationVersionService struct {
-	configversion.Service
-
 	cv *configversion.ConfigurationVersion
 }
 
@@ -149,8 +146,6 @@ func (f *fakeReporterConfigurationVersionService) Get(context.Context, resource.
 }
 
 type fakeReporterWorkspaceClient struct {
-	workspace.Service
-
 	ws *workspace.Workspace
 }
 
@@ -188,3 +183,7 @@ func (f *fakeReporterCloudClient) SetStatus(ctx context.Context, opts vcs.SetSta
 	f.got <- opts
 	return nil
 }
+
+type fakeReporterURLClient struct{}
+
+func (f *fakeReporterURLClient) URL(path string) string { return path }

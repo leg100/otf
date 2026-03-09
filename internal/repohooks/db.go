@@ -5,7 +5,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/vcs"
@@ -13,7 +12,8 @@ import (
 
 type db struct {
 	*sql.DB
-	*internal.HostnameService
+
+	urls urlClient
 }
 
 // getOrCreateHook gets a hook if it exists or creates it if it does not. Should be
@@ -168,13 +168,13 @@ func (db *db) scan(row pgx.CollectableRow) (*hook, error) {
 		return nil, err
 	}
 	opts := newRepohookOptions{
-		id:              &model.RepohookID,
-		vcsProviderID:   model.VCSProviderID,
-		secret:          &model.Secret,
-		repoPath:        model.RepoPath,
-		vcsKindID:       model.VCSKind,
-		HostnameService: db.HostnameService,
-		cloudID:         model.VCSID,
+		id:            &model.RepohookID,
+		vcsProviderID: model.VCSProviderID,
+		secret:        &model.Secret,
+		repoPath:      model.RepoPath,
+		vcsKindID:     model.VCSKind,
+		urls:          db.urls,
+		cloudID:       model.VCSID,
 	}
 	return newRepohook(opts)
 }

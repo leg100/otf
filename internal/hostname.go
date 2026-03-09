@@ -63,7 +63,7 @@ func (s *HostnameService) WebhookURL(path string) string {
 	return u.String()
 }
 
-// LocalhostURL returns an absolute URL for a path with the host set to
+// LocalURL returns an absolute URL for a path with the host set to
 // localhost. Useful for testing purposes where hostname might be set to
 // something that isn't routable from the local machine.
 func (s *HostnameService) LocalURL(path string) string {

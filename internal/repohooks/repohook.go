@@ -39,7 +39,11 @@ type (
 		cloudID       *string // cloud's webhook id
 
 		// for building endpoint URL
-		*internal.HostnameService
+		urls urlClient
+	}
+
+	urlClient interface {
+		WebhookURL(path string) string
 	}
 )
 
@@ -64,7 +68,7 @@ func newRepohook(opts newRepohookOptions) (*hook, error) {
 		}
 		hook.secret = secret
 	}
-	hook.endpoint = opts.WebhookURL(path.Join(handlerPrefix, hook.id.String()))
+	hook.endpoint = opts.urls.WebhookURL(path.Join(handlerPrefix, hook.id.String()))
 	return &hook, nil
 }
 

@@ -117,7 +117,7 @@ func (h *Handlers) getModule(w http.ResponseWriter, r *http.Request) {
 			terraformModule: tfmod,
 			readme:          readme,
 			currentVersion:  modver,
-			hostname:        h.HostnameService.Hostname(),
+			hostname:        h.Hostnames.Hostname(),
 		}),
 		"modules",
 		w,

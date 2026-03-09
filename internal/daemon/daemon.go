@@ -199,7 +199,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	repoService := repohooks.NewService(ctx, repohooks.Options{
 		Logger:              logger,
 		DB:                  db,
-		HostnameService:     hostnameService,
+		URLs:                hostnameService,
 		OrganizationService: orgService,
 		VCSService:          vcsService,
 		GithubAppService:    githubAppService,
@@ -301,7 +301,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	})
 	authenticatorService, err := authenticator.NewAuthenticatorService(ctx, authenticator.Options{
 		Logger:               logger,
-		HostnameService:      hostnameService,
+		URLClient:            hostnameService,
 		TokensService:        tokensService,
 		UserService:          userService,
 		IDTokenHandlerConfig: cfg.OIDC,
@@ -455,15 +455,14 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 			Logger: logger,
 			DB:     db,
 			LockID: internal.Ptr(sql.ReporterLockID),
-			System: &run.Reporter{
-				Logger:          logger.WithValues("component", "reporter"),
-				VCS:             vcsService,
-				HostnameService: hostnameService,
-				Workspaces:      workspaceService,
-				Runs:            runService,
-				Configs:         configService,
-				Cache:           make(map[resource.TfeID]vcs.Status),
-			},
+			System: run.NewReporter(
+				logger,
+				vcsService,
+				workspaceService,
+				runService,
+				configService,
+				hostnameService,
+			),
 		},
 		{
 			Name:   "run_metrics",

@@ -6,9 +6,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/leg100/otf/internal/logr"
 	"github.com/google/uuid"
-	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/stretchr/testify/assert"
@@ -17,9 +16,9 @@ import (
 
 func Test_repohookHandler(t *testing.T) {
 	hook, err := newRepohook(newRepohookOptions{
-		vcsProviderID:   testutils.ParseID(t, "vcs-123"),
-		vcsKindID:       vcs.KindID("test"),
-		HostnameService: internal.NewHostnameService("fakehost.org"),
+		vcsProviderID: testutils.ParseID(t, "vcs-123"),
+		vcsKindID:     vcs.KindID("test"),
+		urls:          &fakeURLsClient{},
 	})
 	require.NoError(t, err)
 
@@ -74,3 +73,7 @@ func (db *fakeVCSKindDB) GetKind(id vcs.KindID) (vcs.Kind, error) {
 		EventHandler: db.handler,
 	}, nil
 }
+
+type fakeURLsClient struct{}
+
+func (f *fakeURLsClient) WebhookURL(path string) string { return path }
