@@ -20,28 +20,16 @@ type (
 	Spawner struct {
 		logr.Logger
 
-		configs    spawnerConfigClient
-		workspaces spawnerWorkspaceClient
-		vcs        spawnerVCSClient
-		runs       spawnerRunClient
+		client spawnerClient
 	}
 
-	spawnerWorkspaceClient interface {
+	spawnerClient interface {
 		ListConnectedWorkspaces(ctx context.Context, vcsProviderID resource.TfeID, repoPath vcs.Repo) ([]*workspace.Workspace, error)
-	}
-
-	spawnerConfigClient interface {
 		CreateConfigVersion(ctx context.Context, workspaceID resource.TfeID, opts configversion.CreateOptions) (*configversion.ConfigurationVersion, error)
 		GetConfigVersion(ctx context.Context, id resource.TfeID) (*configversion.ConfigurationVersion, error)
 		GetLatestConfigVersion(ctx context.Context, workspaceID resource.TfeID) (*configversion.ConfigurationVersion, error)
 		UploadConfig(ctx context.Context, id resource.TfeID, config []byte) error
-	}
-
-	spawnerVCSClient interface {
 		GetVCSProvider(ctx context.Context, providerID resource.TfeID) (*vcs.Provider, error)
-	}
-
-	spawnerRunClient interface {
 		CreateRun(ctx context.Context, workspaceID resource.TfeID, opts CreateOptions) (*Run, error)
 	}
 )
@@ -75,7 +63,7 @@ func (s *Spawner) handleWithError(logger logr.Logger, event vcs.Event) error {
 		return nil
 	}
 
-	workspaces, err := s.workspaces.ListConnectedWorkspaces(ctx, event.VCSProviderID, event.Repo)
+	workspaces, err := s.client.ListConnectedWorkspaces(ctx, event.VCSProviderID, event.Repo)
 	if err != nil {
 		return err
 	}
@@ -145,7 +133,7 @@ func (s *Spawner) handleWithError(logger logr.Logger, event vcs.Event) error {
 	workspaces = workspaces[:n]
 
 	// fetch tarball
-	client, err := s.vcs.GetVCSProvider(ctx, event.VCSProviderID)
+	client, err := s.client.GetVCSProvider(ctx, event.VCSProviderID)
 	if err != nil {
 		return err
 	}
@@ -216,15 +204,15 @@ func (s *Spawner) handleWithError(logger logr.Logger, event vcs.Event) error {
 		runOpts := CreateOptions{
 			Source: event.EventHeader.Source,
 		}
-		cv, err := s.configs.CreateConfigVersion(ctx, ws.ID, cvOpts)
+		cv, err := s.client.CreateConfigVersion(ctx, ws.ID, cvOpts)
 		if err != nil {
 			return err
 		}
-		if err := s.configs.UploadConfig(ctx, cv.ID, tarball); err != nil {
+		if err := s.client.UploadConfig(ctx, cv.ID, tarball); err != nil {
 			return err
 		}
 		runOpts.ConfigurationVersionID = &cv.ID
-		_, err = s.runs.CreateRun(ctx, ws.ID, runOpts)
+		_, err = s.client.CreateRun(ctx, ws.ID, runOpts)
 		if err != nil {
 			return err
 		}

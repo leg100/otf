@@ -13,7 +13,6 @@ import (
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/vcs"
@@ -37,18 +36,14 @@ type (
 	}
 
 	Options struct {
-		DB                  *sql.DB
-		Listener            *sql.Listener
-		Responder           *tfeapi.Responder
-		Authorizer          *authz.Authorizer
-		Logger              logr.Logger
-		OrganizationService *organization.Service
-		VCSProviderService  *vcs.Service
-		TeamService         *team.Service
-		UserService         *user.Service
-		ConnectionService   *connections.Service
-		DefaultEngine       *engine.Engine
-		EngineService       *engine.Service
+		DB                *sql.DB
+		Listener          *sql.Listener
+		Responder         *tfeapi.Responder
+		Authorizer        *authz.Authorizer
+		Logger            logr.Logger
+		ConnectionService *connections.Service
+		DefaultEngine     *engine.Engine
+		EngineService     *engine.Service
 	}
 )
 

@@ -29,8 +29,12 @@ type tfe struct {
 	internal.Signer
 	*tfeapi.Responder
 
-	workspaces *workspace.Service
+	client     tfeWorkspaceGetter
 	authorizer *authz.Authorizer
+}
+
+type tfeWorkspaceGetter interface {
+	GetWorkspace(ctx context.Context, workspaceID resource.TfeID) (*workspace.Workspace, error)
 }
 
 func (a *tfe) addHandlers(r *mux.Router) {
@@ -361,7 +365,7 @@ func (a *tfe) includeWorkspace(ctx context.Context, v any) ([]any, error) {
 	if !ok {
 		return nil, nil
 	}
-	ws, err := a.workspaces.GetWorkspace(ctx, run.Workspace.ID)
+	ws, err := a.client.GetWorkspace(ctx, run.Workspace.ID)
 	if err != nil {
 		return nil, fmt.Errorf("retrieving workspace: %w", err)
 	}

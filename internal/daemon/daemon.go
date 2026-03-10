@@ -217,18 +217,14 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		engineService.StartLatestChecker(ctx)
 	}
 	workspaceService := workspace.NewService(workspace.Options{
-		Logger:              logger,
-		Authorizer:          authorizer,
-		DB:                  db,
-		Listener:            sqlListener,
-		Responder:           responder,
-		ConnectionService:   connectionService,
-		TeamService:         teamService,
-		UserService:         userService,
-		OrganizationService: orgService,
-		VCSProviderService:  vcsService,
-		DefaultEngine:       cfg.DefaultEngine,
-		EngineService:       engineService,
+		Logger:            logger,
+		Authorizer:        authorizer,
+		DB:                db,
+		Listener:          sqlListener,
+		Responder:         responder,
+		ConnectionService: connectionService,
+		DefaultEngine:     cfg.DefaultEngine,
+		EngineService:     engineService,
 	})
 
 	runService := run.NewService(run.Options{
@@ -349,6 +345,10 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		DB:         db,
 		Responder:  responder,
 	})
+
+	type operationClient struct {
+		*run.Service
+	}
 
 	serverRunner, err := runner.New(
 		logger,
