@@ -45,11 +45,7 @@ import (
 
 type (
 	Daemon struct {
-		Config
-		logr.Logger
-
-		*sql.DB
-
+		DB            *sql.DB
 		Organizations *organization.Service
 		Runs          *run.Service
 		Workspaces    *workspace.Service
@@ -69,10 +65,7 @@ type (
 		System        *internal.HostnameService
 		SSHKeys       *sshkey.Service
 
-		handlers    []internal.Handlers
-		sqlListener *sql.Listener
 		netListener net.Listener
-		runner      *runner.Runner
 		server      *http.Server
 		subsystems  []*Subsystem
 	}
@@ -194,13 +187,17 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	})
 
 	repoService := repohooks.NewService(ctx, repohooks.Options{
-		Logger:              logger,
-		DB:                  db,
-		URLs:                hostnameService,
-		OrganizationService: orgService,
-		VCSService:          vcsService,
-		GithubAppService:    githubAppService,
-		VCSEventBroker:      vcsEventBroker,
+		Logger: logger,
+		DB:     db,
+		URLs:   hostnameService,
+		Client: struct {
+			*organization.OrganizationService
+			*vcs.VCSService
+		}{
+			OrganizationService: orgService,
+			VCSService:          vcsService,
+		},
+		VCSEventBroker: vcsEventBroker,
 	})
 
 	connectionService := connections.NewService(ctx, connections.Options{
@@ -217,36 +214,40 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		engineService.StartLatestChecker(ctx)
 	}
 	workspaceService := workspace.NewService(workspace.Options{
-		Logger:              logger,
-		Authorizer:          authorizer,
-		DB:                  db,
-		Listener:            sqlListener,
-		Responder:           responder,
-		ConnectionService:   connectionService,
-		TeamService:         teamService,
-		UserService:         userService,
-		OrganizationService: orgService,
-		VCSProviderService:  vcsService,
-		DefaultEngine:       cfg.DefaultEngine,
-		EngineService:       engineService,
+		Logger:            logger,
+		Authorizer:        authorizer,
+		DB:                db,
+		Listener:          sqlListener,
+		Responder:         responder,
+		ConnectionService: connectionService,
+		DefaultEngine:     cfg.DefaultEngine,
+		EngineService:     engineService,
 	})
 
 	runService := run.NewService(run.Options{
-		Logger:               logger,
-		Authorizer:           authorizer,
-		DB:                   db,
-		Listener:             sqlListener,
-		Responder:            responder,
-		OrganizationService:  orgService,
-		WorkspaceService:     workspaceService,
-		ConfigVersionService: configService,
-		VCSProviderService:   vcsService,
-		VCSEventSubscriber:   vcsEventBroker,
-		Signer:               signer,
-		EngineService:        engineService,
-		TokensService:        tokensService,
-		UsersService:         userService,
-		DaemonCtx:            ctx,
+		Logger:     logger,
+		Authorizer: authorizer,
+		DB:         db,
+		Listener:   sqlListener,
+		Responder:  responder,
+		Client: struct {
+			*organization.OrganizationService
+			*workspace.WorkspaceService
+			*configversion.ConfigService
+			*vcs.VCSService
+			*engine.EngineService
+			*tokens.TokensService
+		}{
+			OrganizationService: orgService,
+			WorkspaceService:    workspaceService,
+			ConfigService:       configService,
+			VCSService:          vcsService,
+			EngineService:       engineService,
+			TokensService:       tokensService,
+		},
+		VCSEventSubscriber: vcsEventBroker,
+		Signer:             signer,
+		DaemonCtx:          ctx,
 	})
 	moduleService := module.NewService(module.Options{
 		Logger:             logger,
@@ -354,16 +355,29 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		logger,
 		runnerService,
 		func(_ string) runner.OperationClient {
-			return runner.NewOperationClient(
-				runService,
-				workspaceService,
-				variableService,
-				stateService,
-				configService,
-				hostnameService,
-				runnerService,
-				sshkeyService,
-			)
+			return struct {
+				*organization.OrganizationService
+				*workspace.WorkspaceService
+				*run.RunService
+				*configversion.ConfigService
+				*variable.VariableService
+				*state.StateService
+				*internal.HostnameService
+				*sshkey.SSHKeyService
+				*runner.RunnerService
+				*engine.EngineService
+			}{
+				OrganizationService: orgService,
+				WorkspaceService:    workspaceService,
+				RunService:          runService,
+				ConfigService:       configService,
+				VariableService:     variableService,
+				StateService:        stateService,
+				HostnameService:     hostnameService,
+				SSHKeyService:       sshkeyService,
+				RunnerService:       runnerService,
+				EngineService:       engineService,
+			}
 		},
 		cfg.RunnerConfig,
 	)
@@ -569,9 +583,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	}
 
 	return &Daemon{
-		Config:        cfg,
-		Logger:        logger,
-		handlers:      handlers,
 		Organizations: orgService,
 		System:        hostnameService,
 		Runs:          runService,
@@ -591,8 +602,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Runners:       runnerService,
 		SSHKeys:       sshkeyService,
 		DB:            db,
-		runner:        serverRunner,
-		sqlListener:   sqlListener,
 		netListener:   netListener,
 		server:        server,
 		subsystems:    subsystems,

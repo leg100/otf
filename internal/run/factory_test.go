@@ -137,7 +137,7 @@ func TestFactory(t *testing.T) {
 			}),
 			&configversion.ConfigurationVersion{},
 		)
-		f.releases = &fakeReleasesService{latestVersion: "2.0.0"}
+		f.client.(*fakeFactoryClient).latestVersion = "2.0.0"
 
 		got, err := f.NewRun(ctx, resource.TfeID{}, CreateOptions{})
 		require.NoError(t, err)
@@ -147,65 +147,66 @@ func TestFactory(t *testing.T) {
 }
 
 type (
-	fakeFactoryOrganizationService struct {
-		org *organization.Organization
-	}
-	fakeFactoryWorkspaceService struct {
-		ws *workspace.Workspace
-	}
-	fakeFactoryConfigurationVersionService struct {
-		cv *configversion.ConfigurationVersion
-	}
-	fakeFactoryVCSProviderService struct{}
-	fakeFactoryCloudClient        struct {
-		vcs.Client
-	}
-	fakeReleasesService struct {
+	fakeFactoryClient struct {
+		serviceClient
+
+		org           *organization.Organization
+		ws            *workspace.Workspace
+		cv            *configversion.ConfigurationVersion
 		latestVersion string
 	}
 )
 
 func newTestFactory(org *organization.Organization, ws *workspace.Workspace, cv *configversion.ConfigurationVersion) *factory {
 	return &factory{
-		organizations: &fakeFactoryOrganizationService{org: org},
-		workspaces:    &fakeFactoryWorkspaceService{ws: ws},
-		configs:       &fakeFactoryConfigurationVersionService{cv: cv},
-		vcs:           &fakeFactoryVCSProviderService{},
+		client: &fakeFactoryClient{
+			org: org,
+			ws:  ws,
+			cv:  cv,
+		},
 	}
 }
 
-func (f *fakeFactoryOrganizationService) GetOrganization(context.Context, organization.Name) (*organization.Organization, error) {
+func (f *fakeFactoryClient) GetOrganization(context.Context, organization.Name) (*organization.Organization, error) {
 	return f.org, nil
 }
 
-func (f *fakeFactoryWorkspaceService) GetWorkspace(context.Context, resource.TfeID) (*workspace.Workspace, error) {
+func (f *fakeFactoryClient) GetWorkspace(context.Context, resource.TfeID) (*workspace.Workspace, error) {
 	return f.ws, nil
 }
 
-func (f *fakeFactoryConfigurationVersionService) GetConfigVersion(context.Context, resource.TfeID) (*configversion.ConfigurationVersion, error) {
+func (f *fakeFactoryClient) GetConfigVersion(context.Context, resource.TfeID) (*configversion.ConfigurationVersion, error) {
 	return f.cv, nil
 }
 
-func (f *fakeFactoryConfigurationVersionService) GetLatestConfigVersion(context.Context, resource.TfeID) (*configversion.ConfigurationVersion, error) {
+func (f *fakeFactoryClient) GetLatestConfigVersion(context.Context, resource.TfeID) (*configversion.ConfigurationVersion, error) {
 	return f.cv, nil
 }
 
-func (f *fakeFactoryConfigurationVersionService) CreateConfigVersion(ctx context.Context, workspaceID resource.TfeID, opts configversion.CreateOptions) (*configversion.ConfigurationVersion, error) {
+func (f *fakeFactoryClient) CreateConfigVersion(ctx context.Context, workspaceID resource.TfeID, opts configversion.CreateOptions) (*configversion.ConfigurationVersion, error) {
 	return &configversion.ConfigurationVersion{ID: workspaceID}, nil
 }
 
-func (f *fakeFactoryConfigurationVersionService) UploadConfig(context.Context, resource.TfeID, []byte) error {
+func (f *fakeFactoryClient) UploadConfig(context.Context, resource.TfeID, []byte) error {
 	return nil
 }
 
-func (f *fakeFactoryConfigurationVersionService) GetSourceIcon(source source.Source) templ.Component {
+func (f *fakeFactoryClient) GetSourceIcon(source source.Source) templ.Component {
 	return templ.Raw("")
 }
 
-func (f *fakeFactoryVCSProviderService) GetVCSProvider(context.Context, resource.TfeID) (*vcs.Provider, error) {
+func (f *fakeFactoryClient) GetLatest(context.Context, *engine.Engine) (string, time.Time, error) {
+	return f.latestVersion, time.Time{}, nil
+}
+
+func (f *fakeFactoryClient) GetVCSProvider(context.Context, resource.TfeID) (*vcs.Provider, error) {
 	return &vcs.Provider{
 		Client: &fakeFactoryCloudClient{},
 	}, nil
+}
+
+type fakeFactoryCloudClient struct {
+	vcs.Client
 }
 
 func (f *fakeFactoryCloudClient) GetRepoTarball(context.Context, vcs.GetRepoTarballOptions) ([]byte, string, error) {
@@ -218,8 +219,4 @@ func (f *fakeFactoryCloudClient) GetDefaultBranch(context.Context, string) (stri
 
 func (f *fakeFactoryCloudClient) GetCommit(context.Context, vcs.Repo, string) (vcs.Commit, error) {
 	return vcs.Commit{}, nil
-}
-
-func (f *fakeReleasesService) GetLatest(context.Context, *engine.Engine) (string, time.Time, error) {
-	return f.latestVersion, time.Time{}, nil
 }

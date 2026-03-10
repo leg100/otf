@@ -17,6 +17,10 @@ import (
 )
 
 type (
+	// Alias service to permit embedding it with other services in a struct
+	// without a name clash.
+	DynamicCredsService = Service
+
 	Service struct {
 		handlers   *Handlers
 		privateKey jwk.Key

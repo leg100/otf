@@ -6,10 +6,10 @@ import (
 	"net/http"
 	"path"
 
-	"github.com/leg100/otf/internal/logr"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal/http/decode"
+	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/vcs"
 )
 

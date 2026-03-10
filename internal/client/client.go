@@ -20,16 +20,16 @@ type (
 	Client struct {
 		*otfhttp.Client
 
-		Organizations *organization.Client
-		Workspaces    *workspace.Client
-		Runs          *run.Client
-		Teams         *team.Client
-		Users         *user.Client
-		States        *state.Client
-		Configs       *configversion.Client
-		Variables     *variable.Client
-		Runners       *runner.Client
-		SSHKeys       *sshkey.Client
+		*organization.OrganizationClient
+		*workspace.WorkspaceClient
+		*run.RunClient
+		*team.TeamClient
+		*user.UserClient
+		*state.StateClient
+		*configversion.ConfigClient
+		*variable.VariableClient
+		*runner.RunnerClient
+		*sshkey.SSHKeyClient
 	}
 )
 
@@ -59,16 +59,16 @@ func (c *Client) UseToken(token string) *Client {
 
 func (c *Client) new(httpClient *otfhttp.Client) *Client {
 	return &Client{
-		Client:        httpClient,
-		Organizations: &organization.Client{Client: httpClient},
-		Workspaces:    &workspace.Client{Client: httpClient},
-		Runs:          &run.Client{Client: httpClient},
-		Teams:         &team.Client{Client: httpClient},
-		Users:         &user.Client{Client: httpClient},
-		States:        &state.Client{Client: httpClient},
-		Configs:       &configversion.Client{Client: httpClient},
-		Variables:     &variable.Client{Client: httpClient},
-		Runners:       &runner.Client{Client: httpClient},
-		SSHKeys:       &sshkey.Client{Client: httpClient},
+		Client:             httpClient,
+		OrganizationClient: &organization.Client{Client: httpClient},
+		WorkspaceClient:    &workspace.Client{Client: httpClient},
+		RunClient:          &run.Client{Client: httpClient},
+		TeamClient:         &team.Client{Client: httpClient},
+		UserClient:         &user.Client{Client: httpClient},
+		StateClient:        &state.Client{Client: httpClient},
+		ConfigClient:       &configversion.Client{Client: httpClient},
+		VariableClient:     &variable.Client{Client: httpClient},
+		RunnerClient:       &runner.Client{Client: httpClient},
+		SSHKeyClient:       &sshkey.Client{Client: httpClient},
 	}
 }

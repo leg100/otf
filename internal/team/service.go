@@ -18,6 +18,10 @@ import (
 var ErrRemovingOwnersTeamNotPermitted = errors.New("the owners team cannot be deleted")
 
 type (
+	// Alias service to permit embedding it with other services in a struct
+	// without a name clash.
+	TeamService = Service
+
 	Service struct {
 		logr.Logger
 		*authz.Authorizer

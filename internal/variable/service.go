@@ -16,6 +16,10 @@ import (
 )
 
 type (
+	// Alias service to permit embedding it with other services in a struct
+	// without a name clash.
+	VariableService = Service
+
 	Service struct {
 		logr.Logger
 		*authz.Authorizer

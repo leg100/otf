@@ -10,6 +10,10 @@ import (
 	"github.com/leg100/otf/internal/resource"
 )
 
+// Alias client to permit embedding it with other clients in a struct
+// without a name clash.
+type ConfigClient = Client
+
 type Client struct {
 	*otfhttp.Client
 }

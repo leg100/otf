@@ -13,6 +13,10 @@ import (
 )
 
 type (
+	// Alias service to permit embedding it with other services in a struct
+	// without a name clash.
+	GithubService = Service
+
 	// Service is the service for github app management
 	Service struct {
 		logr.Logger

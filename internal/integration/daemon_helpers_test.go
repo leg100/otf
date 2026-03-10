@@ -47,6 +47,8 @@ type (
 		// Nest the hostname service so that accessing URLs in tests isn't so
 		// verbose.
 		*internal.HostnameService
+
+		config daemon.Config
 	}
 )
 
@@ -140,6 +142,7 @@ func setup(t *testing.T, opts ...configOption) (*testDaemon, *organization.Organ
 		TestServer:      githubServer,
 		runEvents:       runEvents,
 		HostnameService: d.System,
+		config:          cfg.Config,
 	}
 
 	// create a dedicated user account and context for test to use.

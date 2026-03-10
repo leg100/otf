@@ -25,6 +25,10 @@ import (
 var ErrInvalidStateTransition = errors.New("invalid runner state transition")
 
 type (
+	// Alias service to permit embedding it with other services in a struct
+	// without a name clash.
+	RunnerService = Service
+
 	Service struct {
 		logr.Logger
 		*authz.Authorizer

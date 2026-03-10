@@ -60,7 +60,7 @@ func run(ctx context.Context, args []string) error {
 				return err
 			}
 			// Retrieve job
-			job, err := client.Runners.GetJob(ctx, jobID)
+			job, err := client.GetJob(ctx, jobID)
 			if err != nil {
 				return err
 			}
@@ -70,16 +70,7 @@ func run(ctx context.Context, args []string) error {
 				OperationConfig: operationConfig,
 				Job:             job,
 				JobToken:        []byte(jobToken),
-				Client: runner.NewOperationClient(
-					client.Runs,
-					client.Workspaces,
-					client.Variables,
-					client.States,
-					client.Configs,
-					client,
-					client.Runners,
-					client.SSHKeys,
-				),
+				Client:          client,
 			})
 			return nil
 		},

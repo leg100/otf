@@ -12,6 +12,10 @@ import (
 
 const runnerIDHeaderKey = "otf-agent-id"
 
+// Alias client to permit embedding it with other clients in a struct
+// without a name clash.
+type RunnerClient = Client
+
 // client accesses the service endpoints via RPC.
 type Client struct {
 	*otfhttp.Client
@@ -79,6 +83,7 @@ func (c *Client) GetJob(ctx context.Context, jobID resource.TfeID) (*Job, error)
 	return &job, nil
 }
 
+//lint:ignore U1000 staticcheck wrongly picks this up as unused - perhaps because only the RunnerClient alias is used?
 func (c *Client) awaitJobSignal(ctx context.Context, jobID resource.TfeID) func() (jobSignal, error) {
 	u := fmt.Sprintf("jobs/%s/await-signal", jobID)
 	req, err := c.newRequest("GET", u, nil)
@@ -149,6 +154,7 @@ func (c *Client) startJob(ctx context.Context, jobID resource.TfeID) ([]byte, er
 	return buf.Bytes(), nil
 }
 
+//lint:ignore U1000 staticcheck wrongly picks this up as unused - perhaps because only the RunnerClient alias is used?
 func (c *Client) finishJob(ctx context.Context, jobID resource.TfeID, opts finishJobOptions) error {
 	req, err := c.newRequest("POST", "jobs/finish", &finishJobParams{
 		JobID:            jobID,

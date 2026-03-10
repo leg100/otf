@@ -18,6 +18,10 @@ import (
 var ErrCurrentVersionDeletionAttempt = errors.New("deleting the current state version is not allowed")
 
 type (
+	// Alias service to permit embedding it with other services in a struct
+	// without a name clash.
+	StateService = Service
+
 	// Service provides access to state and state versions
 	Service struct {
 		logr.Logger

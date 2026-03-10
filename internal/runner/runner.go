@@ -27,7 +27,7 @@ type Runner struct {
 	PluginCache     bool   // toggle use of terraform's shared plugin cache
 	TerraformBinDir string // destination directory for terraform binaries
 
-	runners    RunnerClient
+	runners    runnerClient
 	executor   executor
 	registered chan struct{}
 
@@ -35,7 +35,7 @@ type Runner struct {
 	v      int         // logger verbosity
 }
 
-type RunnerClient interface {
+type runnerClient interface {
 	Register(ctx context.Context, opts RegisterRunnerOptions) (*RunnerMeta, error)
 	awaitAllocatedJobs(ctx context.Context, agentID resource.TfeID) ([]*Job, error)
 	updateStatus(ctx context.Context, agentID resource.TfeID, status RunnerStatus) error
@@ -45,7 +45,7 @@ type RunnerClient interface {
 // New constructs a runner.
 func New(
 	logger logr.Logger,
-	runnerClient RunnerClient,
+	runnerClient runnerClient,
 	operationClientCreator OperationClientCreator,
 	cfg *Config,
 ) (*Runner, error) {

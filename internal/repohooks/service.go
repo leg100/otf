@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
-	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
@@ -14,6 +13,10 @@ import (
 )
 
 type (
+	// Alias service to permit embedding it with other services in a struct
+	// without a name clash.
+	RepohookService = Service
+
 	Service struct {
 		logr.Logger
 
@@ -21,17 +24,23 @@ type (
 		*handlers     // handles incoming vcs events
 		*synchroniser // synchronise hooks
 
-		vcsproviders *vcs.Service
+		client serviceClient
 	}
 
 	Options struct {
-		Logger              logr.Logger
-		OrganizationService *organization.Service
-		VCSService          *vcs.Service
-		GithubAppService    *github.Service
-		VCSEventBroker      *vcs.Broker
-		URLs                urlClient
-		DB                  *sql.DB
+		Logger         logr.Logger
+		VCSEventBroker vcs.Publisher
+		Client         serviceClient
+		URLs           urlClient
+		DB             *sql.DB
+	}
+
+	serviceClient interface {
+		BeforeDeleteVCSProvider(hook func(context.Context, *vcs.Provider) error)
+		BeforeDeleteOrganization(hook func(context.Context, *organization.Organization) error)
+		GetVCSProvider(ctx context.Context, id resource.TfeID) (*vcs.Provider, error)
+		ListVCSProviders(ctx context.Context, organization organization.Name) ([]*vcs.Provider, error)
+		GetKind(id vcs.KindID) (vcs.Kind, error)
 	}
 
 	CreateRepohookOptions struct {
@@ -43,13 +52,13 @@ type (
 func NewService(ctx context.Context, opts Options) *Service {
 	db := &db{opts.DB, opts.URLs}
 	svc := &Service{
-		Logger:       opts.Logger,
-		vcsproviders: opts.VCSService,
-		db:           db,
+		Logger: opts.Logger,
+		client: opts.Client,
+		db:     db,
 		handlers: newHandler(
 			opts.Logger,
 			opts.VCSEventBroker,
-			opts.VCSService,
+			opts.Client,
 			db,
 		),
 		synchroniser: &synchroniser{Logger: opts.Logger, syncdb: db},
@@ -58,15 +67,15 @@ func NewService(ctx context.Context, opts Options) *Service {
 	// necessary for the deletion of webhooks from VCS repos. Hence we need to
 	// first delete webhooks that reference the VCS provider before the VCS
 	// provider is deleted.
-	opts.VCSService.BeforeDeleteVCSProvider(svc.deleteProviderRepohooks)
+	opts.Client.BeforeDeleteVCSProvider(svc.deleteProviderRepohooks)
 	// Delete webhooks prior to the deletion of organizations. Deleting
 	// organizations cascades deletion of VCS providers (see above).
-	opts.OrganizationService.BeforeDeleteOrganization(svc.deleteOrganizationRepohooks)
+	opts.Client.BeforeDeleteOrganization(svc.deleteOrganizationRepohooks)
 	return svc
 }
 
 func (s *Service) CreateRepohook(ctx context.Context, opts CreateRepohookOptions) (uuid.UUID, error) {
-	vcsProvider, err := s.vcsproviders.GetVCSProvider(ctx, opts.VCSProviderID)
+	vcsProvider, err := s.client.GetVCSProvider(ctx, opts.VCSProviderID)
 	if err != nil {
 		return uuid.UUID{}, fmt.Errorf("retrieving vcs provider: %w", err)
 	}
@@ -114,7 +123,7 @@ func (s *Service) DeleteUnreferencedRepohooks(ctx context.Context) error {
 }
 
 func (s *Service) deleteOrganizationRepohooks(ctx context.Context, org *organization.Organization) error {
-	providers, err := s.vcsproviders.ListVCSProviders(ctx, org.Name)
+	providers, err := s.client.ListVCSProviders(ctx, org.Name)
 	if err != nil {
 		return err
 	}
@@ -153,7 +162,7 @@ func (s *Service) deleteRepohook(ctx context.Context, repohook *hook) error {
 	if err := s.db.deleteHook(ctx, repohook.id); err != nil {
 		return fmt.Errorf("deleting webhook from db: %w", err)
 	}
-	client, err := s.vcsproviders.GetVCSProvider(ctx, repohook.vcsProviderID)
+	client, err := s.client.GetVCSProvider(ctx, repohook.vcsProviderID)
 	if err != nil {
 		return fmt.Errorf("retrieving vcs client from db: %w", err)
 	}

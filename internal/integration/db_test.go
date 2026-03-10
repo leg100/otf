@@ -48,7 +48,7 @@ func TestTx(t *testing.T) {
 		_, err := daemon.Organizations.GetOrganization(ctx, org.Name)
 		assert.NoError(t, err)
 
-		err = daemon.Tx(ctx, func(ctx context.Context) error {
+		err = daemon.DB.Tx(ctx, func(ctx context.Context) error {
 			// query org just created using child tx conn
 			_, err := daemon.Organizations.GetOrganization(ctx, org.Name)
 			return err

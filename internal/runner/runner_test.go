@@ -18,7 +18,7 @@ func TestRunner(t *testing.T) {
 		logr.Discard(),
 		&fakeRunnerClient{registeredID: wantID, updates: updates},
 		func(jobToken string) OperationClient {
-			return OperationClient{}
+			return nil
 		},
 		NewDefaultConfig(),
 	)

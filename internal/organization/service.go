@@ -16,6 +16,10 @@ import (
 )
 
 type (
+	// Alias service to permit embedding it with other services in a struct
+	// without a name clash.
+	OrganizationService = Service
+
 	Service struct {
 		RestrictOrganizationCreation bool
 

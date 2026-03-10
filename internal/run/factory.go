@@ -3,13 +3,8 @@ package run
 import (
 	"context"
 	"fmt"
-	"time"
 
-	"github.com/a-h/templ"
 	"github.com/leg100/otf/internal/configversion"
-	"github.com/leg100/otf/internal/configversion/source"
-	"github.com/leg100/otf/internal/engine"
-	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/vcs"
@@ -19,45 +14,17 @@ import (
 type (
 	// factory constructs runs
 	factory struct {
-		organizations factoryOrganizationClient
-		workspaces    factoryWorkspaceClient
-		configs       factoryConfigClient
-		vcs           factoryVCSClient
-		releases      factoryReleasesClient
-	}
-
-	factoryOrganizationClient interface {
-		GetOrganization(ctx context.Context, name organization.Name) (*organization.Organization, error)
-	}
-
-	factoryWorkspaceClient interface {
-		GetWorkspace(ctx context.Context, workspaceID resource.TfeID) (*workspace.Workspace, error)
-	}
-
-	factoryConfigClient interface {
-		CreateConfigVersion(ctx context.Context, workspaceID resource.TfeID, opts configversion.CreateOptions) (*configversion.ConfigurationVersion, error)
-		GetConfigVersion(ctx context.Context, id resource.TfeID) (*configversion.ConfigurationVersion, error)
-		GetLatestConfigVersion(ctx context.Context, workspaceID resource.TfeID) (*configversion.ConfigurationVersion, error)
-		UploadConfig(ctx context.Context, id resource.TfeID, config []byte) error
-		GetSourceIcon(source source.Source) templ.Component
-	}
-
-	factoryVCSClient interface {
-		GetVCSProvider(ctx context.Context, providerID resource.TfeID) (*vcs.Provider, error)
-	}
-
-	factoryReleasesClient interface {
-		GetLatest(ctx context.Context, engine *engine.Engine) (string, time.Time, error)
+		client serviceClient
 	}
 )
 
 // NewRun constructs a new run using the provided options.
 func (f *factory) NewRun(ctx context.Context, workspaceID resource.TfeID, opts CreateOptions) (*Run, error) {
-	ws, err := f.workspaces.GetWorkspace(ctx, workspaceID)
+	ws, err := f.client.GetWorkspace(ctx, workspaceID)
 	if err != nil {
 		return nil, err
 	}
-	org, err := f.organizations.GetOrganization(ctx, ws.Organization)
+	org, err := f.client.GetOrganization(ctx, ws.Organization)
 	if err != nil {
 		return nil, err
 	}
@@ -69,9 +36,9 @@ func (f *factory) NewRun(ctx context.Context, workspaceID resource.TfeID, opts C
 	// not connected then the latest existing config is used.
 	var cv *configversion.ConfigurationVersion
 	if opts.ConfigurationVersionID != nil {
-		cv, err = f.configs.GetConfigVersion(ctx, *opts.ConfigurationVersionID)
+		cv, err = f.client.GetConfigVersion(ctx, *opts.ConfigurationVersionID)
 	} else if ws.Connection == nil {
-		cv, err = f.configs.GetLatestConfigVersion(ctx, workspaceID)
+		cv, err = f.client.GetLatestConfigVersion(ctx, workspaceID)
 	} else {
 		cv, err = f.createConfigVersionFromVCS(ctx, ws)
 	}
@@ -81,7 +48,7 @@ func (f *factory) NewRun(ctx context.Context, workspaceID resource.TfeID, opts C
 
 	// If workspace tracks the latest version then fetch it from db.
 	if ws.EngineVersion.Latest {
-		opts.EngineVersion, _, err = f.releases.GetLatest(ctx, ws.Engine)
+		opts.EngineVersion, _, err = f.client.GetLatest(ctx, ws.Engine)
 		if err != nil {
 			return nil, err
 		}
@@ -99,7 +66,7 @@ func (f *factory) NewRun(ctx context.Context, workspaceID resource.TfeID, opts C
 // createConfigVersionFromVCS creates a config version from the vcs repo
 // connected to the workspace using the contents of the vcs repo.
 func (f *factory) createConfigVersionFromVCS(ctx context.Context, ws *workspace.Workspace) (*configversion.ConfigurationVersion, error) {
-	client, err := f.vcs.GetVCSProvider(ctx, ws.Connection.VCSProviderID)
+	client, err := f.client.GetVCSProvider(ctx, ws.Connection.VCSProviderID)
 	if err != nil {
 		return nil, err
 	}
@@ -122,7 +89,7 @@ func (f *factory) createConfigVersionFromVCS(ctx context.Context, ws *workspace.
 	if err != nil {
 		return nil, fmt.Errorf("retrieving commit information: %s: %w", ref, err)
 	}
-	cv, err := f.configs.CreateConfigVersion(ctx, ws.ID, configversion.CreateOptions{
+	cv, err := f.client.CreateConfigVersion(ctx, ws.ID, configversion.CreateOptions{
 		IngressAttributes: &configversion.IngressAttributes{
 			Branch:          branch,
 			CommitSHA:       commit.SHA,
@@ -138,7 +105,7 @@ func (f *factory) createConfigVersionFromVCS(ctx context.Context, ws *workspace.
 	if err != nil {
 		return nil, err
 	}
-	if err := f.configs.UploadConfig(ctx, cv.ID, tarball); err != nil {
+	if err := f.client.UploadConfig(ctx, cv.ID, tarball); err != nil {
 		return nil, err
 	}
 	return cv, err

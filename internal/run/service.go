@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/a-h/templ"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/configversion"
+	"github.com/leg100/otf/internal/configversion/source"
 	"github.com/leg100/otf/internal/engine"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/organization"
@@ -17,7 +19,6 @@ import (
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/tfeapi"
-	"github.com/leg100/otf/internal/tokens"
 	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/workspace"
@@ -25,16 +26,16 @@ import (
 )
 
 type (
-	// Alias services so they don't conflict when nested together in struct
-	ConfigurationVersionService configversion.Service
-	VCSProviderService          vcs.Service
+	// Alias service to permit embedding it with other services in a struct
+	// without a name clash.
+	RunService = Service
 
 	Service struct {
 		logr.Logger
 		authz.Interface
 		*MetricsCollector
 
-		workspaces             *workspace.Service
+		client                 serviceClient
 		db                     *pgdb
 		tfeapi                 *tfe
 		api                    *api
@@ -50,46 +51,53 @@ type (
 	}
 
 	Options struct {
-		Authorizer           *authz.Authorizer
-		VCSEventSubscriber   vcs.Subscriber
-		DaemonCtx            context.Context
-		WorkspaceService     *workspace.Service
-		OrganizationService  *organization.Service
-		ConfigVersionService *configversion.Service
-		EngineService        *engine.Service
-		VCSProviderService   *vcs.Service
-		TokensService        *tokens.Service
-		UsersService         *user.Service
-		Logger               logr.Logger
-		DB                   *sql.DB
-		Responder            *tfeapi.Responder
-		Signer               *surl.Signer
-		Listener             *sql.Listener
+		Authorizer         *authz.Authorizer
+		VCSEventSubscriber vcs.Subscriber
+		DaemonCtx          context.Context
+		Client             serviceClient
+		Logger             logr.Logger
+		DB                 *sql.DB
+		Responder          *tfeapi.Responder
+		Signer             *surl.Signer
+		Listener           *sql.Listener
+	}
+
+	serviceClient interface {
+		GetOrganization(ctx context.Context, name organization.Name) (*organization.Organization, error)
+		GetWorkspace(ctx context.Context, workspaceID resource.TfeID) (*workspace.Workspace, error)
+		GetWorkspaceByName(ctx context.Context, organization organization.Name, workspace string) (*workspace.Workspace, error)
+		SetWorkspaceLatestRun(ctx context.Context, workspaceID, runID resource.TfeID) (*workspace.Workspace, error)
+		Lock(ctx context.Context, workspaceID resource.TfeID, runID *resource.TfeID) (*workspace.Workspace, error)
+		ListConnectedWorkspaces(ctx context.Context, vcsProviderID resource.TfeID, repoPath vcs.Repo) ([]*workspace.Workspace, error)
+		AfterCreateWorkspace(hook func(context.Context, *workspace.Workspace) error)
+		CreateConfigVersion(ctx context.Context, workspaceID resource.TfeID, opts configversion.CreateOptions) (*configversion.ConfigurationVersion, error)
+		GetConfigVersion(ctx context.Context, id resource.TfeID) (*configversion.ConfigurationVersion, error)
+		GetLatestConfigVersion(ctx context.Context, workspaceID resource.TfeID) (*configversion.ConfigurationVersion, error)
+		UploadConfig(ctx context.Context, id resource.TfeID, config []byte) error
+		GetSourceIcon(source source.Source) templ.Component
+		GetVCSProvider(ctx context.Context, providerID resource.TfeID) (*vcs.Provider, error)
+		GetLatest(ctx context.Context, engine *engine.Engine) (string, time.Time, error)
 	}
 )
 
 func NewService(opts Options) *Service {
 	db := &pgdb{opts.DB}
 	svc := Service{
-		Logger:     opts.Logger,
-		workspaces: opts.WorkspaceService,
-		db:         db,
-		Interface:  opts.Authorizer,
-		daemonCtx:  opts.DaemonCtx,
+		Logger:    opts.Logger,
+		client:    opts.Client,
+		db:        db,
+		Interface: opts.Authorizer,
+		daemonCtx: opts.DaemonCtx,
 	}
 	svc.MetricsCollector = &MetricsCollector{
 		service: &svc,
 	}
 	svc.factory = &factory{
-		organizations: opts.OrganizationService,
-		workspaces:    opts.WorkspaceService,
-		configs:       opts.ConfigVersionService,
-		vcs:           opts.VCSProviderService,
-		releases:      opts.EngineService,
+		client: opts.Client,
 	}
 	svc.tfeapi = &tfe{
 		Service:    &svc,
-		workspaces: opts.WorkspaceService,
+		client:     opts.Client,
 		Responder:  opts.Responder,
 		Signer:     opts.Signer,
 		authorizer: opts.Authorizer,
@@ -109,11 +117,14 @@ func NewService(opts Options) *Service {
 		client: &svc,
 	}
 	spawner := &Spawner{
-		Logger:     opts.Logger.WithValues("component", "spawner"),
-		configs:    opts.ConfigVersionService,
-		workspaces: opts.WorkspaceService,
-		vcs:        opts.VCSProviderService,
-		runs:       &svc,
+		Logger: opts.Logger.WithValues("component", "spawner"),
+		client: struct {
+			serviceClient
+			*Service
+		}{
+			serviceClient: opts.Client,
+			Service:       &svc,
+		},
 	}
 	svc.broker = pubsub.NewBroker[*Event](
 		opts.Logger,
@@ -144,7 +155,7 @@ func NewService(opts Options) *Service {
 
 	// After a workspace is created, if auto-queue-runs is set, then create a
 	// run as well.
-	opts.WorkspaceService.AfterCreateWorkspace(svc.autoQueueRun)
+	opts.Client.AfterCreateWorkspace(svc.autoQueueRun)
 
 	return &svc
 }
@@ -200,7 +211,7 @@ func (s *Service) ListRuns(ctx context.Context, opts ListOptions) (*resource.Pag
 		authErr error
 	)
 	if opts.Organization != nil && opts.WorkspaceName != nil {
-		workspace, err := s.workspaces.GetWorkspaceByName(ctx, *opts.Organization, *opts.WorkspaceName)
+		workspace, err := s.client.GetWorkspaceByName(ctx, *opts.Organization, *opts.WorkspaceName)
 		if err != nil {
 			return nil, err
 		}
@@ -255,11 +266,11 @@ func (s *Service) EnqueuePlan(ctx context.Context, runID resource.TfeID) (run *R
 			return err
 		}
 		if !run.PlanOnly {
-			_, err := s.workspaces.Lock(ctx, run.WorkspaceID, &run.ID)
+			_, err := s.client.Lock(ctx, run.WorkspaceID, &run.ID)
 			if err != nil {
 				return err
 			}
-			_, err = s.workspaces.SetWorkspaceLatestRun(ctx, run.WorkspaceID, run.ID)
+			_, err = s.client.SetWorkspaceLatestRun(ctx, run.WorkspaceID, run.ID)
 			if err != nil {
 				return err
 			}

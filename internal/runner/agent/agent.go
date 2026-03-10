@@ -21,20 +21,11 @@ func New(logger logr.Logger, serverURL string, token string, config *runner.Conf
 	// Construct runner.
 	return runner.New(
 		logger,
-		client.Runners,
+		client,
 		// Callback to create a client for a job to interact with otfd.
 		func(jobToken string) runner.OperationClient {
 			client := client.UseToken(jobToken)
-			return runner.NewOperationClient(
-				client.Runs,
-				client.Workspaces,
-				client.Variables,
-				client.States,
-				client.Configs,
-				client,
-				client.Runners,
-				client.SSHKeys,
-			)
+			return client
 		},
 		config,
 	)

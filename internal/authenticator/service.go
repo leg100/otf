@@ -19,6 +19,10 @@ type (
 		SkipTLSVerification  bool
 	}
 
+	// Alias service to permit embedding it with other services in a struct
+	// without a name clash.
+	AuthenticatorService = Service
+
 	Service struct {
 		logr.Logger
 

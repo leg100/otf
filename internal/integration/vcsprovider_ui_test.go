@@ -46,7 +46,7 @@ func TestIntegration_VCSProviderTokenUI(t *testing.T) {
 		require.NoError(t, err)
 
 		// expect default github API URL
-		err = expect.Locator(page.Locator(`//input[@name='base_url']`)).ToHaveValue(daemon.GithubHostname.String())
+		err = expect.Locator(page.Locator(`//input[@name='base_url']`)).ToHaveValue(daemon.config.GithubHostname.String())
 		require.NoError(t, err)
 
 		// submit form to create provider
@@ -177,7 +177,7 @@ func TestIntegration_VCSProviderAppUI(t *testing.T) {
 
 	// create app
 	_, err := daemon.GithubApp.CreateApp(ctx, github.CreateAppOptions{
-		BaseURL:    daemon.GithubHostname,
+		BaseURL:    daemon.config.GithubHostname,
 		AppID:      456,
 		Slug:       "otf-123",
 		PrivateKey: string(testutils.ReadFile(t, "./fixtures/key.pem")),

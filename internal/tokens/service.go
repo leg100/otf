@@ -8,6 +8,10 @@ import (
 )
 
 type (
+	// Alias service to permit embedding it with other services in a struct
+	// without a name clash.
+	TokensService = Service
+
 	Service struct {
 		logr.Logger
 

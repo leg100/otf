@@ -69,6 +69,31 @@ type (
 		client OperationClient
 	}
 
+	// OperationClientCreator creates an OperationClient using the given job token.
+	OperationClientCreator func(jobToken string) OperationClient
+
+	// OperationClient is a client for an operation to interact with services on
+	// behalf of its job.
+	OperationClient interface {
+		GetJob(ctx context.Context, jobID resource.TfeID) (*Job, error)
+		GenerateDynamicCredentialsToken(ctx context.Context, jobID resource.TfeID, audience string) ([]byte, error)
+		GetRun(ctx context.Context, runID resource.TfeID) (*runpkg.Run, error)
+		GetRunPlanFile(ctx context.Context, id resource.TfeID, format runpkg.PlanFormat) ([]byte, error)
+		UploadRunPlanFile(ctx context.Context, id resource.TfeID, plan []byte, format runpkg.PlanFormat) error
+		GetLockFile(ctx context.Context, id resource.TfeID) ([]byte, error)
+		UploadLockFile(ctx context.Context, id resource.TfeID, lockFile []byte) error
+		PutChunk(ctx context.Context, opts runpkg.PutChunkOptions) error
+		GetWorkspace(ctx context.Context, workspaceID resource.TfeID) (*workspace.Workspace, error)
+		ListEffectiveVariables(ctx context.Context, runID resource.TfeID) ([]*variable.Variable, error)
+		DownloadConfig(ctx context.Context, id resource.TfeID) ([]byte, error)
+		CreateStateVersion(ctx context.Context, opts state.CreateStateVersionOptions) (*state.Version, error)
+		DownloadCurrentState(ctx context.Context, workspaceID resource.TfeID) ([]byte, error)
+		Hostname() string
+		GetSSHKeyPrivateKey(ctx context.Context, id resource.TfeID) ([]byte, error)
+		awaitJobSignal(ctx context.Context, jobID resource.TfeID) func() (jobSignal, error)
+		finishJob(ctx context.Context, jobID resource.TfeID, opts finishJobOptions) error
+	}
+
 	OperationConfig struct {
 		Debug          bool   // toggle debug mode
 		PluginCache    bool   // toggle use of engine's shared plugin cache
@@ -86,52 +111,9 @@ type (
 		Client   OperationClient
 	}
 
-	operationJobsClient interface {
-		GetJob(ctx context.Context, jobID resource.TfeID) (*Job, error)
-		GenerateDynamicCredentialsToken(ctx context.Context, jobID resource.TfeID, audience string) ([]byte, error)
-
-		awaitJobSignal(ctx context.Context, jobID resource.TfeID) func() (jobSignal, error)
-		finishJob(ctx context.Context, jobID resource.TfeID, opts finishJobOptions) error
-	}
-
 	// downloader downloads engine versions
 	downloader interface {
 		Download(ctx context.Context, version string, w io.Writer) (string, error)
-	}
-
-	runClient interface {
-		GetRun(ctx context.Context, runID resource.TfeID) (*runpkg.Run, error)
-		GetRunPlanFile(ctx context.Context, id resource.TfeID, format runpkg.PlanFormat) ([]byte, error)
-		UploadRunPlanFile(ctx context.Context, id resource.TfeID, plan []byte, format runpkg.PlanFormat) error
-		GetLockFile(ctx context.Context, id resource.TfeID) ([]byte, error)
-		UploadLockFile(ctx context.Context, id resource.TfeID, lockFile []byte) error
-		PutChunk(ctx context.Context, opts runpkg.PutChunkOptions) error
-	}
-
-	workspaceClient interface {
-		GetWorkspace(ctx context.Context, workspaceID resource.TfeID) (*workspace.Workspace, error)
-	}
-
-	variablesClient interface {
-		ListEffectiveVariables(ctx context.Context, runID resource.TfeID) ([]*variable.Variable, error)
-	}
-
-	configClient interface {
-		DownloadConfig(ctx context.Context, id resource.TfeID) ([]byte, error)
-	}
-
-	stateClient interface {
-		CreateStateVersion(ctx context.Context, opts state.CreateStateVersionOptions) (*state.Version, error)
-		DownloadCurrentState(ctx context.Context, workspaceID resource.TfeID) ([]byte, error)
-	}
-
-	hostnameClient interface {
-		Hostname() string
-	}
-
-	// sshKeyClient fetches SSH key data for an operation.
-	sshKeyClient interface {
-		GetSSHKeyPrivateKey(ctx context.Context, id resource.TfeID) ([]byte, error)
 	}
 )
 
@@ -160,7 +142,7 @@ func DoOperation(runnerCtx context.Context, g *errgroup.Group, opts OperationOpt
 
 	envs := defaultEnvs
 	// make token available to engine CLI
-	envs = append(envs, internal.CredentialEnv(opts.Client.Server.Hostname(), opts.JobToken))
+	envs = append(envs, internal.CredentialEnv(opts.Client.Hostname(), opts.JobToken))
 
 	op := &operation{
 		Logger:   opts.Logger.WithValues("job", opts.Job),
@@ -195,7 +177,7 @@ func (o *operation) doAndFinish() {
 		handleJobSignal := func() error {
 			for {
 				// blocks until signal received
-				signal, err := o.client.Jobs.awaitJobSignal(o.ctx, o.job.ID)()
+				signal, err := o.client.awaitJobSignal(o.ctx, o.job.ID)()
 				if err != nil {
 					// If context has closed then the op has finished and we can
 					// exit.
@@ -243,14 +225,14 @@ func (o *operation) doAndFinish() {
 		opts.Status = JobFinished
 		o.V(0).Info("finished job successfully")
 	}
-	if err := o.client.Jobs.finishJob(o.ctx, o.job.ID, opts); err != nil {
+	if err := o.client.finishJob(o.ctx, o.job.ID, opts); err != nil {
 		o.Error(err, "sending job status", "status", opts.Status)
 	}
 }
 
 // do executes the job
 func (o *operation) do() error {
-	run, err := o.client.Runs.GetRun(o.ctx, o.job.RunID)
+	run, err := o.client.GetRun(o.ctx, o.job.RunID)
 	if err != nil {
 		return err
 	}
@@ -261,7 +243,7 @@ func (o *operation) do() error {
 	}
 
 	// Get workspace in order to get working directory path
-	o.ws, err = o.client.Workspaces.GetWorkspace(o.ctx, o.job.WorkspaceID)
+	o.ws, err = o.client.GetWorkspace(o.ctx, o.job.WorkspaceID)
 	if err != nil {
 		return fmt.Errorf("retreiving workspace: %w", err)
 	}
@@ -278,7 +260,7 @@ func (o *operation) do() error {
 	writer := runpkg.NewPhaseWriter(o.ctx, runpkg.PhaseWriterOptions{
 		RunID:  run.ID,
 		Phase:  run.Phase(),
-		Writer: o.client.Runs,
+		Writer: o.client,
 	})
 	defer writer.Close()
 	o.out = writer
@@ -450,7 +432,7 @@ func (o *operation) downloadEngine(ctx context.Context) error {
 }
 
 func (o *operation) downloadConfig(ctx context.Context) error {
-	cv, err := o.client.Configs.DownloadConfig(ctx, o.run.ConfigurationVersionID)
+	cv, err := o.client.DownloadConfig(ctx, o.run.ConfigurationVersionID)
 	if err != nil {
 		return fmt.Errorf("unable to download config: %w", err)
 	}
@@ -471,7 +453,7 @@ func (o *operation) deleteBackendConfig(ctx context.Context) error {
 // downloadState downloads current state to disk. If there is no state yet then
 // nothing will be downloaded and no error will be reported.
 func (o *operation) downloadState(ctx context.Context) error {
-	statefile, err := o.client.State.DownloadCurrentState(ctx, o.run.WorkspaceID)
+	statefile, err := o.client.DownloadCurrentState(ctx, o.run.WorkspaceID)
 	if errors.Is(err, internal.ErrResourceNotFound) {
 		return nil
 	} else if err != nil {
@@ -487,7 +469,7 @@ func (o *operation) downloadState(ctx context.Context) error {
 // directory. If one has not been uploaded then this will simply write an empty
 // file, which is harmless.
 func (o *operation) downloadLockFile(ctx context.Context) error {
-	lockFile, err := o.client.Runs.GetLockFile(ctx, o.run.ID)
+	lockFile, err := o.client.GetLockFile(ctx, o.run.ID)
 	if err != nil {
 		return err
 	}
@@ -497,7 +479,7 @@ func (o *operation) downloadLockFile(ctx context.Context) error {
 // readVars retrieves terraform and environment variables and adds them to the
 // operation
 func (o *operation) readVars(ctx context.Context) error {
-	variables, err := o.client.Variables.ListEffectiveVariables(o.ctx, o.run.ID)
+	variables, err := o.client.ListEffectiveVariables(o.ctx, o.run.ID)
 	if err != nil {
 		return fmt.Errorf("retrieving variables: %w", err)
 	}
@@ -524,7 +506,7 @@ func (o *operation) writeTerraformVars(ctx context.Context) error {
 func (o *operation) setupDynamicCredentials(ctx context.Context) error {
 	envs, err := dynamiccreds.Setup(
 		ctx,
-		o.client.Jobs,
+		o.client,
 		o.workdir.String(),
 		o.job.ID,
 		o.job.Phase,
@@ -541,7 +523,7 @@ func (o *operation) setupSSHKey(ctx context.Context) error {
 	if o.ws.SSHKeyID == nil {
 		return nil
 	}
-	key, err := o.client.SSHKeys.GetSSHKeyPrivateKey(ctx, *o.ws.SSHKeyID)
+	key, err := o.client.GetSSHKeyPrivateKey(ctx, *o.ws.SSHKeyID)
 	if err != nil {
 		return fmt.Errorf("getting SSH key: %w", err)
 	}
@@ -658,7 +640,7 @@ func (o *operation) uploadPlan(ctx context.Context) error {
 		return fmt.Errorf("reading plan file: %w", err)
 	}
 
-	if err := o.client.Runs.UploadRunPlanFile(ctx, o.run.ID, file, runpkg.PlanFormatBinary); err != nil {
+	if err := o.client.UploadRunPlanFile(ctx, o.run.ID, file, runpkg.PlanFormatBinary); err != nil {
 		return fmt.Errorf("unable to upload plan: %w", err)
 	}
 
@@ -670,7 +652,7 @@ func (o *operation) uploadJSONPlan(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("reading plan in json format: %w", err)
 	}
-	if err := o.client.Runs.UploadRunPlanFile(ctx, o.run.ID, jsonFile, runpkg.PlanFormatJSON); err != nil {
+	if err := o.client.UploadRunPlanFile(ctx, o.run.ID, jsonFile, runpkg.PlanFormatJSON); err != nil {
 		return fmt.Errorf("unable to upload JSON plan: %w", err)
 	}
 	return nil
@@ -684,14 +666,14 @@ func (o *operation) uploadLockFile(ctx context.Context) error {
 	} else if err != nil {
 		return fmt.Errorf("reading lock file: %w", err)
 	}
-	if err := o.client.Runs.UploadLockFile(ctx, o.run.ID, lockFile); err != nil {
+	if err := o.client.UploadLockFile(ctx, o.run.ID, lockFile); err != nil {
 		return fmt.Errorf("unable to upload lock file: %w", err)
 	}
 	return nil
 }
 
 func (o *operation) downloadPlanFile(ctx context.Context) error {
-	plan, err := o.client.Runs.GetRunPlanFile(ctx, o.run.ID, runpkg.PlanFormatBinary)
+	plan, err := o.client.GetRunPlanFile(ctx, o.run.ID, runpkg.PlanFormatBinary)
 	if err != nil {
 		return err
 	}
@@ -710,7 +692,7 @@ func (o *operation) uploadState(ctx context.Context) error {
 	if err := json.Unmarshal(statefile, &f); err != nil {
 		return err
 	}
-	_, err = o.client.State.CreateStateVersion(ctx, state.CreateStateVersionOptions{
+	_, err = o.client.CreateStateVersion(ctx, state.CreateStateVersionOptions{
 		WorkspaceID: o.run.WorkspaceID,
 		State:       statefile,
 		Serial:      &f.Serial,

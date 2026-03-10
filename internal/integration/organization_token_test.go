@@ -38,7 +38,7 @@ func TestIntegration_OrganizationTokens(t *testing.T) {
 	daemon.createWorkspace(t, ctx, org)
 	daemon.createWorkspace(t, ctx, org)
 
-	got, err := client.Workspaces.ListWorkspaces(ctx, workspace.ListOptions{
+	got, err := client.ListWorkspaces(ctx, workspace.ListOptions{
 		Organization: &org.Name,
 	})
 	require.NoError(t, err)
@@ -51,7 +51,7 @@ func TestIntegration_OrganizationTokens(t *testing.T) {
 	require.NoError(t, err)
 
 	// access with previous token should now be refused
-	_, err = client.Workspaces.ListWorkspaces(ctx, workspace.ListOptions{
+	_, err = client.ListWorkspaces(ctx, workspace.ListOptions{
 		Organization: &org.Name,
 	})
 	require.Equal(t, internal.ErrUnauthorized, err)
