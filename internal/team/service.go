@@ -67,7 +67,7 @@ func NewService(opts Options) *Service {
 		// owners team is created, so in this particular instance authorization
 		// is skipped.
 		ctx = authz.AddSkipAuthz(ctx)
-		_, err := svc.Create(ctx, organization.Name, CreateTeamOptions{
+		_, err := svc.CreateTeam(ctx, organization.Name, CreateTeamOptions{
 			Name: new("owners"),
 		})
 		if err != nil {
@@ -100,7 +100,7 @@ func (a *Service) AddHandlers(r *mux.Router) {
 	a.api.addHandlers(r)
 }
 
-func (a *Service) Create(ctx context.Context, organization organization.Name, opts CreateTeamOptions) (*Team, error) {
+func (a *Service) CreateTeam(ctx context.Context, organization organization.Name, opts CreateTeamOptions) (*Team, error) {
 	subject, err := a.Authorize(ctx, authz.CreateTeamAction, organization)
 	if err != nil {
 		return nil, err
@@ -135,7 +135,7 @@ func (a *Service) AfterCreateTeam(hook func(context.Context, *Team) error) {
 	a.afterCreateHooks = append(a.afterCreateHooks, hook)
 }
 
-func (a *Service) Update(ctx context.Context, teamID resource.TfeID, opts UpdateTeamOptions) (*Team, error) {
+func (a *Service) UpdateTeam(ctx context.Context, teamID resource.TfeID, opts UpdateTeamOptions) (*Team, error) {
 	team, err := a.db.getTeamByID(ctx, teamID)
 	if err != nil {
 		a.Error(err, "retrieving team", "team_id", teamID)
@@ -159,8 +159,8 @@ func (a *Service) Update(ctx context.Context, teamID resource.TfeID, opts Update
 	return team, nil
 }
 
-// List lists teams in the organization.
-func (a *Service) List(ctx context.Context, organization organization.Name) ([]*Team, error) {
+// ListTeams lists teams in the organization.
+func (a *Service) ListTeams(ctx context.Context, organization organization.Name) ([]*Team, error) {
 	subject, err := a.Authorize(ctx, authz.ListTeamsAction, organization)
 	if err != nil {
 		return nil, err
@@ -176,7 +176,7 @@ func (a *Service) List(ctx context.Context, organization organization.Name) ([]*
 	return teams, nil
 }
 
-func (a *Service) Get(ctx context.Context, organization organization.Name, name string) (*Team, error) {
+func (a *Service) GetTeam(ctx context.Context, organization organization.Name, name string) (*Team, error) {
 	subject, err := a.Authorize(ctx, authz.GetTeamAction, organization)
 	if err != nil {
 		return nil, err
@@ -193,7 +193,7 @@ func (a *Service) Get(ctx context.Context, organization organization.Name, name 
 	return team, nil
 }
 
-func (a *Service) GetByID(ctx context.Context, teamID resource.TfeID) (*Team, error) {
+func (a *Service) GetTeamByID(ctx context.Context, teamID resource.TfeID) (*Team, error) {
 	team, err := a.db.getTeamByID(ctx, teamID)
 	if err != nil {
 		a.Error(err, "retrieving team", "team_id", teamID)
@@ -210,7 +210,7 @@ func (a *Service) GetByID(ctx context.Context, teamID resource.TfeID) (*Team, er
 	return team, nil
 }
 
-func (a *Service) Delete(ctx context.Context, teamID resource.TfeID) error {
+func (a *Service) DeleteTeam(ctx context.Context, teamID resource.TfeID) error {
 	team, err := a.db.getTeamByID(ctx, teamID)
 	if err != nil {
 		a.Error(err, "retrieving team", "team_id", teamID)

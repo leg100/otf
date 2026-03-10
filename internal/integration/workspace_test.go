@@ -26,17 +26,17 @@ func TestWorkspace(t *testing.T) {
 		daemon, org, ctx := setup(t)
 
 		// watch workspace events
-		sub, unsub := daemon.Workspaces.Watch(ctx)
+		sub, unsub := daemon.Workspaces.WatchWorkspaces(ctx)
 		defer unsub()
 
-		ws, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
+		ws, err := daemon.Workspaces.CreateWorkspace(ctx, workspace.CreateOptions{
 			Name:         new(uuid.NewString()),
 			Organization: &org.Name,
 		})
 		require.NoError(t, err)
 
 		t.Run("duplicate error", func(t *testing.T) {
-			_, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
+			_, err := daemon.Workspaces.CreateWorkspace(ctx, workspace.CreateOptions{
 				Name:         new(ws.Name),
 				Organization: &org.Name,
 			})
@@ -53,7 +53,7 @@ func TestWorkspace(t *testing.T) {
 		daemon, org, ctx := setup(t, withGithubOption(github.WithRepo(vcs.NewMustRepo("test", "dummy"))))
 
 		vcsprov := daemon.createVCSProvider(t, ctx, org, nil)
-		ws, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
+		ws, err := daemon.Workspaces.CreateWorkspace(ctx, workspace.CreateOptions{
 			Name:         new(uuid.NewString()),
 			Organization: &org.Name,
 			ConnectOptions: &workspace.ConnectOptions{
@@ -83,7 +83,7 @@ func TestWorkspace(t *testing.T) {
 		daemon, org, ctx := setup(t, withGithubOption(github.WithRepo(vcs.NewMustRepo("test", "dummy"))))
 
 		vcsprov := daemon.createVCSProvider(t, ctx, org, nil)
-		ws, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
+		ws, err := daemon.Workspaces.CreateWorkspace(ctx, workspace.CreateOptions{
 			Name:         new(uuid.NewString()),
 			Organization: &org.Name,
 			ConnectOptions: &workspace.ConnectOptions{
@@ -97,7 +97,7 @@ func TestWorkspace(t *testing.T) {
 		hook := <-daemon.WebhookEvents
 		require.Equal(t, github.WebhookCreated, hook.Action)
 
-		_, err = daemon.Workspaces.Delete(ctx, ws.ID)
+		_, err = daemon.Workspaces.DeleteWorkspace(ctx, ws.ID)
 		require.NoError(t, err)
 
 		// webhook should now have been deleted from github
@@ -132,14 +132,14 @@ func TestWorkspace(t *testing.T) {
 		daemon, org, ctx := setup(t)
 
 		// watch workspace events
-		sub, unsub := daemon.Workspaces.Watch(ctx)
+		sub, unsub := daemon.Workspaces.WatchWorkspaces(ctx)
 		defer unsub()
 
 		ws := daemon.createWorkspace(t, ctx, org)
 		event := <-sub
 		assert.Equal(t, pubsub.CreatedEvent, event.Type)
 
-		got, err := daemon.Workspaces.Update(ctx, ws.ID, workspace.UpdateOptions{
+		got, err := daemon.Workspaces.UpdateWorkspace(ctx, ws.ID, workspace.UpdateOptions{
 			Description: new("updated description"),
 		})
 		require.NoError(t, err)
@@ -149,7 +149,7 @@ func TestWorkspace(t *testing.T) {
 
 		// assert too that the WS returned by UpdateWorkspace is identical to one
 		// returned by GetWorkspace
-		want, err := daemon.Workspaces.Get(ctx, ws.ID)
+		want, err := daemon.Workspaces.GetWorkspace(ctx, ws.ID)
 		require.NoError(t, err)
 		assert.Equal(t, want, got)
 	})
@@ -158,7 +158,7 @@ func TestWorkspace(t *testing.T) {
 		daemon, _, ctx := setup(t)
 		want := daemon.createWorkspace(t, ctx, nil)
 
-		got, err := daemon.Workspaces.Get(ctx, want.ID)
+		got, err := daemon.Workspaces.GetWorkspace(ctx, want.ID)
 		require.NoError(t, err)
 		assert.Equal(t, want, got)
 	})
@@ -167,24 +167,24 @@ func TestWorkspace(t *testing.T) {
 		daemon, _, ctx := setup(t)
 		want := daemon.createWorkspace(t, ctx, nil)
 
-		got, err := daemon.Workspaces.GetByName(ctx, want.Organization, want.Name)
+		got, err := daemon.Workspaces.GetWorkspaceByName(ctx, want.Organization, want.Name)
 		require.NoError(t, err)
 		assert.Equal(t, want, got)
 	})
 
 	t.Run("list", func(t *testing.T) {
 		daemon, org, ctx := setup(t)
-		ws1, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
+		ws1, err := daemon.Workspaces.CreateWorkspace(ctx, workspace.CreateOptions{
 			Organization: &org.Name,
 			Name:         new("workspace-1"),
 		})
 		require.NoError(t, err)
-		ws2, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
+		ws2, err := daemon.Workspaces.CreateWorkspace(ctx, workspace.CreateOptions{
 			Organization: &org.Name,
 			Name:         new("workspace-2"),
 		})
 		require.NoError(t, err)
-		wsTagged, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
+		wsTagged, err := daemon.Workspaces.CreateWorkspace(ctx, workspace.CreateOptions{
 			Organization: &org.Name,
 			Name:         new("workspace-3"),
 			Tags:         []workspace.TagSpec{{Name: "foo"}, {Name: "bar"}},
@@ -268,7 +268,7 @@ func TestWorkspace(t *testing.T) {
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				// call endpoint using admin to avoid authz errors.
-				results, err := daemon.Workspaces.List(adminCtx, tt.opts)
+				results, err := daemon.Workspaces.ListWorkspaces(adminCtx, tt.opts)
 				require.NoError(t, err)
 
 				tt.want(t, results)
@@ -278,13 +278,13 @@ func TestWorkspace(t *testing.T) {
 
 	t.Run("list by tag", func(t *testing.T) {
 		daemon, org, ctx := setup(t)
-		ws1, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
+		ws1, err := daemon.Workspaces.CreateWorkspace(ctx, workspace.CreateOptions{
 			Name:         new(uuid.NewString()),
 			Organization: &org.Name,
 			Tags:         []workspace.TagSpec{{Name: "foo"}},
 		})
 		require.NoError(t, err)
-		ws2, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
+		ws2, err := daemon.Workspaces.CreateWorkspace(ctx, workspace.CreateOptions{
 			Name:         new(uuid.NewString()),
 			Organization: &org.Name,
 			Tags:         []workspace.TagSpec{{Name: "foo"}, {Name: "bar"}},
@@ -323,7 +323,7 @@ func TestWorkspace(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				results, err := daemon.Workspaces.List(ctx, workspace.ListOptions{
+				results, err := daemon.Workspaces.ListWorkspaces(ctx, workspace.ListOptions{
 					Organization: &org.Name,
 					Tags:         tt.tags,
 				})
@@ -341,8 +341,8 @@ func TestWorkspace(t *testing.T) {
 
 		team1 := daemon.createTeam(t, ctx, org)
 		team2 := daemon.createTeam(t, ctx, org)
-		_ = daemon.Workspaces.SetPermission(ctx, ws1.ID, team1.ID, authz.WorkspacePlanRole)
-		_ = daemon.Workspaces.SetPermission(ctx, ws2.ID, team2.ID, authz.WorkspacePlanRole)
+		_ = daemon.Workspaces.SetWorkspacePermission(ctx, ws1.ID, team1.ID, authz.WorkspacePlanRole)
+		_ = daemon.Workspaces.SetWorkspacePermission(ctx, ws2.ID, team2.ID, authz.WorkspacePlanRole)
 		user1 := daemon.createUser(t, user.WithTeams(team1, team2))
 		user2 := daemon.createUser(t)
 
@@ -403,7 +403,7 @@ func TestWorkspace(t *testing.T) {
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				ctx := authz.AddSubjectToContext(ctx, tt.user)
-				results, err := daemon.Workspaces.List(ctx, tt.opts)
+				results, err := daemon.Workspaces.ListWorkspaces(ctx, tt.opts)
 				require.NoError(t, err)
 
 				tt.want(t, results)
@@ -428,7 +428,7 @@ func TestWorkspace(t *testing.T) {
 
 		ws3run1applied := daemon.createRun(t, ctx, ws3, cv3, nil)
 		_ = daemon.waitRunStatus(t, ctx, ws3run1applied.ID, runstatus.Planned)
-		err := daemon.Runs.Apply(ctx, ws3run1applied.ID)
+		err := daemon.Runs.ApplyRun(ctx, ws3run1applied.ID)
 		require.NoError(t, err)
 		_ = daemon.waitRunStatus(t, ctx, ws3run1applied.ID, runstatus.Applied)
 
@@ -468,7 +468,7 @@ func TestWorkspace(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				results, err := daemon.Workspaces.List(ctx, workspace.ListOptions{
+				results, err := daemon.Workspaces.ListWorkspaces(ctx, workspace.ListOptions{
 					Organization: &org.Name,
 					Status:       tt.statuses,
 				})
@@ -498,19 +498,19 @@ func TestWorkspace(t *testing.T) {
 		daemon, org, ctx := setup(t)
 
 		// watch workspace events
-		sub, unsub := daemon.Workspaces.Watch(ctx)
+		sub, unsub := daemon.Workspaces.WatchWorkspaces(ctx)
 		defer unsub()
 
 		ws := daemon.createWorkspace(t, ctx, org)
 		event := <-sub
 		assert.Equal(t, pubsub.CreatedEvent, event.Type)
 
-		_, err := daemon.Workspaces.Delete(ctx, ws.ID)
+		_, err := daemon.Workspaces.DeleteWorkspace(ctx, ws.ID)
 		require.NoError(t, err)
 		event = <-sub
 		assert.Equal(t, pubsub.DeletedEvent, event.Type)
 
-		results, err := daemon.Workspaces.List(ctx, workspace.ListOptions{Organization: &ws.Organization})
+		results, err := daemon.Workspaces.ListWorkspaces(ctx, workspace.ListOptions{Organization: &ws.Organization})
 		require.NoError(t, err)
 		assert.Equal(t, 0, len(results.Items))
 	})

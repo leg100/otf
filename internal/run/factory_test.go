@@ -174,23 +174,23 @@ func newTestFactory(org *organization.Organization, ws *workspace.Workspace, cv 
 	}
 }
 
-func (f *fakeFactoryOrganizationService) Get(context.Context, organization.Name) (*organization.Organization, error) {
+func (f *fakeFactoryOrganizationService) GetOrganization(context.Context, organization.Name) (*organization.Organization, error) {
 	return f.org, nil
 }
 
-func (f *fakeFactoryWorkspaceService) Get(context.Context, resource.TfeID) (*workspace.Workspace, error) {
+func (f *fakeFactoryWorkspaceService) GetWorkspace(context.Context, resource.TfeID) (*workspace.Workspace, error) {
 	return f.ws, nil
 }
 
-func (f *fakeFactoryConfigurationVersionService) Get(context.Context, resource.TfeID) (*configversion.ConfigurationVersion, error) {
+func (f *fakeFactoryConfigurationVersionService) GetConfigVersion(context.Context, resource.TfeID) (*configversion.ConfigurationVersion, error) {
 	return f.cv, nil
 }
 
-func (f *fakeFactoryConfigurationVersionService) GetLatest(context.Context, resource.TfeID) (*configversion.ConfigurationVersion, error) {
+func (f *fakeFactoryConfigurationVersionService) GetLatestConfigVersion(context.Context, resource.TfeID) (*configversion.ConfigurationVersion, error) {
 	return f.cv, nil
 }
 
-func (f *fakeFactoryConfigurationVersionService) Create(ctx context.Context, workspaceID resource.TfeID, opts configversion.CreateOptions) (*configversion.ConfigurationVersion, error) {
+func (f *fakeFactoryConfigurationVersionService) CreateConfigVersion(ctx context.Context, workspaceID resource.TfeID, opts configversion.CreateOptions) (*configversion.ConfigurationVersion, error) {
 	return &configversion.ConfigurationVersion{ID: workspaceID}, nil
 }
 
@@ -202,7 +202,7 @@ func (f *fakeFactoryConfigurationVersionService) GetSourceIcon(source source.Sou
 	return templ.Raw("")
 }
 
-func (f *fakeFactoryVCSProviderService) Get(context.Context, resource.TfeID) (*vcs.Provider, error) {
+func (f *fakeFactoryVCSProviderService) GetVCSProvider(context.Context, resource.TfeID) (*vcs.Provider, error) {
 	return &vcs.Provider{
 		Client: &fakeFactoryCloudClient{},
 	}, nil

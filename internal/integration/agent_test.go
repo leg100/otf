@@ -29,7 +29,7 @@ func TestIntegration_Agents(t *testing.T) {
 	require.NoError(t, err)
 
 	// ws1 is assigned to pool1
-	ws1, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
+	ws1, err := daemon.Workspaces.CreateWorkspace(ctx, workspace.CreateOptions{
 		Name:          new("ws-1"),
 		Organization:  &org.Name,
 		ExecutionMode: internal.Ptr(workspace.AgentExecutionMode),
@@ -38,7 +38,7 @@ func TestIntegration_Agents(t *testing.T) {
 	require.NoError(t, err)
 
 	// ws2 to assigned to pool2
-	ws2, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
+	ws2, err := daemon.Workspaces.CreateWorkspace(ctx, workspace.CreateOptions{
 		Name:          new("ws-2"),
 		Organization:  &org.Name,
 		ExecutionMode: internal.Ptr(workspace.AgentExecutionMode),

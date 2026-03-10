@@ -14,7 +14,7 @@ type Client struct {
 	*otfhttp.Client
 }
 
-func (c *Client) GetPrivateKey(ctx context.Context, id resource.TfeID) ([]byte, error) {
+func (c *Client) GetSSHKeyPrivateKey(ctx context.Context, id resource.TfeID) ([]byte, error) {
 	path := fmt.Sprintf("ssh-keys/%s", id)
 	req, err := c.NewRequest("GET", path, nil)
 	if err != nil {

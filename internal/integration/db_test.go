@@ -45,19 +45,19 @@ func TestTx(t *testing.T) {
 		org := daemon.createOrganization(t, ctx)
 
 		// query org just created using same tx conn.
-		_, err := daemon.Organizations.Get(ctx, org.Name)
+		_, err := daemon.Organizations.GetOrganization(ctx, org.Name)
 		assert.NoError(t, err)
 
 		err = daemon.Tx(ctx, func(ctx context.Context) error {
 			// query org just created using child tx conn
-			_, err := daemon.Organizations.Get(ctx, org.Name)
+			_, err := daemon.Organizations.GetOrganization(ctx, org.Name)
 			return err
 		})
 		require.NoError(t, err)
 
 		// this should fail because it is using a different conn from the old
 		// context
-		_, err = daemon.Organizations.Get(oldContext, org.Name)
+		_, err = daemon.Organizations.GetOrganization(oldContext, org.Name)
 		assert.ErrorIs(t, err, internal.ErrResourceNotFound)
 
 		return nil

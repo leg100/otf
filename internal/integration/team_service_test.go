@@ -17,13 +17,13 @@ func TestIntegation_TeamService(t *testing.T) {
 	t.Run("create", func(t *testing.T) {
 		daemon, org, ctx := setup(t)
 
-		team, err := daemon.Teams.Create(ctx, org.Name, otfteam.CreateTeamOptions{
+		team, err := daemon.Teams.CreateTeam(ctx, org.Name, otfteam.CreateTeamOptions{
 			Name: new(uuid.NewString()),
 		})
 		require.NoError(t, err)
 
 		t.Run("already exists error", func(t *testing.T) {
-			_, err := daemon.Teams.Create(ctx, org.Name, otfteam.CreateTeamOptions{
+			_, err := daemon.Teams.CreateTeam(ctx, org.Name, otfteam.CreateTeamOptions{
 				Name: new(team.Name),
 			})
 			require.Equal(t, internal.ErrResourceAlreadyExists, err)
@@ -34,7 +34,7 @@ func TestIntegation_TeamService(t *testing.T) {
 		daemon, _, ctx := setup(t)
 		team := daemon.createTeam(t, ctx, nil)
 
-		_, err := daemon.Teams.Update(ctx, team.ID, otfteam.UpdateTeamOptions{
+		_, err := daemon.Teams.UpdateTeam(ctx, team.ID, otfteam.UpdateTeamOptions{
 			OrganizationAccessOptions: otfteam.OrganizationAccessOptions{
 				ManageWorkspaces: new(true),
 				ManageVCS:        new(true),
@@ -43,7 +43,7 @@ func TestIntegation_TeamService(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		got, err := daemon.Teams.Get(ctx, team.Organization, team.Name)
+		got, err := daemon.Teams.GetTeam(ctx, team.Organization, team.Name)
 		require.NoError(t, err)
 
 		assert.True(t, got.ManageWorkspaces)
@@ -55,7 +55,7 @@ func TestIntegation_TeamService(t *testing.T) {
 		daemon, _, ctx := setup(t)
 		team := daemon.createTeam(t, ctx, nil)
 
-		got, err := daemon.Teams.Get(ctx, team.Organization, team.Name)
+		got, err := daemon.Teams.GetTeam(ctx, team.Organization, team.Name)
 		require.NoError(t, err)
 
 		assert.Equal(t, team, got)
@@ -65,7 +65,7 @@ func TestIntegation_TeamService(t *testing.T) {
 		daemon, _, ctx := setup(t)
 		want := daemon.createTeam(t, ctx, nil)
 
-		got, err := daemon.Teams.GetByID(ctx, want.ID)
+		got, err := daemon.Teams.GetTeamByID(ctx, want.ID)
 		require.NoError(t, err)
 
 		assert.Equal(t, want, got)
@@ -78,7 +78,7 @@ func TestIntegation_TeamService(t *testing.T) {
 		team2 := daemon.createTeam(t, ctx, org)
 		team3 := daemon.createTeam(t, ctx, org)
 
-		got, err := daemon.Teams.List(ctx, org.Name)
+		got, err := daemon.Teams.ListTeams(ctx, org.Name)
 		require.NoError(t, err)
 
 		assert.Contains(t, got, team1)
@@ -109,7 +109,7 @@ func TestIntegation_TeamService(t *testing.T) {
 		daemon, _, ctx := setup(t)
 		team := daemon.createTeam(t, ctx, nil)
 
-		err := daemon.Teams.Delete(ctx, team.ID)
+		err := daemon.Teams.DeleteTeam(ctx, team.ID)
 		require.NoError(t, err)
 	})
 
@@ -117,10 +117,10 @@ func TestIntegation_TeamService(t *testing.T) {
 		daemon, _, ctx := setup(t)
 		org := daemon.createOrganization(t, ctx) // creates owners team
 
-		owners, err := daemon.Teams.Get(ctx, org.Name, "owners")
+		owners, err := daemon.Teams.GetTeam(ctx, org.Name, "owners")
 		require.NoError(t, err)
 
-		err = daemon.Teams.Delete(ctx, owners.ID)
+		err = daemon.Teams.DeleteTeam(ctx, owners.ID)
 		assert.Equal(t, otfteam.ErrRemovingOwnersTeamNotPermitted, err)
 	})
 }

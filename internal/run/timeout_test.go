@@ -95,11 +95,11 @@ type fakeTimeoutRunClient struct {
 	canceled bool
 }
 
-func (f *fakeTimeoutRunClient) List(ctx context.Context, opts ListOptions) (*resource.Page[*Run], error) {
+func (f *fakeTimeoutRunClient) ListRuns(ctx context.Context, opts ListOptions) (*resource.Page[*Run], error) {
 	return resource.NewPage([]*Run{f.run}, resource.PageOptions{}, nil), nil
 }
 
-func (f *fakeTimeoutRunClient) Cancel(ctx context.Context, runID resource.TfeID) error {
+func (f *fakeTimeoutRunClient) CancelRun(ctx context.Context, runID resource.TfeID) error {
 	f.canceled = true
 	return nil
 }

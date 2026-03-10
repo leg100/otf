@@ -38,7 +38,7 @@ func newFakeCLI(run *Run, tarball []byte) *CLI {
 	}
 }
 
-func (f *fakeCLIService) Get(context.Context, resource.TfeID) (*Run, error) {
+func (f *fakeCLIService) GetRun(context.Context, resource.TfeID) (*Run, error) {
 	return f.run, nil
 }
 

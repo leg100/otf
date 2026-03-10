@@ -15,7 +15,7 @@ type Client struct {
 	*otfhttp.Client
 }
 
-func (c *Client) GetPlanFile(ctx context.Context, runID resource.TfeID, format PlanFormat) ([]byte, error) {
+func (c *Client) GetRunPlanFile(ctx context.Context, runID resource.TfeID, format PlanFormat) ([]byte, error) {
 	u := fmt.Sprintf("runs/%s/planfile", url.QueryEscape(runID.String()))
 	req, err := c.NewRequest("GET", u, &PlanFileOptions{Format: format})
 	if err != nil {
@@ -30,7 +30,7 @@ func (c *Client) GetPlanFile(ctx context.Context, runID resource.TfeID, format P
 	return buf.Bytes(), nil
 }
 
-func (c *Client) UploadPlanFile(ctx context.Context, runID resource.TfeID, plan []byte, format PlanFormat) error {
+func (c *Client) UploadRunPlanFile(ctx context.Context, runID resource.TfeID, plan []byte, format PlanFormat) error {
 	u := fmt.Sprintf("runs/%s/planfile", url.QueryEscape(runID.String()))
 	req, err := c.NewRequest("PUT", u, plan)
 	if err != nil {
@@ -89,7 +89,7 @@ func (c *Client) ListRuns(ctx context.Context, opts ListOptions) (*resource.Page
 	return &list, nil
 }
 
-func (c *Client) Get(ctx context.Context, runID resource.TfeID) (*Run, error) {
+func (c *Client) GetRun(ctx context.Context, runID resource.TfeID) (*Run, error) {
 	u := fmt.Sprintf("runs/%s", url.QueryEscape(runID.String()))
 	req, err := c.NewRequest("GET", u, nil)
 	if err != nil {
@@ -102,7 +102,7 @@ func (c *Client) Get(ctx context.Context, runID resource.TfeID) (*Run, error) {
 	return &run, nil
 }
 
-func (c *Client) PutChunk(ctx context.Context, opts PutChunkOptions) error {
+func (c *Client) PutRunChunk(ctx context.Context, opts PutChunkOptions) error {
 	u := fmt.Sprintf("runs/%s/logs/%s", url.QueryEscape(opts.RunID.String()), url.QueryEscape(string(opts.Phase)))
 	req, err := c.NewRequest("PUT", u, opts.Data)
 	if err != nil {

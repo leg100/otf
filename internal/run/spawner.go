@@ -31,18 +31,18 @@ type (
 	}
 
 	spawnerConfigClient interface {
-		Create(ctx context.Context, workspaceID resource.TfeID, opts configversion.CreateOptions) (*configversion.ConfigurationVersion, error)
-		Get(ctx context.Context, id resource.TfeID) (*configversion.ConfigurationVersion, error)
-		GetLatest(ctx context.Context, workspaceID resource.TfeID) (*configversion.ConfigurationVersion, error)
+		CreateConfigVersion(ctx context.Context, workspaceID resource.TfeID, opts configversion.CreateOptions) (*configversion.ConfigurationVersion, error)
+		GetConfigVersion(ctx context.Context, id resource.TfeID) (*configversion.ConfigurationVersion, error)
+		GetLatestConfigVersion(ctx context.Context, workspaceID resource.TfeID) (*configversion.ConfigurationVersion, error)
 		UploadConfig(ctx context.Context, id resource.TfeID, config []byte) error
 	}
 
 	spawnerVCSClient interface {
-		Get(ctx context.Context, providerID resource.TfeID) (*vcs.Provider, error)
+		GetVCSProvider(ctx context.Context, providerID resource.TfeID) (*vcs.Provider, error)
 	}
 
 	spawnerRunClient interface {
-		Create(ctx context.Context, workspaceID resource.TfeID, opts CreateOptions) (*Run, error)
+		CreateRun(ctx context.Context, workspaceID resource.TfeID, opts CreateOptions) (*Run, error)
 	}
 )
 
@@ -145,7 +145,7 @@ func (s *Spawner) handleWithError(logger logr.Logger, event vcs.Event) error {
 	workspaces = workspaces[:n]
 
 	// fetch tarball
-	client, err := s.vcs.Get(ctx, event.VCSProviderID)
+	client, err := s.vcs.GetVCSProvider(ctx, event.VCSProviderID)
 	if err != nil {
 		return err
 	}
@@ -216,7 +216,7 @@ func (s *Spawner) handleWithError(logger logr.Logger, event vcs.Event) error {
 		runOpts := CreateOptions{
 			Source: event.EventHeader.Source,
 		}
-		cv, err := s.configs.Create(ctx, ws.ID, cvOpts)
+		cv, err := s.configs.CreateConfigVersion(ctx, ws.ID, cvOpts)
 		if err != nil {
 			return err
 		}
@@ -224,7 +224,7 @@ func (s *Spawner) handleWithError(logger logr.Logger, event vcs.Event) error {
 			return err
 		}
 		runOpts.ConfigurationVersionID = &cv.ID
-		_, err = s.runs.Create(ctx, ws.ID, runOpts)
+		_, err = s.runs.CreateRun(ctx, ws.ID, runOpts)
 		if err != nil {
 			return err
 		}

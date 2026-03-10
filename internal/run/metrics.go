@@ -31,13 +31,13 @@ type status struct {
 }
 
 type metricsService interface {
-	Watch(ctx context.Context) (<-chan pubsub.Event[*Event], func())
+	WatchRuns(ctx context.Context) (<-chan pubsub.Event[*Event], func())
 	listStatuses(ctx context.Context) ([]status, error)
 }
 
 func (mc *MetricsCollector) Start(ctx context.Context) error {
 	// subscribe to run events
-	sub, unsub := mc.service.Watch(ctx)
+	sub, unsub := mc.service.WatchRuns(ctx)
 	defer unsub()
 
 	statuses, err := mc.service.listStatuses(ctx)

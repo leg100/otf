@@ -196,7 +196,7 @@ func (a *Service) ListOrganizationUsers(ctx context.Context, organization organi
 // needs either organization-wide authority to call this endpoint, or they need
 // to be a member of the team.
 func (a *Service) ListTeamUsers(ctx context.Context, teamID resource.TfeID) ([]*User, error) {
-	team, err := a.teams.GetByID(ctx, teamID)
+	team, err := a.teams.GetTeamByID(ctx, teamID)
 	if err != nil {
 		return nil, err
 	}
@@ -237,7 +237,7 @@ func (a *Service) Delete(ctx context.Context, username Username) error {
 // AddTeamMembership adds users to a team. If a user does not exist then the
 // user is created first.
 func (a *Service) AddTeamMembership(ctx context.Context, teamID resource.TfeID, usernames []Username) error {
-	team, err := a.teams.GetByID(ctx, teamID)
+	team, err := a.teams.GetTeamByID(ctx, teamID)
 	if err != nil {
 		return fmt.Errorf("retrieving team: %w", err)
 	}
@@ -276,7 +276,7 @@ func (a *Service) AddTeamMembership(ctx context.Context, teamID resource.TfeID, 
 
 // RemoveTeamMembership removes users from a team.
 func (a *Service) RemoveTeamMembership(ctx context.Context, teamID resource.TfeID, usernames []Username) error {
-	team, err := a.teams.GetByID(ctx, teamID)
+	team, err := a.teams.GetTeamByID(ctx, teamID)
 	if err != nil {
 		return err
 	}

@@ -197,7 +197,7 @@ type fakeSchedulerRunClient struct {
 	enqueuePlanError error
 }
 
-func (f *fakeSchedulerRunClient) EnqueuePlan(ctx context.Context, runID resource.TfeID) (*Run, error) {
+func (f *fakeSchedulerRunClient) EnqueueRunPlan(ctx context.Context, runID resource.TfeID) (*Run, error) {
 	f.enqueuedRunID = &runID
 	return nil, f.enqueuePlanError
 }

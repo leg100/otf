@@ -85,7 +85,7 @@ func (a *tfe) createOAuthClient(w http.ResponseWriter, r *http.Request) {
 		params.Name = new("")
 	}
 
-	oauthClient, err := a.Create(r.Context(), CreateOptions{
+	oauthClient, err := a.CreateVCSProvider(r.Context(), CreateOptions{
 		Name:                   *params.Name,
 		Organization:           pathParams.Organization,
 		Token:                  params.OAuthToken,
@@ -111,7 +111,7 @@ func (a *tfe) listOAuthClients(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	providers, err := a.List(r.Context(), params.Organization)
+	providers, err := a.ListVCSProviders(r.Context(), params.Organization)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -132,7 +132,7 @@ func (a *tfe) getOAuthClient(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	oauthClient, err := a.Get(r.Context(), id)
+	oauthClient, err := a.GetVCSProvider(r.Context(), id)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -148,7 +148,7 @@ func (a *tfe) deleteOAuthClient(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if _, err = a.Delete(r.Context(), id); err != nil {
+	if _, err = a.DeleteVCSProvider(r.Context(), id); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}

@@ -68,7 +68,7 @@ func (a *tfe) createSSHKey(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	key, err := a.Create(r.Context(), CreateOptions{
+	key, err := a.CreateSSHKey(r.Context(), CreateOptions{
 		Organization: pathParams.Organization,
 		Name:         params.Name,
 		PrivateKey:   params.Value,
@@ -88,7 +88,7 @@ func (a *tfe) listSSHKeys(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	keys, err := a.List(r.Context(), pathParams.Organization)
+	keys, err := a.ListSSHKeys(r.Context(), pathParams.Organization)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -106,7 +106,7 @@ func (a *tfe) getSSHKey(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	key, err := a.Get(r.Context(), id)
+	key, err := a.GetSSHKey(r.Context(), id)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -125,7 +125,7 @@ func (a *tfe) updateSSHKey(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	key, err := a.Update(r.Context(), id, UpdateOptions{
+	key, err := a.UpdateSSHKey(r.Context(), id, UpdateOptions{
 		Name: params.Name,
 	})
 	if err != nil {
@@ -141,7 +141,7 @@ func (a *tfe) deleteSSHKey(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	_, err = a.Delete(r.Context(), id)
+	_, err = a.DeleteSSHKey(r.Context(), id)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return

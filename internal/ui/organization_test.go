@@ -71,7 +71,7 @@ type (
 	}
 )
 
-func (f *fakeOrganizationService) List(ctx context.Context, opts organization.ListOptions) (*resource.Page[*organization.Organization], error) {
+func (f *fakeOrganizationService) ListOrganizations(ctx context.Context, opts organization.ListOptions) (*resource.Page[*organization.Organization], error) {
 	return resource.NewPage(f.orgs, opts.PageOptions, nil), nil
 }
 

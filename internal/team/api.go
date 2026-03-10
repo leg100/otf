@@ -42,7 +42,7 @@ func (a *api) createTeam(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	team, err := a.Create(r.Context(), params.Name, opts)
+	team, err := a.CreateTeam(r.Context(), params.Name, opts)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -59,7 +59,7 @@ func (a *api) getTeamByName(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	team, err := a.Get(r.Context(), params.Organization, params.Team)
+	team, err := a.GetTeam(r.Context(), params.Organization, params.Team)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -74,7 +74,7 @@ func (a *api) deleteTeam(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := a.Delete(r.Context(), id); err != nil {
+	if err := a.DeleteTeam(r.Context(), id); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}

@@ -26,7 +26,7 @@ func (h *Handlers) createSSHKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	key, err := h.SSHKeys.Create(r.Context(), opts)
+	key, err := h.SSHKeys.CreateSSHKey(r.Context(), opts)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -45,7 +45,7 @@ func (h *Handlers) listSSHKeys(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	keys, err := h.SSHKeys.List(r.Context(), params.Name)
+	keys, err := h.SSHKeys.ListSSHKeys(r.Context(), params.Name)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -73,7 +73,7 @@ func (h *Handlers) deleteSSHKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	key, err := h.SSHKeys.Delete(r.Context(), id)
+	key, err := h.SSHKeys.DeleteSSHKey(r.Context(), id)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return

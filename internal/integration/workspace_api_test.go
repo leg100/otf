@@ -97,7 +97,7 @@ func TestIntegration_WorkspaceAPI_CreateConnected(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	run, err := daemon.Runs.Create(ctx, testutils.ParseID(t, ws.ID), otfrun.CreateOptions{})
+	run, err := daemon.Runs.CreateRun(ctx, testutils.ParseID(t, ws.ID), otfrun.CreateOptions{})
 	require.NoError(t, err)
 
 	run = daemon.waitRunStatus(t, ctx, run.ID, runstatus.Planned)

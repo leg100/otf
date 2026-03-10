@@ -84,7 +84,7 @@ func (a *Service) AddHandlers(r *mux.Router) {
 	a.api.addHandlers(r)
 }
 
-func (a *Service) Create(ctx context.Context, opts CreateStateVersionOptions) (*Version, error) {
+func (a *Service) CreateStateVersion(ctx context.Context, opts CreateStateVersionOptions) (*Version, error) {
 	subject, err := a.Authorize(ctx, authz.CreateStateVersionAction, opts.WorkspaceID)
 	if err != nil {
 		return nil, err
@@ -100,15 +100,15 @@ func (a *Service) Create(ctx context.Context, opts CreateStateVersionOptions) (*
 	return sv, nil
 }
 
-func (a *Service) DownloadCurrent(ctx context.Context, workspaceID resource.TfeID) ([]byte, error) {
-	v, err := a.GetCurrent(ctx, workspaceID)
+func (a *Service) DownloadCurrentState(ctx context.Context, workspaceID resource.TfeID) ([]byte, error) {
+	v, err := a.GetCurrentStateVersion(ctx, workspaceID)
 	if err != nil {
 		return nil, err
 	}
-	return a.Download(ctx, v.ID)
+	return a.DownloadState(ctx, v.ID)
 }
 
-func (a *Service) List(ctx context.Context, workspaceID resource.TfeID, opts resource.PageOptions) (*resource.Page[*Version], error) {
+func (a *Service) ListStateVersions(ctx context.Context, workspaceID resource.TfeID, opts resource.PageOptions) (*resource.Page[*Version], error) {
 	subject, err := a.Authorize(ctx, authz.ListStateVersionsAction, workspaceID)
 	if err != nil {
 		return nil, err
@@ -123,7 +123,7 @@ func (a *Service) List(ctx context.Context, workspaceID resource.TfeID, opts res
 	return svl, nil
 }
 
-func (a *Service) GetCurrent(ctx context.Context, workspaceID resource.TfeID) (*Version, error) {
+func (a *Service) GetCurrentStateVersion(ctx context.Context, workspaceID resource.TfeID) (*Version, error) {
 	subject, err := a.Authorize(ctx, authz.GetStateVersionAction, workspaceID)
 	if err != nil {
 		return nil, err
@@ -143,10 +143,10 @@ func (a *Service) GetCurrent(ctx context.Context, workspaceID resource.TfeID) (*
 	return sv, nil
 }
 
-// GetPrevious returns the finalized state version that immediately precedes sv
+// GetPreviousStateVersion returns the finalized state version that immediately precedes sv
 // (by serial) in the same workspace. Returns ErrResourceNotFound when sv is
 // the first version.
-func (a *Service) GetPrevious(ctx context.Context, sv *Version) (*Version, error) {
+func (a *Service) GetPreviousStateVersion(ctx context.Context, sv *Version) (*Version, error) {
 	if _, err := a.Authorize(ctx, authz.GetStateVersionAction, sv.WorkspaceID); err != nil {
 		return nil, err
 	}
@@ -158,7 +158,7 @@ func (a *Service) GetPrevious(ctx context.Context, sv *Version) (*Version, error
 	return prev, nil
 }
 
-func (a *Service) Get(ctx context.Context, versionID resource.TfeID) (*Version, error) {
+func (a *Service) GetStateVersion(ctx context.Context, versionID resource.TfeID) (*Version, error) {
 	subject, err := a.Authorize(ctx, authz.GetStateVersionAction, versionID)
 	if err != nil {
 		return nil, err
@@ -173,7 +173,7 @@ func (a *Service) Get(ctx context.Context, versionID resource.TfeID) (*Version, 
 	return sv, nil
 }
 
-func (a *Service) Delete(ctx context.Context, versionID resource.TfeID) error {
+func (a *Service) DeleteStateVersion(ctx context.Context, versionID resource.TfeID) error {
 	subject, err := a.Authorize(ctx, authz.DeleteStateVersionAction, versionID)
 	if err != nil {
 		return err
@@ -187,7 +187,7 @@ func (a *Service) Delete(ctx context.Context, versionID resource.TfeID) error {
 	return nil
 }
 
-func (a *Service) Rollback(ctx context.Context, versionID resource.TfeID) (*Version, error) {
+func (a *Service) RollbackStateVersion(ctx context.Context, versionID resource.TfeID) (*Version, error) {
 	subject, err := a.Authorize(ctx, authz.RollbackStateVersionAction, versionID)
 	if err != nil {
 		return nil, err
@@ -202,7 +202,7 @@ func (a *Service) Rollback(ctx context.Context, versionID resource.TfeID) (*Vers
 	return sv, nil
 }
 
-func (a *Service) Upload(ctx context.Context, svID resource.TfeID, state []byte) error {
+func (a *Service) UploadState(ctx context.Context, svID resource.TfeID, state []byte) error {
 	var sv *Version
 	err := a.db.Tx(ctx, func(ctx context.Context) error {
 		var err error
@@ -224,7 +224,7 @@ func (a *Service) Upload(ctx context.Context, svID resource.TfeID, state []byte)
 	return nil
 }
 
-func (a *Service) Download(ctx context.Context, svID resource.TfeID) ([]byte, error) {
+func (a *Service) DownloadState(ctx context.Context, svID resource.TfeID) ([]byte, error) {
 	subject, err := a.Authorize(ctx, authz.DownloadStateAction, svID)
 	if err != nil {
 		return nil, err
@@ -238,7 +238,7 @@ func (a *Service) Download(ctx context.Context, svID resource.TfeID) ([]byte, er
 	return state, nil
 }
 
-func (a *Service) GetOutput(ctx context.Context, outputID resource.TfeID) (*Output, error) {
+func (a *Service) GetStateOutput(ctx context.Context, outputID resource.TfeID) (*Output, error) {
 	out, err := a.db.getOutput(ctx, outputID)
 	if err != nil {
 		a.Error(err, "retrieving state version output", "id", outputID)

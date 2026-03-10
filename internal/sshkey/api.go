@@ -28,7 +28,7 @@ func (a *api) getPrivateKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	key, err := a.GetPrivateKey(r.Context(), id)
+	key, err := a.GetSSHKeyPrivateKey(r.Context(), id)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return

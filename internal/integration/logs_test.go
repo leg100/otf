@@ -17,7 +17,7 @@ func TestLogs(t *testing.T) {
 		daemon, _, ctx := setup(t)
 		run := daemon.createRun(t, ctx, nil, nil, nil)
 
-		err := daemon.Runs.PutChunk(ctx, runpkg.PutChunkOptions{
+		err := daemon.Runs.PutRunChunk(ctx, runpkg.PutChunkOptions{
 			RunID: run.ID,
 			Phase: runpkg.PlanPhase,
 			Data:  []byte("\x02hello world\x03"),
@@ -29,7 +29,7 @@ func TestLogs(t *testing.T) {
 		daemon, _, ctx := setup(t)
 		run := daemon.createRun(t, ctx, nil, nil, nil)
 
-		err := daemon.Runs.PutChunk(ctx, runpkg.PutChunkOptions{
+		err := daemon.Runs.PutRunChunk(ctx, runpkg.PutChunkOptions{
 			RunID: run.ID,
 			Phase: runpkg.PlanPhase,
 		})
@@ -40,7 +40,7 @@ func TestLogs(t *testing.T) {
 		daemon, _, ctx := setup(t)
 		run := daemon.createRun(t, ctx, nil, nil, nil)
 
-		err := daemon.Runs.PutChunk(ctx, runpkg.PutChunkOptions{
+		err := daemon.Runs.PutRunChunk(ctx, runpkg.PutChunkOptions{
 			RunID: run.ID,
 			Phase: runpkg.PlanPhase,
 			Data:  []byte("\x02hello world\x03"),
@@ -111,7 +111,7 @@ func TestLogs(t *testing.T) {
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				got, err := daemon.Runs.GetChunk(ctx, tt.opts)
+				got, err := daemon.Runs.GetRunChunk(ctx, tt.opts)
 				require.NoError(t, err)
 
 				assert.Equal(t, tt.want, got)
@@ -136,14 +136,14 @@ func TestClusterLogs(t *testing.T) {
 	run := local.createRun(t, ctx, nil, nil, nil)
 
 	// follow run's plan logs on remote node
-	sub, err := remote.Runs.Tail(ctx, runpkg.TailOptions{
+	sub, err := remote.Runs.TailRun(ctx, runpkg.TailOptions{
 		RunID: run.ID,
 		Phase: runpkg.PlanPhase,
 	})
 	require.NoError(t, err)
 
 	// upload first chunk to local node
-	err = local.Runs.PutChunk(ctx, runpkg.PutChunkOptions{
+	err = local.Runs.PutRunChunk(ctx, runpkg.PutChunkOptions{
 		RunID: run.ID,
 		Phase: runpkg.PlanPhase,
 		Data:  []byte("\x02hello"),
@@ -151,7 +151,7 @@ func TestClusterLogs(t *testing.T) {
 	require.NoError(t, err)
 
 	// upload second and last chunk to local node
-	err = local.Runs.PutChunk(ctx, runpkg.PutChunkOptions{
+	err = local.Runs.PutRunChunk(ctx, runpkg.PutChunkOptions{
 		RunID:  run.ID,
 		Phase:  runpkg.PlanPhase,
 		Data:   []byte(" world\x03"),

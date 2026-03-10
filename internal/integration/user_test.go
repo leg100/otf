@@ -199,7 +199,7 @@ func TestUser(t *testing.T) {
 		daemon, org, ctx := setup(t)
 		owner := userFromContext(t, ctx)
 
-		owners, err := daemon.Teams.Get(ctx, org.Name, "owners")
+		owners, err := daemon.Teams.GetTeam(ctx, org.Name, "owners")
 		require.NoError(t, err)
 		// add another owner
 		another := daemon.createUser(t, otfuser.WithTeams(owners))

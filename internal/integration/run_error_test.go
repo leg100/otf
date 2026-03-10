@@ -44,7 +44,7 @@ func TestRunError(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// create workspace
-			ws, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
+			ws, err := daemon.Workspaces.CreateWorkspace(ctx, workspace.CreateOptions{
 				Name:          new("ws-" + string(tt.mode)),
 				Organization:  &org.Name,
 				ExecutionMode: new(tt.mode),
@@ -82,7 +82,7 @@ func TestRunError(t *testing.T) {
 			run := daemon.createRun(t, ctx, ws, cv, nil)
 
 			// tail run logs
-			logs, err := daemon.Runs.Tail(ctx, runpkg.TailOptions{
+			logs, err := daemon.Runs.TailRun(ctx, runpkg.TailOptions{
 				RunID: run.ID,
 				Phase: runpkg.PlanPhase,
 			})

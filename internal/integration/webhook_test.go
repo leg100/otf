@@ -84,21 +84,21 @@ func TestWebhook_Purger(t *testing.T) {
 		{
 			name: "delete organization",
 			event: func(t *testing.T, org organization.Name, _, vcsProviderID resource.TfeID) {
-				err := daemon.Organizations.Delete(ctx, org)
+				err := daemon.Organizations.DeleteOrganization(ctx, org)
 				require.NoError(t, err)
 			},
 		},
 		{
 			name: "delete vcs provider",
 			event: func(t *testing.T, _ organization.Name, _, vcsProviderID resource.TfeID) {
-				_, err := daemon.VCSProviders.Delete(ctx, vcsProviderID)
+				_, err := daemon.VCSProviders.DeleteVCSProvider(ctx, vcsProviderID)
 				require.NoError(t, err)
 			},
 		},
 		{
 			name: "delete workspace",
 			event: func(t *testing.T, _ organization.Name, workspaceID, _ resource.TfeID) {
-				_, err := daemon.Workspaces.Delete(ctx, workspaceID)
+				_, err := daemon.Workspaces.DeleteWorkspace(ctx, workspaceID)
 				require.NoError(t, err)
 			},
 		},
@@ -109,7 +109,7 @@ func TestWebhook_Purger(t *testing.T) {
 			// workspace to create a webhook on github
 			org := daemon.createOrganization(t, ctx)
 			provider := daemon.createVCSProvider(t, ctx, org, nil)
-			ws, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
+			ws, err := daemon.Workspaces.CreateWorkspace(ctx, workspace.CreateOptions{
 				Name:         new("workspace-1"),
 				Organization: &org.Name,
 				ConnectOptions: &workspace.ConnectOptions{

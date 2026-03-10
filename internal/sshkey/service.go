@@ -62,7 +62,7 @@ func (s *Service) AddHandlers(r *mux.Router) {
 	s.tfe.addHandlers(r)
 }
 
-func (s *Service) Create(ctx context.Context, opts CreateOptions) (*SSHKey, error) {
+func (s *Service) CreateSSHKey(ctx context.Context, opts CreateOptions) (*SSHKey, error) {
 	subject, err := s.Authorize(ctx, authz.CreateSSHKeyAction, opts.Organization)
 	if err != nil {
 		return nil, err
@@ -82,7 +82,7 @@ func (s *Service) Create(ctx context.Context, opts CreateOptions) (*SSHKey, erro
 	return key, nil
 }
 
-func (s *Service) GetPrivateKey(ctx context.Context, id resource.TfeID) ([]byte, error) {
+func (s *Service) GetSSHKeyPrivateKey(ctx context.Context, id resource.TfeID) ([]byte, error) {
 	subject, err := s.Authorize(ctx, authz.GetPrivateKeySSHKeyAction, id)
 	if err != nil {
 		return nil, err
@@ -96,7 +96,7 @@ func (s *Service) GetPrivateKey(ctx context.Context, id resource.TfeID) ([]byte,
 	return key, nil
 }
 
-func (s *Service) Get(ctx context.Context, id resource.TfeID) (*SSHKey, error) {
+func (s *Service) GetSSHKey(ctx context.Context, id resource.TfeID) (*SSHKey, error) {
 	subject, err := s.Authorize(ctx, authz.GetSSHKeyAction, id)
 	if err != nil {
 		return nil, err
@@ -110,7 +110,7 @@ func (s *Service) Get(ctx context.Context, id resource.TfeID) (*SSHKey, error) {
 	return key, nil
 }
 
-func (s *Service) List(ctx context.Context, org organization.Name) ([]*SSHKey, error) {
+func (s *Service) ListSSHKeys(ctx context.Context, org organization.Name) ([]*SSHKey, error) {
 	subject, err := s.Authorize(ctx, authz.ListSSHKeysAction, org)
 	if err != nil {
 		return nil, err
@@ -124,7 +124,7 @@ func (s *Service) List(ctx context.Context, org organization.Name) ([]*SSHKey, e
 	return keys, nil
 }
 
-func (s *Service) Update(ctx context.Context, id resource.TfeID, opts UpdateOptions) (*SSHKey, error) {
+func (s *Service) UpdateSSHKey(ctx context.Context, id resource.TfeID, opts UpdateOptions) (*SSHKey, error) {
 	var subject authz.Subject
 	updated, err := s.db.update(ctx, id, func(ctx context.Context, key *SSHKey) (err error) {
 		subject, err = s.Authorize(ctx, authz.UpdateSSHKeyAction, id)
@@ -144,7 +144,7 @@ func (s *Service) Update(ctx context.Context, id resource.TfeID, opts UpdateOpti
 	return updated, nil
 }
 
-func (s *Service) Delete(ctx context.Context, id resource.TfeID) (*SSHKey, error) {
+func (s *Service) DeleteSSHKey(ctx context.Context, id resource.TfeID) (*SSHKey, error) {
 	subject, err := s.Authorize(ctx, authz.DeleteSSHKeyAction, id)
 	if err != nil {
 		return nil, err

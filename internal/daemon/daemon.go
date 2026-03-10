@@ -485,7 +485,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 			System: &resource.Deleter[*run.Run]{
 				Logger:                logger.WithValues("component", "run-deleter"),
 				OverrideCheckInterval: cfg.OverrideDeleterInterval,
-				Client:                runService,
+				Client:                &runDeleterAdapter{svc: runService},
 				AgeThreshold:          cfg.DeleteRunsAfter,
 			},
 		},
@@ -495,7 +495,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 			System: &resource.Deleter[*configversion.ConfigurationVersion]{
 				Logger:                logger.WithValues("component", "config-deleter"),
 				OverrideCheckInterval: cfg.OverrideDeleterInterval,
-				Client:                configService,
+				Client:                &configVersionDeleterAdapter{svc: configService},
 				AgeThreshold:          cfg.DeleteConfigsAfter,
 			},
 		},
@@ -645,4 +645,31 @@ func (d *Daemon) Close() {
 	d.netListener.Close()
 	// close all db connections upon exit
 	d.DB.Close()
+}
+
+// configVersionDeleterAdapter adapts configversion.Service to the
+// resource.deleterClient interface.
+type configVersionDeleterAdapter struct {
+	svc *configversion.Service
+}
+
+func (a *configVersionDeleterAdapter) ListOlderThan(ctx context.Context, age time.Time) ([]*configversion.ConfigurationVersion, error) {
+	return a.svc.ListConfigVersionsOlderThan(ctx, age)
+}
+
+func (a *configVersionDeleterAdapter) Delete(ctx context.Context, id resource.TfeID) error {
+	return a.svc.DeleteConfigVersion(ctx, id)
+}
+
+// runDeleterAdapter adapts run.Service to the resource.deleterClient interface.
+type runDeleterAdapter struct {
+	svc *run.Service
+}
+
+func (a *runDeleterAdapter) ListOlderThan(ctx context.Context, age time.Time) ([]*run.Run, error) {
+	return a.svc.ListRunsOlderThan(ctx, age)
+}
+
+func (a *runDeleterAdapter) Delete(ctx context.Context, id resource.TfeID) error {
+	return a.svc.DeleteRun(ctx, id)
 }

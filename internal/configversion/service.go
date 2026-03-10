@@ -84,7 +84,7 @@ func (s *Service) AddHandlers(r *mux.Router) {
 	s.api.addHandlers(r)
 }
 
-func (s *Service) Create(ctx context.Context, workspaceID resource.TfeID, opts CreateOptions) (*ConfigurationVersion, error) {
+func (s *Service) CreateConfigVersion(ctx context.Context, workspaceID resource.TfeID, opts CreateOptions) (*ConfigurationVersion, error) {
 	subject, err := s.Authorize(ctx, authz.CreateConfigurationVersionAction, workspaceID)
 	if err != nil {
 		return nil, err
@@ -99,7 +99,7 @@ func (s *Service) Create(ctx context.Context, workspaceID resource.TfeID, opts C
 	return cv, nil
 }
 
-func (s *Service) List(ctx context.Context, workspaceID resource.TfeID, opts ListOptions) (*resource.Page[*ConfigurationVersion], error) {
+func (s *Service) ListConfigVersions(ctx context.Context, workspaceID resource.TfeID, opts ListOptions) (*resource.Page[*ConfigurationVersion], error) {
 	subject, err := s.Authorize(ctx, authz.ListConfigurationVersionsAction, workspaceID)
 	if err != nil {
 		return nil, err
@@ -115,12 +115,12 @@ func (s *Service) List(ctx context.Context, workspaceID resource.TfeID, opts Lis
 	return cvl, nil
 }
 
-// ListOlderThan lists configs created before t. Implements resource.deleterClient.
-func (s *Service) ListOlderThan(ctx context.Context, t time.Time) ([]*ConfigurationVersion, error) {
+// ListConfigVersionsOlderThan lists configs created before t. Implements resource.deleterClient.
+func (s *Service) ListConfigVersionsOlderThan(ctx context.Context, t time.Time) ([]*ConfigurationVersion, error) {
 	return s.db.listOlderThan(ctx, t)
 }
 
-func (s *Service) Get(ctx context.Context, id resource.TfeID) (*ConfigurationVersion, error) {
+func (s *Service) GetConfigVersion(ctx context.Context, id resource.TfeID) (*ConfigurationVersion, error) {
 	subject, err := s.Authorize(ctx, authz.GetConfigurationVersionAction, id)
 	if err != nil {
 		return nil, err
@@ -135,7 +135,7 @@ func (s *Service) Get(ctx context.Context, id resource.TfeID) (*ConfigurationVer
 	return cv, nil
 }
 
-func (s *Service) GetLatest(ctx context.Context, workspaceID resource.TfeID) (*ConfigurationVersion, error) {
+func (s *Service) GetLatestConfigVersion(ctx context.Context, workspaceID resource.TfeID) (*ConfigurationVersion, error) {
 	subject, err := s.Authorize(ctx, authz.GetConfigurationVersionAction, workspaceID)
 	if err != nil {
 		return nil, err
@@ -150,7 +150,7 @@ func (s *Service) GetLatest(ctx context.Context, workspaceID resource.TfeID) (*C
 	return cv, nil
 }
 
-func (s *Service) Delete(ctx context.Context, cvID resource.TfeID) error {
+func (s *Service) DeleteConfigVersion(ctx context.Context, cvID resource.TfeID) error {
 	subject, err := s.Authorize(ctx, authz.DeleteConfigurationVersionAction, cvID)
 	if err != nil {
 		return err

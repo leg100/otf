@@ -64,7 +64,7 @@ func TestSSHKeyPrivateModule(t *testing.T) {
 	agent, _ := daemon.startAgent(t, ctx, org.Name, nil, "")
 
 	// Register the SSH key with OTF.
-	key, err := daemon.SSHKeys.Create(ctx, sshkey.CreateOptions{
+	key, err := daemon.SSHKeys.CreateSSHKey(ctx, sshkey.CreateOptions{
 		Organization: org.Name,
 		Name:         "test-key",
 		PrivateKey:   string(privKeyBytes),
@@ -88,13 +88,13 @@ func TestSSHKeyPrivateModule(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 
 			// Create a workspace and assign the SSH key to it.
-			ws, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
+			ws, err := daemon.Workspaces.CreateWorkspace(ctx, workspace.CreateOptions{
 				Name:          new("ws-" + string(tt.mode)),
 				Organization:  &org.Name,
 				ExecutionMode: new(tt.mode),
 				AgentPoolID:   tt.poolID,
 			})
-			_, err = daemon.Workspaces.Update(ctx, ws.ID, workspace.UpdateOptions{
+			_, err = daemon.Workspaces.UpdateWorkspace(ctx, ws.ID, workspace.UpdateOptions{
 				UpdateSSHKeyOptions: &workspace.UpdateSSHKeyOptions{
 					SSHKeyID: &key.ID,
 				},

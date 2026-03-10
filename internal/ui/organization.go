@@ -49,7 +49,7 @@ func (h *Handlers) createOrganization(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	org, err := h.Organizations.Create(r.Context(), opts)
+	org, err := h.Organizations.CreateOrganization(r.Context(), opts)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -66,7 +66,7 @@ func (h *Handlers) listOrganizations(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	organizations, err := h.Organizations.List(r.Context(), opts)
+	organizations, err := h.Organizations.ListOrganizations(r.Context(), opts)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -117,7 +117,7 @@ func (h *Handlers) editOrganization(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	org, err := h.Organizations.Get(r.Context(), params.Name)
+	org, err := h.Organizations.GetOrganization(r.Context(), params.Name)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -145,7 +145,7 @@ func (h *Handlers) updateOrganization(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	org, err := h.Organizations.Update(r.Context(), params.Name, organization.UpdateOptions{
+	org, err := h.Organizations.UpdateOrganization(r.Context(), params.Name, organization.UpdateOptions{
 		Name: &params.UpdatedName,
 	})
 	if err != nil {
@@ -166,7 +166,7 @@ func (h *Handlers) deleteOrganization(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.Organizations.Delete(r.Context(), params.Name); err != nil {
+	if err := h.Organizations.DeleteOrganization(r.Context(), params.Name); err != nil {
 		html.Error(r, w, err.Error())
 		return
 	}
@@ -185,7 +185,7 @@ func (h *Handlers) createOrganizationToken(w http.ResponseWriter, r *http.Reques
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
-	_, token, err := h.Organizations.CreateToken(r.Context(), opts)
+	_, token, err := h.Organizations.CreateOrganizationToken(r.Context(), opts)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -207,7 +207,7 @@ func (h *Handlers) organizationToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// ListOrganizationTokens should only ever return either 0 or 1 token
-	tokens, err := h.Organizations.ListTokens(r.Context(), params.Name)
+	tokens, err := h.Organizations.ListOrganizationTokens(r.Context(), params.Name)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -236,7 +236,7 @@ func (h *Handlers) deleteOrganizationToken(w http.ResponseWriter, r *http.Reques
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
-	if err := h.Organizations.DeleteToken(r.Context(), params.Name); err != nil {
+	if err := h.Organizations.DeleteOrganizationToken(r.Context(), params.Name); err != nil {
 		html.Error(r, w, err.Error())
 		return
 	}

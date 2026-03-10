@@ -33,14 +33,14 @@ type (
 	}
 
 	schedulerWorkspaceClient interface {
-		Watch(context.Context) (<-chan pubsub.Event[*workspace.Event], func())
+		WatchWorkspaces(context.Context) (<-chan pubsub.Event[*workspace.Event], func())
 		Unlock(ctx context.Context, workspaceID resource.TfeID, runID *resource.TfeID, force bool) (*workspace.Workspace, error)
 	}
 
 	schedulerRunClient interface {
-		List(ctx context.Context, opts ListOptions) (*resource.Page[*Run], error)
-		Watch(context.Context) (<-chan pubsub.Event[*Event], func())
-		EnqueuePlan(ctx context.Context, runID resource.TfeID) (*Run, error)
+		ListRuns(ctx context.Context, opts ListOptions) (*resource.Page[*Run], error)
+		WatchRuns(context.Context) (<-chan pubsub.Event[*Event], func())
+		EnqueueRunPlan(ctx context.Context, runID resource.TfeID) (*Run, error)
 	}
 
 	SchedulerOptions struct {
@@ -72,16 +72,16 @@ func NewScheduler(opts SchedulerOptions) *scheduler {
 // queues for scheduling.
 func (s *scheduler) Start(ctx context.Context) error {
 	// subscribe to workspace events
-	subWorkspaces, unsubWorkspaces := s.workspaces.Watch(ctx)
+	subWorkspaces, unsubWorkspaces := s.workspaces.WatchWorkspaces(ctx)
 	defer unsubWorkspaces()
 
 	// subscribe to run events
-	subRuns, unsubRuns := s.runs.Watch(ctx)
+	subRuns, unsubRuns := s.runs.WatchRuns(ctx)
 	defer unsubRuns()
 
 	// Retrieve all incomplete runs
 	runs, err := resource.ListAll(func(opts resource.PageOptions) (*resource.Page[*Run], error) {
-		return s.runs.List(ctx, ListOptions{
+		return s.runs.ListRuns(ctx, ListOptions{
 			Statuses:    IncompleteRun,
 			PageOptions: opts,
 		})
@@ -150,7 +150,7 @@ func (s *scheduler) schedule(ctx context.Context, workspaceID resource.TfeID, ru
 	if runEvent != nil && runEvent.planOnly {
 		if runEvent.status == runstatus.Pending {
 			// Enqueue plan immediately for pending plan-only runs
-			if _, err := s.runs.EnqueuePlan(ctx, runEvent.id); err != nil {
+			if _, err := s.runs.EnqueueRunPlan(ctx, runEvent.id); err != nil {
 				return err
 			}
 		}
@@ -160,7 +160,7 @@ func (s *scheduler) schedule(ctx context.Context, workspaceID resource.TfeID, ru
 	q := s.queues[workspaceID]
 	q, enqueue, unlock := q.process(runEvent)
 	if enqueue {
-		_, err := s.runs.EnqueuePlan(ctx, *q.current)
+		_, err := s.runs.EnqueueRunPlan(ctx, *q.current)
 		if err != nil {
 			if errors.Is(err, workspace.ErrWorkspaceAlreadyLocked) {
 				s.V(0).Info("workspace locked by user; cannot schedule run", "run", *q.current)

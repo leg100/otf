@@ -93,7 +93,7 @@ func (a *tfe) createRun(w http.ResponseWriter, r *http.Request) {
 		opts.Variables[i] = Variable{Key: from.Key, Value: from.Value}
 	}
 
-	run, err := a.Create(r.Context(), params.Workspace.ID, opts)
+	run, err := a.CreateRun(r.Context(), params.Workspace.ID, opts)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -114,7 +114,7 @@ func (a *tfe) getRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	run, err := a.Get(r.Context(), id)
+	run, err := a.GetRun(r.Context(), id)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -165,7 +165,7 @@ func (a *tfe) getRunQueue(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) listRunsWithOptions(w http.ResponseWriter, r *http.Request, opts ListOptions) {
-	page, err := a.List(r.Context(), opts)
+	page, err := a.ListRuns(r.Context(), opts)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -191,7 +191,7 @@ func (a *tfe) applyRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := a.Apply(r.Context(), id); err != nil {
+	if err := a.ApplyRun(r.Context(), id); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
@@ -206,7 +206,7 @@ func (a *tfe) discardRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = a.Discard(r.Context(), id); err != nil {
+	if err = a.DiscardRun(r.Context(), id); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
@@ -221,7 +221,7 @@ func (a *tfe) cancelRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = a.Cancel(r.Context(), id); err != nil {
+	if err = a.CancelRun(r.Context(), id); err != nil {
 		if internal.ErrorIs(err, ErrRunCancelNotAllowed, ErrRunForceCancelNotAllowed) {
 			tfeapi.Error(w, err, tfeapi.WithStatus(http.StatusConflict))
 		} else {
@@ -240,7 +240,7 @@ func (a *tfe) forceCancelRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := a.ForceCancel(r.Context(), id); err != nil {
+	if err := a.ForceCancelRun(r.Context(), id); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
@@ -259,7 +259,7 @@ func (a *tfe) getPlan(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// otf's plan IDs are simply the corresponding run ID
-	run, err := a.Get(r.Context(), resource.ConvertTfeID(id, "run"))
+	run, err := a.GetRun(r.Context(), resource.ConvertTfeID(id, "run"))
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -285,7 +285,7 @@ func (a *tfe) getPlanJSON(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// otf's plan IDs are simply the corresponding run ID
-	json, err := a.GetPlanFile(r.Context(), resource.ConvertTfeID(id, "run"), PlanFormatJSON)
+	json, err := a.GetRunPlanFile(r.Context(), resource.ConvertTfeID(id, "run"), PlanFormatJSON)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -304,7 +304,7 @@ func (a *tfe) getApply(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// otf's apply IDs are simply the corresponding run ID
-	run, err := a.Get(r.Context(), resource.ConvertTfeID(id, "run"))
+	run, err := a.GetRun(r.Context(), resource.ConvertTfeID(id, "run"))
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -334,7 +334,7 @@ func (a *tfe) includeCurrentRun(ctx context.Context, v any) ([]any, error) {
 	if ws.CurrentRun == nil {
 		return nil, nil
 	}
-	run, err := a.Get(ctx, ws.CurrentRun.ID)
+	run, err := a.GetRun(ctx, ws.CurrentRun.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -361,7 +361,7 @@ func (a *tfe) includeWorkspace(ctx context.Context, v any) ([]any, error) {
 	if !ok {
 		return nil, nil
 	}
-	ws, err := a.workspaces.Get(ctx, run.Workspace.ID)
+	ws, err := a.workspaces.GetWorkspace(ctx, run.Workspace.ID)
 	if err != nil {
 		return nil, fmt.Errorf("retrieving workspace: %w", err)
 	}

@@ -53,7 +53,7 @@ func TestIntegration_RunCancelInterrupt(t *testing.T) {
 	agent, _ := daemon.startAgent(t, ctx, org.Name, nil, "", withEngineBinDir(bins))
 
 	// create workspace specifying that it use an external agent.
-	ws, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
+	ws, err := daemon.Workspaces.CreateWorkspace(ctx, workspace.CreateOptions{
 		Name:          new("ws-1"),
 		Organization:  &org.Name,
 		ExecutionMode: internal.Ptr(workspace.AgentExecutionMode),
@@ -77,7 +77,7 @@ func TestIntegration_RunCancelInterrupt(t *testing.T) {
 	require.Equal(t, "started", <-got)
 
 	// we can now send interrupt
-	err = daemon.Runs.Cancel(ctx, r.ID)
+	err = daemon.Runs.CancelRun(ctx, r.ID)
 	require.NoError(t, err)
 
 	// fake bin has received interrupt

@@ -14,7 +14,7 @@ type Client struct {
 	*otfhttp.Client
 }
 
-func (c *Client) GetByName(ctx context.Context, organization organization.Name, workspace string) (*Workspace, error) {
+func (c *Client) GetWorkspaceByName(ctx context.Context, organization organization.Name, workspace string) (*Workspace, error) {
 	path := fmt.Sprintf("organizations/%s/workspaces/%s", organization, workspace)
 	req, err := c.NewRequest("GET", path, nil)
 	if err != nil {
@@ -27,7 +27,7 @@ func (c *Client) GetByName(ctx context.Context, organization organization.Name, 
 	return &ws, nil
 }
 
-func (c *Client) Get(ctx context.Context, workspaceID resource.TfeID) (*Workspace, error) {
+func (c *Client) GetWorkspace(ctx context.Context, workspaceID resource.TfeID) (*Workspace, error) {
 	path := fmt.Sprintf("workspaces/%s", workspaceID)
 	req, err := c.NewRequest("GET", path, nil)
 	if err != nil {
@@ -40,7 +40,7 @@ func (c *Client) Get(ctx context.Context, workspaceID resource.TfeID) (*Workspac
 	return &ws, nil
 }
 
-func (c *Client) List(ctx context.Context, opts ListOptions) (*resource.Page[*Workspace], error) {
+func (c *Client) ListWorkspaces(ctx context.Context, opts ListOptions) (*resource.Page[*Workspace], error) {
 	u := fmt.Sprintf("organizations/%s/workspaces", url.QueryEscape(opts.Organization.String()))
 	req, err := c.NewRequest("GET", u, &opts)
 	if err != nil {
@@ -53,7 +53,7 @@ func (c *Client) List(ctx context.Context, opts ListOptions) (*resource.Page[*Wo
 	return &page, nil
 }
 
-func (c *Client) Update(ctx context.Context, workspaceID resource.TfeID, opts UpdateOptions) (*Workspace, error) {
+func (c *Client) UpdateWorkspace(ctx context.Context, workspaceID resource.TfeID, opts UpdateOptions) (*Workspace, error) {
 	// Pre-emptively validate options
 	if _, err := (&Workspace{}).Update(opts); err != nil {
 		return nil, err

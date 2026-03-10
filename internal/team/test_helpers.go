@@ -11,26 +11,26 @@ type fakeService struct {
 	team *Team
 }
 
-func (f *fakeService) Create(context.Context, organization.Name, CreateTeamOptions) (*Team, error) {
+func (f *fakeService) CreateTeam(context.Context, organization.Name, CreateTeamOptions) (*Team, error) {
 	return f.team, nil
 }
 
-func (f *fakeService) Update(context.Context, resource.TfeID, UpdateTeamOptions) (*Team, error) {
+func (f *fakeService) UpdateTeam(context.Context, resource.TfeID, UpdateTeamOptions) (*Team, error) {
 	return f.team, nil
 }
 
-func (f *fakeService) Get(context.Context, organization.Name, string) (*Team, error) {
+func (f *fakeService) GetTeam(context.Context, organization.Name, string) (*Team, error) {
 	return f.team, nil
 }
 
-func (f *fakeService) GetByID(context.Context, resource.TfeID) (*Team, error) {
+func (f *fakeService) GetTeamByID(context.Context, resource.TfeID) (*Team, error) {
 	return f.team, nil
 }
 
-func (f *fakeService) List(context.Context, organization.Name) ([]*Team, error) {
+func (f *fakeService) ListTeams(context.Context, organization.Name) ([]*Team, error) {
 	return []*Team{f.team}, nil
 }
 
-func (f *fakeService) Delete(context.Context, resource.TfeID) error {
+func (f *fakeService) DeleteTeam(context.Context, resource.TfeID) error {
 	return nil
 }

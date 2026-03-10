@@ -28,23 +28,23 @@ func TestIntegration_MinimumPermissions(t *testing.T) {
 
 	// Assign read role to guests team. Guests now receive a minimum set of
 	// permissions across the workspace's organization.
-	err = daemon.Workspaces.SetPermission(ctx, ws.ID, guests.ID, authz.WorkspaceReadRole)
+	err = daemon.Workspaces.SetWorkspacePermission(ctx, ws.ID, guests.ID, authz.WorkspaceReadRole)
 	require.NoError(t, err)
 
 	// Guest should be able to get org
-	_, err = daemon.Organizations.Get(guestCtx, org.Name)
+	_, err = daemon.Organizations.GetOrganization(guestCtx, org.Name)
 	require.NoError(t, err)
 
 	// Guest should be able to list teams
-	_, err = daemon.Teams.List(guestCtx, org.Name)
+	_, err = daemon.Teams.ListTeams(guestCtx, org.Name)
 	require.NoError(t, err)
 
 	// Guest should be able to list providers
-	_, err = daemon.VCSProviders.List(guestCtx, org.Name)
+	_, err = daemon.VCSProviders.ListVCSProviders(guestCtx, org.Name)
 	require.NoError(t, err)
 
 	// Guest should be able to get a provider
 	provider := daemon.createVCSProvider(t, ctx, org, nil)
-	_, err = daemon.VCSProviders.Get(guestCtx, provider.ID)
+	_, err = daemon.VCSProviders.GetVCSProvider(guestCtx, provider.ID)
 	require.NoError(t, err)
 }

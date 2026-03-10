@@ -59,9 +59,9 @@ type (
 	}
 
 	phaseClient interface {
-		StartPhase(ctx context.Context, runID resource.TfeID, phase otfrun.PhaseType, _ otfrun.PhaseStartOptions) (*otfrun.Run, error)
-		FinishPhase(ctx context.Context, runID resource.TfeID, phase otfrun.PhaseType, opts otfrun.PhaseFinishOptions) (*otfrun.Run, error)
-		Cancel(ctx context.Context, runID resource.TfeID) error
+		StartRunPhase(ctx context.Context, runID resource.TfeID, phase otfrun.PhaseType, _ otfrun.PhaseStartOptions) (*otfrun.Run, error)
+		FinishRunPhase(ctx context.Context, runID resource.TfeID, phase otfrun.PhaseType, opts otfrun.PhaseFinishOptions) (*otfrun.Run, error)
+		CancelRun(ctx context.Context, runID resource.TfeID) error
 	}
 )
 
@@ -133,8 +133,8 @@ func NewService(opts ServiceOptions) *Service {
 		return &unregistered{pool: pool}, nil
 	})
 	// create jobs when a plan or apply is enqueued
-	opts.RunService.AfterEnqueuePlan(svc.createJob)
-	opts.RunService.AfterEnqueueApply(svc.createJob)
+	opts.RunService.AfterEnqueueRunPlan(svc.createJob)
+	opts.RunService.AfterEnqueueRunApply(svc.createJob)
 	// cancel job when a run is canceled
 	opts.RunService.AfterCancelRun(svc.cancelJob)
 	// cancel job when a run is forceably canceled
@@ -456,7 +456,7 @@ func (s *Service) startJob(ctx context.Context, jobID resource.TfeID) ([]byte, e
 			return err
 		}
 		// start corresponding run phase too
-		if _, err = s.phases.StartPhase(ctx, job.RunID, job.Phase, otfrun.PhaseStartOptions{}); err != nil {
+		if _, err = s.phases.StartRunPhase(ctx, job.RunID, job.Phase, otfrun.PhaseStartOptions{}); err != nil {
 			return err
 		}
 		token, err = s.createJobToken(jobID)
@@ -494,11 +494,11 @@ func (s *Service) finishJob(ctx context.Context, jobID resource.TfeID, opts fini
 		var err error
 		switch opts.Status {
 		case JobFinished, JobErrored:
-			_, err = s.phases.FinishPhase(ctx, job.RunID, job.Phase, otfrun.PhaseFinishOptions{
+			_, err = s.phases.FinishRunPhase(ctx, job.RunID, job.Phase, otfrun.PhaseFinishOptions{
 				Errored: opts.Status == JobErrored,
 			})
 		case JobCanceled:
-			err = s.phases.Cancel(ctx, job.RunID)
+			err = s.phases.CancelRun(ctx, job.RunID)
 		}
 		if err != nil {
 			return err
@@ -526,7 +526,7 @@ func (s *Service) GenerateDynamicCredentialsToken(ctx context.Context, jobID res
 		if err != nil {
 			return nil, err
 		}
-		workspace, err := s.workspaces.Get(ctx, job.WorkspaceID)
+		workspace, err := s.workspaces.GetWorkspace(ctx, job.WorkspaceID)
 		if err != nil {
 			return nil, err
 		}

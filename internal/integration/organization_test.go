@@ -16,20 +16,20 @@ func TestIntegration_Organization(t *testing.T) {
 
 	t.Run("create", func(t *testing.T) {
 		daemon, _, ctx := setup(t, skipDefaultOrganization())
-		org, err := daemon.Organizations.Create(ctx, organization.CreateOptions{
+		org, err := daemon.Organizations.CreateOrganization(ctx, organization.CreateOptions{
 			Name: new(uuid.NewString()),
 		})
 		require.NoError(t, err)
 
 		t.Run("duplicate error", func(t *testing.T) {
-			_, err := daemon.Organizations.Create(ctx, organization.CreateOptions{
+			_, err := daemon.Organizations.CreateOrganization(ctx, organization.CreateOptions{
 				Name: new(org.Name.String()),
 			})
 			require.Equal(t, internal.ErrResourceAlreadyExists, err)
 		})
 
 		t.Run("owners team should be created", func(t *testing.T) {
-			owners, err := daemon.Teams.Get(ctx, org.Name, "owners")
+			owners, err := daemon.Teams.GetTeam(ctx, org.Name, "owners")
 			require.NoError(t, err)
 
 			t.Run("creator should be a member", func(t *testing.T) {
@@ -48,7 +48,7 @@ func TestIntegration_Organization(t *testing.T) {
 		org := daemon.createOrganization(t, ctx)
 
 		want := organization.NewTestName(t)
-		updated, err := daemon.Organizations.Update(ctx, org.Name, organization.UpdateOptions{
+		updated, err := daemon.Organizations.UpdateOrganization(ctx, org.Name, organization.UpdateOptions{
 			Name: new(want.String()),
 		})
 		require.NoError(t, err)
@@ -62,21 +62,21 @@ func TestIntegration_Organization(t *testing.T) {
 		_ = daemon.createOrganization(t, ctx)
 
 		t.Run("page one, two items per page", func(t *testing.T) {
-			orgs, err := daemon.Organizations.List(ctx, organization.ListOptions{PageOptions: resource.PageOptions{PageNumber: 1, PageSize: 2}})
+			orgs, err := daemon.Organizations.ListOrganizations(ctx, organization.ListOptions{PageOptions: resource.PageOptions{PageNumber: 1, PageSize: 2}})
 			require.NoError(t, err)
 
 			assert.Equal(t, 2, len(orgs.Items))
 		})
 
 		t.Run("page one, one item per page", func(t *testing.T) {
-			orgs, err := daemon.Organizations.List(ctx, organization.ListOptions{PageOptions: resource.PageOptions{PageNumber: 1, PageSize: 1}})
+			orgs, err := daemon.Organizations.ListOrganizations(ctx, organization.ListOptions{PageOptions: resource.PageOptions{PageNumber: 1, PageSize: 1}})
 			require.NoError(t, err)
 
 			assert.Equal(t, 1, len(orgs.Items))
 		})
 
 		t.Run("page two, one item per page", func(t *testing.T) {
-			orgs, err := daemon.Organizations.List(ctx, organization.ListOptions{PageOptions: resource.PageOptions{PageNumber: 2, PageSize: 1}})
+			orgs, err := daemon.Organizations.ListOrganizations(ctx, organization.ListOptions{PageOptions: resource.PageOptions{PageNumber: 2, PageSize: 1}})
 			require.NoError(t, err)
 
 			assert.Equal(t, 1, len(orgs.Items))
@@ -88,7 +88,7 @@ func TestIntegration_Organization(t *testing.T) {
 		want2 := daemon.createOrganization(t, ctx)
 		_ = daemon.createOrganization(t, adminCtx) // org not belonging to user
 
-		got, err := daemon.Organizations.List(ctx, organization.ListOptions{})
+		got, err := daemon.Organizations.ListOrganizations(ctx, organization.ListOptions{})
 		require.NoError(t, err)
 
 		assert.Equal(t, 2, len(got.Items))
@@ -103,7 +103,7 @@ func TestIntegration_Organization(t *testing.T) {
 
 		_, newUserCtx := daemon.createUserCtx(t)
 
-		got, err := daemon.Organizations.List(newUserCtx, organization.ListOptions{})
+		got, err := daemon.Organizations.ListOrganizations(newUserCtx, organization.ListOptions{})
 		require.NoError(t, err)
 		assert.Equal(t, 0, len(got.Items))
 	})
@@ -112,7 +112,7 @@ func TestIntegration_Organization(t *testing.T) {
 		daemon, _, ctx := setup(t)
 		want := daemon.createOrganization(t, ctx)
 
-		got, err := daemon.Organizations.Get(ctx, want.Name)
+		got, err := daemon.Organizations.GetOrganization(ctx, want.Name)
 		require.NoError(t, err)
 
 		assert.Equal(t, want, got)
@@ -123,10 +123,10 @@ func TestIntegration_Organization(t *testing.T) {
 
 		org := daemon.createOrganization(t, ctx)
 
-		err := daemon.Organizations.Delete(ctx, org.Name)
+		err := daemon.Organizations.DeleteOrganization(ctx, org.Name)
 		require.NoError(t, err)
 
-		_, err = daemon.Organizations.Get(ctx, org.Name)
+		_, err = daemon.Organizations.GetOrganization(ctx, org.Name)
 		require.ErrorIs(t, err, internal.ErrResourceNotFound)
 	})
 
@@ -135,7 +135,7 @@ func TestIntegration_Organization(t *testing.T) {
 
 		// delete using site admin otherwise a not authorized error is returned
 		// to normal users
-		err := daemon.Organizations.Delete(adminCtx, organization.NewTestName(t))
+		err := daemon.Organizations.DeleteOrganization(adminCtx, organization.NewTestName(t))
 		require.ErrorIs(t, err, internal.ErrResourceNotFound)
 	})
 }

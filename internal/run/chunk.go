@@ -49,7 +49,7 @@ type (
 	}
 
 	PutChunkService interface {
-		PutChunk(ctx context.Context, opts PutChunkOptions) error
+		PutRunChunk(ctx context.Context, opts PutChunkOptions) error
 	}
 )
 

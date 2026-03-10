@@ -138,7 +138,7 @@ func (h *Handlers) newModule(w http.ResponseWriter, r *http.Request) {
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
-	providers, err := h.VCSProviders.List(r.Context(), params.Organization)
+	providers, err := h.VCSProviders.ListVCSProviders(r.Context(), params.Organization)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -169,13 +169,13 @@ func (h *Handlers) connectModule(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	provider, err := h.VCSProviders.Get(r.Context(), params.VCSProviderID)
+	provider, err := h.VCSProviders.GetVCSProvider(r.Context(), params.VCSProviderID)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
 	}
 
-	client, err := h.VCSProviders.Get(r.Context(), params.VCSProviderID)
+	client, err := h.VCSProviders.GetVCSProvider(r.Context(), params.VCSProviderID)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return

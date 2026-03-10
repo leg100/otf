@@ -59,7 +59,7 @@ func (h *Handlers) createTeam(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	createdTeam, err := h.Teams.Create(r.Context(), *params.Organization, team.CreateTeamOptions{
+	createdTeam, err := h.Teams.CreateTeam(r.Context(), *params.Organization, team.CreateTeamOptions{
 		Name: params.Name,
 	})
 	if err != nil {
@@ -83,7 +83,7 @@ func (h *Handlers) updateTeam(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	updatedTeam, err := h.Teams.Update(r.Context(), params.TeamID, team.UpdateTeamOptions{
+	updatedTeam, err := h.Teams.UpdateTeam(r.Context(), params.TeamID, team.UpdateTeamOptions{
 		OrganizationAccessOptions: team.OrganizationAccessOptions{
 			ManageWorkspaces: &params.ManageWorkspaces,
 			ManageVCS:        &params.ManageVCS,
@@ -106,7 +106,7 @@ func (h *Handlers) getTeam(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	team, err := h.Teams.GetByID(r.Context(), teamID)
+	team, err := h.Teams.GetTeamByID(r.Context(), teamID)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -176,7 +176,7 @@ func (h *Handlers) listTeams(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	teams, err := h.Teams.List(r.Context(), params.Organization)
+	teams, err := h.Teams.ListTeams(r.Context(), params.Organization)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -205,12 +205,12 @@ func (h *Handlers) deleteTeam(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	deletedTeam, err := h.Teams.GetByID(r.Context(), teamID)
+	deletedTeam, err := h.Teams.GetTeamByID(r.Context(), teamID)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
 	}
-	err = h.Teams.Delete(r.Context(), teamID)
+	err = h.Teams.DeleteTeam(r.Context(), teamID)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return

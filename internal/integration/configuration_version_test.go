@@ -18,7 +18,7 @@ func TestConfigurationVersion(t *testing.T) {
 		daemon, _, ctx := setup(t)
 		ws := daemon.createWorkspace(t, ctx, nil)
 
-		_, err := daemon.Configs.Create(ctx, ws.ID, configversion.CreateOptions{})
+		_, err := daemon.Configs.CreateConfigVersion(ctx, ws.ID, configversion.CreateOptions{})
 		require.NoError(t, err)
 	})
 
@@ -31,7 +31,7 @@ func TestConfigurationVersion(t *testing.T) {
 		err = daemon.Configs.UploadConfig(ctx, cv.ID, tarball)
 		require.NoError(t, err)
 
-		got, err := daemon.Configs.Get(ctx, cv.ID)
+		got, err := daemon.Configs.GetConfigVersion(ctx, cv.ID)
 		require.NoError(t, err)
 
 		assert.Equal(t, configversion.ConfigurationUploaded, got.Status)
@@ -47,7 +47,7 @@ func TestConfigurationVersion(t *testing.T) {
 		daemon, _, ctx := setup(t)
 		want := daemon.createConfigurationVersion(t, ctx, nil, nil)
 
-		got, err := daemon.Configs.Get(ctx, want.ID)
+		got, err := daemon.Configs.GetConfigVersion(ctx, want.ID)
 		require.NoError(t, err)
 		assert.Equal(t, want, got)
 	})
@@ -56,7 +56,7 @@ func TestConfigurationVersion(t *testing.T) {
 		daemon, _, ctx := setup(t)
 		want := daemon.createConfigurationVersion(t, ctx, nil, nil)
 
-		got, err := daemon.Configs.GetLatest(ctx, want.WorkspaceID)
+		got, err := daemon.Configs.GetLatestConfigVersion(ctx, want.WorkspaceID)
 		require.NoError(t, err)
 		assert.Equal(t, want, got)
 	})
@@ -116,7 +116,7 @@ func TestConfigurationVersion(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				results, err := daemon.Configs.List(ctx, tt.workspaceID, tt.opts)
+				results, err := daemon.Configs.ListConfigVersions(ctx, tt.workspaceID, tt.opts)
 				tt.want(t, results, err)
 			})
 		}

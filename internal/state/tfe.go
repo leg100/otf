@@ -109,7 +109,7 @@ func (a *tfe) createVersion(w http.ResponseWriter, r *http.Request) {
 
 	// TODO: validate lineage
 
-	sv, err := a.state.Create(r.Context(), CreateStateVersionOptions{
+	sv, err := a.state.CreateStateVersion(r.Context(), CreateStateVersionOptions{
 		WorkspaceID: workspaceID,
 		State:       state,
 		Serial:      opts.Serial,
@@ -137,12 +137,12 @@ func (a *tfe) listVersionsByName(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	ws, err := a.workspaces.GetByName(r.Context(), opts.Organization, opts.Workspace)
+	ws, err := a.workspaces.GetWorkspaceByName(r.Context(), opts.Organization, opts.Workspace)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
-	page, err := a.state.List(r.Context(), ws.ID, resource.PageOptions(opts.ListOptions))
+	page, err := a.state.ListStateVersions(r.Context(), ws.ID, resource.PageOptions(opts.ListOptions))
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -164,7 +164,7 @@ func (a *tfe) getCurrentVersion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sv, err := a.state.GetCurrent(r.Context(), workspaceID)
+	sv, err := a.state.GetCurrentStateVersion(r.Context(), workspaceID)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -184,7 +184,7 @@ func (a *tfe) getVersion(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	sv, err := a.state.Get(r.Context(), versionID)
+	sv, err := a.state.GetStateVersion(r.Context(), versionID)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -204,7 +204,7 @@ func (a *tfe) deleteVersion(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	if err := a.state.Delete(r.Context(), versionID); err != nil {
+	if err := a.state.DeleteStateVersion(r.Context(), versionID); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
@@ -218,7 +218,7 @@ func (a *tfe) rollbackVersion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sv, err := a.state.Rollback(r.Context(), opts.RollbackStateVersion.ID)
+	sv, err := a.state.RollbackStateVersion(r.Context(), opts.RollbackStateVersion.ID)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -242,7 +242,7 @@ func (a *tfe) uploadState(w http.ResponseWriter, r *http.Request) {
 	if _, err := io.Copy(buf, r.Body); err != nil {
 		tfeapi.Error(w, err)
 	}
-	if err := a.state.Upload(r.Context(), versionID, buf.Bytes()); err != nil {
+	if err := a.state.UploadState(r.Context(), versionID, buf.Bytes()); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
@@ -254,7 +254,7 @@ func (a *tfe) downloadState(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	resp, err := a.state.Download(r.Context(), versionID)
+	resp, err := a.state.DownloadState(r.Context(), versionID)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -269,7 +269,7 @@ func (a *tfe) getCurrentVersionOutputs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sv, err := a.state.GetCurrent(r.Context(), workspaceID)
+	sv, err := a.state.GetCurrentStateVersion(r.Context(), workspaceID)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -296,7 +296,7 @@ func (a *tfe) listOutputs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sv, err := a.state.Get(r.Context(), params.StateVersionID)
+	sv, err := a.state.GetStateVersion(r.Context(), params.StateVersionID)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -319,7 +319,7 @@ func (a *tfe) getOutput(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	out, err := a.state.GetOutput(r.Context(), outputID)
+	out, err := a.state.GetStateOutput(r.Context(), outputID)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -399,7 +399,7 @@ func (a *tfe) includeOutputs(ctx context.Context, v any) ([]any, error) {
 	}
 	// re-retrieve the state version, because the tfe state version only
 	// possesses the IDs of the outputs, whereas we need the full output structs
-	from, err := a.state.Get(ctx, to.ID)
+	from, err := a.state.GetStateVersion(ctx, to.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -417,7 +417,7 @@ func (a *tfe) includeWorkspaceCurrentOutputs(ctx context.Context, v any) ([]any,
 	if !ok {
 		return nil, nil
 	}
-	sv, err := a.state.GetCurrent(ctx, ws.ID)
+	sv, err := a.state.GetCurrentStateVersion(ctx, ws.ID)
 	if err != nil {
 		return nil, err
 	}

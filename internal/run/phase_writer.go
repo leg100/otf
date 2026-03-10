@@ -56,7 +56,7 @@ func (w *PhaseWriter) Write(p []byte) (int, error) {
 	}
 	w.offset += len(data)
 
-	if err := w.PutChunk(w.ctx, chunk); err != nil {
+	if err := w.PutRunChunk(w.ctx, chunk); err != nil {
 		return 0, fmt.Errorf("writing log stream: %w", err)
 	}
 
@@ -76,7 +76,7 @@ func (w *PhaseWriter) Close() error {
 		opts.Data = []byte{STX, ETX}
 	}
 
-	if err := w.PutChunk(w.ctx, opts); err != nil {
+	if err := w.PutRunChunk(w.ctx, opts); err != nil {
 		return err
 	}
 	return nil

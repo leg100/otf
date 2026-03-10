@@ -15,7 +15,7 @@ type workspaceCache struct {
 }
 
 type workspaceCacheService interface {
-	Get(ctx context.Context, workspaceID resource.TfeID) (*workspace.Workspace, error)
+	GetWorkspace(ctx context.Context, workspaceID resource.TfeID) (*workspace.Workspace, error)
 }
 
 func newWorkspaceCache(getter workspaceCacheService) *workspaceCache {
@@ -29,7 +29,7 @@ func (c *workspaceCache) Get(ctx context.Context, workspaceID resource.TfeID) (*
 	if ws, ok := c.cache[workspaceID]; ok {
 		return ws, nil
 	}
-	ws, err := c.getter.Get(ctx, workspaceID)
+	ws, err := c.getter.GetWorkspace(ctx, workspaceID)
 	if err != nil {
 		return nil, err
 	}

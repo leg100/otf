@@ -35,7 +35,7 @@ func (h *Handlers) getState(w http.ResponseWriter, r *http.Request) {
 
 	// ignore errors and instead render unpopulated template
 	f := &state.File{}
-	sv, err := h.State.GetCurrent(r.Context(), id)
+	sv, err := h.State.GetCurrentStateVersion(r.Context(), id)
 	if err == nil {
 		f, _ = sv.File()
 	}
@@ -53,20 +53,20 @@ func (h *Handlers) listStateVersions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := h.Workspaces.Get(r.Context(), params.WorkspaceID)
+	ws, err := h.Workspaces.GetWorkspace(r.Context(), params.WorkspaceID)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
 	}
 
-	page, err := h.State.List(r.Context(), params.WorkspaceID, params.PageOptions)
+	page, err := h.State.ListStateVersions(r.Context(), params.WorkspaceID, params.PageOptions)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
 	}
 
 	var currentID *resource.TfeID
-	current, err := h.State.GetCurrent(r.Context(), params.WorkspaceID)
+	current, err := h.State.GetCurrentStateVersion(r.Context(), params.WorkspaceID)
 	if err == nil {
 		currentID = &current.ID
 	} else if !errors.Is(err, internal.ErrResourceNotFound) {
@@ -95,7 +95,7 @@ func (h *Handlers) rollbackStateVersion(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	sv, err := h.State.Rollback(r.Context(), id)
+	sv, err := h.State.RollbackStateVersion(r.Context(), id)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -111,14 +111,14 @@ func (h *Handlers) deleteStateVersion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sv, err := h.State.Get(r.Context(), id)
+	sv, err := h.State.GetStateVersion(r.Context(), id)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
 	}
 	workspaceID := sv.WorkspaceID
 
-	if err := h.State.Delete(r.Context(), id); err != nil {
+	if err := h.State.DeleteStateVersion(r.Context(), id); err != nil {
 		html.Error(r, w, err.Error())
 		return
 	}
@@ -133,13 +133,13 @@ func (h *Handlers) getStateVersion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sv, err := h.State.Get(r.Context(), id)
+	sv, err := h.State.GetStateVersion(r.Context(), id)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
 	}
 
-	ws, err := h.Workspaces.Get(r.Context(), sv.WorkspaceID)
+	ws, err := h.Workspaces.GetWorkspace(r.Context(), sv.WorkspaceID)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -170,13 +170,13 @@ func (h *Handlers) diffStateVersion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sv, err := h.State.Get(r.Context(), id)
+	sv, err := h.State.GetStateVersion(r.Context(), id)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
 	}
 
-	ws, err := h.Workspaces.Get(r.Context(), sv.WorkspaceID)
+	ws, err := h.Workspaces.GetWorkspace(r.Context(), sv.WorkspaceID)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -190,7 +190,7 @@ func (h *Handlers) diffStateVersion(w http.ResponseWriter, r *http.Request) {
 
 	var fromFile *state.File
 	var prev *state.Version
-	prev, err = h.State.GetPrevious(r.Context(), sv)
+	prev, err = h.State.GetPreviousStateVersion(r.Context(), sv)
 	if err == nil {
 		fromFile, _ = prev.File()
 	} else if !errors.Is(err, internal.ErrResourceNotFound) {

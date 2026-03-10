@@ -7,7 +7,7 @@ import (
 )
 
 type tailerClient interface {
-	GetChunk(ctx context.Context, opts GetChunkOptions) (Chunk, error)
+	GetRunChunk(ctx context.Context, opts GetChunkOptions) (Chunk, error)
 }
 
 type tailer struct {
@@ -20,7 +20,7 @@ func (t *tailer) Tail(ctx context.Context, opts TailOptions) (<-chan Chunk, erro
 	// won't miss any updates
 	sub, _ := t.broker.Subscribe(ctx)
 
-	chunk, err := t.client.GetChunk(ctx, GetChunkOptions{
+	chunk, err := t.client.GetRunChunk(ctx, GetChunkOptions{
 		RunID:  opts.RunID,
 		Phase:  opts.Phase,
 		Offset: opts.Offset,

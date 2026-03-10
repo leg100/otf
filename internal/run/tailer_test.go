@@ -180,7 +180,7 @@ type fakeTailerClient struct {
 	chunk Chunk
 }
 
-func (f *fakeTailerClient) GetChunk(ctx context.Context, opts GetChunkOptions) (Chunk, error) {
+func (f *fakeTailerClient) GetRunChunk(ctx context.Context, opts GetChunkOptions) (Chunk, error) {
 	return f.chunk, nil
 }
 

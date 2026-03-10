@@ -20,7 +20,7 @@ func TestRemoteStateSharing(t *testing.T) {
 
 	daemon, org, ctx := setup(t)
 	// producer is the workspace sharing its state
-	producer, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
+	producer, err := daemon.Workspaces.CreateWorkspace(ctx, workspace.CreateOptions{
 		Name:              new("producer"),
 		Organization:      &org.Name,
 		GlobalRemoteState: new(true),
@@ -44,7 +44,7 @@ func TestRemoteStateSharing(t *testing.T) {
 
 	// Wait for run to reach planned state before applying
 	planned := daemon.waitRunStatus(t, ctx, producerRun.ID, runstatus.Planned)
-	err = daemon.Runs.Apply(ctx, planned.ID)
+	err = daemon.Runs.ApplyRun(ctx, planned.ID)
 	require.NoError(t, err)
 
 	// Wait for run to be applied
@@ -81,7 +81,7 @@ output "remote_foo" {
 	// create run and apply
 	consumerRun := daemon.createRun(t, ctx, consumer, consumerCV, nil)
 	planned = daemon.waitRunStatus(t, ctx, consumerRun.ID, runstatus.Planned)
-	err = daemon.Runs.Apply(ctx, planned.ID)
+	err = daemon.Runs.ApplyRun(ctx, planned.ID)
 	require.NoError(t, err)
 	daemon.waitRunStatus(t, ctx, consumerRun.ID, runstatus.Applied)
 
