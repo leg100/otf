@@ -26,14 +26,12 @@ type (
 	}
 
 	Options struct {
-		logr.Logger
-
+		Logger        logr.Logger
 		MaxConfigSize int64
 		Authorizer    *authz.Authorizer
-
-		*sql.DB
-		*surl.Signer
-		*tfeapi.Responder
+		DB            *sql.DB
+		Signer        *surl.Signer
+		Responder     *tfeapi.Responder
 	}
 )
 

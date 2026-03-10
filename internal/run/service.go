@@ -50,10 +50,9 @@ type (
 	}
 
 	Options struct {
-		Authorizer         *authz.Authorizer
-		VCSEventSubscriber vcs.Subscriber
-		DaemonCtx          context.Context
-
+		Authorizer           *authz.Authorizer
+		VCSEventSubscriber   vcs.Subscriber
+		DaemonCtx            context.Context
 		WorkspaceService     *workspace.Service
 		OrganizationService  *organization.Service
 		ConfigVersionService *configversion.Service
@@ -61,12 +60,11 @@ type (
 		VCSProviderService   *vcs.Service
 		TokensService        *tokens.Service
 		UsersService         *user.Service
-
-		logr.Logger
-		*sql.DB
-		*tfeapi.Responder
-		*surl.Signer
-		*sql.Listener
+		Logger               logr.Logger
+		DB                   *sql.DB
+		Responder            *tfeapi.Responder
+		Signer               *surl.Signer
+		Listener             *sql.Listener
 	}
 )
 

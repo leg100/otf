@@ -37,13 +37,11 @@ type (
 	}
 
 	Options struct {
-		*sql.DB
-		*sql.Listener
-		*tfeapi.Responder
-		*authz.Authorizer
-
-		logr.Logger
-
+		DB                  *sql.DB
+		Listener            *sql.Listener
+		Responder           *tfeapi.Responder
+		Authorizer          *authz.Authorizer
+		Logger              logr.Logger
 		OrganizationService *organization.Service
 		VCSProviderService  *vcs.Service
 		TeamService         *team.Service

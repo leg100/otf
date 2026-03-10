@@ -25,15 +25,13 @@ type (
 	}
 
 	Options struct {
-		logr.Logger
-
+		Logger              logr.Logger
 		OrganizationService *organization.Service
 		VCSService          *vcs.Service
 		GithubAppService    *github.Service
 		VCSEventBroker      *vcs.Broker
 		URLs                urlClient
-
-		*sql.DB
+		DB                  *sql.DB
 	}
 
 	CreateRepohookOptions struct {
@@ -68,7 +66,7 @@ func NewService(ctx context.Context, opts Options) *Service {
 }
 
 func (s *Service) CreateRepohook(ctx context.Context, opts CreateRepohookOptions) (uuid.UUID, error) {
-	vcsProvider, err := s.vcsproviders.GetVCSProvider(ctx,opts.VCSProviderID)
+	vcsProvider, err := s.vcsproviders.GetVCSProvider(ctx, opts.VCSProviderID)
 	if err != nil {
 		return uuid.UUID{}, fmt.Errorf("retrieving vcs provider: %w", err)
 	}
@@ -155,7 +153,7 @@ func (s *Service) deleteRepohook(ctx context.Context, repohook *hook) error {
 	if err := s.db.deleteHook(ctx, repohook.id); err != nil {
 		return fmt.Errorf("deleting webhook from db: %w", err)
 	}
-	client, err := s.vcsproviders.GetVCSProvider(ctx,repohook.vcsProviderID)
+	client, err := s.vcsproviders.GetVCSProvider(ctx, repohook.vcsProviderID)
 	if err != nil {
 		return fmt.Errorf("retrieving vcs client from db: %w", err)
 	}

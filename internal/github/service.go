@@ -22,10 +22,8 @@ type (
 	}
 
 	Options struct {
-		*sql.DB
-		logr.Logger
-		vcs.Publisher
-
+		DB                  *sql.DB
+		Logger              logr.Logger
 		GithubAPIURL        *internal.WebURL
 		SkipTLSVerification bool
 		Authorizer          *authz.Authorizer

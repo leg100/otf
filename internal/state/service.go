@@ -31,11 +31,10 @@ type (
 	}
 
 	Options struct {
-		logr.Logger
-		*sql.DB
-		*tfeapi.Responder
-		*surl.Signer
-
+		Logger           logr.Logger
+		DB               *sql.DB
+		Responder        *tfeapi.Responder
+		Signer           *surl.Signer
 		WorkspaceService *workspace.Service
 		Authorizer       *authz.Authorizer
 	}

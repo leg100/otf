@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/leg100/otf/internal/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal/authz"
+	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
@@ -30,10 +30,9 @@ type (
 		WorkspaceService *workspace.Service
 		RunClient        runClient
 		Authorizer       *authz.Authorizer
-
-		*sql.DB
-		*tfeapi.Responder
-		logr.Logger
+		DB               *sql.DB
+		Responder        *tfeapi.Responder
+		Logger           logr.Logger
 	}
 
 	runClient interface {

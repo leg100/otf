@@ -11,8 +11,7 @@ import (
 
 type (
 	Options struct {
-		logr.Logger
-
+		Logger               logr.Logger
 		URLClient            urlClient
 		UserService          userService
 		TokensService        *tokens.Service
@@ -80,7 +79,7 @@ func NewAuthenticatorService(ctx context.Context, opts Options) (*Service, error
 		return nil, err
 	}
 	svc.clients = append(svc.clients, client)
-	opts.V(0).Info("activated OIDC client", "name", opts.IDTokenHandlerConfig.Name)
+	opts.Logger.V(0).Info("activated OIDC client", "name", opts.IDTokenHandlerConfig.Name)
 	return &svc, nil
 }
 

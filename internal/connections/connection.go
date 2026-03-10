@@ -40,9 +40,8 @@ type (
 	}
 
 	Options struct {
-		logr.Logger
-		*sql.DB
-
+		Logger             logr.Logger
+		DB                 *sql.DB
 		VCSProviderService *vcs.Service
 		RepoHooksService   *repohooks.Service
 	}

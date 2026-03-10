@@ -45,11 +45,10 @@ type (
 	}
 
 	ServiceOptions struct {
-		logr.Logger
-		*sql.DB
-		*sql.Listener
-		*tfeapi.Responder
-
+		Logger                    logr.Logger
+		DB                        *sql.DB
+		Listener                  *sql.Listener
+		Responder                 *tfeapi.Responder
 		RunService                *otfrun.Service
 		WorkspaceService          *workspace.Service
 		TokensService             *tokens.Service

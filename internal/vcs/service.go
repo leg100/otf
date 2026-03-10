@@ -26,10 +26,9 @@ type (
 	}
 
 	Options struct {
-		*sql.DB
-		*tfeapi.Responder
-		logr.Logger
-
+		DB                  *sql.DB
+		Responder           *tfeapi.Responder
+		Logger              logr.Logger
 		SourceIconRegistrar SourceIconRegistrar
 		SkipTLSVerification bool
 		Authorizer          *authz.Authorizer

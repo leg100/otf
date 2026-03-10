@@ -23,11 +23,10 @@ type (
 	}
 
 	Options struct {
-		*sql.DB
-		*sql.Listener
-		*tfeapi.Responder
-		logr.Logger
-
+		DB         *sql.DB
+		Listener   *sql.Listener
+		Responder  *tfeapi.Responder
+		Logger     logr.Logger
 		Authorizer *authz.Authorizer
 	}
 )

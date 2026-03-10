@@ -33,11 +33,9 @@ type (
 	}
 
 	Options struct {
-		logr.Logger
-
-		*sql.DB
-		*surl.Signer
-
+		Logger             logr.Logger
+		DB                 *sql.DB
+		Signer             *surl.Signer
 		Authorizer         *authz.Authorizer
 		RepohookService    *repohooks.Service
 		VCSProviderService *vcs.Service
@@ -76,7 +74,7 @@ func (s *Service) AddHandlers(r *mux.Router) {
 // PublishModule publishes a new module from a VCS repository, enumerating through
 // its git tags and releasing a module version for each tag.
 func (s *Service) PublishModule(ctx context.Context, opts PublishOptions) (*Module, error) {
-	vcsprov, err := s.vcsproviders.GetVCSProvider(ctx,opts.VCSProviderID)
+	vcsprov, err := s.vcsproviders.GetVCSProvider(ctx, opts.VCSProviderID)
 	if err != nil {
 		return nil, err
 	}
@@ -126,7 +124,7 @@ func (s *Service) publishModule(ctx context.Context, organization organization.N
 		if err != nil {
 			return err
 		}
-		client, err = s.vcsproviders.GetVCSProvider(ctx,opts.VCSProviderID)
+		client, err = s.vcsproviders.GetVCSProvider(ctx, opts.VCSProviderID)
 		if err != nil {
 			return fmt.Errorf("retreving vcs client config: %w", err)
 		}
