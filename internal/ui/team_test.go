@@ -101,26 +101,26 @@ type fakeTeamService struct {
 	team *team.Team
 }
 
-func (f *fakeTeamService) Create(context.Context, organization.Name, team.CreateTeamOptions) (*team.Team, error) {
+func (f *fakeTeamService) CreateTeam(context.Context, organization.Name, team.CreateTeamOptions) (*team.Team, error) {
 	return f.team, nil
 }
 
-func (f *fakeTeamService) Update(context.Context, resource.TfeID, team.UpdateTeamOptions) (*team.Team, error) {
+func (f *fakeTeamService) UpdateTeam(context.Context, resource.TfeID, team.UpdateTeamOptions) (*team.Team, error) {
 	return f.team, nil
 }
 
-func (f *fakeTeamService) Get(context.Context, organization.Name, string) (*team.Team, error) {
+func (f *fakeTeamService) GetTeam(context.Context, organization.Name, string) (*team.Team, error) {
 	return f.team, nil
 }
 
-func (f *fakeTeamService) GetByID(context.Context, resource.TfeID) (*team.Team, error) {
+func (f *fakeTeamService) GetTeamByID(context.Context, resource.TfeID) (*team.Team, error) {
 	return f.team, nil
 }
 
-func (f *fakeTeamService) List(context.Context, organization.Name) ([]*team.Team, error) {
+func (f *fakeTeamService) ListTeams(context.Context, organization.Name) ([]*team.Team, error) {
 	return []*team.Team{f.team}, nil
 }
 
-func (f *fakeTeamService) Delete(context.Context, resource.TfeID) error {
+func (f *fakeTeamService) DeleteTeam(context.Context, resource.TfeID) error {
 	return nil
 }

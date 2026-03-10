@@ -39,20 +39,20 @@ type (
 	}
 
 	reporterWorkspaceClient interface {
-		Get(ctx context.Context, workspaceID resource.TfeID) (*workspace.Workspace, error)
+		GetWorkspace(ctx context.Context, workspaceID resource.TfeID) (*workspace.Workspace, error)
 	}
 
 	reporterConfigClient interface {
-		Get(ctx context.Context, id resource.TfeID) (*configversion.ConfigurationVersion, error)
+		GetConfigVersion(ctx context.Context, id resource.TfeID) (*configversion.ConfigurationVersion, error)
 	}
 
 	reporterVCSClient interface {
-		Get(ctx context.Context, providerID resource.TfeID) (*vcs.Provider, error)
+		GetVCSProvider(ctx context.Context, providerID resource.TfeID) (*vcs.Provider, error)
 	}
 
 	reporterRunClient interface {
-		Watch(context.Context) (<-chan pubsub.Event[*Event], func())
-		Get(context.Context, resource.TfeID) (*Run, error)
+		WatchRuns(context.Context) (<-chan pubsub.Event[*Event], func())
+		GetRun(context.Context, resource.TfeID) (*Run, error)
 	}
 
 	reporterURLClient interface {
@@ -82,7 +82,7 @@ func NewReporter(
 // Start starts the reporter daemon. Should be invoked in a go routine.
 func (r *Reporter) Start(ctx context.Context) error {
 	// subscribe to run events
-	sub, unsub := r.runs.Watch(ctx)
+	sub, unsub := r.runs.WatchRuns(ctx)
 	defer unsub()
 
 	for event := range sub {
@@ -106,7 +106,7 @@ func (r *Reporter) handleRun(ctx context.Context, event *Event) error {
 		return nil
 	}
 
-	cv, err := r.configs.Get(ctx, event.ConfigurationVersionID)
+	cv, err := r.configs.GetConfigVersion(ctx, event.ConfigurationVersionID)
 	if err != nil {
 		return fmt.Errorf("retrieving config: %w", err)
 	}
@@ -116,7 +116,7 @@ func (r *Reporter) handleRun(ctx context.Context, event *Event) error {
 		return nil
 	}
 
-	ws, err := r.workspaces.Get(ctx, event.WorkspaceID)
+	ws, err := r.workspaces.GetWorkspace(ctx, event.WorkspaceID)
 	if err != nil {
 		return fmt.Errorf("retrieving workspace: %w", err)
 	}
@@ -124,12 +124,12 @@ func (r *Reporter) handleRun(ctx context.Context, event *Event) error {
 		return fmt.Errorf("workspace not connected to repo: %s", ws.ID)
 	}
 
-	client, err := r.vcs.Get(ctx, ws.Connection.VCSProviderID)
+	client, err := r.vcs.GetVCSProvider(ctx, ws.Connection.VCSProviderID)
 	if err != nil {
 		return fmt.Errorf("retrieving vcs client: %w", err)
 	}
 
-	run, err := r.runs.Get(ctx, event.ID)
+	run, err := r.runs.GetRun(ctx, event.ID)
 	if err != nil {
 		return fmt.Errorf("retrieving run: %w", err)
 	}

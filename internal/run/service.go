@@ -156,7 +156,7 @@ func (s *Service) AddHandlers(r *mux.Router) {
 	s.api.addHandlers(r)
 }
 
-func (s *Service) Create(ctx context.Context, workspaceID resource.TfeID, opts CreateOptions) (*Run, error) {
+func (s *Service) CreateRun(ctx context.Context, workspaceID resource.TfeID, opts CreateOptions) (*Run, error) {
 	subject, err := s.Authorize(ctx, authz.CreateRunAction, workspaceID)
 	if err != nil {
 		return nil, err
@@ -177,8 +177,8 @@ func (s *Service) Create(ctx context.Context, workspaceID resource.TfeID, opts C
 	return run, nil
 }
 
-// Get retrieves a run from the db.
-func (s *Service) Get(ctx context.Context, runID resource.TfeID) (*Run, error) {
+// GetRun retrieves a run from the db.
+func (s *Service) GetRun(ctx context.Context, runID resource.TfeID) (*Run, error) {
 	subject, err := s.Authorize(ctx, authz.GetRunAction, runID)
 	if err != nil {
 		return nil, err
@@ -194,15 +194,15 @@ func (s *Service) Get(ctx context.Context, runID resource.TfeID) (*Run, error) {
 	return run, nil
 }
 
-// List retrieves multiple runs. Use opts to filter and paginate the
+// ListRuns retrieves multiple runs. Use opts to filter and paginate the
 // list.
-func (s *Service) List(ctx context.Context, opts ListOptions) (*resource.Page[*Run], error) {
+func (s *Service) ListRuns(ctx context.Context, opts ListOptions) (*resource.Page[*Run], error) {
 	var (
 		subject authz.Subject
 		authErr error
 	)
 	if opts.Organization != nil && opts.WorkspaceName != nil {
-		workspace, err := s.workspaces.GetByName(ctx, *opts.Organization, *opts.WorkspaceName)
+		workspace, err := s.workspaces.GetWorkspaceByName(ctx, *opts.Organization, *opts.WorkspaceName)
 		if err != nil {
 			return nil, err
 		}
@@ -233,10 +233,10 @@ func (s *Service) List(ctx context.Context, opts ListOptions) (*resource.Page[*R
 	return page, nil
 }
 
-// ListOlderThan lists runs created before t. Implements resource.deleterClient.
-func (s *Service) ListOlderThan(ctx context.Context, t time.Time) ([]*Run, error) {
+// ListRunsOlderThan lists runs created before t. Implements resource.deleterClient.
+func (s *Service) ListRunsOlderThan(ctx context.Context, t time.Time) ([]*Run, error) {
 	return resource.ListAll(func(opts resource.PageOptions) (*resource.Page[*Run], error) {
-		return s.List(ctx, ListOptions{
+		return s.ListRuns(ctx, ListOptions{
 			PageOptions:     opts,
 			BeforeCreatedAt: &t,
 		})
@@ -261,7 +261,7 @@ func (s *Service) EnqueuePlan(ctx context.Context, runID resource.TfeID) (run *R
 			if err != nil {
 				return err
 			}
-			_, err = s.workspaces.SetLatestRun(ctx, run.WorkspaceID, run.ID)
+			_, err = s.workspaces.SetWorkspaceLatestRun(ctx, run.WorkspaceID, run.ID)
 			if err != nil {
 				return err
 			}
@@ -286,7 +286,7 @@ func (s *Service) AfterEnqueuePlan(hook func(context.Context, *Run) error) {
 	s.afterEnqueuePlanHooks = append(s.afterEnqueuePlanHooks, hook)
 }
 
-func (s *Service) Delete(ctx context.Context, runID resource.TfeID) error {
+func (s *Service) DeleteRun(ctx context.Context, runID resource.TfeID) error {
 	subject, err := s.Authorize(ctx, authz.DeleteRunAction, runID)
 	if err != nil {
 		return err
@@ -343,7 +343,7 @@ func (s *Service) FinishPhase(ctx context.Context, runID resource.TfeID, phase P
 			return err
 		}
 		if autoapply {
-			return s.Apply(ctx, runID)
+			return s.ApplyRun(ctx, runID)
 		}
 		return nil
 	})
@@ -355,12 +355,12 @@ func (s *Service) FinishPhase(ctx context.Context, runID resource.TfeID, phase P
 	return run, nil
 }
 
-func (s *Service) Watch(ctx context.Context) (<-chan pubsub.Event[*Event], func()) {
+func (s *Service) WatchRuns(ctx context.Context) (<-chan pubsub.Event[*Event], func()) {
 	return s.broker.Subscribe(ctx)
 }
 
-// Apply enqueues an apply for the run.
-func (s *Service) Apply(ctx context.Context, runID resource.TfeID) error {
+// ApplyRun enqueues an apply for the run.
+func (s *Service) ApplyRun(ctx context.Context, runID resource.TfeID) error {
 	subject, err := s.Authorize(ctx, authz.ApplyRunAction, runID)
 	if err != nil {
 		return err
@@ -390,8 +390,8 @@ func (s *Service) AfterEnqueueApply(hook func(context.Context, *Run) error) {
 	s.afterEnqueueApplyHooks = append(s.afterEnqueueApplyHooks, hook)
 }
 
-// Discard discards the run.
-func (s *Service) Discard(ctx context.Context, runID resource.TfeID) error {
+// DiscardRun discards the run.
+func (s *Service) DiscardRun(ctx context.Context, runID resource.TfeID) error {
 	subject, err := s.Authorize(ctx, authz.DiscardRunAction, runID)
 	if err != nil {
 		return err
@@ -410,7 +410,7 @@ func (s *Service) Discard(ctx context.Context, runID resource.TfeID) error {
 	return err
 }
 
-func (s *Service) Cancel(ctx context.Context, runID resource.TfeID) error {
+func (s *Service) CancelRun(ctx context.Context, runID resource.TfeID) error {
 	subject, err := s.Authorize(ctx, authz.CancelRunAction, runID)
 	if err != nil {
 		return err
@@ -463,8 +463,8 @@ func (s *Service) AfterCancelRun(hook func(context.Context, *Run) error) {
 	s.afterCancelHooks = append(s.afterCancelHooks, hook)
 }
 
-// ForceCancel forcefully cancels a run.
-func (s *Service) ForceCancel(ctx context.Context, runID resource.TfeID) error {
+// ForceCancelRun forcefully cancels a run.
+func (s *Service) ForceCancelRun(ctx context.Context, runID resource.TfeID) error {
 	subject, err := s.Authorize(ctx, authz.ForceCancelRunAction, runID)
 	if err != nil {
 		return err
@@ -493,8 +493,8 @@ func (s *Service) AfterForceCancelRun(hook func(context.Context, *Run) error) {
 	s.afterForceCancelHooks = append(s.afterForceCancelHooks, hook)
 }
 
-// GetPlanFile returns the plan file for the run.
-func (s *Service) GetPlanFile(ctx context.Context, runID resource.TfeID, format PlanFormat) ([]byte, error) {
+// GetRunPlanFile returns the plan file for the run.
+func (s *Service) GetRunPlanFile(ctx context.Context, runID resource.TfeID, format PlanFormat) ([]byte, error) {
 	subject, err := s.Authorize(ctx, authz.GetPlanFileAction, runID)
 	if err != nil {
 		return nil, err
@@ -508,9 +508,9 @@ func (s *Service) GetPlanFile(ctx context.Context, runID resource.TfeID, format 
 	return file, nil
 }
 
-// UploadPlanFile persists a run's plan file. The plan format should be either
+// UploadRunPlanFile persists a run's plan file. The plan format should be either
 // be binary or json.
-func (s *Service) UploadPlanFile(ctx context.Context, runID resource.TfeID, plan []byte, format PlanFormat) error {
+func (s *Service) UploadRunPlanFile(ctx context.Context, runID resource.TfeID, plan []byte, format PlanFormat) error {
 	subject, err := s.Authorize(ctx, authz.UploadPlanFileAction, runID)
 	if err != nil {
 		return err
@@ -540,7 +540,7 @@ func (s *Service) createReports(ctx context.Context, runID resource.TfeID, phase
 }
 
 func (s *Service) createPlanReports(ctx context.Context, runID resource.TfeID) (resources Report, outputs Report, err error) {
-	plan, err := s.GetPlanFile(ctx, runID, PlanFormatJSON)
+	plan, err := s.GetRunPlanFile(ctx, runID, PlanFormatJSON)
 	if err != nil {
 		return Report{}, Report{}, err
 	}
@@ -576,7 +576,7 @@ func (s *Service) autoQueueRun(ctx context.Context, ws *workspace.Workspace) err
 	// Auto queue a run only if configured on the worspace and the workspace is
 	// a connected to a VCS repo.
 	if ws.QueueAllRuns && ws.Connection != nil {
-		_, err := s.Create(ctx, ws.ID, CreateOptions{})
+		_, err := s.CreateRun(ctx, ws.ID, CreateOptions{})
 		if err != nil {
 			return err
 		}
@@ -620,9 +620,9 @@ func (s *Service) PutChunk(ctx context.Context, opts PutChunkOptions) error {
 	return nil
 }
 
-// Tail logs for a phase. Offset specifies the number of bytes into the logs
+// TailRun tails logs for a phase. Offset specifies the number of bytes into the logs
 // from which to start tailing.
-func (s *Service) Tail(ctx context.Context, opts TailOptions) (<-chan Chunk, error) {
+func (s *Service) TailRun(ctx context.Context, opts TailOptions) (<-chan Chunk, error) {
 	subject, err := s.Authorize(ctx, authz.TailLogsAction, opts.RunID)
 	if err != nil {
 		return nil, err

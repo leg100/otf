@@ -53,7 +53,7 @@ func (h *AppEventHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	// relay a copy of the event for each vcs provider configured with the
 	// github app install that triggered the event.
-	providers, err := h.VCSService.ListByInstall(ctx, *payload.GithubAppInstallID)
+	providers, err := h.VCSService.ListVCSProvidersByInstall(ctx, *payload.GithubAppInstallID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

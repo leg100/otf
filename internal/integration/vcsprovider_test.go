@@ -17,7 +17,7 @@ func TestVCSProvider(t *testing.T) {
 	t.Run("create", func(t *testing.T) {
 		daemon, org, ctx := setup(t)
 
-		_, err := daemon.VCSProviders.Create(ctx, vcs.CreateOptions{
+		_, err := daemon.VCSProviders.CreateVCSProvider(ctx, vcs.CreateOptions{
 			Organization: org.Name,
 			Token:        new(uuid.NewString()),
 			KindID:       github.TokenKindID,
@@ -32,14 +32,14 @@ func TestVCSProvider(t *testing.T) {
 		// Don't trust the provider returned from the Update function because
 		// it returns the provider from the provider.Update() function but we
 		// want the updated provider from the *database*.
-		_, err := daemon.VCSProviders.Update(ctx, provider.ID, vcs.UpdateOptions{
+		_, err := daemon.VCSProviders.UpdateVCSProvider(ctx, provider.ID, vcs.UpdateOptions{
 			Token:   new("somethingelse"),
 			BaseURL: internal.MustWebURL("https://my-updated-server/api"),
 		})
 		require.NoError(t, err)
 
 		// Retrieve provider from database.
-		updated, err := daemon.VCSProviders.Get(ctx, provider.ID)
+		updated, err := daemon.VCSProviders.GetVCSProvider(ctx, provider.ID)
 		require.NoError(t, err)
 
 		assert.NotEqual(t, updated.Token, provider.Token)
@@ -50,7 +50,7 @@ func TestVCSProvider(t *testing.T) {
 		daemon, _, ctx := setup(t)
 		want := daemon.createVCSProvider(t, ctx, nil, nil)
 
-		got, err := daemon.VCSProviders.Get(ctx, want.ID)
+		got, err := daemon.VCSProviders.GetVCSProvider(ctx, want.ID)
 		require.NoError(t, err)
 
 		vcsProviderIsEqual(t, want, got)
@@ -62,7 +62,7 @@ func TestVCSProvider(t *testing.T) {
 		provider2 := daemon.createVCSProvider(t, ctx, org, &vcs.CreateOptions{Name: "beta"})
 		provider3 := daemon.createVCSProvider(t, ctx, org, &vcs.CreateOptions{Name: "gamma"})
 
-		got, err := daemon.VCSProviders.List(ctx, org.Name)
+		got, err := daemon.VCSProviders.ListVCSProviders(ctx, org.Name)
 		require.NoError(t, err)
 
 		vcsProviderIsEqual(t, got[0], provider1)
@@ -74,7 +74,7 @@ func TestVCSProvider(t *testing.T) {
 		daemon, _, ctx := setup(t)
 		want := daemon.createVCSProvider(t, ctx, nil, nil)
 
-		got, err := daemon.VCSProviders.Delete(ctx, want.ID)
+		got, err := daemon.VCSProviders.DeleteVCSProvider(ctx, want.ID)
 		require.NoError(t, err)
 
 		vcsProviderIsEqual(t, want, got)

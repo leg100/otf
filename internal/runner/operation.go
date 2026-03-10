@@ -100,16 +100,16 @@ type (
 	}
 
 	runClient interface {
-		Get(ctx context.Context, runID resource.TfeID) (*runpkg.Run, error)
-		GetPlanFile(ctx context.Context, id resource.TfeID, format runpkg.PlanFormat) ([]byte, error)
-		UploadPlanFile(ctx context.Context, id resource.TfeID, plan []byte, format runpkg.PlanFormat) error
+		GetRun(ctx context.Context, runID resource.TfeID) (*runpkg.Run, error)
+		GetRunPlanFile(ctx context.Context, id resource.TfeID, format runpkg.PlanFormat) ([]byte, error)
+		UploadRunPlanFile(ctx context.Context, id resource.TfeID, plan []byte, format runpkg.PlanFormat) error
 		GetLockFile(ctx context.Context, id resource.TfeID) ([]byte, error)
 		UploadLockFile(ctx context.Context, id resource.TfeID, lockFile []byte) error
 		PutChunk(ctx context.Context, opts runpkg.PutChunkOptions) error
 	}
 
 	workspaceClient interface {
-		Get(ctx context.Context, workspaceID resource.TfeID) (*workspace.Workspace, error)
+		GetWorkspace(ctx context.Context, workspaceID resource.TfeID) (*workspace.Workspace, error)
 	}
 
 	variablesClient interface {
@@ -121,8 +121,8 @@ type (
 	}
 
 	stateClient interface {
-		Create(ctx context.Context, opts state.CreateStateVersionOptions) (*state.Version, error)
-		DownloadCurrent(ctx context.Context, workspaceID resource.TfeID) ([]byte, error)
+		CreateStateVersion(ctx context.Context, opts state.CreateStateVersionOptions) (*state.Version, error)
+		DownloadCurrentState(ctx context.Context, workspaceID resource.TfeID) ([]byte, error)
 	}
 
 	hostnameClient interface {
@@ -131,7 +131,7 @@ type (
 
 	// sshKeyClient fetches SSH key data for an operation.
 	sshKeyClient interface {
-		GetPrivateKey(ctx context.Context, id resource.TfeID) ([]byte, error)
+		GetSSHKeyPrivateKey(ctx context.Context, id resource.TfeID) ([]byte, error)
 	}
 )
 
@@ -250,7 +250,7 @@ func (o *operation) doAndFinish() {
 
 // do executes the job
 func (o *operation) do() error {
-	run, err := o.client.Runs.Get(o.ctx, o.job.RunID)
+	run, err := o.client.Runs.GetRun(o.ctx, o.job.RunID)
 	if err != nil {
 		return err
 	}
@@ -261,7 +261,7 @@ func (o *operation) do() error {
 	}
 
 	// Get workspace in order to get working directory path
-	o.ws, err = o.client.Workspaces.Get(o.ctx, o.job.WorkspaceID)
+	o.ws, err = o.client.Workspaces.GetWorkspace(o.ctx, o.job.WorkspaceID)
 	if err != nil {
 		return fmt.Errorf("retreiving workspace: %w", err)
 	}
@@ -471,7 +471,7 @@ func (o *operation) deleteBackendConfig(ctx context.Context) error {
 // downloadState downloads current state to disk. If there is no state yet then
 // nothing will be downloaded and no error will be reported.
 func (o *operation) downloadState(ctx context.Context) error {
-	statefile, err := o.client.State.DownloadCurrent(ctx, o.run.WorkspaceID)
+	statefile, err := o.client.State.DownloadCurrentState(ctx, o.run.WorkspaceID)
 	if errors.Is(err, internal.ErrResourceNotFound) {
 		return nil
 	} else if err != nil {
@@ -541,7 +541,7 @@ func (o *operation) setupSSHKey(ctx context.Context) error {
 	if o.ws.SSHKeyID == nil {
 		return nil
 	}
-	key, err := o.client.SSHKeys.GetPrivateKey(ctx, *o.ws.SSHKeyID)
+	key, err := o.client.SSHKeys.GetSSHKeyPrivateKey(ctx, *o.ws.SSHKeyID)
 	if err != nil {
 		return fmt.Errorf("getting SSH key: %w", err)
 	}
@@ -658,7 +658,7 @@ func (o *operation) uploadPlan(ctx context.Context) error {
 		return fmt.Errorf("reading plan file: %w", err)
 	}
 
-	if err := o.client.Runs.UploadPlanFile(ctx, o.run.ID, file, runpkg.PlanFormatBinary); err != nil {
+	if err := o.client.Runs.UploadRunPlanFile(ctx, o.run.ID, file, runpkg.PlanFormatBinary); err != nil {
 		return fmt.Errorf("unable to upload plan: %w", err)
 	}
 
@@ -670,7 +670,7 @@ func (o *operation) uploadJSONPlan(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("reading plan in json format: %w", err)
 	}
-	if err := o.client.Runs.UploadPlanFile(ctx, o.run.ID, jsonFile, runpkg.PlanFormatJSON); err != nil {
+	if err := o.client.Runs.UploadRunPlanFile(ctx, o.run.ID, jsonFile, runpkg.PlanFormatJSON); err != nil {
 		return fmt.Errorf("unable to upload JSON plan: %w", err)
 	}
 	return nil
@@ -691,7 +691,7 @@ func (o *operation) uploadLockFile(ctx context.Context) error {
 }
 
 func (o *operation) downloadPlanFile(ctx context.Context) error {
-	plan, err := o.client.Runs.GetPlanFile(ctx, o.run.ID, runpkg.PlanFormatBinary)
+	plan, err := o.client.Runs.GetRunPlanFile(ctx, o.run.ID, runpkg.PlanFormatBinary)
 	if err != nil {
 		return err
 	}
@@ -710,7 +710,7 @@ func (o *operation) uploadState(ctx context.Context) error {
 	if err := json.Unmarshal(statefile, &f); err != nil {
 		return err
 	}
-	_, err = o.client.State.Create(ctx, state.CreateStateVersionOptions{
+	_, err = o.client.State.CreateStateVersion(ctx, state.CreateStateVersionOptions{
 		WorkspaceID: o.run.WorkspaceID,
 		State:       statefile,
 		Serial:      &f.Serial,

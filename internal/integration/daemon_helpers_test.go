@@ -127,7 +127,7 @@ func setup(t *testing.T, opts ...configOption) (*testDaemon, *organization.Organ
 	<-started
 
 	// Subscribe to run events
-	runEvents, unsub := d.Runs.Watch(ctx)
+	runEvents, unsub := d.Runs.WatchRuns(ctx)
 	t.Cleanup(unsub)
 
 	t.Cleanup(func() {
@@ -162,7 +162,7 @@ func setup(t *testing.T, opts ...configOption) (*testDaemon, *organization.Organ
 func (s *testDaemon) createOrganization(t *testing.T, ctx context.Context) *organization.Organization {
 	t.Helper()
 
-	org, err := s.Organizations.Create(ctx, organization.CreateOptions{
+	org, err := s.Organizations.CreateOrganization(ctx, organization.CreateOptions{
 		Name: new(internal.GenerateRandomString(4) + "-corp"),
 	})
 	require.NoError(t, err)
@@ -176,7 +176,7 @@ func (s *testDaemon) createWorkspace(t *testing.T, ctx context.Context, org *org
 		org = s.createOrganization(t, ctx)
 	}
 
-	ws, err := s.Workspaces.Create(ctx, workspace.CreateOptions{
+	ws, err := s.Workspaces.CreateWorkspace(ctx, workspace.CreateOptions{
 		Name:         new("workspace-" + internal.GenerateRandomString(6)),
 		Organization: &org.Name,
 	})
@@ -187,7 +187,7 @@ func (s *testDaemon) createWorkspace(t *testing.T, ctx context.Context, org *org
 func (s *testDaemon) getWorkspace(t *testing.T, ctx context.Context, workspaceID resource.TfeID) *workspace.Workspace {
 	t.Helper()
 
-	ws, err := s.Workspaces.Get(ctx, workspaceID)
+	ws, err := s.Workspaces.GetWorkspace(ctx, workspaceID)
 	require.NoError(t, err)
 	return ws
 }
@@ -195,7 +195,7 @@ func (s *testDaemon) getWorkspace(t *testing.T, ctx context.Context, workspaceID
 func (s *testDaemon) getRun(t *testing.T, ctx context.Context, runID resource.TfeID) *run.Run {
 	t.Helper()
 
-	run, err := s.Runs.Get(ctx, runID)
+	run, err := s.Runs.GetRun(ctx, runID)
 	require.NoError(t, err)
 	return run
 }
@@ -232,7 +232,7 @@ func (s *testDaemon) createVCSProvider(t *testing.T, ctx context.Context, org *o
 		opts.Name = createOptions.Name
 	}
 
-	provider, err := s.VCSProviders.Create(ctx, opts)
+	provider, err := s.VCSProviders.CreateVCSProvider(ctx, opts)
 	require.NoError(t, err)
 	return provider
 }
@@ -295,7 +295,7 @@ func (s *testDaemon) createTeam(t *testing.T, ctx context.Context, org *organiza
 		org = s.createOrganization(t, ctx)
 	}
 
-	team, err := s.Teams.Create(ctx, org.Name, team.CreateTeamOptions{
+	team, err := s.Teams.CreateTeam(ctx, org.Name, team.CreateTeamOptions{
 		Name: new("team-" + internal.GenerateRandomString(4)),
 	})
 	require.NoError(t, err)
@@ -305,7 +305,7 @@ func (s *testDaemon) createTeam(t *testing.T, ctx context.Context, org *organiza
 func (s *testDaemon) getTeam(t *testing.T, ctx context.Context, org organization.Name, name string) *team.Team {
 	t.Helper()
 
-	team, err := s.Teams.Get(ctx, org, name)
+	team, err := s.Teams.GetTeam(ctx, org, name)
 	require.NoError(t, err)
 	return team
 }
@@ -320,7 +320,7 @@ func (s *testDaemon) createConfigurationVersion(t *testing.T, ctx context.Contex
 		opts = &configversion.CreateOptions{}
 	}
 
-	cv, err := s.Configs.Create(ctx, ws.ID, *opts)
+	cv, err := s.Configs.CreateConfigVersion(ctx, ws.ID, *opts)
 	require.NoError(t, err)
 	return cv
 }
@@ -347,7 +347,7 @@ func (s *testDaemon) createRun(t *testing.T, ctx context.Context, ws *workspace.
 	}
 	opts.ConfigurationVersionID = &cv.ID
 
-	run, err := s.Runs.Create(ctx, ws.ID, *opts)
+	run, err := s.Runs.CreateRun(ctx, ws.ID, *opts)
 	require.NoError(t, err)
 	return run
 }
@@ -381,7 +381,7 @@ func (s *testDaemon) createStateVersion(t *testing.T, ctx context.Context, ws *w
 	file, err := os.ReadFile("./testdata/terraform.tfstate")
 	require.NoError(t, err)
 
-	sv, err := s.State.Create(ctx, state.CreateStateVersionOptions{
+	sv, err := s.State.CreateStateVersion(ctx, state.CreateStateVersionOptions{
 		State:       file,
 		WorkspaceID: ws.ID,
 		// serial matches that in ./testdata/terraform.tfstate
@@ -394,7 +394,7 @@ func (s *testDaemon) createStateVersion(t *testing.T, ctx context.Context, ws *w
 func (s *testDaemon) getCurrentState(t *testing.T, ctx context.Context, wsID resource.TfeID) *state.Version {
 	t.Helper()
 
-	sv, err := s.State.GetCurrent(ctx, wsID)
+	sv, err := s.State.GetCurrentStateVersion(ctx, wsID)
 	require.NoError(t, err)
 	return sv
 }
@@ -422,7 +422,7 @@ func (s *testDaemon) createNotificationConfig(t *testing.T, ctx context.Context,
 		ws = s.createWorkspace(t, ctx, nil)
 	}
 
-	nc, err := s.Notifications.Create(ctx, ws.ID, notifications.CreateConfigOptions{
+	nc, err := s.Notifications.CreateNotificationConfig(ctx, ws.ID, notifications.CreateConfigOptions{
 		DestinationType: notifications.DestinationGeneric,
 		Enabled:         new(true),
 		Name:            new(uuid.NewString()),

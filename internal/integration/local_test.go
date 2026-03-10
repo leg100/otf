@@ -16,7 +16,7 @@ func TestLocal(t *testing.T) {
 	daemon, org, ctx := setup(t)
 
 	// create workspace with local execution mode
-	_, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
+	_, err := daemon.Workspaces.CreateWorkspace(ctx, workspace.CreateOptions{
 		Name:          new("local-ws"),
 		Organization:  &org.Name,
 		ExecutionMode: internal.Ptr(workspace.LocalExecutionMode),

@@ -22,15 +22,15 @@ type CLI struct {
 }
 
 type cliStateService interface {
-	List(ctx context.Context, workspaceID resource.TfeID, opts resource.PageOptions) (*resource.Page[*Version], error)
-	GetCurrent(ctx context.Context, workspaceID resource.TfeID) (*Version, error)
-	Download(ctx context.Context, versionID resource.TfeID) ([]byte, error)
-	Rollback(ctx context.Context, versionID resource.TfeID) (*Version, error)
-	Delete(ctx context.Context, versionID resource.TfeID) error
+	ListStateVersions(ctx context.Context, workspaceID resource.TfeID, opts resource.PageOptions) (*resource.Page[*Version], error)
+	GetCurrentStateVersion(ctx context.Context, workspaceID resource.TfeID) (*Version, error)
+	DownloadState(ctx context.Context, versionID resource.TfeID) ([]byte, error)
+	RollbackStateVersion(ctx context.Context, versionID resource.TfeID) (*Version, error)
+	DeleteStateVersion(ctx context.Context, versionID resource.TfeID) error
 }
 
 type cliWorkspaceService interface {
-	GetByName(ctx context.Context, organization organization.Name, workspace string) (*workspace.Workspace, error)
+	GetWorkspaceByName(ctx context.Context, organization organization.Name, workspace string) (*workspace.Workspace, error)
 }
 
 func NewCommand(client *otfhttp.Client) *cobra.Command {
@@ -72,11 +72,11 @@ func (a *CLI) stateListCommand() *cobra.Command {
 
 			// first retrieve workspace and current state version so that the
 			// user can be informed which state version is current
-			workspace, err := a.workspaces.GetByName(ctx, opts.Organization, opts.Workspace)
+			workspace, err := a.workspaces.GetWorkspaceByName(ctx, opts.Organization, opts.Workspace)
 			if err != nil {
 				return err
 			}
-			current, err := a.state.GetCurrent(ctx, workspace.ID)
+			current, err := a.state.GetCurrentStateVersion(ctx, workspace.ID)
 			if errors.Is(err, internal.ErrResourceNotFound) {
 				fmt.Fprintln(out, "No state versions found")
 				return nil
@@ -86,7 +86,7 @@ func (a *CLI) stateListCommand() *cobra.Command {
 			}
 
 			list, err := resource.ListAll(func(opts resource.PageOptions) (*resource.Page[*Version], error) {
-				return a.state.List(cmd.Context(), workspace.ID, opts)
+				return a.state.ListStateVersions(cmd.Context(), workspace.ID, opts)
 			})
 			if err != nil {
 				return fmt.Errorf("listing state versions: %w", err)
@@ -123,7 +123,7 @@ func (a *CLI) stateDeleteCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			if err := a.state.Delete(cmd.Context(), id); err != nil {
+			if err := a.state.DeleteStateVersion(cmd.Context(), id); err != nil {
 				return err
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "Deleted state version: %s\n", args[0])
@@ -144,7 +144,7 @@ func (a *CLI) stateDownloadCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			state, err := a.state.Download(cmd.Context(), id)
+			state, err := a.state.DownloadState(cmd.Context(), id)
 			if err != nil {
 				return err
 			}
@@ -170,7 +170,7 @@ func (a *CLI) stateRollbackCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			_, err = a.state.Rollback(cmd.Context(), id)
+			_, err = a.state.RollbackStateVersion(cmd.Context(), id)
 			if err != nil {
 				return err
 			}

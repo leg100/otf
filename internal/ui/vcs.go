@@ -62,7 +62,7 @@ func (h *Handlers) createVCSProvider(w http.ResponseWriter, r *http.Request) {
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
-	provider, err := h.VCSProviders.Create(r.Context(), params)
+	provider, err := h.VCSProviders.CreateVCSProvider(r.Context(), params)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -78,7 +78,7 @@ func (h *Handlers) editVCSProvider(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	provider, err := h.VCSProviders.Get(r.Context(), providerID)
+	provider, err := h.VCSProviders.GetVCSProvider(r.Context(), providerID)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -120,7 +120,7 @@ func (h *Handlers) updateVCSProvider(w http.ResponseWriter, r *http.Request) {
 	if params.Token != "" {
 		opts.Token = &params.Token
 	}
-	provider, err := h.VCSProviders.Update(r.Context(), params.ID, opts)
+	provider, err := h.VCSProviders.UpdateVCSProvider(r.Context(), params.ID, opts)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -135,7 +135,7 @@ func (h *Handlers) listVCSProviders(w http.ResponseWriter, r *http.Request) {
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
-	providers, err := h.VCSProviders.List(r.Context(), params.Organization)
+	providers, err := h.VCSProviders.ListVCSProviders(r.Context(), params.Organization)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -162,7 +162,7 @@ func (h *Handlers) deleteVCSProvider(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	provider, err := h.VCSProviders.Delete(r.Context(), id)
+	provider, err := h.VCSProviders.DeleteVCSProvider(r.Context(), id)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return

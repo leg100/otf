@@ -32,7 +32,7 @@ func TestAutoApply(t *testing.T) {
 		err = expect.Locator(page.GetByRole("alert")).ToHaveText("updated workspace")
 		require.NoError(t, err)
 		// check UI has correctly updated the workspace resource
-		ws, err := daemon.Workspaces.GetByName(ctx, org.Name, t.Name())
+		ws, err := daemon.Workspaces.GetWorkspaceByName(ctx, org.Name, t.Name())
 		require.NoError(t, err)
 		require.Equal(t, true, ws.AutoApply)
 	})

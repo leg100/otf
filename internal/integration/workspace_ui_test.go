@@ -95,7 +95,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 		workspaces := make([]*workspace.Workspace, 101)
 		for i := range 101 {
 			// create workspaces workspaces-{1-101}
-			ws, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
+			ws, err := daemon.Workspaces.CreateWorkspace(ctx, workspace.CreateOptions{
 				Name:         new(fmt.Sprintf("workspace-%d", i+1)),
 				Organization: &org.Name,
 			})
@@ -117,7 +117,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 		// An 'applied' run.
 		ws3run1applied := daemon.createRun(t, ctx, workspaces[2], cv3, nil)
 		_ = daemon.waitRunStatus(t, ctx, ws3run1applied.ID, runstatus.Planned)
-		err := daemon.Runs.Apply(ctx, ws3run1applied.ID)
+		err := daemon.Runs.ApplyRun(ctx, ws3run1applied.ID)
 		require.NoError(t, err)
 		_ = daemon.waitRunStatus(t, ctx, ws3run1applied.ID, runstatus.Applied)
 
@@ -307,7 +307,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 			require.NoError(t, err)
 
 			// check UI has correctly updated the workspace resource
-			ws, err := daemon.Workspaces.GetByName(ctx, org.Name, ws1.Name)
+			ws, err := daemon.Workspaces.GetWorkspaceByName(ctx, org.Name, ws1.Name)
 			require.NoError(t, err)
 			require.Len(t, ws.TriggerPatterns, 2)
 			require.Contains(t, ws.TriggerPatterns, "/foo/*.tf")
@@ -349,7 +349,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 			require.NoError(t, err)
 
 			// check UI has correctly updated the workspace resource
-			ws, err = daemon.Workspaces.GetByName(ctx, org.Name, ws1.Name)
+			ws, err = daemon.Workspaces.GetWorkspaceByName(ctx, org.Name, ws1.Name)
 			require.NoError(t, err)
 			require.Len(t, ws.TriggerPatterns, 0)
 			require.NotNil(t, ws.Connection)
@@ -381,7 +381,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 			require.NoError(t, err)
 
 			// check UI has correctly updated the workspace resource
-			ws, err = daemon.Workspaces.GetByName(ctx, org.Name, ws1.Name)
+			ws, err = daemon.Workspaces.GetWorkspaceByName(ctx, org.Name, ws1.Name)
 			require.NoError(t, err)
 			require.Equal(t, "dev", ws.Connection.Branch)
 
@@ -408,7 +408,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 			require.NoError(t, err)
 
 			// check UI has correctly updated the workspace resource
-			ws, err = daemon.Workspaces.GetByName(ctx, org.Name, ws1.Name)
+			ws, err = daemon.Workspaces.GetWorkspaceByName(ctx, org.Name, ws1.Name)
 			require.NoError(t, err)
 			require.Equal(t, true, ws.Connection.AllowCLIApply)
 

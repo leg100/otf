@@ -69,7 +69,7 @@ func (h *Handlers) newWorkspaceVariable(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	ws, err := h.Workspaces.Get(r.Context(), workspaceID)
+	ws, err := h.Workspaces.GetWorkspace(r.Context(), workspaceID)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -121,7 +121,7 @@ func (h *Handlers) listWorkspaceVariables(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	ws, err := h.Workspaces.Get(r.Context(), workspaceID)
+	ws, err := h.Workspaces.GetWorkspace(r.Context(), workspaceID)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -211,7 +211,7 @@ func (h *Handlers) editWorkspaceVariable(w http.ResponseWriter, r *http.Request)
 		html.Error(r, w, err.Error())
 		return
 	}
-	ws, err := h.Workspaces.Get(r.Context(), wv.WorkspaceID)
+	ws, err := h.Workspaces.GetWorkspace(r.Context(), wv.WorkspaceID)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -623,7 +623,7 @@ func (h *Handlers) deleteVariableSetVariable(w http.ResponseWriter, r *http.Requ
 func (h *Handlers) getAvailableWorkspaces(ctx context.Context, org organization.Name) ([]resource.Info, error) {
 	// retrieve names of all workspaces in org to show in dropdown widget
 	workspaces, err := resource.ListAll(func(opts resource.PageOptions) (*resource.Page[*workspace.Workspace], error) {
-		return h.Workspaces.List(ctx, workspace.ListOptions{
+		return h.Workspaces.ListWorkspaces(ctx, workspace.ListOptions{
 			Organization: &org,
 			PageOptions:  opts,
 		})

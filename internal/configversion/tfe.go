@@ -34,11 +34,11 @@ type tfe struct {
 
 // tfeConfigsClient gives the tfe handlers access to config version services
 type tfeClient interface {
-	Create(ctx context.Context, workspaceid resource.TfeID, opts CreateOptions) (*ConfigurationVersion, error)
-	Get(ctx context.Context, id resource.TfeID) (*ConfigurationVersion, error)
-	GetLatest(ctx context.Context, workspaceID resource.TfeID) (*ConfigurationVersion, error)
-	List(ctx context.Context, workspaceID resource.TfeID, opts ListOptions) (*resource.Page[*ConfigurationVersion], error)
-	Delete(ctx context.Context, cvID resource.TfeID) error
+	CreateConfigVersion(ctx context.Context, workspaceid resource.TfeID, opts CreateOptions) (*ConfigurationVersion, error)
+	GetConfigVersion(ctx context.Context, id resource.TfeID) (*ConfigurationVersion, error)
+	GetLatestConfigVersion(ctx context.Context, workspaceID resource.TfeID) (*ConfigurationVersion, error)
+	ListConfigVersions(ctx context.Context, workspaceID resource.TfeID, opts ListOptions) (*resource.Page[*ConfigurationVersion], error)
+	DeleteConfigVersion(ctx context.Context, cvID resource.TfeID) error
 
 	UploadConfig(ctx context.Context, id resource.TfeID, config []byte) error
 	DownloadConfig(ctx context.Context, id resource.TfeID) ([]byte, error)
@@ -77,7 +77,7 @@ func (a *tfe) createConfigurationVersion(w http.ResponseWriter, r *http.Request)
 		opts.Source = source.Terraform
 	}
 
-	cv, err := a.Create(r.Context(), workspaceID, opts)
+	cv, err := a.CreateConfigVersion(r.Context(), workspaceID, opts)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -106,7 +106,7 @@ func (a *tfe) getConfigurationVersion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cv, err := a.Get(r.Context(), id)
+	cv, err := a.GetConfigVersion(r.Context(), id)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -126,7 +126,7 @@ func (a *tfe) listConfigurationVersions(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	page, err := a.List(r.Context(), params.WorkspaceID, ListOptions{
+	page, err := a.ListConfigVersions(r.Context(), params.WorkspaceID, ListOptions{
 		PageOptions: resource.PageOptions(params.ListOptions),
 	})
 	if err != nil {
@@ -205,7 +205,7 @@ func (a *tfe) include(ctx context.Context, v any) ([]any, error) {
 	if !ok {
 		return nil, nil
 	}
-	cv, err := a.Get(ctx, resourceID)
+	cv, err := a.GetConfigVersion(ctx, resourceID)
 	if err != nil {
 		return nil, err
 	}
@@ -222,7 +222,7 @@ func (a *tfe) includeIngressAttributes(ctx context.Context, v any) ([]any, error
 	}
 	// the tfe CV does not by default include ingress attributes, whereas the
 	// otf CV *does*, so we need to fetch it.
-	cv, err := a.Get(ctx, tfeCV.ID)
+	cv, err := a.GetConfigVersion(ctx, tfeCV.ID)
 	if err != nil {
 		return nil, err
 	}

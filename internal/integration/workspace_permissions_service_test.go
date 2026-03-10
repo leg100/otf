@@ -20,17 +20,17 @@ func TestIntegration_WorkspacePermissionsService(t *testing.T) {
 	t.Run("set permission", func(t *testing.T) {
 		ws := daemon.createWorkspace(t, ctx, org)
 		team := daemon.createTeam(t, ctx, org)
-		err := daemon.Workspaces.SetPermission(ctx, ws.ID, team.ID, authz.WorkspacePlanRole)
+		err := daemon.Workspaces.SetWorkspacePermission(ctx, ws.ID, team.ID, authz.WorkspacePlanRole)
 		require.NoError(t, err)
 	})
 
 	t.Run("unset permission", func(t *testing.T) {
 		ws := daemon.createWorkspace(t, ctx, org)
 		team := daemon.createTeam(t, ctx, org)
-		err := daemon.Workspaces.SetPermission(ctx, ws.ID, team.ID, authz.WorkspacePlanRole)
+		err := daemon.Workspaces.SetWorkspacePermission(ctx, ws.ID, team.ID, authz.WorkspacePlanRole)
 		require.NoError(t, err)
 
-		err = daemon.Workspaces.UnsetPermission(ctx, ws.ID, team.ID)
+		err = daemon.Workspaces.UnsetWorkspacePermission(ctx, ws.ID, team.ID)
 		require.NoError(t, err)
 
 		policy, err := daemon.Workspaces.GetWorkspacePolicy(ctx, ws.ID)
@@ -43,11 +43,11 @@ func TestIntegration_WorkspacePermissionsService(t *testing.T) {
 		scum := daemon.createTeam(t, ctx, org)
 		skates := daemon.createTeam(t, ctx, org)
 		cherries := daemon.createTeam(t, ctx, org)
-		err := daemon.Workspaces.SetPermission(ctx, ws.ID, scum.ID, authz.WorkspaceAdminRole)
+		err := daemon.Workspaces.SetWorkspacePermission(ctx, ws.ID, scum.ID, authz.WorkspaceAdminRole)
 		require.NoError(t, err)
-		err = daemon.Workspaces.SetPermission(ctx, ws.ID, skates.ID, authz.WorkspaceReadRole)
+		err = daemon.Workspaces.SetWorkspacePermission(ctx, ws.ID, skates.ID, authz.WorkspaceReadRole)
 		require.NoError(t, err)
-		err = daemon.Workspaces.SetPermission(ctx, ws.ID, cherries.ID, authz.WorkspacePlanRole)
+		err = daemon.Workspaces.SetWorkspacePermission(ctx, ws.ID, cherries.ID, authz.WorkspacePlanRole)
 		require.NoError(t, err)
 
 		got, err := daemon.Workspaces.GetWorkspacePolicy(ctx, ws.ID)

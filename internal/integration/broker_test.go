@@ -19,9 +19,9 @@ func TestBroker(t *testing.T) {
 	remote, _, _ := setup(t, db)
 
 	// setup subscriptions
-	localSub, localUnsub := local.Workspaces.Watch(ctx)
+	localSub, localUnsub := local.Workspaces.WatchWorkspaces(ctx)
 	defer localUnsub()
-	remoteSub, remoteUnsub := remote.Workspaces.Watch(ctx)
+	remoteSub, remoteUnsub := remote.Workspaces.WatchWorkspaces(ctx)
 	defer remoteUnsub()
 
 	// create a workspace which should trigger an event

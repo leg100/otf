@@ -46,7 +46,7 @@ func (h *Handlers) createRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	createdRun, err := h.Runs.Create(r.Context(), params.WorkspaceID, runpkg.CreateOptions{
+	createdRun, err := h.Runs.CreateRun(r.Context(), params.WorkspaceID, runpkg.CreateOptions{
 		IsDestroy: new(params.Operation == runpkg.DestroyAllOperation),
 		PlanOnly:  new(params.Operation == runpkg.PlanOnlyOperation),
 		Source:    source.UI,
@@ -77,7 +77,7 @@ func (h *Handlers) listRuns(w http.ResponseWriter, r *http.Request) {
 
 	var renderOptions []renderPageOption
 	if opts.ListOptions.WorkspaceID != nil {
-		ws, err := h.Workspaces.Get(r.Context(), *opts.WorkspaceID)
+		ws, err := h.Workspaces.GetWorkspace(r.Context(), *opts.WorkspaceID)
 		if err != nil {
 			html.Error(r, w, err.Error())
 			return
@@ -98,7 +98,7 @@ func (h *Handlers) listRuns(w http.ResponseWriter, r *http.Request) {
 		helpers.Breadcrumb{Name: "Runs"},
 	))
 
-	page, err := h.Runs.List(r.Context(), opts.ListOptions)
+	page, err := h.Runs.ListRuns(r.Context(), opts.ListOptions)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -121,13 +121,13 @@ func (h *Handlers) getRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	run, err := h.Runs.Get(r.Context(), runID)
+	run, err := h.Runs.GetRun(r.Context(), runID)
 	if err != nil {
 		html.Error(r, w, "retrieving run: "+err.Error())
 		return
 	}
 
-	ws, err := h.Workspaces.Get(r.Context(), run.WorkspaceID)
+	ws, err := h.Workspaces.GetWorkspace(r.Context(), run.WorkspaceID)
 	if err != nil {
 		html.Error(r, w, "retrieving workspace: "+err.Error())
 		return
@@ -178,12 +178,12 @@ func (h *Handlers) deleteRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	runItem, err := h.Runs.Get(r.Context(), runID)
+	runItem, err := h.Runs.GetRun(r.Context(), runID)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
 	}
-	err = h.Runs.Delete(r.Context(), runID)
+	err = h.Runs.DeleteRun(r.Context(), runID)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -198,7 +198,7 @@ func (h *Handlers) cancelRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.Runs.Cancel(r.Context(), runID); err != nil {
+	if err := h.Runs.CancelRun(r.Context(), runID); err != nil {
 		html.Error(r, w, err.Error())
 		return
 	}
@@ -213,7 +213,7 @@ func (h *Handlers) forceCancelRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.Runs.ForceCancel(r.Context(), runID); err != nil {
+	if err := h.Runs.ForceCancelRun(r.Context(), runID); err != nil {
 		html.Error(r, w, err.Error())
 		return
 	}
@@ -228,7 +228,7 @@ func (h *Handlers) applyRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.Runs.Apply(r.Context(), runID); err != nil {
+	if err := h.Runs.ApplyRun(r.Context(), runID); err != nil {
 		html.Error(r, w, err.Error())
 		return
 	}
@@ -243,7 +243,7 @@ func (h *Handlers) discardRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.Runs.Discard(r.Context(), runID); err != nil {
+	if err := h.Runs.DiscardRun(r.Context(), runID); err != nil {
 		html.Error(r, w, err.Error())
 		return
 	}
@@ -258,13 +258,13 @@ func (h *Handlers) retryRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	existingRun, err := h.Runs.Get(r.Context(), runID)
+	existingRun, err := h.Runs.GetRun(r.Context(), runID)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
 	}
 
-	newRun, err := h.Runs.Create(r.Context(), existingRun.WorkspaceID, runpkg.CreateOptions{
+	newRun, err := h.Runs.CreateRun(r.Context(), existingRun.WorkspaceID, runpkg.CreateOptions{
 		ConfigurationVersionID: &existingRun.ConfigurationVersionID,
 		IsDestroy:              &existingRun.IsDestroy,
 		PlanOnly:               &existingRun.PlanOnly,
@@ -296,10 +296,10 @@ func (h *Handlers) watchRun(w http.ResponseWriter, r *http.Request) {
 	}
 	conn := newSSEConnection(w, false)
 
-	sub, _ := h.Runs.Watch(r.Context())
+	sub, _ := h.Runs.WatchRuns(r.Context())
 
 	send := func() {
-		run, err := h.Runs.Get(r.Context(), runID)
+		run, err := h.Runs.GetRun(r.Context(), runID)
 		if err != nil {
 			// terminate conn on error
 			return
@@ -369,9 +369,9 @@ func (h *Handlers) watchLatestRun(w http.ResponseWriter, r *http.Request) {
 
 	// Setup event subscriptions first then retrieve workspace to ensure we
 	// don't miss anything.
-	workspacesSub, _ := h.Workspaces.Watch(r.Context())
-	runsSub, _ := h.Runs.Watch(r.Context())
-	ws, err := h.Workspaces.Get(r.Context(), workspaceID)
+	workspacesSub, _ := h.Workspaces.WatchWorkspaces(r.Context())
+	runsSub, _ := h.Runs.WatchRuns(r.Context())
+	ws, err := h.Workspaces.GetWorkspace(r.Context(), workspaceID)
 	if err != nil {
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
 		return
@@ -381,7 +381,7 @@ func (h *Handlers) watchLatestRun(w http.ResponseWriter, r *http.Request) {
 
 	// function for retrieving run, rendering fragment and sending to client.
 	send := func(runID resource.TfeID) {
-		run, err := h.Runs.Get(r.Context(), runID)
+		run, err := h.Runs.GetRun(r.Context(), runID)
 		if err != nil {
 			// terminate conn on error
 			return
@@ -460,7 +460,7 @@ func (h *Handlers) tailRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ch, err := h.Runs.Tail(r.Context(), params)
+	ch, err := h.Runs.TailRun(r.Context(), params)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return

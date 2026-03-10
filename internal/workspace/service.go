@@ -112,11 +112,11 @@ func (s *Service) AddHandlers(r *mux.Router) {
 	s.api.addHandlers(r)
 }
 
-func (s *Service) Watch(ctx context.Context) (<-chan pubsub.Event[*Event], func()) {
+func (s *Service) WatchWorkspaces(ctx context.Context) (<-chan pubsub.Event[*Event], func()) {
 	return s.broker.Subscribe(ctx)
 }
 
-func (s *Service) Create(ctx context.Context, opts CreateOptions) (*Workspace, error) {
+func (s *Service) CreateWorkspace(ctx context.Context, opts CreateOptions) (*Workspace, error) {
 	ws, err := s.NewWorkspace(ctx, opts)
 	if err != nil {
 		s.Error(err, "constructing workspace")
@@ -176,7 +176,7 @@ func (s *Service) AfterCreateWorkspace(hook func(context.Context, *Workspace) er
 	s.afterCreateHooks = append(s.afterCreateHooks, hook)
 }
 
-func (s *Service) Get(ctx context.Context, workspaceID resource.TfeID) (*Workspace, error) {
+func (s *Service) GetWorkspace(ctx context.Context, workspaceID resource.TfeID) (*Workspace, error) {
 	subject, err := s.Authorize(ctx, authz.GetWorkspaceAction, workspaceID)
 	if err != nil {
 		return nil, err
@@ -193,7 +193,7 @@ func (s *Service) Get(ctx context.Context, workspaceID resource.TfeID) (*Workspa
 	return ws, nil
 }
 
-func (s *Service) GetByName(ctx context.Context, organization organization.Name, workspace string) (*Workspace, error) {
+func (s *Service) GetWorkspaceByName(ctx context.Context, organization organization.Name, workspace string) (*Workspace, error) {
 	ws, err := s.db.getByName(ctx, organization, workspace)
 	if err != nil {
 		s.Error(err, "retrieving workspace", "organization", organization, "workspace", workspace)
@@ -210,7 +210,7 @@ func (s *Service) GetByName(ctx context.Context, organization organization.Name,
 	return ws, nil
 }
 
-func (s *Service) List(ctx context.Context, opts ListOptions) (*resource.Page[*Workspace], error) {
+func (s *Service) ListWorkspaces(ctx context.Context, opts ListOptions) (*resource.Page[*Workspace], error) {
 	if opts.Organization == nil {
 		// subject needs perms on site to list workspaces across site
 		_, err := s.Authorize(ctx, authz.ListWorkspacesAction, resource.SiteID)
@@ -246,7 +246,7 @@ func (s *Service) BeforeUpdateWorkspace(hook func(context.Context, *Workspace) e
 	s.beforeUpdateHooks = append(s.beforeUpdateHooks, hook)
 }
 
-func (s *Service) Update(ctx context.Context, workspaceID resource.TfeID, opts UpdateOptions) (*Workspace, error) {
+func (s *Service) UpdateWorkspace(ctx context.Context, workspaceID resource.TfeID, opts UpdateOptions) (*Workspace, error) {
 	subject, err := s.Authorize(ctx, authz.UpdateWorkspaceAction, workspaceID)
 	if err != nil {
 		return nil, err
@@ -291,7 +291,7 @@ func (s *Service) Update(ctx context.Context, workspaceID resource.TfeID, opts U
 	return updated, nil
 }
 
-func (s *Service) Delete(ctx context.Context, workspaceID resource.TfeID) (*Workspace, error) {
+func (s *Service) DeleteWorkspace(ctx context.Context, workspaceID resource.TfeID) (*Workspace, error) {
 	subject, err := s.Authorize(ctx, authz.DeleteWorkspaceAction, workspaceID)
 	if err != nil {
 		return nil, err
@@ -319,7 +319,7 @@ func (s *Service) Delete(ctx context.Context, workspaceID resource.TfeID) (*Work
 	return ws, nil
 }
 
-func (s *Service) SetPermission(ctx context.Context, workspaceID, teamID resource.TfeID, role authz.Role) error {
+func (s *Service) SetWorkspacePermission(ctx context.Context, workspaceID, teamID resource.TfeID, role authz.Role) error {
 	subject, err := s.Authorize(ctx, authz.SetWorkspacePermissionAction, workspaceID)
 	if err != nil {
 		return err
@@ -337,7 +337,7 @@ func (s *Service) SetPermission(ctx context.Context, workspaceID, teamID resourc
 	return nil
 }
 
-func (s *Service) UnsetPermission(ctx context.Context, workspaceID, teamID resource.TfeID) error {
+func (s *Service) UnsetWorkspacePermission(ctx context.Context, workspaceID, teamID resource.TfeID) error {
 	subject, err := s.Authorize(ctx, authz.UnsetWorkspacePermissionAction, workspaceID)
 	if err != nil {
 		s.Error(err, "unsetting workspace permission", "team_id", teamID, "subject", subject, "workspace", workspaceID)
@@ -397,7 +397,7 @@ func (s *Service) disconnect(ctx context.Context, workspaceID resource.TfeID) er
 	return nil
 }
 
-// SetLatestRun sets the latest run for the workspace
-func (s *Service) SetLatestRun(ctx context.Context, workspaceID, runID resource.TfeID) (*Workspace, error) {
+// SetWorkspaceLatestRun sets the latest run for the workspace
+func (s *Service) SetWorkspaceLatestRun(ctx context.Context, workspaceID, runID resource.TfeID) (*Workspace, error) {
 	return s.db.setLatestRun(ctx, workspaceID, runID)
 }

@@ -47,32 +47,32 @@ func (f *FakeService) ListConnectedWorkspaces(ctx context.Context, vcsProviderID
 	return f.Workspaces, nil
 }
 
-func (f *FakeService) Create(context.Context, CreateOptions) (*Workspace, error) {
+func (f *FakeService) CreateWorkspace(context.Context, CreateOptions) (*Workspace, error) {
 	return f.Workspaces[0], nil
 }
 
-func (f *FakeService) Update(_ context.Context, _ resource.TfeID, opts UpdateOptions) (*Workspace, error) {
+func (f *FakeService) UpdateWorkspace(_ context.Context, _ resource.TfeID, opts UpdateOptions) (*Workspace, error) {
 	f.Workspaces[0].Update(opts)
 	return f.Workspaces[0], nil
 }
 
-func (f *FakeService) List(ctx context.Context, opts ListOptions) (*resource.Page[*Workspace], error) {
+func (f *FakeService) ListWorkspaces(ctx context.Context, opts ListOptions) (*resource.Page[*Workspace], error) {
 	return resource.NewPage(f.Workspaces, opts.PageOptions, nil), nil
 }
 
-func (f *FakeService) Get(context.Context, resource.TfeID) (*Workspace, error) {
+func (f *FakeService) GetWorkspace(context.Context, resource.TfeID) (*Workspace, error) {
 	return f.Workspaces[0], nil
 }
 
-func (f *FakeService) GetByName(context.Context, organization.Name, string) (*Workspace, error) {
+func (f *FakeService) GetWorkspaceByName(context.Context, organization.Name, string) (*Workspace, error) {
 	return f.Workspaces[0], nil
 }
 
-func (f *FakeService) Watch(context.Context) (<-chan pubsub.Event[*Event], func()) {
+func (f *FakeService) WatchWorkspaces(context.Context) (<-chan pubsub.Event[*Event], func()) {
 	return nil, nil
 }
 
-func (f *FakeService) Delete(context.Context, resource.TfeID) (*Workspace, error) {
+func (f *FakeService) DeleteWorkspace(context.Context, resource.TfeID) (*Workspace, error) {
 	return f.Workspaces[0], nil
 }
 
@@ -100,11 +100,11 @@ func (f *FakeService) RemoveTags(ctx context.Context, workspaceID resource.TfeID
 	return nil
 }
 
-func (f *FakeService) SetPermission(ctx context.Context, workspaceID, teamID resource.TfeID, role authz.Role) error {
+func (f *FakeService) SetWorkspacePermission(ctx context.Context, workspaceID, teamID resource.TfeID, role authz.Role) error {
 	return nil
 }
 
-func (f *FakeService) UnsetPermission(ctx context.Context, workspaceID, teamID resource.TfeID) error {
+func (f *FakeService) UnsetWorkspacePermission(ctx context.Context, workspaceID, teamID resource.TfeID) error {
 	return nil
 }
 

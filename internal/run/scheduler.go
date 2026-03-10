@@ -4,8 +4,8 @@ import (
 	"context"
 	"slices"
 
-	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runstatus"
@@ -33,13 +33,13 @@ type (
 	}
 
 	schedulerWorkspaceClient interface {
-		Watch(context.Context) (<-chan pubsub.Event[*workspace.Event], func())
+		WatchWorkspaces(context.Context) (<-chan pubsub.Event[*workspace.Event], func())
 		Unlock(ctx context.Context, workspaceID resource.TfeID, runID *resource.TfeID, force bool) (*workspace.Workspace, error)
 	}
 
 	schedulerRunClient interface {
-		List(ctx context.Context, opts ListOptions) (*resource.Page[*Run], error)
-		Watch(context.Context) (<-chan pubsub.Event[*Event], func())
+		ListRuns(ctx context.Context, opts ListOptions) (*resource.Page[*Run], error)
+		WatchRuns(context.Context) (<-chan pubsub.Event[*Event], func())
 		EnqueuePlan(ctx context.Context, runID resource.TfeID) (*Run, error)
 	}
 
@@ -72,16 +72,16 @@ func NewScheduler(opts SchedulerOptions) *scheduler {
 // queues for scheduling.
 func (s *scheduler) Start(ctx context.Context) error {
 	// subscribe to workspace events
-	subWorkspaces, unsubWorkspaces := s.workspaces.Watch(ctx)
+	subWorkspaces, unsubWorkspaces := s.workspaces.WatchWorkspaces(ctx)
 	defer unsubWorkspaces()
 
 	// subscribe to run events
-	subRuns, unsubRuns := s.runs.Watch(ctx)
+	subRuns, unsubRuns := s.runs.WatchRuns(ctx)
 	defer unsubRuns()
 
 	// Retrieve all incomplete runs
 	runs, err := resource.ListAll(func(opts resource.PageOptions) (*resource.Page[*Run], error) {
-		return s.runs.List(ctx, ListOptions{
+		return s.runs.ListRuns(ctx, ListOptions{
 			Statuses:    IncompleteRun,
 			PageOptions: opts,
 		})

@@ -86,7 +86,7 @@ type membershipCLIClient interface {
 }
 
 type teamsCLIClient interface {
-	Get(ctx context.Context, org organization.Name, name string) (*team.Team, error)
+	GetTeam(ctx context.Context, org organization.Name, name string) (*team.Team, error)
 }
 
 func NewTeamMembershipCommand(apiclient *otfhttp.Client) *cobra.Command {
@@ -123,7 +123,7 @@ func (a *membershipCLI) addTeamMembershipCommand() *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			team, err := a.teams.Get(cmd.Context(), organization, name)
+			team, err := a.teams.GetTeam(cmd.Context(), organization, name)
 			if err != nil {
 				return err
 			}
@@ -164,7 +164,7 @@ func (a *membershipCLI) deleteTeamMembershipCommand() *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			team, err := a.teams.Get(cmd.Context(), organization, name)
+			team, err := a.teams.GetTeam(cmd.Context(), organization, name)
 			if err != nil {
 				return err
 			}

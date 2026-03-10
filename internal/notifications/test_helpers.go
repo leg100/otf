@@ -59,15 +59,15 @@ func (f *fakeCacheDB) listAll(context.Context) ([]*Config, error) {
 	return f.configs, nil
 }
 
-func (f *fakeWorkspaceService) Get(context.Context, resource.TfeID) (*workspace.Workspace, error) {
+func (f *fakeWorkspaceService) GetWorkspace(context.Context, resource.TfeID) (*workspace.Workspace, error) {
 	return nil, nil
 }
 
-func (f *fakeRunService) Get(ctx context.Context, id resource.TfeID) (*run.Run, error) {
+func (f *fakeRunService) GetRun(ctx context.Context, id resource.TfeID) (*run.Run, error) {
 	return &run.Run{ID: id}, nil
 }
 
-func (f *fakeRunService) Watch(ctx context.Context) (<-chan pubsub.Event[*run.Event], func()) {
+func (f *fakeRunService) WatchRuns(ctx context.Context) (<-chan pubsub.Event[*run.Event], func()) {
 	return nil, nil
 }
 

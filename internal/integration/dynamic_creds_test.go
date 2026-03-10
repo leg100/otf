@@ -85,7 +85,7 @@ func TestDynamicCredentialsGCP(t *testing.T) {
 
 	// create an organization with a specific name that matches the assertion
 	// condition in GCP, e.g. `attribute.terraform_organization_name="acme"`
-	org, err := daemon.Organizations.Create(ctx, organization.CreateOptions{Name: new(orgName)})
+	org, err := daemon.Organizations.CreateOrganization(ctx, organization.CreateOptions{Name: new(orgName)})
 	require.NoError(t, err)
 
 	ws1 := daemon.createWorkspace(t, ctx, org)
@@ -136,7 +136,7 @@ data "google_project" "my-project" {}
 		})
 		require.NoError(t, err)
 
-		_, err = daemon.Workspaces.Update(ctx, ws1.ID, workspace.UpdateOptions{
+		_, err = daemon.Workspaces.UpdateWorkspace(ctx, ws1.ID, workspace.UpdateOptions{
 			ExecutionMode: internal.Ptr(workspace.AgentExecutionMode),
 			AgentPoolID:   &pool1.ID,
 		})

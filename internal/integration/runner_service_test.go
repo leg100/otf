@@ -28,9 +28,8 @@ func TestRunner_Service(t *testing.T) {
 	// listing site-wide runners requires site admin perms.
 	ctx = authz.AddSubjectToContext(ctx, &user.SiteAdmin)
 
-	results, err := daemon.Runners.List(ctx, runner.ListOptions{})
+	results, err := daemon.Runners.ListRunners(ctx, runner.ListOptions{})
 	require.NoError(t, err)
 
-	assert.Equal(t, 4, len(results.Items))
-	assert.Equal(t, 4, results.TotalCount)
+	assert.Equal(t, 4, len(results))
 }

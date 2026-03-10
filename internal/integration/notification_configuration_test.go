@@ -17,9 +17,9 @@ func TestIntegration_NotificationConfigurationService(t *testing.T) {
 	t.Run("create", func(t *testing.T) {
 		daemon, org, ctx := setup(t)
 		ws := daemon.createWorkspace(t, ctx, org)
-		sub, unsub := daemon.Notifications.Watch(ctx)
+		sub, unsub := daemon.Notifications.WatchNotificationConfigs(ctx)
 		defer unsub()
-		nc, err := daemon.Notifications.Create(ctx, ws.ID, notifications.CreateConfigOptions{
+		nc, err := daemon.Notifications.CreateNotificationConfig(ctx, ws.ID, notifications.CreateConfigOptions{
 			DestinationType: notifications.DestinationGeneric,
 			Enabled:         new(true),
 			Name:            new("testing"),
@@ -36,7 +36,7 @@ func TestIntegration_NotificationConfigurationService(t *testing.T) {
 		nc := daemon.createNotificationConfig(t, ctx, nil)
 
 		t.Run("name", func(t *testing.T) {
-			got, err := daemon.Notifications.Update(ctx, nc.ID, notifications.UpdateConfigOptions{
+			got, err := daemon.Notifications.UpdateNotificationConfig(ctx, nc.ID, notifications.UpdateConfigOptions{
 				Name: new("new-name"),
 			})
 			require.NoError(t, err)
@@ -44,7 +44,7 @@ func TestIntegration_NotificationConfigurationService(t *testing.T) {
 		})
 
 		t.Run("disable", func(t *testing.T) {
-			got, err := daemon.Notifications.Update(ctx, nc.ID, notifications.UpdateConfigOptions{
+			got, err := daemon.Notifications.UpdateNotificationConfig(ctx, nc.ID, notifications.UpdateConfigOptions{
 				Enabled: new(false),
 			})
 			require.NoError(t, err)
@@ -52,7 +52,7 @@ func TestIntegration_NotificationConfigurationService(t *testing.T) {
 		})
 
 		t.Run("url", func(t *testing.T) {
-			got, err := daemon.Notifications.Update(ctx, nc.ID, notifications.UpdateConfigOptions{
+			got, err := daemon.Notifications.UpdateNotificationConfig(ctx, nc.ID, notifications.UpdateConfigOptions{
 				URL: new("http://otf.ninja/notifications"),
 			})
 			require.NoError(t, err)
@@ -67,7 +67,7 @@ func TestIntegration_NotificationConfigurationService(t *testing.T) {
 		nc2 := daemon.createNotificationConfig(t, ctx, ws)
 		nc3 := daemon.createNotificationConfig(t, ctx, ws)
 
-		got, err := daemon.Notifications.List(ctx, ws.ID)
+		got, err := daemon.Notifications.ListNotificationConfigs(ctx, ws.ID)
 		require.NoError(t, err)
 
 		assert.Equal(t, 3, len(got))
@@ -80,7 +80,7 @@ func TestIntegration_NotificationConfigurationService(t *testing.T) {
 		daemon, _, ctx := setup(t)
 		nc := daemon.createNotificationConfig(t, ctx, nil)
 
-		got, err := daemon.Notifications.Get(ctx, nc.ID)
+		got, err := daemon.Notifications.GetNotificationConfig(ctx, nc.ID)
 		require.NoError(t, err)
 
 		assert.Equal(t, nc, got)
@@ -89,14 +89,14 @@ func TestIntegration_NotificationConfigurationService(t *testing.T) {
 	t.Run("delete", func(t *testing.T) {
 		daemon, org, ctx := setup(t)
 		ws := daemon.createWorkspace(t, ctx, org)
-		sub, unsub := daemon.Notifications.Watch(ctx)
+		sub, unsub := daemon.Notifications.WatchNotificationConfigs(ctx)
 		defer unsub()
 		nc := daemon.createNotificationConfig(t, ctx, ws)
 
 		// dismiss created event
 		<-sub
 
-		err := daemon.Notifications.Delete(ctx, nc.ID)
+		err := daemon.Notifications.DeleteNotificationConfig(ctx, nc.ID)
 		require.NoError(t, err)
 
 		// should receive deleted event
@@ -104,7 +104,7 @@ func TestIntegration_NotificationConfigurationService(t *testing.T) {
 		assert.Equal(t, pubsub.DeletedEvent, event.Type)
 		assert.Equal(t, nc.ID, event.Payload.ID)
 
-		_, err = daemon.Notifications.Get(ctx, nc.ID)
+		_, err = daemon.Notifications.GetNotificationConfig(ctx, nc.ID)
 		require.True(t, errors.Is(err, internal.ErrResourceNotFound))
 	})
 
@@ -113,7 +113,7 @@ func TestIntegration_NotificationConfigurationService(t *testing.T) {
 	// configurations should be deleted too and events should be sent out.
 	t.Run("cascade delete", func(t *testing.T) {
 		daemon, org, ctx := setup(t)
-		sub, unsub := daemon.Notifications.Watch(ctx)
+		sub, unsub := daemon.Notifications.WatchNotificationConfigs(ctx)
 		defer unsub()
 
 		ws := daemon.createWorkspace(t, ctx, org)
@@ -126,7 +126,7 @@ func TestIntegration_NotificationConfigurationService(t *testing.T) {
 		// dismiss created event
 		<-sub
 
-		_, err := daemon.Workspaces.Delete(ctx, ws.ID)
+		_, err := daemon.Workspaces.DeleteWorkspace(ctx, ws.ID)
 		require.NoError(t, err)
 
 		// should receive deleted events

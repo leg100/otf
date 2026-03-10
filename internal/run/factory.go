@@ -27,23 +27,23 @@ type (
 	}
 
 	factoryOrganizationClient interface {
-		Get(ctx context.Context, name organization.Name) (*organization.Organization, error)
+		GetOrganization(ctx context.Context, name organization.Name) (*organization.Organization, error)
 	}
 
 	factoryWorkspaceClient interface {
-		Get(ctx context.Context, workspaceID resource.TfeID) (*workspace.Workspace, error)
+		GetWorkspace(ctx context.Context, workspaceID resource.TfeID) (*workspace.Workspace, error)
 	}
 
 	factoryConfigClient interface {
-		Create(ctx context.Context, workspaceID resource.TfeID, opts configversion.CreateOptions) (*configversion.ConfigurationVersion, error)
-		Get(ctx context.Context, id resource.TfeID) (*configversion.ConfigurationVersion, error)
-		GetLatest(ctx context.Context, workspaceID resource.TfeID) (*configversion.ConfigurationVersion, error)
+		CreateConfigVersion(ctx context.Context, workspaceID resource.TfeID, opts configversion.CreateOptions) (*configversion.ConfigurationVersion, error)
+		GetConfigVersion(ctx context.Context, id resource.TfeID) (*configversion.ConfigurationVersion, error)
+		GetLatestConfigVersion(ctx context.Context, workspaceID resource.TfeID) (*configversion.ConfigurationVersion, error)
 		UploadConfig(ctx context.Context, id resource.TfeID, config []byte) error
 		GetSourceIcon(source source.Source) templ.Component
 	}
 
 	factoryVCSClient interface {
-		Get(ctx context.Context, providerID resource.TfeID) (*vcs.Provider, error)
+		GetVCSProvider(ctx context.Context, providerID resource.TfeID) (*vcs.Provider, error)
 	}
 
 	factoryReleasesClient interface {
@@ -53,11 +53,11 @@ type (
 
 // NewRun constructs a new run using the provided options.
 func (f *factory) NewRun(ctx context.Context, workspaceID resource.TfeID, opts CreateOptions) (*Run, error) {
-	ws, err := f.workspaces.Get(ctx, workspaceID)
+	ws, err := f.workspaces.GetWorkspace(ctx, workspaceID)
 	if err != nil {
 		return nil, err
 	}
-	org, err := f.organizations.Get(ctx, ws.Organization)
+	org, err := f.organizations.GetOrganization(ctx, ws.Organization)
 	if err != nil {
 		return nil, err
 	}
@@ -69,9 +69,9 @@ func (f *factory) NewRun(ctx context.Context, workspaceID resource.TfeID, opts C
 	// not connected then the latest existing config is used.
 	var cv *configversion.ConfigurationVersion
 	if opts.ConfigurationVersionID != nil {
-		cv, err = f.configs.Get(ctx, *opts.ConfigurationVersionID)
+		cv, err = f.configs.GetConfigVersion(ctx, *opts.ConfigurationVersionID)
 	} else if ws.Connection == nil {
-		cv, err = f.configs.GetLatest(ctx, workspaceID)
+		cv, err = f.configs.GetLatestConfigVersion(ctx, workspaceID)
 	} else {
 		cv, err = f.createConfigVersionFromVCS(ctx, ws)
 	}
@@ -99,7 +99,7 @@ func (f *factory) NewRun(ctx context.Context, workspaceID resource.TfeID, opts C
 // createConfigVersionFromVCS creates a config version from the vcs repo
 // connected to the workspace using the contents of the vcs repo.
 func (f *factory) createConfigVersionFromVCS(ctx context.Context, ws *workspace.Workspace) (*configversion.ConfigurationVersion, error) {
-	client, err := f.vcs.Get(ctx, ws.Connection.VCSProviderID)
+	client, err := f.vcs.GetVCSProvider(ctx, ws.Connection.VCSProviderID)
 	if err != nil {
 		return nil, err
 	}
@@ -122,7 +122,7 @@ func (f *factory) createConfigVersionFromVCS(ctx context.Context, ws *workspace.
 	if err != nil {
 		return nil, fmt.Errorf("retrieving commit information: %s: %w", ref, err)
 	}
-	cv, err := f.configs.Create(ctx, ws.ID, configversion.CreateOptions{
+	cv, err := f.configs.CreateConfigVersion(ctx, ws.ID, configversion.CreateOptions{
 		IngressAttributes: &configversion.IngressAttributes{
 			Branch:          branch,
 			CommitSHA:       commit.SHA,

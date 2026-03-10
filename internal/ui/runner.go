@@ -197,7 +197,7 @@ func (h *Handlers) getAgentPool(w http.ResponseWriter, r *http.Request) {
 	// fetch all workspaces in organization then distribute them among the three
 	// sets documented above.
 	allWorkspaces, err := resource.ListAll(func(opts resource.PageOptions) (*resource.Page[*workspace.Workspace], error) {
-		return h.Workspaces.List(r.Context(), workspace.ListOptions{
+		return h.Workspaces.ListWorkspaces(r.Context(), workspace.ListOptions{
 			PageOptions:  opts,
 			Organization: &pool.Organization,
 		})
@@ -288,7 +288,7 @@ func (h *Handlers) listAllowedPools(w http.ResponseWriter, r *http.Request) {
 		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
-	ws, err := h.Workspaces.Get(r.Context(), opts.WorkspaceID)
+	ws, err := h.Workspaces.GetWorkspace(r.Context(), opts.WorkspaceID)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return

@@ -63,7 +63,7 @@ func (p *publisher) handleWithError(event vcs.Event) error {
 	if module.Connection == nil {
 		return fmt.Errorf("module is not connected to a repo: %s", module.ID)
 	}
-	client, err := p.vcsproviders.Get(ctx, module.Connection.VCSProviderID)
+	client, err := p.vcsproviders.GetVCSProvider(ctx, module.Connection.VCSProviderID)
 	if err != nil {
 		return fmt.Errorf("retrieving vcs provider: %w", err)
 	}

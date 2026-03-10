@@ -14,8 +14,8 @@ type Client struct {
 	*otfhttp.Client
 }
 
-// Create creates a team via HTTP/JSONAPI.
-func (c *Client) Create(ctx context.Context, organization organization.Name, opts CreateTeamOptions) (*Team, error) {
+// CreateTeam creates a team via HTTP/JSONAPI.
+func (c *Client) CreateTeam(ctx context.Context, organization organization.Name, opts CreateTeamOptions) (*Team, error) {
 	// validate params
 	if _, err := newTeam(organization, opts); err != nil {
 		return nil, err
@@ -32,8 +32,8 @@ func (c *Client) Create(ctx context.Context, organization organization.Name, opt
 	return &team, nil
 }
 
-// Get retrieves a team via HTTP/JSONAPI.
-func (c *Client) Get(ctx context.Context, organization organization.Name, name string) (*Team, error) {
+// GetTeam retrieves a team via HTTP/JSONAPI.
+func (c *Client) GetTeam(ctx context.Context, organization organization.Name, name string) (*Team, error) {
 	u := fmt.Sprintf("organizations/%s/teams/%s", url.QueryEscape(organization.String()), url.QueryEscape(name))
 	req, err := c.NewRequest("GET", u, nil)
 	if err != nil {
@@ -46,8 +46,8 @@ func (c *Client) Get(ctx context.Context, organization organization.Name, name s
 	return &team, nil
 }
 
-// Delete deletes a team via HTTP/JSONAPI.
-func (c *Client) Delete(ctx context.Context, id resource.TfeID) error {
+// DeleteTeam deletes a team via HTTP/JSONAPI.
+func (c *Client) DeleteTeam(ctx context.Context, id resource.TfeID) error {
 	u := fmt.Sprintf("teams/%s", url.QueryEscape(id.String()))
 	req, err := c.NewRequest("DELETE", u, nil)
 	if err != nil {

@@ -42,7 +42,7 @@ func (a *api) list(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	page, err := a.List(r.Context(), params)
+	page, err := a.ListRuns(r.Context(), params)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -56,7 +56,7 @@ func (a *api) get(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	run, err := a.Get(r.Context(), id)
+	run, err := a.GetRun(r.Context(), id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -75,7 +75,7 @@ func (a *api) getPlanFile(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	file, err := a.GetPlanFile(r.Context(), id, opts.Format)
+	file, err := a.GetRunPlanFile(r.Context(), id, opts.Format)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -102,7 +102,7 @@ func (a *api) uploadPlanFile(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	if err := a.UploadPlanFile(r.Context(), id, buf.Bytes(), opts.Format); err != nil {
+	if err := a.UploadRunPlanFile(r.Context(), id, buf.Bytes(), opts.Format); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}

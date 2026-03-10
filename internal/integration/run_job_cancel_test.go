@@ -29,7 +29,7 @@ func TestIntegration_RunJobCancel(t *testing.T) {
 	})
 
 	// Cancel run
-	err := daemon.Runs.Cancel(ctx, r.ID)
+	err := daemon.Runs.CancelRun(ctx, r.ID)
 	require.NoError(t, err)
 
 	// Run and job should now enter canceled state.

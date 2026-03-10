@@ -60,7 +60,7 @@ func (a *Service) AddHandlers(r *mux.Router) {
 	a.api.addHandlers(r)
 }
 
-func (a *Service) Create(ctx context.Context, opts CreateOptions) (*Provider, error) {
+func (a *Service) CreateVCSProvider(ctx context.Context, opts CreateOptions) (*Provider, error) {
 	subject, err := a.Authorize(ctx, authz.CreateVCSProviderAction, &opts.Organization)
 	if err != nil {
 		return nil, err
@@ -79,7 +79,7 @@ func (a *Service) Create(ctx context.Context, opts CreateOptions) (*Provider, er
 	return provider, nil
 }
 
-func (a *Service) Update(ctx context.Context, id resource.TfeID, opts UpdateOptions) (*Provider, error) {
+func (a *Service) UpdateVCSProvider(ctx context.Context, id resource.TfeID, opts UpdateOptions) (*Provider, error) {
 	var (
 		subject authz.Subject
 		before  Provider
@@ -106,7 +106,7 @@ func (a *Service) Update(ctx context.Context, id resource.TfeID, opts UpdateOpti
 	return after, nil
 }
 
-func (a *Service) List(ctx context.Context, organization organization.Name) ([]*Provider, error) {
+func (a *Service) ListVCSProviders(ctx context.Context, organization organization.Name) ([]*Provider, error) {
 	subject, err := a.Authorize(ctx, authz.ListVCSProvidersAction, organization)
 	if err != nil {
 		return nil, err
@@ -121,7 +121,7 @@ func (a *Service) List(ctx context.Context, organization organization.Name) ([]*
 	return providers, nil
 }
 
-func (a *Service) ListByInstall(ctx context.Context, installID int64) ([]*Provider, error) {
+func (a *Service) ListVCSProvidersByInstall(ctx context.Context, installID int64) ([]*Provider, error) {
 	subject, err := authz.SubjectFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -135,7 +135,7 @@ func (a *Service) ListByInstall(ctx context.Context, installID int64) ([]*Provid
 	return providers, nil
 }
 
-func (a *Service) Get(ctx context.Context, id resource.TfeID) (*Provider, error) {
+func (a *Service) GetVCSProvider(ctx context.Context, id resource.TfeID) (*Provider, error) {
 	// Parameters only include VCS Provider ID, so we can only determine
 	// authorization _after_ retrieving the provider
 	provider, err := a.db.get(ctx, id)
@@ -153,7 +153,7 @@ func (a *Service) Get(ctx context.Context, id resource.TfeID) (*Provider, error)
 	return provider, nil
 }
 
-func (a *Service) Delete(ctx context.Context, id resource.TfeID) (*Provider, error) {
+func (a *Service) DeleteVCSProvider(ctx context.Context, id resource.TfeID) (*Provider, error) {
 	var (
 		provider *Provider
 		subject  authz.Subject

@@ -133,7 +133,7 @@ module "mod" {
 
 	// delete vcs provider and visit the module page; it should be no longer
 	// connected. Then delete the module.
-	_, err = daemon.VCSProviders.Delete(ctx, provider.ID)
+	_, err = daemon.VCSProviders.DeleteVCSProvider(ctx, provider.ID)
 	require.NoError(t, err)
 
 	browser.New(t, ctx, func(page playwright.Page) {

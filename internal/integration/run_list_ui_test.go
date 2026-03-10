@@ -40,7 +40,7 @@ func TestIntegration_RunListUI(t *testing.T) {
 	run1 := daemon.createRun(t, ctx, ws1, cv1, nil)
 	{
 		_ = daemon.waitRunStatus(t, ctx, run1.ID, runstatus.Planned)
-		err := daemon.Runs.Apply(ctx, run1.ID)
+		err := daemon.Runs.ApplyRun(ctx, run1.ID)
 		require.NoError(t, err)
 		_ = daemon.waitRunStatus(t, ctx, run1.ID, runstatus.Applied)
 	}

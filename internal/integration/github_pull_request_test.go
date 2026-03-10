@@ -27,7 +27,7 @@ func TestGithubPullRequest(t *testing.T) {
 	))
 
 	provider := daemon.createVCSProvider(t, ctx, org, nil)
-	ws, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
+	ws, err := daemon.Workspaces.CreateWorkspace(ctx, workspace.CreateOptions{
 		Name:            new("dev"),
 		Organization:    &org.Name,
 		TriggerPatterns: []string{"/foo/**/*.tf"},

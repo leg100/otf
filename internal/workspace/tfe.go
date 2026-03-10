@@ -121,7 +121,7 @@ func (a *tfe) createWorkspace(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	ws, err := a.Create(r.Context(), opts)
+	ws, err := a.CreateWorkspace(r.Context(), opts)
 	if err != nil {
 		var opts []tfeapi.ErrorOption
 		if errors.Is(err, engine.ErrInvalidVersion) {
@@ -147,7 +147,7 @@ func (a *tfe) getWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := a.Get(r.Context(), id)
+	ws, err := a.GetWorkspace(r.Context(), id)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -168,7 +168,7 @@ func (a *tfe) getWorkspaceByName(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := a.GetByName(r.Context(), params.Organization, params.Name)
+	ws, err := a.GetWorkspaceByName(r.Context(), params.Organization, params.Name)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -197,7 +197,7 @@ func (a *tfe) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	page, err := a.List(r.Context(), ListOptions{
+	page, err := a.ListWorkspaces(r.Context(), ListOptions{
 		Search:       params.Search,
 		Organization: &pathParams.Organization,
 		PageOptions:  resource.PageOptions(params.ListOptions),
@@ -245,7 +245,7 @@ func (a *tfe) updateWorkspaceByName(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := a.GetByName(r.Context(), params.Organization, params.Name)
+	ws, err := a.GetWorkspaceByName(r.Context(), params.Organization, params.Name)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -321,7 +321,7 @@ func (a *tfe) deleteWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = a.Delete(r.Context(), workspaceID)
+	_, err = a.DeleteWorkspace(r.Context(), workspaceID)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -336,12 +336,12 @@ func (a *tfe) deleteWorkspaceByName(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := a.GetByName(r.Context(), params.Organization, params.Name)
+	ws, err := a.GetWorkspaceByName(r.Context(), params.Organization, params.Name)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
-	_, err = a.Delete(r.Context(), ws.ID)
+	_, err = a.DeleteWorkspace(r.Context(), ws.ID)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -414,7 +414,7 @@ func (a *tfe) updateWorkspace(w http.ResponseWriter, r *http.Request, workspaceI
 		}
 	}
 
-	ws, err := a.Update(r.Context(), workspaceID, opts)
+	ws, err := a.UpdateWorkspace(r.Context(), workspaceID, opts)
 	if err != nil {
 		var opts []tfeapi.ErrorOption
 		if errors.Is(err, engine.ErrInvalidVersion) {
@@ -445,7 +445,7 @@ func (a *tfe) assignSSHKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := a.Update(r.Context(), workspaceID, UpdateOptions{
+	ws, err := a.UpdateWorkspace(r.Context(), workspaceID, UpdateOptions{
 		UpdateSSHKeyOptions: &UpdateSSHKeyOptions{
 			SSHKeyID: opts.SSHKeyID,
 		},
@@ -471,7 +471,7 @@ func (a *tfe) unassignSSHKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := a.Update(r.Context(), workspaceID, UpdateOptions{
+	ws, err := a.UpdateWorkspace(r.Context(), workspaceID, UpdateOptions{
 		UpdateSSHKeyOptions: &UpdateSSHKeyOptions{
 			SSHKeyID: nil,
 		},
@@ -595,7 +595,7 @@ func (a *tfe) include(ctx context.Context, v any) ([]any, error) {
 	// onlyID only contains the ID field, e.g. TFEWorkspace{ID: "ws-123"}; so
 	// now retrieve the fully populated workspace, convert to a tfe workspace
 	// and return.
-	ws, err := a.Get(ctx, onlyID.ID)
+	ws, err := a.GetWorkspace(ctx, onlyID.ID)
 	if err != nil {
 		return nil, fmt.Errorf("retrieving workspace: %w", err)
 	}
@@ -625,7 +625,7 @@ func (a *tfe) includeMany(ctx context.Context, v any) ([]any, error) {
 	// so now retrieve the fully populated workspaces, convert and return them.
 	include := make([]any, len(onlyIDs))
 	for i, onlyID := range onlyIDs {
-		ws, err := a.Get(ctx, onlyID.ID)
+		ws, err := a.GetWorkspace(ctx, onlyID.ID)
 		if err != nil {
 			return nil, fmt.Errorf("retrieving workspace: %w", err)
 		}

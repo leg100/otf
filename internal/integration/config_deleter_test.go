@@ -41,20 +41,20 @@ func TestConfigDeleter(t *testing.T) {
 		case <-timeout:
 			t.Fatal("configs were not deleted within timeout")
 		case <-ticker.C:
-			configs, err := daemon.Configs.List(ctx, ws.ID, configversion.ListOptions{})
+			configs, err := daemon.Configs.ListConfigVersions(ctx, ws.ID, configversion.ListOptions{})
 			require.NoError(t, err)
 			if len(configs.Items) == 2 {
 				// Good, only 2 configs remaining. Check that they are the new
 				// configs by checking that they both still exist.
-				_, err := daemon.Configs.Get(ctx, cv3.ID)
+				_, err := daemon.Configs.GetConfigVersion(ctx, cv3.ID)
 				require.NoError(t, err)
-				_, err = daemon.Configs.Get(ctx, cv4.ID)
+				_, err = daemon.Configs.GetConfigVersion(ctx, cv4.ID)
 				require.NoError(t, err)
 
 				// Check that both runs belonging to the deleted configs have
 				// been deleted as well.
 				// Listing runs site-wide requires site admin user
-				runs, err := daemon.Runs.List(adminCtx, run.ListOptions{})
+				runs, err := daemon.Runs.ListRuns(adminCtx, run.ListOptions{})
 				require.NoError(t, err)
 				require.Equal(t, 0, len(runs.Items))
 

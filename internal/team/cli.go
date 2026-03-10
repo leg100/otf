@@ -17,9 +17,9 @@ type teamCLI struct {
 }
 
 type cliClient interface {
-	Create(ctx context.Context, organization organization.Name, opts CreateTeamOptions) (*Team, error)
-	Get(ctx context.Context, organization organization.Name, team string) (*Team, error)
-	Delete(ctx context.Context, teamID resource.TfeID) error
+	CreateTeam(ctx context.Context, organization organization.Name, opts CreateTeamOptions) (*Team, error)
+	GetTeam(ctx context.Context, organization organization.Name, team string) (*Team, error)
+	DeleteTeam(ctx context.Context, teamID resource.TfeID) error
 }
 
 func NewTeamCommand(apiClient *otfhttp.Client) *cobra.Command {
@@ -51,7 +51,7 @@ func (a *teamCLI) teamNewCommand() *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			team, err := a.client.Create(cmd.Context(), orgName, CreateTeamOptions{
+			team, err := a.client.CreateTeam(cmd.Context(), orgName, CreateTeamOptions{
 				Name: new(args[0]),
 			})
 			if err != nil {
@@ -78,11 +78,11 @@ func (a *teamCLI) teamDeleteCommand() *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			team, err := a.client.Get(cmd.Context(), orgName, args[0])
+			team, err := a.client.GetTeam(cmd.Context(), orgName, args[0])
 			if err != nil {
 				return err
 			}
-			if err := a.client.Delete(cmd.Context(), team.ID); err != nil {
+			if err := a.client.DeleteTeam(cmd.Context(), team.ID); err != nil {
 				return err
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "Successfully deleted team %s\n", args[0])

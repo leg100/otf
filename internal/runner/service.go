@@ -61,7 +61,7 @@ type (
 	phaseClient interface {
 		StartPhase(ctx context.Context, runID resource.TfeID, phase otfrun.PhaseType, _ otfrun.PhaseStartOptions) (*otfrun.Run, error)
 		FinishPhase(ctx context.Context, runID resource.TfeID, phase otfrun.PhaseType, opts otfrun.PhaseFinishOptions) (*otfrun.Run, error)
-		Cancel(ctx context.Context, runID resource.TfeID) error
+		CancelRun(ctx context.Context, runID resource.TfeID) error
 	}
 )
 
@@ -266,14 +266,6 @@ type ListOptions struct {
 	PoolID *resource.TfeID `schema:"pool_id"`
 	// HideServerRunners if true filters out server runners
 	HideServerRunners bool `schema:"hide_server_runners"`
-}
-
-func (s *Service) List(ctx context.Context, opts ListOptions) (*resource.Page[*RunnerMeta], error) {
-	runners, err := s.ListRunners(ctx, opts)
-	if err != nil {
-		return nil, err
-	}
-	return resource.NewPage(runners, opts.PageOptions, nil), nil
 }
 
 func (s *Service) ListRunners(ctx context.Context, opts ListOptions) ([]*RunnerMeta, error) {
@@ -498,7 +490,7 @@ func (s *Service) finishJob(ctx context.Context, jobID resource.TfeID, opts fini
 				Errored: opts.Status == JobErrored,
 			})
 		case JobCanceled:
-			err = s.phases.Cancel(ctx, job.RunID)
+			err = s.phases.CancelRun(ctx, job.RunID)
 		}
 		if err != nil {
 			return err
@@ -526,7 +518,7 @@ func (s *Service) GenerateDynamicCredentialsToken(ctx context.Context, jobID res
 		if err != nil {
 			return nil, err
 		}
-		workspace, err := s.workspaces.Get(ctx, job.WorkspaceID)
+		workspace, err := s.workspaces.GetWorkspace(ctx, job.WorkspaceID)
 		if err != nil {
 			return nil, err
 		}

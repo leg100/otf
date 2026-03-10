@@ -97,7 +97,7 @@ func (h *Handlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 		tagStrings[i] = tag.Name
 	}
 
-	page, err := h.Workspaces.List(r.Context(), params.ListOptions)
+	page, err := h.Workspaces.ListWorkspaces(r.Context(), params.ListOptions)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -161,7 +161,7 @@ func (h *Handlers) createWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := h.Workspaces.Create(r.Context(), workspace.CreateOptions{
+	ws, err := h.Workspaces.CreateWorkspace(r.Context(), workspace.CreateOptions{
 		Name:         params.Name,
 		Organization: params.Organization,
 	})
@@ -180,7 +180,7 @@ func (h *Handlers) getWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := h.Workspaces.Get(r.Context(), id)
+	ws, err := h.Workspaces.GetWorkspace(r.Context(), id)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -193,7 +193,7 @@ func (h *Handlers) getWorkspace(w http.ResponseWriter, r *http.Request) {
 
 	var provider *vcs.Provider
 	if ws.Connection != nil {
-		provider, err = h.VCSProviders.Get(r.Context(), ws.Connection.VCSProviderID)
+		provider, err = h.VCSProviders.GetVCSProvider(r.Context(), ws.Connection.VCSProviderID)
 		if err != nil {
 			html.Error(r, w, err.Error())
 			return
@@ -228,7 +228,7 @@ func (h *Handlers) getWorkspace(w http.ResponseWriter, r *http.Request) {
 	// Generate component for latest run if workspace has one.
 	var latestRunTable templ.Component
 	if ws.LatestRun != nil {
-		run, err := h.Runs.Get(r.Context(), ws.LatestRun.ID)
+		run, err := h.Runs.GetRun(r.Context(), ws.LatestRun.ID)
 		if err != nil {
 			html.Error(r, w, err.Error())
 			return
@@ -279,7 +279,7 @@ func (h *Handlers) getWorkspaceByName(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := h.Workspaces.GetByName(r.Context(), params.Organization, params.Name)
+	ws, err := h.Workspaces.GetWorkspaceByName(r.Context(), params.Organization, params.Name)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -295,7 +295,7 @@ func (h *Handlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := h.Workspaces.Get(r.Context(), workspaceID)
+	ws, err := h.Workspaces.GetWorkspace(r.Context(), workspaceID)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -308,7 +308,7 @@ func (h *Handlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get teams for populating team permissions
-	teams, err := h.Teams.List(r.Context(), ws.Organization)
+	teams, err := h.Teams.ListTeams(r.Context(), ws.Organization)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -332,7 +332,7 @@ func (h *Handlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 
 	var provider *vcs.Provider
 	if ws.Connection != nil {
-		provider, err = h.VCSProviders.Get(r.Context(), ws.Connection.VCSProviderID)
+		provider, err = h.VCSProviders.GetVCSProvider(r.Context(), ws.Connection.VCSProviderID)
 		if err != nil {
 			html.Error(r, w, err.Error())
 			return
@@ -448,7 +448,7 @@ func (h *Handlers) updateWorkspace(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// get workspace before updating to determine if it is connected or not.
-	ws, err := h.Workspaces.Get(r.Context(), params.WorkspaceID)
+	ws, err := h.Workspaces.GetWorkspace(r.Context(), params.WorkspaceID)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -497,7 +497,7 @@ func (h *Handlers) updateWorkspace(w http.ResponseWriter, r *http.Request) {
 		opts.AgentPoolID = params.AgentPoolID
 	}
 
-	ws, err = h.Workspaces.Update(r.Context(), params.WorkspaceID, opts)
+	ws, err = h.Workspaces.UpdateWorkspace(r.Context(), params.WorkspaceID, opts)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -515,13 +515,13 @@ func (h *Handlers) editWorkspaceSSHKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := h.Workspaces.Get(r.Context(), workspaceID)
+	ws, err := h.Workspaces.GetWorkspace(r.Context(), workspaceID)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
 	}
 
-	keys, err := h.SSHKeys.List(r.Context(), ws.Organization)
+	keys, err := h.SSHKeys.ListSSHKeys(r.Context(), ws.Organization)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -558,7 +558,7 @@ func (h *Handlers) updateWorkspaceSSHKey(w http.ResponseWriter, r *http.Request)
 		opts.SSHKeyID = &params.SSHKeyID
 	}
 
-	ws, err := h.Workspaces.Update(r.Context(), params.WorkspaceID, workspace.UpdateOptions{
+	ws, err := h.Workspaces.UpdateWorkspace(r.Context(), params.WorkspaceID, workspace.UpdateOptions{
 		UpdateSSHKeyOptions: opts,
 	})
 	if err != nil {
@@ -578,7 +578,7 @@ func (h *Handlers) deleteWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := h.Workspaces.Delete(r.Context(), workspaceID)
+	ws, err := h.Workspaces.DeleteWorkspace(r.Context(), workspaceID)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -641,12 +641,12 @@ func (h *Handlers) listWorkspaceVCSProviders(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	ws, err := h.Workspaces.Get(r.Context(), workspaceID)
+	ws, err := h.Workspaces.GetWorkspace(r.Context(), workspaceID)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
 	}
-	providers, err := h.VCSProviders.List(r.Context(), ws.Organization)
+	providers, err := h.VCSProviders.ListVCSProviders(r.Context(), ws.Organization)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -676,12 +676,12 @@ func (h *Handlers) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	ws, err := h.Workspaces.Get(r.Context(), params.WorkspaceID)
+	ws, err := h.Workspaces.GetWorkspace(r.Context(), params.WorkspaceID)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
 	}
-	client, err := h.VCSProviders.Get(r.Context(), params.VCSProviderID)
+	client, err := h.VCSProviders.GetVCSProvider(r.Context(), params.VCSProviderID)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -717,7 +717,7 @@ func (h *Handlers) connect(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err := h.Workspaces.Update(r.Context(), params.WorkspaceID, workspace.UpdateOptions{
+	_, err := h.Workspaces.UpdateWorkspace(r.Context(), params.WorkspaceID, workspace.UpdateOptions{
 		ConnectOptions: &workspace.ConnectOptions{
 			VCSProviderID: params.VCSProviderID,
 			RepoPath:      params.RepoPath,
@@ -739,7 +739,7 @@ func (h *Handlers) disconnect(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = h.Workspaces.Update(r.Context(), workspaceID, workspace.UpdateOptions{
+	_, err = h.Workspaces.UpdateWorkspace(r.Context(), workspaceID, workspace.UpdateOptions{
 		Disconnect: true,
 	})
 	if err != nil {
@@ -767,7 +767,7 @@ func (h *Handlers) setWorkspacePermission(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	err = h.Workspaces.SetPermission(r.Context(), params.WorkspaceID, params.TeamID, role)
+	err = h.Workspaces.SetWorkspacePermission(r.Context(), params.WorkspaceID, params.TeamID, role)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return
@@ -786,7 +786,7 @@ func (h *Handlers) unsetWorkspacePermission(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	err := h.Workspaces.UnsetPermission(r.Context(), params.WorkspaceID, params.TeamID)
+	err := h.Workspaces.UnsetWorkspacePermission(r.Context(), params.WorkspaceID, params.TeamID)
 	if err != nil {
 		html.Error(r, w, err.Error())
 		return

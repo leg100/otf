@@ -38,16 +38,16 @@ type (
 	}
 
 	notifierWorkspaceClient interface {
-		Get(ctx context.Context, workspaceID resource.TfeID) (*workspace.Workspace, error)
+		GetWorkspace(ctx context.Context, workspaceID resource.TfeID) (*workspace.Workspace, error)
 	}
 
 	notifierRunClient interface {
-		Watch(context.Context) (<-chan pubsub.Event[*run.Event], func())
-		Get(context.Context, resource.TfeID) (*run.Run, error)
+		WatchRuns(context.Context) (<-chan pubsub.Event[*run.Event], func())
+		GetRun(context.Context, resource.TfeID) (*run.Run, error)
 	}
 
 	notifierNotificationClient interface {
-		Watch(context.Context) (<-chan pubsub.Event[*Config], func())
+		WatchNotificationConfigs(context.Context) (<-chan pubsub.Event[*Config], func())
 	}
 
 	notifierHostnameClient interface {
@@ -69,9 +69,9 @@ func NewNotifier(opts NotifierOptions) *Notifier {
 // Start the notifier daemon. Should be started in a go-routine.
 func (s *Notifier) Start(ctx context.Context) error {
 	// subscribe to notification config events
-	subRuns, unsubRuns := s.runs.Watch(ctx)
+	subRuns, unsubRuns := s.runs.WatchRuns(ctx)
 	defer unsubRuns()
-	subConfigs, unsubConfigs := s.notifications.Watch(ctx)
+	subConfigs, unsubConfigs := s.notifications.WatchNotificationConfigs(ctx)
 	defer unsubConfigs()
 
 	// populate cache with existing notification configs
@@ -154,7 +154,7 @@ func (s *Notifier) handleRunEvent(ctx context.Context, event pubsub.Event[*run.E
 		// (b) add workspace info to run itself
 		if ws == nil {
 			var err error
-			ws, err = s.workspaces.Get(ctx, event.Payload.WorkspaceID)
+			ws, err = s.workspaces.GetWorkspace(ctx, event.Payload.WorkspaceID)
 			if err != nil {
 				return err
 			}

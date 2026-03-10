@@ -24,7 +24,7 @@ func TestRunService(t *testing.T) {
 		daemon, _, ctx := setup(t, disableScheduler())
 		cv := daemon.createConfigurationVersion(t, ctx, nil, nil)
 
-		run, err := daemon.Runs.Create(ctx, cv.WorkspaceID, otfrun.CreateOptions{})
+		run, err := daemon.Runs.CreateRun(ctx, cv.WorkspaceID, otfrun.CreateOptions{})
 		require.NoError(t, err)
 
 		assertRunCreatedByCurrentUser(t, ctx, run)
@@ -40,7 +40,7 @@ func TestRunService(t *testing.T) {
 		))
 		org := daemon.createOrganization(t, ctx)
 		vcsProvider := daemon.createVCSProvider(t, ctx, org, nil)
-		ws, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
+		ws, err := daemon.Workspaces.CreateWorkspace(ctx, workspace.CreateOptions{
 			Name:         new("connected-workspace"),
 			Organization: &org.Name,
 			ConnectOptions: &workspace.ConnectOptions{
@@ -50,7 +50,7 @@ func TestRunService(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		_, err = daemon.Runs.Create(ctx, ws.ID, otfrun.CreateOptions{})
+		_, err = daemon.Runs.CreateRun(ctx, ws.ID, otfrun.CreateOptions{})
 		require.NoError(t, err)
 	})
 
@@ -109,10 +109,10 @@ func TestRunService(t *testing.T) {
 		daemon, _, ctx := setup(t, disableScheduler())
 		run := daemon.createRun(t, ctx, nil, nil, nil)
 
-		err := daemon.Runs.Cancel(ctx, run.ID)
+		err := daemon.Runs.CancelRun(ctx, run.ID)
 		require.NoError(t, err)
 
-		got, err := daemon.Runs.Get(ctx, run.ID)
+		got, err := daemon.Runs.GetRun(ctx, run.ID)
 		require.NoError(t, err)
 
 		assert.Equal(t, runstatus.Canceled, got.Status)
@@ -125,7 +125,7 @@ func TestRunService(t *testing.T) {
 		daemon, _, ctx := setup(t, disableScheduler())
 		want := daemon.createRun(t, ctx, nil, nil, nil)
 
-		got, err := daemon.Runs.Get(ctx, want.ID)
+		got, err := daemon.Runs.GetRun(ctx, want.ID)
 		require.NoError(t, err)
 
 		assertEqualRuns(t, want, got)
@@ -138,7 +138,7 @@ func TestRunService(t *testing.T) {
 		ws1 := daemon.createWorkspace(t, ctx, nil)
 		ws2 := daemon.createWorkspace(t, ctx, nil)
 		cv1 := daemon.createConfigurationVersion(t, ctx, ws1, nil)
-		cv2, err := daemon.Configs.Create(ctx, ws2.ID, configversion.CreateOptions{
+		cv2, err := daemon.Configs.CreateConfigVersion(ctx, ws2.ID, configversion.CreateOptions{
 			Speculative: new(true),
 		})
 		require.NoError(t, err)
@@ -232,7 +232,7 @@ func TestRunService(t *testing.T) {
 			t.Run(tt.name, func(t *testing.T) {
 				// call endpoint using admin to avoid authz errors (particularly
 				// when listing runs across a site).
-				got, err := daemon.Runs.List(adminCtx, tt.opts)
+				got, err := daemon.Runs.ListRuns(adminCtx, tt.opts)
 				require.NoError(t, err)
 
 				tt.want(t, got)

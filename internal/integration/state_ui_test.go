@@ -23,11 +23,11 @@ func TestIntegration_StateUI(t *testing.T) {
 	// create run and wait for it to complete
 	r := daemon.createRun(t, ctx, ws, cv, nil)
 	planned := daemon.waitRunStatus(t, ctx, r.ID, runstatus.Planned)
-	err := daemon.Runs.Apply(ctx, planned.ID)
+	err := daemon.Runs.ApplyRun(ctx, planned.ID)
 	require.NoError(t, err)
 	daemon.waitRunStatus(t, ctx, r.ID, runstatus.Applied)
 
-	sv, err := daemon.State.GetCurrent(ctx, ws.ID)
+	sv, err := daemon.State.GetCurrentStateVersion(ctx, ws.ID)
 	require.NoError(t, err)
 
 	// Tests the table of resources and outputs on the workspace overview page.

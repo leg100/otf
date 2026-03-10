@@ -5,10 +5,10 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/leg100/otf/internal/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
+	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/tfeapi"
@@ -35,11 +35,9 @@ type (
 		RestrictOrganizationCreation bool
 		TokensService                *tokens.Service
 		Authorizer                   *authz.Authorizer
-
-		*sql.DB
-		*tfeapi.Responder
-		*sql.Listener
-		logr.Logger
+		DB                           *sql.DB
+		Responder                    *tfeapi.Responder
+		Logger                       logr.Logger
 	}
 
 	// ListOptions represents the options for listing organizations.
@@ -81,11 +79,11 @@ func (s *Service) AddHandlers(r *mux.Router) {
 	s.api.addHandlers(r)
 }
 
-// Create creates an organization. Only users can create
+// CreateOrganization creates an organization. Only users can create
 // organizations, or, if RestrictOrganizationCreation is true, then only the
 // site admin can create organizations. Creating an organization automatically
 // creates an owners team and adds creator as an owner.
-func (s *Service) Create(ctx context.Context, opts CreateOptions) (*Organization, error) {
+func (s *Service) CreateOrganization(ctx context.Context, opts CreateOptions) (*Organization, error) {
 	subject, err := s.Authorize(ctx, authz.CreateOrganizationAction, resource.SiteID)
 	if err != nil {
 		return nil, err
@@ -133,7 +131,7 @@ func (s *Service) AfterCreateOrganization(hook func(context.Context, *Organizati
 	s.afterCreateHooks = append(s.afterCreateHooks, hook)
 }
 
-func (s *Service) Update(ctx context.Context, name Name, opts UpdateOptions) (*Organization, error) {
+func (s *Service) UpdateOrganization(ctx context.Context, name Name, opts UpdateOptions) (*Organization, error) {
 	subject, err := s.Authorize(ctx, authz.UpdateOrganizationAction, &name)
 	if err != nil {
 		return nil, err
@@ -150,9 +148,9 @@ func (s *Service) Update(ctx context.Context, name Name, opts UpdateOptions) (*O
 	return org, nil
 }
 
-// List organizations. If the subject lacks the ListOrganizationsAction
+// ListOrganizations lists organizations. If the subject lacks the ListOrganizationsAction
 // permission then its organization memberships are listed instead.
-func (s *Service) List(ctx context.Context, opts ListOptions) (*resource.Page[*Organization], error) {
+func (s *Service) ListOrganizations(ctx context.Context, opts ListOptions) (*resource.Page[*Organization], error) {
 	orgs, subject, err := func() (*resource.Page[*Organization], authz.Subject, error) {
 		var names []Name
 		subject, err := s.Authorize(ctx, authz.ListOrganizationsAction, resource.SiteID, authz.WithoutErrorLogging())
@@ -179,7 +177,7 @@ func (s *Service) List(ctx context.Context, opts ListOptions) (*resource.Page[*O
 	return orgs, err
 }
 
-func (s *Service) Get(ctx context.Context, name Name) (*Organization, error) {
+func (s *Service) GetOrganization(ctx context.Context, name Name) (*Organization, error) {
 	subject, err := s.Authorize(ctx, authz.GetOrganizationAction, &name)
 	if err != nil {
 		return nil, err
@@ -196,7 +194,7 @@ func (s *Service) Get(ctx context.Context, name Name) (*Organization, error) {
 	return org, nil
 }
 
-func (s *Service) Delete(ctx context.Context, name Name) error {
+func (s *Service) DeleteOrganization(ctx context.Context, name Name) error {
 	subject, err := s.Authorize(ctx, authz.DeleteOrganizationAction, &name)
 	if err != nil {
 		return err
@@ -227,22 +225,22 @@ func (s *Service) BeforeDeleteOrganization(hook func(context.Context, *Organizat
 	s.beforeDeleteHooks = append(s.beforeDeleteHooks, hook)
 }
 
-func (s *Service) GetEntitlements(ctx context.Context, organization Name) (Entitlements, error) {
+func (s *Service) GetOrganizationEntitlements(ctx context.Context, organization Name) (Entitlements, error) {
 	_, err := s.Authorize(ctx, authz.GetEntitlementsAction, organization)
 	if err != nil {
 		return Entitlements{}, err
 	}
 
-	org, err := s.Get(ctx, organization)
+	org, err := s.GetOrganization(ctx, organization)
 	if err != nil {
 		return Entitlements{}, err
 	}
 	return defaultEntitlements(org.ID), nil
 }
 
-// CreateToken creates an organization token. If an organization
+// CreateOrganizationToken creates an organization token. If an organization
 // token already exists it is replaced.
-func (s *Service) CreateToken(ctx context.Context, opts CreateOrganizationTokenOptions) (*OrganizationToken, []byte, error) {
+func (s *Service) CreateOrganizationToken(ctx context.Context, opts CreateOrganizationTokenOptions) (*OrganizationToken, []byte, error) {
 	_, err := s.Authorize(ctx, authz.CreateOrganizationTokenAction, &opts.Organization)
 	if err != nil {
 		return nil, nil, err
@@ -284,7 +282,7 @@ func (s *Service) getOrganizationTokenByID(ctx context.Context, tokenID resource
 	return ot, nil
 }
 
-func (s *Service) ListTokens(ctx context.Context, organization Name) ([]*OrganizationToken, error) {
+func (s *Service) ListOrganizationTokens(ctx context.Context, organization Name) ([]*OrganizationToken, error) {
 	tokens, err := s.db.listOrganizationTokens(ctx, organization)
 	if err != nil {
 		s.Error(err, "listing organization tokens", "organization", organization)
@@ -294,7 +292,7 @@ func (s *Service) ListTokens(ctx context.Context, organization Name) ([]*Organiz
 	return tokens, nil
 }
 
-func (s *Service) DeleteToken(ctx context.Context, organization Name) error {
+func (s *Service) DeleteOrganizationToken(ctx context.Context, organization Name) error {
 	_, err := s.Authorize(ctx, authz.CreateOrganizationTokenAction, organization)
 	if err != nil {
 		return err

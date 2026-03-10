@@ -57,7 +57,7 @@ resource "null_resource" "tags_e2e" {}
 	require.NoError(t, <-tferr, e.String)
 
 	// confirm tagged workspace has been created
-	got, err := daemon.Workspaces.List(ctx, workspace.ListOptions{
+	got, err := daemon.Workspaces.ListWorkspaces(ctx, workspace.ListOptions{
 		Organization: &org.Name,
 		Tags:         []string{"foo", "bar"},
 	})
@@ -118,7 +118,7 @@ resource "null_resource" "tags_e2e" {}
 	assert.Len(t, tags.Items, 2)
 
 	// demonstrate deleting the workspace also deletes the tags from the system
-	_, err = daemon.Workspaces.Delete(ctx, ws.ID)
+	_, err = daemon.Workspaces.DeleteWorkspace(ctx, ws.ID)
 	require.NoError(t, err)
 
 	// should be no tags

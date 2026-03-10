@@ -141,7 +141,7 @@ type fakeReporterConfigurationVersionService struct {
 	cv *configversion.ConfigurationVersion
 }
 
-func (f *fakeReporterConfigurationVersionService) Get(context.Context, resource.TfeID) (*configversion.ConfigurationVersion, error) {
+func (f *fakeReporterConfigurationVersionService) GetConfigVersion(context.Context, resource.TfeID) (*configversion.ConfigurationVersion, error) {
 	return f.cv, nil
 }
 
@@ -149,7 +149,7 @@ type fakeReporterWorkspaceClient struct {
 	ws *workspace.Workspace
 }
 
-func (f *fakeReporterWorkspaceClient) Get(context.Context, resource.TfeID) (*workspace.Workspace, error) {
+func (f *fakeReporterWorkspaceClient) GetWorkspace(context.Context, resource.TfeID) (*workspace.Workspace, error) {
 	return f.ws, nil
 }
 
@@ -159,7 +159,7 @@ type fakeReporterRunClient struct {
 	event *Event
 }
 
-func (f *fakeReporterRunClient) Get(context.Context, resource.TfeID) (*Run, error) {
+func (f *fakeReporterRunClient) GetRun(context.Context, resource.TfeID) (*Run, error) {
 	return &Run{ID: f.event.ID, Status: f.event.Status}, nil
 }
 
@@ -167,7 +167,7 @@ type fakeReporterVCSProviderService struct {
 	got chan vcs.SetStatusOptions
 }
 
-func (f *fakeReporterVCSProviderService) Get(context.Context, resource.TfeID) (*vcs.Provider, error) {
+func (f *fakeReporterVCSProviderService) GetVCSProvider(context.Context, resource.TfeID) (*vcs.Provider, error) {
 	return &vcs.Provider{
 		Client: &fakeReporterCloudClient{got: f.got},
 	}, nil

@@ -160,11 +160,11 @@ type fakeRunClient struct {
 	chunks chan run.Chunk
 }
 
-func (f *fakeRunClient) List(_ context.Context, opts run.ListOptions) (*resource.Page[*run.Run], error) {
+func (f *fakeRunClient) ListRuns(_ context.Context, opts run.ListOptions) (*resource.Page[*run.Run], error) {
 	return resource.NewPage([]*run.Run{f.run}, opts.PageOptions, nil), nil
 }
 
-func (f *fakeRunClient) Get(ctx context.Context, id resource.TfeID) (*run.Run, error) {
+func (f *fakeRunClient) GetRun(ctx context.Context, id resource.TfeID) (*run.Run, error) {
 	return f.run, nil
 }
 
@@ -172,23 +172,23 @@ func (f *fakeRunClient) GetChunk(ctx context.Context, opts run.GetChunkOptions) 
 	return run.Chunk{}, nil
 }
 
-func (f *fakeRunClient) Cancel(ctx context.Context, id resource.TfeID) error {
+func (f *fakeRunClient) CancelRun(ctx context.Context, id resource.TfeID) error {
 	return nil
 }
 
-func (f *fakeRunClient) ForceCancel(ctx context.Context, id resource.TfeID) error {
+func (f *fakeRunClient) ForceCancelRun(ctx context.Context, id resource.TfeID) error {
 	return nil
 }
 
-func (f *fakeRunClient) Discard(ctx context.Context, id resource.TfeID) error {
+func (f *fakeRunClient) DiscardRun(ctx context.Context, id resource.TfeID) error {
 	return nil
 }
 
-func (f *fakeRunClient) Create(ctx context.Context, workspaceID resource.TfeID, opts run.CreateOptions) (*run.Run, error) {
+func (f *fakeRunClient) CreateRun(ctx context.Context, workspaceID resource.TfeID, opts run.CreateOptions) (*run.Run, error) {
 	return f.run, nil
 }
 
-func (f *fakeRunClient) Tail(context.Context, run.TailOptions) (<-chan run.Chunk, error) {
+func (f *fakeRunClient) TailRun(context.Context, run.TailOptions) (<-chan run.Chunk, error) {
 	return f.chunks, nil
 }
 
@@ -197,7 +197,7 @@ type fakeWorkspaceClient struct {
 	ws *workspace.Workspace
 }
 
-func (f *fakeWorkspaceClient) Get(context.Context, resource.TfeID) (*workspace.Workspace, error) {
+func (f *fakeWorkspaceClient) GetWorkspace(context.Context, resource.TfeID) (*workspace.Workspace, error) {
 	return f.ws, nil
 }
 

@@ -18,9 +18,9 @@ type CLI struct {
 }
 
 type cliClient interface {
-	List(ctx context.Context, opts ListOptions) (*resource.Page[*Workspace], error)
-	GetByName(ctx context.Context, organization organization.Name, workspace string) (*Workspace, error)
-	Update(ctx context.Context, workspaceID resource.TfeID, opts UpdateOptions) (*Workspace, error)
+	ListWorkspaces(ctx context.Context, opts ListOptions) (*resource.Page[*Workspace], error)
+	GetWorkspaceByName(ctx context.Context, organization organization.Name, workspace string) (*Workspace, error)
+	UpdateWorkspace(ctx context.Context, workspaceID resource.TfeID, opts UpdateOptions) (*Workspace, error)
 	Lock(ctx context.Context, workspaceID resource.TfeID, runID *resource.TfeID) (*Workspace, error)
 	Unlock(ctx context.Context, workspaceID resource.TfeID, runID *resource.TfeID, force bool) (*Workspace, error)
 }
@@ -58,7 +58,7 @@ func (a *CLI) workspaceListCommand() *cobra.Command {
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			list, err := resource.ListAll(func(opts resource.PageOptions) (*resource.Page[*Workspace], error) {
-				return a.client.List(cmd.Context(), ListOptions{
+				return a.client.ListWorkspaces(cmd.Context(), ListOptions{
 					PageOptions:  opts,
 					Organization: &organization,
 				})
@@ -92,7 +92,7 @@ func (a *CLI) workspaceShowCommand() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			workspace := args[0]
 
-			ws, err := a.client.GetByName(cmd.Context(), organization, workspace)
+			ws, err := a.client.GetWorkspaceByName(cmd.Context(), organization, workspace)
 			if err != nil {
 				return err
 			}
@@ -137,11 +137,11 @@ func (a *CLI) workspaceEditCommand() *cobra.Command {
 			if cmd.Flags().Changed(poolIDFlag) {
 				opts.AgentPoolID = &poolID
 			}
-			ws, err := a.client.GetByName(cmd.Context(), organization, name)
+			ws, err := a.client.GetWorkspaceByName(cmd.Context(), organization, name)
 			if err != nil {
 				return err
 			}
-			_, err = a.client.Update(cmd.Context(), ws.ID, opts)
+			_, err = a.client.UpdateWorkspace(cmd.Context(), ws.ID, opts)
 			if err != nil {
 				return err
 			}
@@ -171,7 +171,7 @@ func (a *CLI) workspaceLockCommand() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			workspace := args[0]
 
-			ws, err := a.client.GetByName(cmd.Context(), organization, workspace)
+			ws, err := a.client.GetWorkspaceByName(cmd.Context(), organization, workspace)
 			if err != nil {
 				return err
 			}
@@ -206,7 +206,7 @@ func (a *CLI) workspaceUnlockCommand() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			workspace := args[0]
 
-			ws, err := a.client.GetByName(cmd.Context(), organization, workspace)
+			ws, err := a.client.GetWorkspaceByName(cmd.Context(), organization, workspace)
 			if err != nil {
 				return err
 			}

@@ -28,7 +28,7 @@ func (a *api) createOrganization(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	org, err := a.Create(r.Context(), opts)
+	org, err := a.CreateOrganization(r.Context(), opts)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -44,7 +44,7 @@ func (a *api) deleteOrganization(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	if err := a.Delete(r.Context(), params.Name); err != nil {
+	if err := a.DeleteOrganization(r.Context(), params.Name); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}

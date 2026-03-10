@@ -56,13 +56,13 @@ func NewService(opts Options) *Service {
 		user := &authz.Superuser{Username: "vcs-provider-service"}
 		ctx := authz.AddSubjectToContext(context.Background(), user)
 		// list all vcsproviders using the app install
-		providers, err := opts.VCSService.ListByInstall(ctx, *event.GithubAppInstallID)
+		providers, err := opts.VCSService.ListVCSProvidersByInstall(ctx, *event.GithubAppInstallID)
 		if err != nil {
 			return
 		}
 		// and delete them
 		for _, prov := range providers {
-			if _, err = opts.VCSService.Delete(ctx, prov.ID); err != nil {
+			if _, err = opts.VCSService.DeleteVCSProvider(ctx, prov.ID); err != nil {
 				return
 			}
 		}

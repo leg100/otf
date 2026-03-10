@@ -20,7 +20,7 @@ func TestIntegration_StateService(t *testing.T) {
 		file, err := os.ReadFile("./testdata/terraform.tfstate")
 		require.NoError(t, err)
 
-		_, err = daemon.State.Create(ctx, state.CreateStateVersionOptions{
+		_, err = daemon.State.CreateStateVersion(ctx, state.CreateStateVersionOptions{
 			State:       file,
 			WorkspaceID: ws.ID,
 			// serial matches that in ./testdata/terraform.tfstate
@@ -33,7 +33,7 @@ func TestIntegration_StateService(t *testing.T) {
 		daemon, _, ctx := setup(t)
 		want := daemon.createStateVersion(t, ctx, nil)
 
-		got, err := daemon.State.Get(ctx, want.ID)
+		got, err := daemon.State.GetStateVersion(ctx, want.ID)
 		require.NoError(t, err)
 
 		assert.Equal(t, want, got)
@@ -42,7 +42,7 @@ func TestIntegration_StateService(t *testing.T) {
 	t.Run("get not found error", func(t *testing.T) {
 		daemon, _, ctx := setup(t)
 
-		_, err := daemon.State.Get(ctx, resource.NewTfeID(resource.StateVersionKind))
+		_, err := daemon.State.GetStateVersion(ctx, resource.NewTfeID(resource.StateVersionKind))
 		require.ErrorIs(t, err, internal.ErrResourceNotFound)
 	})
 
@@ -54,7 +54,7 @@ func TestIntegration_StateService(t *testing.T) {
 		_ = daemon.createStateVersion(t, ctx, ws)
 		want := daemon.createStateVersion(t, ctx, ws)
 
-		got, err := daemon.State.GetCurrent(ctx, want.WorkspaceID)
+		got, err := daemon.State.GetCurrentStateVersion(ctx, want.WorkspaceID)
 		require.NoError(t, err)
 
 		assert.Equal(t, want, got)
@@ -63,7 +63,7 @@ func TestIntegration_StateService(t *testing.T) {
 	t.Run("get current not found error", func(t *testing.T) {
 		daemon, _, ctx := setup(t)
 
-		_, err := daemon.State.GetCurrent(ctx, resource.NewTfeID(resource.WorkspaceKind))
+		_, err := daemon.State.GetCurrentStateVersion(ctx, resource.NewTfeID(resource.WorkspaceKind))
 		require.ErrorIs(t, err, internal.ErrResourceNotFound)
 	})
 
@@ -73,7 +73,7 @@ func TestIntegration_StateService(t *testing.T) {
 		sv1 := daemon.createStateVersion(t, ctx, ws)
 		sv2 := daemon.createStateVersion(t, ctx, ws)
 
-		got, err := daemon.State.List(ctx, ws.ID, resource.PageOptions{})
+		got, err := daemon.State.ListStateVersions(ctx, ws.ID, resource.PageOptions{})
 		require.NoError(t, err)
 		assert.Contains(t, got.Items, sv1)
 		assert.Contains(t, got.Items, sv2)
@@ -84,7 +84,7 @@ func TestIntegration_StateService(t *testing.T) {
 	t.Run("list not found error", func(t *testing.T) {
 		daemon, _, ctx := setup(t)
 
-		_, err := daemon.State.List(ctx, resource.NewTfeID(resource.WorkspaceKind), resource.PageOptions{})
+		_, err := daemon.State.ListStateVersions(ctx, resource.NewTfeID(resource.WorkspaceKind), resource.PageOptions{})
 		require.ErrorIs(t, err, internal.ErrResourceNotFound)
 	})
 
@@ -94,14 +94,14 @@ func TestIntegration_StateService(t *testing.T) {
 		want := daemon.createStateVersion(t, ctx, ws)
 		current := daemon.createStateVersion(t, ctx, ws)
 
-		err := daemon.State.Delete(ctx, want.ID)
+		err := daemon.State.DeleteStateVersion(ctx, want.ID)
 		require.NoError(t, err)
 
-		_, err = daemon.State.Get(ctx, want.ID)
+		_, err = daemon.State.GetStateVersion(ctx, want.ID)
 		require.ErrorIs(t, err, internal.ErrResourceNotFound)
 
 		t.Run("deleting current version not allowed", func(t *testing.T) {
-			err := daemon.State.Delete(ctx, current.ID)
+			err := daemon.State.DeleteStateVersion(ctx, current.ID)
 			assert.Equal(t, state.ErrCurrentVersionDeletionAttempt, err)
 		})
 	})

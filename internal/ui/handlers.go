@@ -70,15 +70,15 @@ type HostnameClient interface {
 }
 
 type OrganizationService interface {
-	Create(ctx context.Context, opts organization.CreateOptions) (*organization.Organization, error)
-	Update(ctx context.Context, name organization.Name, opts organization.UpdateOptions) (*organization.Organization, error)
-	Get(ctx context.Context, name organization.Name) (*organization.Organization, error)
-	List(ctx context.Context, opts organization.ListOptions) (*resource.Page[*organization.Organization], error)
-	Delete(ctx context.Context, name organization.Name) error
+	CreateOrganization(ctx context.Context, opts organization.CreateOptions) (*organization.Organization, error)
+	UpdateOrganization(ctx context.Context, name organization.Name, opts organization.UpdateOptions) (*organization.Organization, error)
+	GetOrganization(ctx context.Context, name organization.Name) (*organization.Organization, error)
+	ListOrganizations(ctx context.Context, opts organization.ListOptions) (*resource.Page[*organization.Organization], error)
+	DeleteOrganization(ctx context.Context, name organization.Name) error
 
-	CreateToken(ctx context.Context, opts organization.CreateOrganizationTokenOptions) (*organization.OrganizationToken, []byte, error)
-	ListTokens(ctx context.Context, org organization.Name) ([]*organization.OrganizationToken, error)
-	DeleteToken(ctx context.Context, org organization.Name) error
+	CreateOrganizationToken(ctx context.Context, opts organization.CreateOrganizationTokenOptions) (*organization.OrganizationToken, []byte, error)
+	ListOrganizationTokens(ctx context.Context, org organization.Name) ([]*organization.OrganizationToken, error)
+	DeleteOrganizationToken(ctx context.Context, org organization.Name) error
 }
 
 type ConfigVersionService interface {
@@ -94,12 +94,12 @@ type GithubAppService interface {
 }
 
 type TeamClient interface {
-	Create(ctx context.Context, organization organization.Name, opts team.CreateTeamOptions) (*team.Team, error)
-	Get(ctx context.Context, organization organization.Name, teamName string) (*team.Team, error)
-	GetByID(ctx context.Context, teamID resource.TfeID) (*team.Team, error)
-	List(ctx context.Context, organization organization.Name) ([]*team.Team, error)
-	Update(ctx context.Context, teamID resource.TfeID, opts team.UpdateTeamOptions) (*team.Team, error)
-	Delete(ctx context.Context, teamID resource.TfeID) error
+	CreateTeam(ctx context.Context, organization organization.Name, opts team.CreateTeamOptions) (*team.Team, error)
+	GetTeam(ctx context.Context, organization organization.Name, teamName string) (*team.Team, error)
+	GetTeamByID(ctx context.Context, teamID resource.TfeID) (*team.Team, error)
+	ListTeams(ctx context.Context, organization organization.Name) ([]*team.Team, error)
+	UpdateTeam(ctx context.Context, teamID resource.TfeID, opts team.UpdateTeamOptions) (*team.Team, error)
+	DeleteTeam(ctx context.Context, teamID resource.TfeID) error
 }
 
 type ModuleService interface {
@@ -118,33 +118,33 @@ type HostnameService interface {
 }
 
 type RunService interface {
-	Create(context.Context, resource.TfeID, run.CreateOptions) (*run.Run, error)
-	List(_ context.Context, opts run.ListOptions) (*resource.Page[*run.Run], error)
-	Get(ctx context.Context, id resource.TfeID) (*run.Run, error)
+	CreateRun(context.Context, resource.TfeID, run.CreateOptions) (*run.Run, error)
+	ListRuns(_ context.Context, opts run.ListOptions) (*resource.Page[*run.Run], error)
+	GetRun(ctx context.Context, id resource.TfeID) (*run.Run, error)
 	GetChunk(ctx context.Context, opts run.GetChunkOptions) (run.Chunk, error)
-	Cancel(ctx context.Context, id resource.TfeID) error
-	ForceCancel(ctx context.Context, id resource.TfeID) error
-	Discard(ctx context.Context, id resource.TfeID) error
-	Tail(context.Context, run.TailOptions) (<-chan run.Chunk, error)
-	Delete(context.Context, resource.TfeID) error
-	Apply(context.Context, resource.TfeID) error
-	Watch(ctx context.Context) (<-chan pubsub.Event[*run.Event], func())
+	CancelRun(ctx context.Context, id resource.TfeID) error
+	ForceCancelRun(ctx context.Context, id resource.TfeID) error
+	DiscardRun(ctx context.Context, id resource.TfeID) error
+	TailRun(context.Context, run.TailOptions) (<-chan run.Chunk, error)
+	DeleteRun(context.Context, resource.TfeID) error
+	ApplyRun(context.Context, resource.TfeID) error
+	WatchRuns(ctx context.Context) (<-chan pubsub.Event[*run.Event], func())
 }
 
 type WorkspaceService interface {
-	Get(context.Context, resource.TfeID) (*workspace.Workspace, error)
-	Watch(ctx context.Context) (<-chan pubsub.Event[*workspace.Event], func())
-	List(ctx context.Context, opts workspace.ListOptions) (*resource.Page[*workspace.Workspace], error)
+	GetWorkspace(context.Context, resource.TfeID) (*workspace.Workspace, error)
+	WatchWorkspaces(ctx context.Context) (<-chan pubsub.Event[*workspace.Event], func())
+	ListWorkspaces(ctx context.Context, opts workspace.ListOptions) (*resource.Page[*workspace.Workspace], error)
 	ListTags(ctx context.Context, organization organization.Name, opts workspace.ListTagsOptions) (*resource.Page[*workspace.Tag], error)
-	Create(ctx context.Context, opts workspace.CreateOptions) (*workspace.Workspace, error)
-	GetByName(ctx context.Context, organization organization.Name, workspace string) (*workspace.Workspace, error)
+	CreateWorkspace(ctx context.Context, opts workspace.CreateOptions) (*workspace.Workspace, error)
+	GetWorkspaceByName(ctx context.Context, organization organization.Name, workspace string) (*workspace.Workspace, error)
 	GetWorkspacePolicy(ctx context.Context, workspaceID resource.TfeID) (workspace.Policy, error)
-	Update(ctx context.Context, workspaceID resource.TfeID, opts workspace.UpdateOptions) (*workspace.Workspace, error)
-	Delete(ctx context.Context, workspaceID resource.TfeID) (*workspace.Workspace, error)
+	UpdateWorkspace(ctx context.Context, workspaceID resource.TfeID, opts workspace.UpdateOptions) (*workspace.Workspace, error)
+	DeleteWorkspace(ctx context.Context, workspaceID resource.TfeID) (*workspace.Workspace, error)
 	Lock(ctx context.Context, workspaceID resource.TfeID, runID *resource.TfeID) (*workspace.Workspace, error)
 	Unlock(ctx context.Context, workspaceID resource.TfeID, runID *resource.TfeID, force bool) (*workspace.Workspace, error)
-	SetPermission(ctx context.Context, workspaceID, teamID resource.TfeID, role authz.Role) error
-	UnsetPermission(ctx context.Context, workspaceID, teamID resource.TfeID) error
+	SetWorkspacePermission(ctx context.Context, workspaceID, teamID resource.TfeID, role authz.Role) error
+	UnsetWorkspacePermission(ctx context.Context, workspaceID, teamID resource.TfeID) error
 	DeleteTags(ctx context.Context, organization organization.Name, tagIDs []resource.TfeID) error
 	AddTags(ctx context.Context, workspaceID resource.TfeID, tags []workspace.TagSpec) error
 	RemoveTags(ctx context.Context, workspaceID resource.TfeID, tags []workspace.TagSpec) error

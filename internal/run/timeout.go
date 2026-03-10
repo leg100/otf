@@ -30,8 +30,8 @@ type (
 	}
 
 	timeoutRunClient interface {
-		List(ctx context.Context, opts ListOptions) (*resource.Page[*Run], error)
-		Cancel(ctx context.Context, runID resource.TfeID) error
+		ListRuns(ctx context.Context, opts ListOptions) (*resource.Page[*Run], error)
+		CancelRun(ctx context.Context, runID resource.TfeID) error
 	}
 )
 
@@ -74,7 +74,7 @@ func (e *Timeout) check(ctx context.Context) {
 	}
 	// Retrieve all runs with the given statuses
 	runs, err := resource.ListAll(func(opts resource.PageOptions) (*resource.Page[*Run], error) {
-		return e.Runs.List(ctx, ListOptions{
+		return e.Runs.ListRuns(ctx, ListOptions{
 			Statuses:    maps.Keys(statuses),
 			PageOptions: opts,
 		})
@@ -111,7 +111,7 @@ func (e *Timeout) check(ctx context.Context) {
 			// run into the canceled state.
 			//
 			// TODO: bubble up to the UI/API the reason for cancelling the run.
-			_ = e.Runs.Cancel(ctx, run.ID)
+			_ = e.Runs.CancelRun(ctx, run.ID)
 		}
 	}
 }
