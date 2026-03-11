@@ -1,5 +1,4 @@
-// Package html contains code relating specifically to the web UI.
-package html
+package helpers
 
 import (
 	"fmt"

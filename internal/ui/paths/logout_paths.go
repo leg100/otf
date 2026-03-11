@@ -2,6 +2,9 @@
 
 package paths
 
+import "fmt"
+
 func Logout() string {
-	return "/app/logout"
+    return "/app/logout"
 }
+

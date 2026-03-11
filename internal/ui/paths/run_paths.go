@@ -5,61 +5,62 @@ package paths
 import "fmt"
 
 func Runs(workspace any) string {
-	return fmt.Sprintf("/app/workspaces/%v/runs", workspace)
+    return fmt.Sprintf("/app/workspaces/%v/runs", workspace)
 }
 
 func CreateRun(workspace any) string {
-	return fmt.Sprintf("/app/workspaces/%v/runs/create", workspace)
+    return fmt.Sprintf("/app/workspaces/%v/runs/create", workspace)
 }
 
 func NewRun(workspace any) string {
-	return fmt.Sprintf("/app/workspaces/%v/runs/new", workspace)
+    return fmt.Sprintf("/app/workspaces/%v/runs/new", workspace)
 }
 
 func Run(run any) string {
-	return fmt.Sprintf("/app/runs/%v", run)
+    return fmt.Sprintf("/app/runs/%v", run)
 }
 
 func EditRun(run any) string {
-	return fmt.Sprintf("/app/runs/%v/edit", run)
+    return fmt.Sprintf("/app/runs/%v/edit", run)
 }
 
 func UpdateRun(run any) string {
-	return fmt.Sprintf("/app/runs/%v/update", run)
+    return fmt.Sprintf("/app/runs/%v/update", run)
 }
 
 func DeleteRun(run any) string {
-	return fmt.Sprintf("/app/runs/%v/delete", run)
+    return fmt.Sprintf("/app/runs/%v/delete", run)
 }
 
 func ApplyRun(run any) string {
-	return fmt.Sprintf("/app/runs/%v/apply", run)
+    return fmt.Sprintf("/app/runs/%v/apply", run)
 }
 
 func DiscardRun(run any) string {
-	return fmt.Sprintf("/app/runs/%v/discard", run)
+    return fmt.Sprintf("/app/runs/%v/discard", run)
 }
 
 func CancelRun(run any) string {
-	return fmt.Sprintf("/app/runs/%v/cancel", run)
+    return fmt.Sprintf("/app/runs/%v/cancel", run)
 }
 
 func ForceCancelRun(run any) string {
-	return fmt.Sprintf("/app/runs/%v/force-cancel", run)
+    return fmt.Sprintf("/app/runs/%v/force-cancel", run)
 }
 
 func RetryRun(run any) string {
-	return fmt.Sprintf("/app/runs/%v/retry", run)
+    return fmt.Sprintf("/app/runs/%v/retry", run)
 }
 
 func TailRun(run any) string {
-	return fmt.Sprintf("/app/runs/%v/tail", run)
+    return fmt.Sprintf("/app/runs/%v/tail", run)
 }
 
 func WatchRun(run any) string {
-	return fmt.Sprintf("/app/runs/%v/watch", run)
+    return fmt.Sprintf("/app/runs/%v/watch", run)
 }
 
 func WatchLatestRun(workspace any) string {
-	return fmt.Sprintf("/app/workspaces/%v/runs/watch-latest", workspace)
+    return fmt.Sprintf("/app/workspaces/%v/runs/watch-latest", workspace)
 }
+

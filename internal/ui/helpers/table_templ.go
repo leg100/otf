@@ -11,7 +11,6 @@ import templruntime "github.com/a-h/templ/runtime"
 import (
 	"context"
 	"fmt"
-	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/resource"
 	"strconv"
 )
@@ -243,7 +242,7 @@ func (p pageInfo[T]) summary() templ.Component {
 		var templ_7745c5c3_Var7 string
 		templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d-%d of %d", firstItemNumber, lastItemNumber, p.TotalCount))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/helpers/table.templ`, Line: 82, Col: 77}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/helpers/table.templ`, Line: 81, Col: 77}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 		if templ_7745c5c3_Err != nil {
@@ -295,13 +294,13 @@ func (p pageInfo[T]) navigationButtons() templ.Component {
 			err         error
 		)
 		if p.PreviousPage != nil {
-			previousURL, err = html.MergeQuery(CurrentURL(ctx), pageQuery(*p.PreviousPage))
+			previousURL, err = MergeQuery(CurrentURL(ctx), pageQuery(*p.PreviousPage))
 			if err != nil {
 				return err
 			}
 		}
 		if p.NextPage != nil {
-			nextURL, err = html.MergeQuery(CurrentURL(ctx), pageQuery(*p.NextPage))
+			nextURL, err = MergeQuery(CurrentURL(ctx), pageQuery(*p.NextPage))
 			if err != nil {
 				return err
 			}
@@ -335,7 +334,7 @@ func (p pageInfo[T]) navigationButtons() templ.Component {
 		var templ_7745c5c3_Var11 templ.SafeURL
 		templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinURLErrs(previousURL)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/helpers/table.templ`, Line: 119, Col: 44}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/helpers/table.templ`, Line: 118, Col: 44}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 		if templ_7745c5c3_Err != nil {
@@ -370,7 +369,7 @@ func (p pageInfo[T]) navigationButtons() templ.Component {
 		var templ_7745c5c3_Var14 templ.SafeURL
 		templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinURLErrs(nextURL)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/helpers/table.templ`, Line: 122, Col: 40}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/helpers/table.templ`, Line: 121, Col: 40}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 		if templ_7745c5c3_Err != nil {
@@ -431,7 +430,7 @@ func (p pageInfo[T]) pageSizeSelector() templ.Component {
 			var templ_7745c5c3_Var16 string
 			templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(size))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/helpers/table.templ`, Line: 138, Col: 66}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/helpers/table.templ`, Line: 137, Col: 66}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 			if templ_7745c5c3_Err != nil {

@@ -5,29 +5,30 @@ package paths
 import "fmt"
 
 func VariableSets(organization any) string {
-	return fmt.Sprintf("/app/organizations/%v/variable-sets", organization)
+    return fmt.Sprintf("/app/organizations/%v/variable-sets", organization)
 }
 
 func CreateVariableSet(organization any) string {
-	return fmt.Sprintf("/app/organizations/%v/variable-sets/create", organization)
+    return fmt.Sprintf("/app/organizations/%v/variable-sets/create", organization)
 }
 
 func NewVariableSet(organization any) string {
-	return fmt.Sprintf("/app/organizations/%v/variable-sets/new", organization)
+    return fmt.Sprintf("/app/organizations/%v/variable-sets/new", organization)
 }
 
 func VariableSet(variableSet any) string {
-	return fmt.Sprintf("/app/variable-sets/%v", variableSet)
+    return fmt.Sprintf("/app/variable-sets/%v", variableSet)
 }
 
 func EditVariableSet(variableSet any) string {
-	return fmt.Sprintf("/app/variable-sets/%v/edit", variableSet)
+    return fmt.Sprintf("/app/variable-sets/%v/edit", variableSet)
 }
 
 func UpdateVariableSet(variableSet any) string {
-	return fmt.Sprintf("/app/variable-sets/%v/update", variableSet)
+    return fmt.Sprintf("/app/variable-sets/%v/update", variableSet)
 }
 
 func DeleteVariableSet(variableSet any) string {
-	return fmt.Sprintf("/app/variable-sets/%v/delete", variableSet)
+    return fmt.Sprintf("/app/variable-sets/%v/delete", variableSet)
 }
+

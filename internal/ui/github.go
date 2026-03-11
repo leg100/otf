@@ -12,7 +12,6 @@ import (
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/http/decode"
-	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/ui/helpers"
 	"github.com/leg100/otf/internal/ui/paths"
@@ -65,7 +64,7 @@ func (h *Handlers) newGithubApp(w http.ResponseWriter, r *http.Request) {
 	}
 	marshaled, err := json.Marshal(&m)
 	if err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
 
@@ -88,13 +87,13 @@ func (h *Handlers) getGithubApp(w http.ResponseWriter, r *http.Request) {
 	if errors.Is(err, internal.ErrResourceNotFound) {
 		// app not found, which is ok.
 	} else if err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	} else {
 		// App found, now get installs
 		installs, err = h.GithubApp.ListInstallations(r.Context())
 		if err != nil {
-			html.Error(r, w, err.Error())
+			helpers.Error(r, w, err.Error())
 			return
 		}
 	}
@@ -120,7 +119,7 @@ func (h *Handlers) exchangeCodeGithubApp(w http.ResponseWriter, r *http.Request)
 		Code string `schema:"code,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
-		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
@@ -130,12 +129,12 @@ func (h *Handlers) exchangeCodeGithubApp(w http.ResponseWriter, r *http.Request)
 		SkipTLSVerification: h.SkipTLSVerification,
 	})
 	if err != nil {
-		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 	cfg, err := client.ExchangeCode(r.Context(), params.Code)
 	if err != nil {
-		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
@@ -151,31 +150,31 @@ func (h *Handlers) exchangeCodeGithubApp(w http.ResponseWriter, r *http.Request)
 	}
 	_, err = h.GithubApp.CreateApp(r.Context(), opts)
 	if err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
 
-	html.FlashSuccess(w, "created github app: "+cfg.GetSlug())
+	helpers.FlashSuccess(w, "created github app: "+cfg.GetSlug())
 	http.Redirect(w, r, paths.GithubApps(), http.StatusFound)
 }
 
 func (h *Handlers) deleteGithubApp(w http.ResponseWriter, r *http.Request) {
 	app, err := h.GithubApp.GetApp(r.Context())
 	if err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
 	if err := h.GithubApp.DeleteApp(r.Context()); err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
 	// render a small templated flash message
 	buf := new(bytes.Buffer)
 	if err := deleteMessage(app).Render(r.Context(), buf); err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
-	html.FlashSuccess(w, buf.String())
+	helpers.FlashSuccess(w, buf.String())
 
 	http.Redirect(w, r, paths.GithubApps(), http.StatusFound)
 }
@@ -185,14 +184,14 @@ func (h *Handlers) deleteGithubAppInstall(w http.ResponseWriter, r *http.Request
 		InstallID int64 `schema:"install_id,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
-		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 	err := h.GithubApp.DeleteInstallation(r.Context(), params.InstallID)
 	if err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
-	html.FlashSuccess(w, fmt.Sprintf("deleted installation: %d", params.InstallID))
+	helpers.FlashSuccess(w, fmt.Sprintf("deleted installation: %d", params.InstallID))
 	http.Redirect(w, r, paths.GithubApps(), http.StatusFound)
 }

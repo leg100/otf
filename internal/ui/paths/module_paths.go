@@ -5,33 +5,34 @@ package paths
 import "fmt"
 
 func Modules(organization any) string {
-	return fmt.Sprintf("/app/organizations/%v/modules", organization)
+    return fmt.Sprintf("/app/organizations/%v/modules", organization)
 }
 
 func CreateModule(organization any) string {
-	return fmt.Sprintf("/app/organizations/%v/modules/create", organization)
+    return fmt.Sprintf("/app/organizations/%v/modules/create", organization)
 }
 
 func NewModule(organization any) string {
-	return fmt.Sprintf("/app/organizations/%v/modules/new", organization)
+    return fmt.Sprintf("/app/organizations/%v/modules/new", organization)
 }
 
 func Module(module any) string {
-	return fmt.Sprintf("/app/modules/%v", module)
+    return fmt.Sprintf("/app/modules/%v", module)
 }
 
 func EditModule(module any) string {
-	return fmt.Sprintf("/app/modules/%v/edit", module)
+    return fmt.Sprintf("/app/modules/%v/edit", module)
 }
 
 func UpdateModule(module any) string {
-	return fmt.Sprintf("/app/modules/%v/update", module)
+    return fmt.Sprintf("/app/modules/%v/update", module)
 }
 
 func DeleteModule(module any) string {
-	return fmt.Sprintf("/app/modules/%v/delete", module)
+    return fmt.Sprintf("/app/modules/%v/delete", module)
 }
 
 func ConnectModule(module any) string {
-	return fmt.Sprintf("/app/modules/%v/connect", module)
+    return fmt.Sprintf("/app/modules/%v/connect", module)
 }
+

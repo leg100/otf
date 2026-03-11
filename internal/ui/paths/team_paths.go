@@ -5,37 +5,38 @@ package paths
 import "fmt"
 
 func Teams(organization any) string {
-	return fmt.Sprintf("/app/organizations/%v/teams", organization)
+    return fmt.Sprintf("/app/organizations/%v/teams", organization)
 }
 
 func CreateTeam(organization any) string {
-	return fmt.Sprintf("/app/organizations/%v/teams/create", organization)
+    return fmt.Sprintf("/app/organizations/%v/teams/create", organization)
 }
 
 func NewTeam(organization any) string {
-	return fmt.Sprintf("/app/organizations/%v/teams/new", organization)
+    return fmt.Sprintf("/app/organizations/%v/teams/new", organization)
 }
 
 func Team(team any) string {
-	return fmt.Sprintf("/app/teams/%v", team)
+    return fmt.Sprintf("/app/teams/%v", team)
 }
 
 func EditTeam(team any) string {
-	return fmt.Sprintf("/app/teams/%v/edit", team)
+    return fmt.Sprintf("/app/teams/%v/edit", team)
 }
 
 func UpdateTeam(team any) string {
-	return fmt.Sprintf("/app/teams/%v/update", team)
+    return fmt.Sprintf("/app/teams/%v/update", team)
 }
 
 func DeleteTeam(team any) string {
-	return fmt.Sprintf("/app/teams/%v/delete", team)
+    return fmt.Sprintf("/app/teams/%v/delete", team)
 }
 
 func AddMemberTeam(team any) string {
-	return fmt.Sprintf("/app/teams/%v/add-member", team)
+    return fmt.Sprintf("/app/teams/%v/add-member", team)
 }
 
 func RemoveMemberTeam(team any) string {
-	return fmt.Sprintf("/app/teams/%v/remove-member", team)
+    return fmt.Sprintf("/app/teams/%v/remove-member", team)
 }
+

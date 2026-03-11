@@ -5,7 +5,6 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal/http/decode"
-	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/sshkey"
 	"github.com/leg100/otf/internal/ui/helpers"
@@ -22,17 +21,17 @@ func addSSHKeyHandlers(r *mux.Router, h *Handlers) {
 func (h *Handlers) createSSHKey(w http.ResponseWriter, r *http.Request) {
 	var opts sshkey.CreateOptions
 	if err := decode.All(&opts, r); err != nil {
-		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
 	key, err := h.SSHKeys.CreateSSHKey(r.Context(), opts)
 	if err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
 
-	html.FlashSuccess(w, "created ssh key: "+key.Name)
+	helpers.FlashSuccess(w, "created ssh key: "+key.Name)
 	http.Redirect(w, r, paths.SSHKeys(opts.Organization), http.StatusFound)
 }
 
@@ -41,13 +40,13 @@ func (h *Handlers) listSSHKeys(w http.ResponseWriter, r *http.Request) {
 		Name organization.Name `schema:"organization_name"`
 	}
 	if err := decode.All(&params, r); err != nil {
-		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
 	keys, err := h.SSHKeys.ListSSHKeys(r.Context(), params.Name)
 	if err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
 
@@ -69,16 +68,16 @@ func (h *Handlers) listSSHKeys(w http.ResponseWriter, r *http.Request) {
 func (h *Handlers) deleteSSHKey(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.ID("ssh_key_id", r)
 	if err != nil {
-		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
 	key, err := h.SSHKeys.DeleteSSHKey(r.Context(), id)
 	if err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
 
-	html.FlashSuccess(w, "deleted ssh key: "+key.Name)
+	helpers.FlashSuccess(w, "deleted ssh key: "+key.Name)
 	http.Redirect(w, r, paths.SSHKeys(key.Organization), http.StatusFound)
 }

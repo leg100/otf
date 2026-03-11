@@ -2,6 +2,9 @@
 
 package paths
 
+import "fmt"
+
 func Admin() string {
-	return "/app/admin"
+    return "/app/admin"
 }
+

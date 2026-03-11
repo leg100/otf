@@ -5,41 +5,42 @@ package paths
 import "fmt"
 
 func GithubApps() string {
-	return "/app/github-apps"
+    return "/app/github-apps"
 }
 
 func CreateGithubApp() string {
-	return "/app/github-apps/create"
+    return "/app/github-apps/create"
 }
 
 func NewGithubApp() string {
-	return "/app/github-apps/new"
+    return "/app/github-apps/new"
 }
 
 func GithubApp(githubApp any) string {
-	return fmt.Sprintf("/app/github-apps/%v", githubApp)
+    return fmt.Sprintf("/app/github-apps/%v", githubApp)
 }
 
 func EditGithubApp(githubApp any) string {
-	return fmt.Sprintf("/app/github-apps/%v/edit", githubApp)
+    return fmt.Sprintf("/app/github-apps/%v/edit", githubApp)
 }
 
 func UpdateGithubApp(githubApp any) string {
-	return fmt.Sprintf("/app/github-apps/%v/update", githubApp)
+    return fmt.Sprintf("/app/github-apps/%v/update", githubApp)
 }
 
 func DeleteGithubApp(githubApp any) string {
-	return fmt.Sprintf("/app/github-apps/%v/delete", githubApp)
+    return fmt.Sprintf("/app/github-apps/%v/delete", githubApp)
 }
 
 func ExchangeCodeGithubApp() string {
-	return "/app/github-apps/exchange-code"
+    return "/app/github-apps/exchange-code"
 }
 
 func CompleteGithubApp() string {
-	return "/app/github-apps/complete"
+    return "/app/github-apps/complete"
 }
 
 func DeleteInstallGithubApp(githubApp any) string {
-	return fmt.Sprintf("/app/github-apps/%v/delete-install", githubApp)
+    return fmt.Sprintf("/app/github-apps/%v/delete-install", githubApp)
 }
+

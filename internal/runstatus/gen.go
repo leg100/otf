@@ -47,7 +47,7 @@ func main() {
 		}
 	}
 
-	if err := os.WriteFile("../http/html/static/css/runstatus.css", []byte(b.String()), 0o755); err != nil {
+	if err := os.WriteFile("../ui/static/css/runstatus.css", []byte(b.String()), 0o755); err != nil {
 		log.Fatal("Error: ", err.Error())
 	}
 }

@@ -10,10 +10,10 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal/authz"
 	otfhttp "github.com/leg100/otf/internal/http"
-	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tfeapi"
+	"github.com/leg100/otf/internal/ui/helpers"
 	"github.com/leg100/otf/internal/ui/paths"
 	"github.com/lestrrat-go/jwx/v2/jwa"
 	"github.com/lestrrat-go/jwx/v2/jwk"
@@ -105,7 +105,7 @@ func newMiddleware(opts middlewareOptions) mux.MiddlewareFunc {
 				var ok bool
 				subject, ok = mw.validateUIRequest(ctx, w, r)
 				if !ok {
-					html.SendUserToLoginPage(w, r)
+					helpers.SendUserToLoginPage(w, r)
 					return
 				}
 			} else {
@@ -153,22 +153,22 @@ func (m *middleware) validateBearer(ctx context.Context, bearer string) (authz.S
 func (m *middleware) validateUIRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) (authz.Subject, bool) {
 	cookie, err := r.Cookie(SessionCookie)
 	if err == http.ErrNoCookie {
-		html.FlashSuccess(w, "you need to login to access the requested page")
+		helpers.FlashSuccess(w, "you need to login to access the requested page")
 		return nil, false
 	}
 	// parse jwt from cookie and verify signature
 	id, err := m.parseIDFromJWT([]byte(cookie.Value))
 	if err != nil {
 		if errors.Is(err, jwt.ErrTokenExpired()) {
-			html.FlashError(w, "session expired")
+			helpers.FlashError(w, "session expired")
 		} else {
-			html.FlashError(w, "unable to verify session token: "+err.Error())
+			helpers.FlashError(w, "unable to verify session token: "+err.Error())
 		}
 		return nil, false
 	}
 	user, err := m.GetSubject(ctx, id)
 	if err != nil {
-		html.FlashError(w, "unable to find user: "+err.Error())
+		helpers.FlashError(w, "unable to find user: "+err.Error())
 		return nil, false
 	}
 	return user, true

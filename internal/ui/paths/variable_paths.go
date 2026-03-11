@@ -5,29 +5,30 @@ package paths
 import "fmt"
 
 func Variables(workspace any) string {
-	return fmt.Sprintf("/app/workspaces/%v/variables", workspace)
+    return fmt.Sprintf("/app/workspaces/%v/variables", workspace)
 }
 
 func CreateVariable(workspace any) string {
-	return fmt.Sprintf("/app/workspaces/%v/variables/create", workspace)
+    return fmt.Sprintf("/app/workspaces/%v/variables/create", workspace)
 }
 
 func NewVariable(workspace any) string {
-	return fmt.Sprintf("/app/workspaces/%v/variables/new", workspace)
+    return fmt.Sprintf("/app/workspaces/%v/variables/new", workspace)
 }
 
 func Variable(variable any) string {
-	return fmt.Sprintf("/app/variables/%v", variable)
+    return fmt.Sprintf("/app/variables/%v", variable)
 }
 
 func EditVariable(variable any) string {
-	return fmt.Sprintf("/app/variables/%v/edit", variable)
+    return fmt.Sprintf("/app/variables/%v/edit", variable)
 }
 
 func UpdateVariable(variable any) string {
-	return fmt.Sprintf("/app/variables/%v/update", variable)
+    return fmt.Sprintf("/app/variables/%v/update", variable)
 }
 
 func DeleteVariable(variable any) string {
-	return fmt.Sprintf("/app/variables/%v/delete", variable)
+    return fmt.Sprintf("/app/variables/%v/delete", variable)
 }
+

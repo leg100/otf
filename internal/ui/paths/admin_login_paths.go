@@ -2,6 +2,9 @@
 
 package paths
 
+import "fmt"
+
 func AdminLogin() string {
-	return "/admin/login"
+    return "/admin/login"
 }
+

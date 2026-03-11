@@ -9,7 +9,6 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal/http/decode"
-	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tokens"
@@ -59,19 +58,19 @@ func addUserHandlers(r *mux.Router, h *Handlers) {
 }
 
 func (h *Handlers) logout(w http.ResponseWriter, r *http.Request) {
-	html.SetCookie(w, tokens.SessionCookie, "", &time.Time{})
+	helpers.SetCookie(w, tokens.SessionCookie, "", &time.Time{})
 	http.Redirect(w, r, "/login", http.StatusFound)
 }
 
 func (h *Handlers) listOrganizationUsers(w http.ResponseWriter, r *http.Request) {
 	var params user.ListOptions
 	if err := decode.All(&params, r); err != nil {
-		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 	users, err := h.Users.ListOrganizationUsers(r.Context(), params.Organization)
 	if err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
 
@@ -112,17 +111,17 @@ func (h *Handlers) addTeamMember(w http.ResponseWriter, r *http.Request) {
 		Username *user.Username `schema:"username,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
-		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
 	err := h.Users.AddTeamMembership(r.Context(), params.TeamID, []user.Username{*params.Username})
 	if err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
 
-	html.FlashSuccess(w, fmt.Sprintf("added team member: %s", *params.Username))
+	helpers.FlashSuccess(w, fmt.Sprintf("added team member: %s", *params.Username))
 	http.Redirect(w, r, paths.Team(params.TeamID), http.StatusFound)
 }
 
@@ -132,17 +131,17 @@ func (h *Handlers) removeTeamMember(w http.ResponseWriter, r *http.Request) {
 		Username user.Username  `schema:"username,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
-		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
 	err := h.Users.RemoveTeamMembership(r.Context(), params.TeamID, []user.Username{params.Username})
 	if err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
 
-	html.FlashSuccess(w, fmt.Sprintf("removed team member: %s", params.Username))
+	helpers.FlashSuccess(w, fmt.Sprintf("removed team member: %s", params.Username))
 	http.Redirect(w, r, paths.Team(params.TeamID), http.StatusFound)
 }
 
@@ -166,17 +165,17 @@ func (h *Handlers) newUserToken(w http.ResponseWriter, r *http.Request) {
 func (h *Handlers) createUserToken(w http.ResponseWriter, r *http.Request) {
 	var opts user.CreateUserTokenOptions
 	if err := decode.Form(&opts, r); err != nil {
-		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 	_, token, err := h.Users.CreateToken(r.Context(), opts)
 	if err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
 
 	if err := helpers.TokenFlashMessage(w, token); err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
 	http.Redirect(w, r, paths.Tokens(), http.StatusFound)
@@ -185,7 +184,7 @@ func (h *Handlers) createUserToken(w http.ResponseWriter, r *http.Request) {
 func (h *Handlers) userTokens(w http.ResponseWriter, r *http.Request) {
 	tokens, err := h.Users.ListTokens(r.Context())
 	if err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
 
@@ -207,14 +206,14 @@ func (h *Handlers) userTokens(w http.ResponseWriter, r *http.Request) {
 func (h *Handlers) deleteUserToken(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.ID("id", r)
 	if err != nil {
-		html.Error(r, w, "missing id", html.WithStatus(http.StatusUnprocessableEntity))
+		helpers.Error(r, w, "missing id", helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 	if err := h.Users.DeleteToken(r.Context(), id); err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
-	html.FlashSuccess(w, "Deleted token")
+	helpers.FlashSuccess(w, "Deleted token")
 	http.Redirect(w, r, paths.Tokens(), http.StatusFound)
 }
 

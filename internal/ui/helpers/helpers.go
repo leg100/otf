@@ -7,12 +7,12 @@ import (
 	"net/url"
 
 	"github.com/leg100/otf/internal/authz"
-	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/ui/static"
 )
 
 func AssetPath(ctx context.Context, path string) (string, error) {
-	return html.AssetsFS.Path(path)
+	return static.AssetsFS.Path(path)
 }
 
 func CurrentUsername(ctx context.Context) (string, error) {
@@ -57,7 +57,7 @@ func IsSiteAdmin(ctx context.Context) bool {
 }
 
 func CurrentPath(ctx context.Context) string {
-	request := html.RequestFromContext(ctx)
+	request := RequestFromContext(ctx)
 	if request == nil {
 		return ""
 	}
@@ -65,7 +65,7 @@ func CurrentPath(ctx context.Context) string {
 }
 
 func CurrentURL(ctx context.Context) string {
-	request := html.RequestFromContext(ctx)
+	request := RequestFromContext(ctx)
 	if request == nil {
 		return ""
 	}
@@ -73,7 +73,7 @@ func CurrentURL(ctx context.Context) string {
 }
 
 func CurrentURLWithoutQuery(ctx context.Context) string {
-	request := html.RequestFromContext(ctx)
+	request := RequestFromContext(ctx)
 	if request == nil {
 		return ""
 	}
@@ -93,12 +93,12 @@ func TokenFlashMessage(w gohttp.ResponseWriter, token []byte) error {
 	if err := flashToken(string(token)).Render(context.Background(), buf); err != nil {
 		return err
 	}
-	html.FlashSuccess(w, buf.String())
+	FlashSuccess(w, buf.String())
 	return nil
 }
 
 func Cookie(ctx context.Context, name string) string {
-	request := html.RequestFromContext(ctx)
+	request := RequestFromContext(ctx)
 	if request == nil {
 		return ""
 	}

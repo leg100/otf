@@ -8,7 +8,6 @@ import (
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/configversion/source"
 	"github.com/leg100/otf/internal/http/decode"
-	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
 	runpkg "github.com/leg100/otf/internal/run"
@@ -42,7 +41,7 @@ func (h *Handlers) createRun(w http.ResponseWriter, r *http.Request) {
 		Operation   runpkg.Operation `schema:"operation,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
-		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
@@ -52,7 +51,7 @@ func (h *Handlers) createRun(w http.ResponseWriter, r *http.Request) {
 		Source:    source.UI,
 	})
 	if err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
 
@@ -65,7 +64,7 @@ func (h *Handlers) listRuns(w http.ResponseWriter, r *http.Request) {
 		StatusFilterVisible bool `schema:"status_filter_visible"`
 	}
 	if err := decode.All(&opts, r); err != nil {
-		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
@@ -79,7 +78,7 @@ func (h *Handlers) listRuns(w http.ResponseWriter, r *http.Request) {
 	if opts.ListOptions.WorkspaceID != nil {
 		ws, err := h.Workspaces.GetWorkspace(r.Context(), *opts.WorkspaceID)
 		if err != nil {
-			html.Error(r, w, err.Error())
+			helpers.Error(r, w, err.Error())
 			return
 		}
 		renderOptions = append(renderOptions, withWorkspace(ws))
@@ -91,7 +90,7 @@ func (h *Handlers) listRuns(w http.ResponseWriter, r *http.Request) {
 			withOrganization(*opts.ListOptions.Organization),
 		)
 	} else {
-		html.Error(r, w, "must provide either organization_name or workspace_id", html.WithStatus(http.StatusUnprocessableEntity))
+		helpers.Error(r, w, "must provide either organization_name or workspace_id", helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 	renderOptions = append(renderOptions, withBreadcrumbs(
@@ -100,7 +99,7 @@ func (h *Handlers) listRuns(w http.ResponseWriter, r *http.Request) {
 
 	page, err := h.Runs.ListRuns(r.Context(), opts.ListOptions)
 	if err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
 	props.page = page
@@ -117,19 +116,19 @@ func (h *Handlers) listRuns(w http.ResponseWriter, r *http.Request) {
 func (h *Handlers) getRun(w http.ResponseWriter, r *http.Request) {
 	runID, err := decode.ID("run_id", r)
 	if err != nil {
-		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
 	run, err := h.Runs.GetRun(r.Context(), runID)
 	if err != nil {
-		html.Error(r, w, "retrieving run: "+err.Error())
+		helpers.Error(r, w, "retrieving run: "+err.Error())
 		return
 	}
 
 	ws, err := h.Workspaces.GetWorkspace(r.Context(), run.WorkspaceID)
 	if err != nil {
-		html.Error(r, w, "retrieving workspace: "+err.Error())
+		helpers.Error(r, w, "retrieving workspace: "+err.Error())
 		return
 	}
 
@@ -139,7 +138,7 @@ func (h *Handlers) getRun(w http.ResponseWriter, r *http.Request) {
 		Phase: runpkg.PlanPhase,
 	})
 	if err != nil {
-		html.Error(r, w, "retrieving plan logs: "+err.Error())
+		helpers.Error(r, w, "retrieving plan logs: "+err.Error())
 		return
 	}
 	applyLogs, err := h.Runs.GetChunk(r.Context(), runpkg.GetChunkOptions{
@@ -147,7 +146,7 @@ func (h *Handlers) getRun(w http.ResponseWriter, r *http.Request) {
 		Phase: runpkg.ApplyPhase,
 	})
 	if err != nil {
-		html.Error(r, w, "retrieving apply logs: "+err.Error())
+		helpers.Error(r, w, "retrieving apply logs: "+err.Error())
 		return
 	}
 
@@ -174,18 +173,18 @@ func (h *Handlers) getRun(w http.ResponseWriter, r *http.Request) {
 func (h *Handlers) deleteRun(w http.ResponseWriter, r *http.Request) {
 	runID, err := decode.ID("run_id", r)
 	if err != nil {
-		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
 	runItem, err := h.Runs.GetRun(r.Context(), runID)
 	if err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
 	err = h.Runs.DeleteRun(r.Context(), runID)
 	if err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
 	http.Redirect(w, r, paths.Workspace(runItem.WorkspaceID), http.StatusFound)
@@ -194,12 +193,12 @@ func (h *Handlers) deleteRun(w http.ResponseWriter, r *http.Request) {
 func (h *Handlers) cancelRun(w http.ResponseWriter, r *http.Request) {
 	runID, err := decode.ID("run_id", r)
 	if err != nil {
-		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
 	if err := h.Runs.CancelRun(r.Context(), runID); err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
 
@@ -209,12 +208,12 @@ func (h *Handlers) cancelRun(w http.ResponseWriter, r *http.Request) {
 func (h *Handlers) forceCancelRun(w http.ResponseWriter, r *http.Request) {
 	runID, err := decode.ID("run_id", r)
 	if err != nil {
-		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
 	if err := h.Runs.ForceCancelRun(r.Context(), runID); err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
 
@@ -224,12 +223,12 @@ func (h *Handlers) forceCancelRun(w http.ResponseWriter, r *http.Request) {
 func (h *Handlers) applyRun(w http.ResponseWriter, r *http.Request) {
 	runID, err := decode.ID("run_id", r)
 	if err != nil {
-		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
 	if err := h.Runs.ApplyRun(r.Context(), runID); err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
 
@@ -239,12 +238,12 @@ func (h *Handlers) applyRun(w http.ResponseWriter, r *http.Request) {
 func (h *Handlers) discardRun(w http.ResponseWriter, r *http.Request) {
 	runID, err := decode.ID("run_id", r)
 	if err != nil {
-		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
 	if err := h.Runs.DiscardRun(r.Context(), runID); err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
 
@@ -254,13 +253,13 @@ func (h *Handlers) discardRun(w http.ResponseWriter, r *http.Request) {
 func (h *Handlers) retryRun(w http.ResponseWriter, r *http.Request) {
 	runID, err := decode.ID("run_id", r)
 	if err != nil {
-		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
 	existingRun, err := h.Runs.GetRun(r.Context(), runID)
 	if err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
 
@@ -271,7 +270,7 @@ func (h *Handlers) retryRun(w http.ResponseWriter, r *http.Request) {
 		Source:                 source.UI,
 	})
 	if err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
 
@@ -291,7 +290,7 @@ const (
 func (h *Handlers) watchRun(w http.ResponseWriter, r *http.Request) {
 	runID, err := decode.ID("run_id", r)
 	if err != nil {
-		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 	conn := newSSEConnection(w, false)
@@ -363,7 +362,7 @@ const latestRunUpdate sseEvent = "LatestRunUpdate"
 func (h *Handlers) watchLatestRun(w http.ResponseWriter, r *http.Request) {
 	workspaceID, err := decode.ID("workspace_id", r)
 	if err != nil {
-		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
@@ -373,7 +372,7 @@ func (h *Handlers) watchLatestRun(w http.ResponseWriter, r *http.Request) {
 	runsSub, _ := h.Runs.WatchRuns(r.Context())
 	ws, err := h.Workspaces.GetWorkspace(r.Context(), workspaceID)
 	if err != nil {
-		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
@@ -456,13 +455,13 @@ const (
 func (h *Handlers) tailRun(w http.ResponseWriter, r *http.Request) {
 	var params runpkg.TailOptions
 	if err := decode.All(&params, r); err != nil {
-		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
 	ch, err := h.Runs.TailRun(r.Context(), params)
 	if err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
 

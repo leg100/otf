@@ -2,6 +2,9 @@
 
 package paths
 
+import "fmt"
+
 func DeleteToken() string {
-	return "/app/current-user/tokens/delete"
+    return "/app/current-user/tokens/delete"
 }
+
