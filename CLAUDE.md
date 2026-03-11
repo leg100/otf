@@ -184,7 +184,7 @@ When modifying a service:
 ### Frontend Development
 
 - Templates use templ syntax (`.templ` files generate `_templ.go`)
-- Styles use Tailwind CSS (`internal/http/html/static/css/`)
+- Styles use Tailwind CSS (`internal/ui/static/css/`)
 - JavaScript uses choices.js for multi-select dropdowns
 - Always run `make generate-templates` after modifying `.templ` files
 - Use `make live` for hot reload during development

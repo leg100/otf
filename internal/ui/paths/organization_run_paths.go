@@ -5,6 +5,5 @@ package paths
 import "fmt"
 
 func OrganizationRuns(organization any) string {
-    return fmt.Sprintf("/app/organizations/%v/runs", organization)
+	return fmt.Sprintf("/app/organizations/%v/runs", organization)
 }
-

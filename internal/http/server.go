@@ -82,7 +82,7 @@ func NewServer(logger logr.Logger, cfg ServerConfig) (*Server, error) {
 	r.Handle("/", http.RedirectHandler("/app/organizations", http.StatusFound))
 
 	// Serve static files
-	if err := static.AddStaticHandler(logger, r); err != nil {
+	if err := static.AddHandler(logger, r); err != nil {
 		return nil, err
 	}
 

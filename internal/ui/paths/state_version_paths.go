@@ -5,38 +5,37 @@ package paths
 import "fmt"
 
 func StateVersions(workspace any) string {
-    return fmt.Sprintf("/app/workspaces/%v/state-versions", workspace)
+	return fmt.Sprintf("/app/workspaces/%v/state-versions", workspace)
 }
 
 func CreateStateVersion(workspace any) string {
-    return fmt.Sprintf("/app/workspaces/%v/state-versions/create", workspace)
+	return fmt.Sprintf("/app/workspaces/%v/state-versions/create", workspace)
 }
 
 func NewStateVersion(workspace any) string {
-    return fmt.Sprintf("/app/workspaces/%v/state-versions/new", workspace)
+	return fmt.Sprintf("/app/workspaces/%v/state-versions/new", workspace)
 }
 
 func StateVersion(stateVersion any) string {
-    return fmt.Sprintf("/app/state-versions/%v", stateVersion)
+	return fmt.Sprintf("/app/state-versions/%v", stateVersion)
 }
 
 func EditStateVersion(stateVersion any) string {
-    return fmt.Sprintf("/app/state-versions/%v/edit", stateVersion)
+	return fmt.Sprintf("/app/state-versions/%v/edit", stateVersion)
 }
 
 func UpdateStateVersion(stateVersion any) string {
-    return fmt.Sprintf("/app/state-versions/%v/update", stateVersion)
+	return fmt.Sprintf("/app/state-versions/%v/update", stateVersion)
 }
 
 func DeleteStateVersion(stateVersion any) string {
-    return fmt.Sprintf("/app/state-versions/%v/delete", stateVersion)
+	return fmt.Sprintf("/app/state-versions/%v/delete", stateVersion)
 }
 
 func RollbackStateVersion(stateVersion any) string {
-    return fmt.Sprintf("/app/state-versions/%v/rollback", stateVersion)
+	return fmt.Sprintf("/app/state-versions/%v/rollback", stateVersion)
 }
 
 func DiffStateVersion(stateVersion any) string {
-    return fmt.Sprintf("/app/state-versions/%v/diff", stateVersion)
+	return fmt.Sprintf("/app/state-versions/%v/diff", stateVersion)
 }
-

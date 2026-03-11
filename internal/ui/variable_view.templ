@@ -283,7 +283,7 @@ templ variableSetForm(props variableSetFormProps) {
 					<input class="peer" type="radio" name="global" value="false" id="workspace-scoped" checked?={ !props.set.Global } required/>
 					<label for="workspace-scoped">Apply to specific workspaces</label>
 					<span class="col-start-2 description">Only the selected workspaces will access this variable set.</span>
-					<script src={ helpers.AssetPath(ctx, "/static/js/dropdown.js") }></script>
+					<script src={ helpers.AssetPath(ctx, "/js/dropdown.js") }></script>
 					<div
 						class="hidden relative col-start-2 mt-2 w-full peer-checked:block"
 						x-data={ "dropdown(" + toJSON(props.existingWorkspaces) + ", " + toJSON(props.availableWorkspaces) + ")" }

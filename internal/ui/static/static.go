@@ -64,11 +64,11 @@ func findModuleRoot(dir string) (roots string) {
 	return ""
 }
 
-// AddStaticHandler adds a handler to router serving static assets
+// AddHandler adds a handler to router serving static assets
 // (JS, CSS, etc) from within go binary. Enabling developer mode sources files from
 // local disk instead and starts a live reload server, which reloads the browser
 // whenever static files change.
-func AddStaticHandler(logger logr.Logger, r *mux.Router) error {
+func AddHandler(logger logr.Logger, r *mux.Router) error {
 	r = r.NewRoute().Subrouter()
 
 	// Middleware to add cache control headers

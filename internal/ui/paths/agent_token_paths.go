@@ -5,30 +5,29 @@ package paths
 import "fmt"
 
 func AgentTokens(agentPool any) string {
-    return fmt.Sprintf("/app/agent-pools/%v/agent-tokens", agentPool)
+	return fmt.Sprintf("/app/agent-pools/%v/agent-tokens", agentPool)
 }
 
 func CreateAgentToken(agentPool any) string {
-    return fmt.Sprintf("/app/agent-pools/%v/agent-tokens/create", agentPool)
+	return fmt.Sprintf("/app/agent-pools/%v/agent-tokens/create", agentPool)
 }
 
 func NewAgentToken(agentPool any) string {
-    return fmt.Sprintf("/app/agent-pools/%v/agent-tokens/new", agentPool)
+	return fmt.Sprintf("/app/agent-pools/%v/agent-tokens/new", agentPool)
 }
 
 func AgentToken(agentToken any) string {
-    return fmt.Sprintf("/app/agent-tokens/%v", agentToken)
+	return fmt.Sprintf("/app/agent-tokens/%v", agentToken)
 }
 
 func EditAgentToken(agentToken any) string {
-    return fmt.Sprintf("/app/agent-tokens/%v/edit", agentToken)
+	return fmt.Sprintf("/app/agent-tokens/%v/edit", agentToken)
 }
 
 func UpdateAgentToken(agentToken any) string {
-    return fmt.Sprintf("/app/agent-tokens/%v/update", agentToken)
+	return fmt.Sprintf("/app/agent-tokens/%v/update", agentToken)
 }
 
 func DeleteAgentToken(agentToken any) string {
-    return fmt.Sprintf("/app/agent-tokens/%v/delete", agentToken)
+	return fmt.Sprintf("/app/agent-tokens/%v/delete", agentToken)
 }
-

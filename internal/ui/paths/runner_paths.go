@@ -5,34 +5,33 @@ package paths
 import "fmt"
 
 func Runners(organization any) string {
-    return fmt.Sprintf("/app/organizations/%v/runners", organization)
+	return fmt.Sprintf("/app/organizations/%v/runners", organization)
 }
 
 func CreateRunner(organization any) string {
-    return fmt.Sprintf("/app/organizations/%v/runners/create", organization)
+	return fmt.Sprintf("/app/organizations/%v/runners/create", organization)
 }
 
 func NewRunner(organization any) string {
-    return fmt.Sprintf("/app/organizations/%v/runners/new", organization)
+	return fmt.Sprintf("/app/organizations/%v/runners/new", organization)
 }
 
 func Runner(runner any) string {
-    return fmt.Sprintf("/app/runners/%v", runner)
+	return fmt.Sprintf("/app/runners/%v", runner)
 }
 
 func EditRunner(runner any) string {
-    return fmt.Sprintf("/app/runners/%v/edit", runner)
+	return fmt.Sprintf("/app/runners/%v/edit", runner)
 }
 
 func UpdateRunner(runner any) string {
-    return fmt.Sprintf("/app/runners/%v/update", runner)
+	return fmt.Sprintf("/app/runners/%v/update", runner)
 }
 
 func DeleteRunner(runner any) string {
-    return fmt.Sprintf("/app/runners/%v/delete", runner)
+	return fmt.Sprintf("/app/runners/%v/delete", runner)
 }
 
 func WatchRunners(organization any) string {
-    return fmt.Sprintf("/app/organizations/%v/runners/watch", organization)
+	return fmt.Sprintf("/app/organizations/%v/runners/watch", organization)
 }
-

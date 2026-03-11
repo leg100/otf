@@ -2,9 +2,6 @@
 
 package paths
 
-import "fmt"
-
 func CreateToken() string {
-    return "/app/current-user/tokens/create"
+	return "/app/current-user/tokens/create"
 }
-

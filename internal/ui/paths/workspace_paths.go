@@ -5,94 +5,93 @@ package paths
 import "fmt"
 
 func Workspaces(organization any) string {
-    return fmt.Sprintf("/app/organizations/%v/workspaces", organization)
+	return fmt.Sprintf("/app/organizations/%v/workspaces", organization)
 }
 
 func CreateWorkspace(organization any) string {
-    return fmt.Sprintf("/app/organizations/%v/workspaces/create", organization)
+	return fmt.Sprintf("/app/organizations/%v/workspaces/create", organization)
 }
 
 func NewWorkspace(organization any) string {
-    return fmt.Sprintf("/app/organizations/%v/workspaces/new", organization)
+	return fmt.Sprintf("/app/organizations/%v/workspaces/new", organization)
 }
 
 func Workspace(workspace any) string {
-    return fmt.Sprintf("/app/workspaces/%v", workspace)
+	return fmt.Sprintf("/app/workspaces/%v", workspace)
 }
 
 func EditWorkspace(workspace any) string {
-    return fmt.Sprintf("/app/workspaces/%v/edit", workspace)
+	return fmt.Sprintf("/app/workspaces/%v/edit", workspace)
 }
 
 func UpdateWorkspace(workspace any) string {
-    return fmt.Sprintf("/app/workspaces/%v/update", workspace)
+	return fmt.Sprintf("/app/workspaces/%v/update", workspace)
 }
 
 func DeleteWorkspace(workspace any) string {
-    return fmt.Sprintf("/app/workspaces/%v/delete", workspace)
+	return fmt.Sprintf("/app/workspaces/%v/delete", workspace)
 }
 
 func LockWorkspace(workspace any) string {
-    return fmt.Sprintf("/app/workspaces/%v/lock", workspace)
+	return fmt.Sprintf("/app/workspaces/%v/lock", workspace)
 }
 
 func UnlockWorkspace(workspace any) string {
-    return fmt.Sprintf("/app/workspaces/%v/unlock", workspace)
+	return fmt.Sprintf("/app/workspaces/%v/unlock", workspace)
 }
 
 func ForceUnlockWorkspace(workspace any) string {
-    return fmt.Sprintf("/app/workspaces/%v/force-unlock", workspace)
+	return fmt.Sprintf("/app/workspaces/%v/force-unlock", workspace)
 }
 
 func SetPermissionWorkspace(workspace any) string {
-    return fmt.Sprintf("/app/workspaces/%v/set-permission", workspace)
+	return fmt.Sprintf("/app/workspaces/%v/set-permission", workspace)
 }
 
 func UnsetPermissionWorkspace(workspace any) string {
-    return fmt.Sprintf("/app/workspaces/%v/unset-permission", workspace)
+	return fmt.Sprintf("/app/workspaces/%v/unset-permission", workspace)
 }
 
 func ConnectWorkspace(workspace any) string {
-    return fmt.Sprintf("/app/workspaces/%v/connect", workspace)
+	return fmt.Sprintf("/app/workspaces/%v/connect", workspace)
 }
 
 func DisconnectWorkspace(workspace any) string {
-    return fmt.Sprintf("/app/workspaces/%v/disconnect", workspace)
+	return fmt.Sprintf("/app/workspaces/%v/disconnect", workspace)
 }
 
 func StartRunWorkspace(workspace any) string {
-    return fmt.Sprintf("/app/workspaces/%v/start-run", workspace)
+	return fmt.Sprintf("/app/workspaces/%v/start-run", workspace)
 }
 
 func SetupConnectionProviderWorkspace(workspace any) string {
-    return fmt.Sprintf("/app/workspaces/%v/setup-connection-provider", workspace)
+	return fmt.Sprintf("/app/workspaces/%v/setup-connection-provider", workspace)
 }
 
 func SetupConnectionRepoWorkspace(workspace any) string {
-    return fmt.Sprintf("/app/workspaces/%v/setup-connection-repo", workspace)
+	return fmt.Sprintf("/app/workspaces/%v/setup-connection-repo", workspace)
 }
 
 func CreateTagWorkspace(workspace any) string {
-    return fmt.Sprintf("/app/workspaces/%v/create-tag", workspace)
+	return fmt.Sprintf("/app/workspaces/%v/create-tag", workspace)
 }
 
 func DeleteTagWorkspace(workspace any) string {
-    return fmt.Sprintf("/app/workspaces/%v/delete-tag", workspace)
+	return fmt.Sprintf("/app/workspaces/%v/delete-tag", workspace)
 }
 
 func StateWorkspace(workspace any) string {
-    return fmt.Sprintf("/app/workspaces/%v/state", workspace)
+	return fmt.Sprintf("/app/workspaces/%v/state", workspace)
 }
 
 func PoolsWorkspace(workspace any) string {
-    return fmt.Sprintf("/app/workspaces/%v/pools", workspace)
+	return fmt.Sprintf("/app/workspaces/%v/pools", workspace)
 }
 
 func EditSSHKeyWorkspace(workspace any) string {
-    return fmt.Sprintf("/app/workspaces/%v/edit-ssh-key", workspace)
+	return fmt.Sprintf("/app/workspaces/%v/edit-ssh-key", workspace)
 }
 
 func UpdateSSHKeyWorkspace(workspace any) string {
-    return fmt.Sprintf("/app/workspaces/%v/update-ssh-key", workspace)
+	return fmt.Sprintf("/app/workspaces/%v/update-ssh-key", workspace)
 }
-

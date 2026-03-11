@@ -5,30 +5,29 @@ package paths
 import "fmt"
 
 func SSHKeys(organization any) string {
-    return fmt.Sprintf("/app/organizations/%v/ssh-keys", organization)
+	return fmt.Sprintf("/app/organizations/%v/ssh-keys", organization)
 }
 
 func CreateSSHKey(organization any) string {
-    return fmt.Sprintf("/app/organizations/%v/ssh-keys/create", organization)
+	return fmt.Sprintf("/app/organizations/%v/ssh-keys/create", organization)
 }
 
 func NewSSHKey(organization any) string {
-    return fmt.Sprintf("/app/organizations/%v/ssh-keys/new", organization)
+	return fmt.Sprintf("/app/organizations/%v/ssh-keys/new", organization)
 }
 
 func SSHKey(sSHKey any) string {
-    return fmt.Sprintf("/app/ssh-keys/%v", sSHKey)
+	return fmt.Sprintf("/app/ssh-keys/%v", sSHKey)
 }
 
 func EditSSHKey(sSHKey any) string {
-    return fmt.Sprintf("/app/ssh-keys/%v/edit", sSHKey)
+	return fmt.Sprintf("/app/ssh-keys/%v/edit", sSHKey)
 }
 
 func UpdateSSHKey(sSHKey any) string {
-    return fmt.Sprintf("/app/ssh-keys/%v/update", sSHKey)
+	return fmt.Sprintf("/app/ssh-keys/%v/update", sSHKey)
 }
 
 func DeleteSSHKey(sSHKey any) string {
-    return fmt.Sprintf("/app/ssh-keys/%v/delete", sSHKey)
+	return fmt.Sprintf("/app/ssh-keys/%v/delete", sSHKey)
 }
-

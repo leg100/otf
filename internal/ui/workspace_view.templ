@@ -552,7 +552,7 @@ templ editConnection(props workspaceEditProps) {
 			<input class="peer" type="radio" id="vcs-triggers-patterns" name="vcs_trigger" value={ props.vcsTriggerPatterns } checked?={ len(props.ws.TriggerPatterns) > 0 }/>
 			<label for="vcs-triggers-patterns">Only trigger runs when files in specified paths change</label>
 			<span class="description">Supports glob patterns.</span>
-			<script src={ helpers.AssetPath(ctx, "/static/js/workspace_trigger_patterns.js") }></script>
+			<script src={ helpers.AssetPath(ctx, "/js/workspace_trigger_patterns.js") }></script>
 			<div class="hidden bg-base-200 p-2 col-start-2 mt-2 w-full peer-checked:block" x-data={ "workspace_trigger_patterns(" + toJSON(props.ws.TriggerPatterns) + ")" }>
 				<input type="hidden" id="paths" name="trigger_patterns" :value="JSON.stringify(paths)"/>
 				<div class="flex flex-col gap-2">
@@ -793,7 +793,7 @@ templ (t *templates) workspaceEditSSHKey(props workspaceEditSSHKeyProps) {
 }
 
 func magnifyingGlassStyle(ctx context.Context) (string, error) {
-	path, err := helpers.AssetPath(ctx, "/static/images/magnifying_glass.svg")
+	path, err := helpers.AssetPath(ctx, "/images/magnifying_glass.svg")
 	if err != nil {
 		return "", err
 	}

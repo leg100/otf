@@ -1591,9 +1591,9 @@ func editConnection(props workspaceEditProps) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var69 string
-		templ_7745c5c3_Var69, templ_7745c5c3_Err = templ.JoinStringErrs(helpers.AssetPath(ctx, "/static/js/workspace_trigger_patterns.js"))
+		templ_7745c5c3_Var69, templ_7745c5c3_Err = templ.JoinStringErrs(helpers.AssetPath(ctx, "/js/workspace_trigger_patterns.js"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/workspace_view.templ`, Line: 555, Col: 83}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/workspace_view.templ`, Line: 555, Col: 76}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var69))
 		if templ_7745c5c3_Err != nil {
@@ -2486,7 +2486,7 @@ func (t *templates) workspaceEditSSHKey(props workspaceEditSSHKeyProps) templ.Co
 }
 
 func magnifyingGlassStyle(ctx context.Context) (string, error) {
-	path, err := helpers.AssetPath(ctx, "/static/images/magnifying_glass.svg")
+	path, err := helpers.AssetPath(ctx, "/images/magnifying_glass.svg")
 	if err != nil {
 		return "", err
 	}

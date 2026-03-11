@@ -31,7 +31,7 @@ templ SearchDropdown(props SearchDropdownProps) {
 			"w-80": props.Width == WideDropDown,
 		}
 	}}
-	<script src={ AssetPath(ctx, "/static/js/search_dropdown.js") }></script>
+	<script src={ AssetPath(ctx, "/js/search_dropdown.js") }></script>
 	<form id="search-dropdown" action={ props.Action } method="POST"></form>
 	<div
 		x-data={ "search_dropdown(" + toJSON(props.Existing) + ", " + toJSON(props.Available) + ")" }

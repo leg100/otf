@@ -2,9 +2,6 @@
 
 package paths
 
-import "fmt"
-
 func Profile() string {
-    return "/app/profile"
+	return "/app/profile"
 }
-

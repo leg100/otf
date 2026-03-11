@@ -886,9 +886,9 @@ func variableSetForm(props variableSetFormProps) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var29 string
-			templ_7745c5c3_Var29, templ_7745c5c3_Err = templ.JoinStringErrs(helpers.AssetPath(ctx, "/static/js/dropdown.js"))
+			templ_7745c5c3_Var29, templ_7745c5c3_Err = templ.JoinStringErrs(helpers.AssetPath(ctx, "/js/dropdown.js"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/variable_view.templ`, Line: 286, Col: 67}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/variable_view.templ`, Line: 286, Col: 60}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var29))
 			if templ_7745c5c3_Err != nil {

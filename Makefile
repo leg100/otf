@@ -160,7 +160,7 @@ live/run:
 
 # run tailwindcss to generate the styles.css bundle in watch mode.
 live/tailwind:
-	tailwindcss -i ./internal/http/html/static/css/input.css -o ./internal/http/html/static/css/output.css --minify --watch
+	tailwindcss -i ./internal/ui/static/css/input.css -o ./internal/ui/static/css/output.css --minify --watch
 
 # watch for any js or css change in the assets/ folder, then reload the browser via templ proxy.
 live/sync_assets:
@@ -168,7 +168,7 @@ live/sync_assets:
 	--build.cmd "go tool templ generate --notify-proxy" \
 	--build.bin "true" \
 	--build.delay "100" \
-	--build.include_dir "internal/http/html/static" \
+	--build.include_dir "internal/ui/static" \
 	--build.include_ext "js,css,svg"
 
 # start watch processes in parallel.

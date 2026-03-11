@@ -5,30 +5,29 @@ package paths
 import "fmt"
 
 func AgentPools(organization any) string {
-    return fmt.Sprintf("/app/organizations/%v/agent-pools", organization)
+	return fmt.Sprintf("/app/organizations/%v/agent-pools", organization)
 }
 
 func CreateAgentPool(organization any) string {
-    return fmt.Sprintf("/app/organizations/%v/agent-pools/create", organization)
+	return fmt.Sprintf("/app/organizations/%v/agent-pools/create", organization)
 }
 
 func NewAgentPool(organization any) string {
-    return fmt.Sprintf("/app/organizations/%v/agent-pools/new", organization)
+	return fmt.Sprintf("/app/organizations/%v/agent-pools/new", organization)
 }
 
 func AgentPool(agentPool any) string {
-    return fmt.Sprintf("/app/agent-pools/%v", agentPool)
+	return fmt.Sprintf("/app/agent-pools/%v", agentPool)
 }
 
 func EditAgentPool(agentPool any) string {
-    return fmt.Sprintf("/app/agent-pools/%v/edit", agentPool)
+	return fmt.Sprintf("/app/agent-pools/%v/edit", agentPool)
 }
 
 func UpdateAgentPool(agentPool any) string {
-    return fmt.Sprintf("/app/agent-pools/%v/update", agentPool)
+	return fmt.Sprintf("/app/agent-pools/%v/update", agentPool)
 }
 
 func DeleteAgentPool(agentPool any) string {
-    return fmt.Sprintf("/app/agent-pools/%v/delete", agentPool)
+	return fmt.Sprintf("/app/agent-pools/%v/delete", agentPool)
 }
-
