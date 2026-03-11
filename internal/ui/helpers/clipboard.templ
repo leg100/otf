@@ -8,7 +8,7 @@ templ CopyableContent() {
 			{ children... }
 		</span>
 		<a class="copyable-content shrink-0" @click="navigator.clipboard.writeText($refs.content.innerHTML); open = true; setTimeout(() => open = false, 1000)">
-			<img id="clipboard-icon" src={ AssetPath(ctx, "/static/images/clipboard_copy.svg") }/>
+			<img id="clipboard-icon" src={ AssetPath(ctx, "/images/clipboard_copy.svg") }/>
 			<span
 				class="bg-black text-white p-1 text-xs font-bold absolute"
 				style="display: none"

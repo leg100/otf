@@ -1,4 +1,4 @@
-package html
+package static
 
 import (
 	"crypto/sha256"

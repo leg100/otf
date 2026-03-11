@@ -3,19 +3,18 @@ package helpers
 import (
 	"errors"
 	"fmt"
-	"github.com/leg100/otf/internal/http/html"
 )
 
-var flashColors = map[html.FlashType]string{
-	html.FlashSuccessType: "alert-success",
-	html.FlashWarningType: "alert-warning",
-	html.FlashErrorType:   "alert-error",
+var flashColors = map[FlashType]string{
+	FlashSuccessType: "alert-success",
+	FlashWarningType: "alert-warning",
+	FlashErrorType:   "alert-error",
 }
 
-var flashIcons = map[html.FlashType]templ.Component{
-	html.FlashSuccessType: successIcon(),
-	html.FlashWarningType: warningIcon(),
-	html.FlashErrorType:   errorIcon(),
+var flashIcons = map[FlashType]templ.Component{
+	FlashSuccessType: successIcon(),
+	FlashWarningType: warningIcon(),
+	FlashErrorType:   errorIcon(),
 }
 
 templ successIcon() {
@@ -38,15 +37,15 @@ templ errorIcon() {
 
 templ Flashes() {
 	{{
-		request := html.RequestFromContext(ctx)
+		request := RequestFromContext(ctx)
 		if request == nil {
 			return errors.New("request not found in context")
 		}
-		response := html.ResponseFromContext(ctx)
+		response := ResponseFromContext(ctx)
 		if response == nil {
 			return errors.New("response not found in context")
 		}
-		flashes, err := html.PopFlashes(request, response)
+		flashes, err := PopFlashes(request, response)
 		if err != nil {
 			return fmt.Errorf("unable to pop flash messages: %w", err)
 		}
@@ -58,7 +57,7 @@ templ Flashes() {
 	}
 }
 
-templ renderFlashes(flashes []html.Flash) {
+templ renderFlashes(flashes []Flash) {
 	for _, flash := range flashes {
 		<div role="alert" class={ "alert", "alert-soft", flashColors[flash.Type] }>
 			@flashIcons[flash.Type]

@@ -3,8 +3,8 @@ package ui
 import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/github"
-	"github.com/leg100/otf/internal/ui/paths"
 	"github.com/leg100/otf/internal/ui/helpers"
+	"github.com/leg100/otf/internal/ui/paths"
 	"github.com/leg100/otf/internal/vcs"
 	"strconv"
 )
@@ -15,7 +15,7 @@ type newAppViewProps struct {
 }
 
 templ (t *templates) newAppView(props newAppViewProps) {
-	<script src={ helpers.AssetPath(ctx, "/static/js/github_apps_new.js") }></script>
+	<script src={ helpers.AssetPath(ctx, "/js/github_apps_new.js") }></script>
 	<div x-data={ "action('" + props.githubHostname + "', '" + props.manifest + "')" }>
 		<form class="flex flex-col gap-4" :action="action" method="post">
 			<div class="field">

@@ -1,4 +1,6 @@
-package html
+// Package static contains static assets and code relating to serving of static
+// assets.
+package static
 
 import (
 	"embed"
@@ -14,7 +16,7 @@ import (
 var (
 	// Files embedded within the go binary
 	//
-	//go:embed static
+	//go:embed css images js
 	embedded embed.FS
 
 	AssetsFS *CacheBuster
@@ -33,7 +35,7 @@ func init() {
 			panic(err.Error())
 		}
 		root := findModuleRoot(wd)
-		localPath := filepath.Join(root, "internal/http/html")
+		localPath := filepath.Join(root, "internal/ui/static")
 		localDisk := os.DirFS(localPath)
 
 		AssetsFS = &CacheBuster{localDisk}
@@ -62,11 +64,11 @@ func findModuleRoot(dir string) (roots string) {
 	return ""
 }
 
-// AddStaticHandler adds a handler to router serving static assets
+// AddHandler adds a handler to router serving static assets
 // (JS, CSS, etc) from within go binary. Enabling developer mode sources files from
 // local disk instead and starts a live reload server, which reloads the browser
 // whenever static files change.
-func AddStaticHandler(logger logr.Logger, r *mux.Router) error {
+func AddHandler(logger logr.Logger, r *mux.Router) error {
 	r = r.NewRoute().Subrouter()
 
 	// Middleware to add cache control headers
@@ -79,6 +81,8 @@ func AddStaticHandler(logger logr.Logger, r *mux.Router) error {
 			next.ServeHTTP(w, r)
 		})
 	})
-	r.PathPrefix("/static/").Handler(http.FileServer(AssetsFS)).Methods("GET")
+	r.PathPrefix("/js/").Handler(http.FileServer(AssetsFS)).Methods("GET")
+	r.PathPrefix("/images/").Handler(http.FileServer(AssetsFS)).Methods("GET")
+	r.PathPrefix("/css/").Handler(http.FileServer(AssetsFS)).Methods("GET")
 	return nil
 }

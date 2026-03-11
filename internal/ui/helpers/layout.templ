@@ -3,8 +3,8 @@ package helpers
 import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
-	"github.com/leg100/otf/internal/ui/paths"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/ui/paths"
 )
 
 type Breadcrumb struct {
@@ -90,7 +90,7 @@ templ BareLayout(props BareLayoutProps) {
 	<!DOCTYPE html>
 	<html lang="en">
 		<head>
-			<script src={ AssetPath(ctx, "/static/js/theme-change.2.0.2.js") }></script>
+			<script src={ AssetPath(ctx, "/js/theme-change.2.0.2.js") }></script>
 			<script async crossorigin="anonymous">
 			   // Prevents page flicker with non-default themes:
 			   // https://github.com/saadeghi/theme-change/issues/28
@@ -105,13 +105,13 @@ templ BareLayout(props BareLayoutProps) {
 				@props.PreContent
 			}
 			<title>{ props.Title } | otf</title>
-			<link rel="icon" type="image/svg+xml" href={ AssetPath(ctx, "/static/images/icon.svg") }/>
-			<script src={ AssetPath(ctx, "/static/js/main.js") }></script>
-			<script src={ AssetPath(ctx, "/static/js/htmx.2.0.4.min.js") }></script>
-			<script src={ AssetPath(ctx, "/static/js/htmx-sse.2.2.2.js") }></script>
-			<script src={ AssetPath(ctx, "/static/js/idiomorph-ext.0.7.4.min.js") }></script>
-			<script defer src={ AssetPath(ctx, "/static/js/alpine.3.15.4.min.js") }></script>
-			<link rel="stylesheet" href={ AssetPath(ctx, "/static/css/output.css") }/>
+			<link rel="icon" type="image/svg+xml" href={ AssetPath(ctx, "/images/icon.svg") }/>
+			<script src={ AssetPath(ctx, "/js/main.js") }></script>
+			<script src={ AssetPath(ctx, "/js/htmx.2.0.4.min.js") }></script>
+			<script src={ AssetPath(ctx, "/js/htmx-sse.2.2.2.js") }></script>
+			<script src={ AssetPath(ctx, "/js/idiomorph-ext.0.7.4.min.js") }></script>
+			<script defer src={ AssetPath(ctx, "/js/alpine.3.15.4.min.js") }></script>
+			<link rel="stylesheet" href={ AssetPath(ctx, "/css/output.css") }/>
 		</head>
 		<body hx-ext="morph" class="min-h-screen min-w-3xl grid grid-rows-[auto_1fr_auto]">
 			<header class="border-b-1 border-base-content/30">
@@ -140,7 +140,7 @@ templ navbar(organization resource.ID, workspace *resource.Info) {
 	<div class="navbar bg-base-100 min-h-1">
 		<div class="flex-1 flex gap-10">
 			<div class="pl-2">
-				<img src={ AssetPath(ctx, "/static/images/logo.svg") } alt="logo"/>
+				<img src={ AssetPath(ctx, "/images/logo.svg") } alt="logo"/>
 			</div>
 			<div class="flex gap-4 items-center">
 				if organization != nil {

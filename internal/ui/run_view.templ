@@ -116,9 +116,9 @@ templ (t *templates) getRun(props getRunProps) {
 }
 
 templ getPreContent() {
-	<link rel="stylesheet" href={ helpers.AssetPath(ctx, "/static/css/terminal.css") }/>
-	<script src={ helpers.AssetPath(ctx, "/static/js/tail.js") }></script>
-	<script src={ helpers.AssetPath(ctx, "/static/js/running_time.js") }></script>
+	<link rel="stylesheet" href={ helpers.AssetPath(ctx, "/css/terminal.css") }/>
+	<script src={ helpers.AssetPath(ctx, "/js/tail.js") }></script>
+	<script src={ helpers.AssetPath(ctx, "/js/running_time.js") }></script>
 }
 
 templ getPostContent(props getRunProps) {

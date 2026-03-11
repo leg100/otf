@@ -10,7 +10,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/decode"
-	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/state"
 	"github.com/leg100/otf/internal/ui/helpers"
@@ -29,7 +28,7 @@ func addStateHandlers(r *mux.Router, h *Handlers) {
 func (h *Handlers) getState(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.ID("workspace_id", r)
 	if err != nil {
-		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
@@ -40,7 +39,7 @@ func (h *Handlers) getState(w http.ResponseWriter, r *http.Request) {
 		f, _ = sv.File()
 	}
 
-	html.Render(getState(f), w, r)
+	helpers.Render(getState(f), w, r)
 }
 
 func (h *Handlers) listStateVersions(w http.ResponseWriter, r *http.Request) {
@@ -49,19 +48,19 @@ func (h *Handlers) listStateVersions(w http.ResponseWriter, r *http.Request) {
 		resource.PageOptions
 	}
 	if err := decode.All(&params, r); err != nil {
-		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
 	ws, err := h.Workspaces.GetWorkspace(r.Context(), params.WorkspaceID)
 	if err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
 
 	page, err := h.State.ListStateVersions(r.Context(), params.WorkspaceID, params.PageOptions)
 	if err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
 
@@ -70,7 +69,7 @@ func (h *Handlers) listStateVersions(w http.ResponseWriter, r *http.Request) {
 	if err == nil {
 		currentID = &current.ID
 	} else if !errors.Is(err, internal.ErrResourceNotFound) {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
 
@@ -91,13 +90,13 @@ func (h *Handlers) listStateVersions(w http.ResponseWriter, r *http.Request) {
 func (h *Handlers) rollbackStateVersion(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.ID("state_version_id", r)
 	if err != nil {
-		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
 	sv, err := h.State.RollbackStateVersion(r.Context(), id)
 	if err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
 
@@ -107,19 +106,19 @@ func (h *Handlers) rollbackStateVersion(w http.ResponseWriter, r *http.Request) 
 func (h *Handlers) deleteStateVersion(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.ID("state_version_id", r)
 	if err != nil {
-		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
 	sv, err := h.State.GetStateVersion(r.Context(), id)
 	if err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
 	workspaceID := sv.WorkspaceID
 
 	if err := h.State.DeleteStateVersion(r.Context(), id); err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
 
@@ -129,25 +128,25 @@ func (h *Handlers) deleteStateVersion(w http.ResponseWriter, r *http.Request) {
 func (h *Handlers) getStateVersion(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.ID("state_version_id", r)
 	if err != nil {
-		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
 	sv, err := h.State.GetStateVersion(r.Context(), id)
 	if err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
 
 	ws, err := h.Workspaces.GetWorkspace(r.Context(), sv.WorkspaceID)
 	if err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
 
 	var pretty bytes.Buffer
 	if err := json.Indent(&pretty, sv.State, "", "  "); err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
 
@@ -166,25 +165,25 @@ func (h *Handlers) getStateVersion(w http.ResponseWriter, r *http.Request) {
 func (h *Handlers) diffStateVersion(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.ID("state_version_id", r)
 	if err != nil {
-		html.Error(r, w, err.Error(), html.WithStatus(http.StatusUnprocessableEntity))
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
 	sv, err := h.State.GetStateVersion(r.Context(), id)
 	if err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
 
 	ws, err := h.Workspaces.GetWorkspace(r.Context(), sv.WorkspaceID)
 	if err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
 
 	toFile, err := sv.File()
 	if err != nil {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
 
@@ -194,7 +193,7 @@ func (h *Handlers) diffStateVersion(w http.ResponseWriter, r *http.Request) {
 	if err == nil {
 		fromFile, _ = prev.File()
 	} else if !errors.Is(err, internal.ErrResourceNotFound) {
-		html.Error(r, w, err.Error())
+		helpers.Error(r, w, err.Error())
 		return
 	}
 

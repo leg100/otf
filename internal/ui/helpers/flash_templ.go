@@ -11,19 +11,18 @@ import templruntime "github.com/a-h/templ/runtime"
 import (
 	"errors"
 	"fmt"
-	"github.com/leg100/otf/internal/http/html"
 )
 
-var flashColors = map[html.FlashType]string{
-	html.FlashSuccessType: "alert-success",
-	html.FlashWarningType: "alert-warning",
-	html.FlashErrorType:   "alert-error",
+var flashColors = map[FlashType]string{
+	FlashSuccessType: "alert-success",
+	FlashWarningType: "alert-warning",
+	FlashErrorType:   "alert-error",
 }
 
-var flashIcons = map[html.FlashType]templ.Component{
-	html.FlashSuccessType: successIcon(),
-	html.FlashWarningType: warningIcon(),
-	html.FlashErrorType:   errorIcon(),
+var flashIcons = map[FlashType]templ.Component{
+	FlashSuccessType: successIcon(),
+	FlashWarningType: warningIcon(),
+	FlashErrorType:   errorIcon(),
 }
 
 func successIcon() templ.Component {
@@ -134,15 +133,15 @@ func Flashes() templ.Component {
 			templ_7745c5c3_Var4 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		request := html.RequestFromContext(ctx)
+		request := RequestFromContext(ctx)
 		if request == nil {
 			return errors.New("request not found in context")
 		}
-		response := html.ResponseFromContext(ctx)
+		response := ResponseFromContext(ctx)
 		if response == nil {
 			return errors.New("response not found in context")
 		}
-		flashes, err := html.PopFlashes(request, response)
+		flashes, err := PopFlashes(request, response)
 		if err != nil {
 			return fmt.Errorf("unable to pop flash messages: %w", err)
 		}
@@ -164,7 +163,7 @@ func Flashes() templ.Component {
 	})
 }
 
-func renderFlashes(flashes []html.Flash) templ.Component {
+func renderFlashes(flashes []Flash) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
