@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.5.18](https://github.com/leg100/otf/compare/v0.5.17...v0.5.18) (2026-03-11)
+
+
+### Miscellaneous
+
+* bump helm charts with app version v0.5.17 ([ccb3d14](https://github.com/leg100/otf/commit/ccb3d142964da0ffaed400b35c7c7c46b561750d))
+* don't embed types in service options ([bab751c](https://github.com/leg100/otf/commit/bab751cfad8d433505ea6aaa2a9e34c7d0a4a90d))
+* remove cache - negligible perf gain? ([3522cdf](https://github.com/leg100/otf/commit/3522cdfcc82587e097655249b4aa873293b19b33))
+* remove unnused go generate line ([f09cd42](https://github.com/leg100/otf/commit/f09cd4229f2dbee7977bfc615752825582a971e5))
+* **tests:** consistently refer to daemon as a daemon ([316900e](https://github.com/leg100/otf/commit/316900e0c81ac2bfd836d402493b070bee3159c1))
+* upgrade dependencies ([b79f46a](https://github.com/leg100/otf/commit/b79f46aba79dcb996096621c8b606f68b8d1db26))
+
 ## [0.5.17](https://github.com/leg100/otf/compare/v0.5.16...v0.5.17) (2026-03-07)
 
 
