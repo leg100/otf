@@ -160,19 +160,35 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 
 	sessionService := session.NewService(logger, tokensService)
 
-	// Authenticate API requests from the site admin containing their token.
-	tokensService.AddAuthenticator(&user.SiteAdminAuthenticator{
-		SiteToken: cfg.SiteToken,
-	})
-	// Authenticate UI session cookies.
-	tokensService.AddAuthenticator(&session.Authenticator{
-		Client: tokensService,
-	})
-	// Authenticate requests from Google IAP.
-	tokensService.AddAuthenticator(iap.NewAuthenticator(
-		cfg.GoogleIAPAudience,
-		userService,
-	))
+	// Authenticate API/UI requests. An authenticated request is one that
+	// has a particular header containing a credential. The token service
+	// middleware checks the request against a series of 'authenticators': each
+	// authenticator checks if the request contains a particular credential; if
+	// there is a successful match then it returns the corresponding subject,
+	// e.g. a user or organization API token, etc.
+	tokensService.Middleware.Authenticators = []tokens.Authenticator{
+		// Authenticate UI session cookies.
+		&session.Authenticator{
+			Client: tokensService,
+		},
+		// Authenticate requests from Google IAP.
+		iap.NewAuthenticator(
+			cfg.GoogleIAPAudience,
+			userService,
+		),
+		// Authenticate API requests from the site admin using their special
+		// non-JWT token. It's important that this authenticator comes *before*
+		// the JWT authenticator otherwise the JWT authenticator would try to
+		// parse the site token as a JWT and return an error.
+		&user.SiteAdminAuthenticator{
+			SiteToken: cfg.SiteToken,
+		},
+		// Authenticate API requests with an authorization header containing a
+		// JWT token.
+		&tokens.JWTAuthenticator{
+			Client: tokensService,
+		},
+	}
 
 	configService := configversion.NewService(configversion.Options{
 		Logger:        logger,

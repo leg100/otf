@@ -42,9 +42,6 @@ func (r *registry) RegisterKind(k resource.Kind, fn SubjectGetter) {
 
 // GetSubject retrieves the subject from a JWT.
 func (r *registry) GetSubject(ctx context.Context, token []byte) (authz.Subject, error) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
 	parsed, err := jwt.Parse(token, jwt.WithKey(jwa.HS256, r.key))
 	if err != nil {
 		return nil, err
@@ -53,6 +50,9 @@ func (r *registry) GetSubject(ctx context.Context, token []byte) (authz.Subject,
 	if err != nil {
 		return nil, err
 	}
+
+	r.mu.Lock()
+	defer r.mu.Unlock()
 
 	subjectGetter, ok := r.kinds[id.Kind()]
 	if !ok {

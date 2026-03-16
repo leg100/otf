@@ -3,6 +3,7 @@ package tokens
 
 import (
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
 
@@ -36,7 +37,11 @@ func (f *factory) NewToken(subjectID resource.TfeID, expiry *time.Time) ([]byte,
 	return jwt.Sign(token, jwt.WithKey(jwa.HS256, f.key))
 }
 
-func ParseBearerToken(bearer string) (string, error) {
+func ParseBearerToken(r *http.Request) (string, error) {
+	bearer := r.Header.Get("Authorization")
+	if bearer == "" {
+		return "", nil
+	}
 	splitToken := strings.Split(bearer, "Bearer ")
 	if len(splitToken) != 2 {
 		return "", fmt.Errorf("malformed bearer token")

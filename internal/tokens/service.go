@@ -39,15 +39,6 @@ func NewService(opts Options) (*Service, error) {
 	}
 	svc.Middleware = &Middleware{
 		logger: opts.Logger,
-		authenticators: []authenticator{
-			&bearerAuthenticator{
-				Client: &svc,
-			},
-		},
 	}
 	return &svc, nil
-}
-
-func (s *Service) AddAuthenticator(authenticator authenticator) {
-	s.Middleware.authenticators = append(s.Middleware.authenticators, authenticator)
 }

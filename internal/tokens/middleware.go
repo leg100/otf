@@ -21,11 +21,11 @@ var AuthenticatedPrefixes = []string{
 
 type (
 	Middleware struct {
-		authenticators []authenticator
+		Authenticators []Authenticator
 		logger         logr.Logger
 	}
 
-	authenticator interface {
+	Authenticator interface {
 		Authenticate(w http.ResponseWriter, r *http.Request) (authz.Subject, error)
 	}
 )
@@ -50,7 +50,7 @@ func (m *Middleware) Authenticate(next http.Handler) http.Handler {
 		})
 		r = r.WithContext(ctx)
 
-		for _, auth := range m.authenticators {
+		for _, auth := range m.Authenticators {
 			subj, err := auth.Authenticate(w, r)
 			if err != nil {
 				m.logger.Error(err, "authenticating request")
