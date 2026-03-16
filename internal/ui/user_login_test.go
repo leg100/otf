@@ -36,7 +36,7 @@ func TestLoginHandler(t *testing.T) {
 func TestAdminLoginHandler(t *testing.T) {
 	h := &Handlers{
 		SiteToken: "secrettoken",
-		Tokens:    &fakeTokensService{},
+		Sessions:  &fakeTokensService{},
 	}
 
 	tests := []struct {

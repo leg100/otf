@@ -32,7 +32,7 @@ type (
 		parseUserInfo(context.Context, *oauth2.Token) (UserInfo, error)
 	}
 
-	sessionStarter interface {
+	SessionStarter interface {
 		StartSession(w http.ResponseWriter, r *http.Request, userID resource.TfeID) error
 	}
 
@@ -45,7 +45,7 @@ type (
 		// extract username from token
 		tokenHandler
 
-		sessions sessionStarter
+		sessions SessionStarter
 		users    userService
 
 		// for retrieving OTF system hostname to construct redirect URLs
@@ -71,7 +71,7 @@ func newOAuthClient(
 	logger logr.Logger,
 	handler tokenHandler,
 	urls urlClient,
-	tokensService sessionStarter,
+	sessionStarter SessionStarter,
 	userService userService,
 	cfg OAuthConfig,
 ) (*OAuthClient, error) {
@@ -98,7 +98,7 @@ func newOAuthClient(
 	return &OAuthClient{
 		tokenHandler: handler,
 		urls:         urls,
-		sessions:     tokensService,
+		sessions:     sessionStarter,
 		users:        userService,
 		OAuthConfig:  cfg,
 	}, nil

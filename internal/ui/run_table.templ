@@ -2,10 +2,10 @@ package ui
 
 import (
 	"context"
-	"github.com/leg100/otf/internal/ui/paths"
 	runpkg "github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/ui/helpers"
+	"github.com/leg100/otf/internal/ui/paths"
 	"github.com/leg100/otf/internal/user"
 )
 
@@ -95,7 +95,7 @@ templ (t *runsTable) Row(run *runpkg.Run) {
 		<td>
 			<div class="flex flex-col gap-2">
 				<div>
-					@runstatus.Badge(run.ID, run.Status)
+					@helpers.RunStatusBadge(run.ID, run.Status)
 				</div>
 				<div class="flex gap-2 items-center">
 					if run.Apply.ResourceReport != nil {

@@ -7,7 +7,7 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/leg100/otf/internal/github"
+	"github.com/leg100/otf/internal/github/testserver"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/leg100/otf/internal/ui/paths"
 	"github.com/leg100/otf/internal/vcs"
@@ -24,9 +24,9 @@ func TestModuleE2E(t *testing.T) {
 	// and its contents via tarball.
 	repo := vcs.NewRandomModuleRepo("aws", "mod")
 	daemon, org, ctx := setup(t, withGithubOptions(
-		github.WithRepo(repo),
-		github.WithRefs("tags/v0.0.1", "tags/v0.0.2", "tags/v0.1.0"),
-		github.WithArchive(testutils.ReadFile(t, "./fixtures/github.module.tar.gz")),
+		testserver.WithRepo(repo),
+		testserver.WithRefs("tags/v0.0.1", "tags/v0.0.2", "tags/v0.1.0"),
+		testserver.WithArchive(testutils.ReadFile(t, "./fixtures/github.module.tar.gz")),
 	))
 	// create vcs provider for module to authenticate to github backend
 	provider := daemon.createVCSProvider(t, ctx, org, nil)
@@ -97,7 +97,7 @@ module "mod" {
 	// generate and send push tag event for v1.0.0
 	pushTpl := testutils.ReadFile(t, "fixtures/github_push_tag.json")
 	push := fmt.Sprintf(string(pushTpl), "v1.0.0", repo.Name(), repo.Owner())
-	daemon.SendEvent(t, github.PushEvent, []byte(push))
+	daemon.SendEvent(t, testserver.PushEvent, []byte(push))
 
 	workspaceName := "module-test"
 	browser.New(t, ctx, func(page playwright.Page) {

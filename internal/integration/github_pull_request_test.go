@@ -3,7 +3,7 @@ package integration
 import (
 	"testing"
 
-	"github.com/leg100/otf/internal/github"
+	"github.com/leg100/otf/internal/github/testserver"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/leg100/otf/internal/ui/paths"
 	"github.com/leg100/otf/internal/vcs"
@@ -21,9 +21,9 @@ func TestGithubPullRequest(t *testing.T) {
 	// contents via tarball, and setup a fake pull request with a list of files
 	// it has changed.
 	daemon, org, ctx := setup(t, withGithubOptions(
-		github.WithRepo(vcs.NewMustRepo("leg100", "otf-workspaces")),
-		github.WithArchive(testutils.ReadFile(t, "../testdata/github.tar.gz")),
-		github.WithPullRequest("2", "/nomatch.tf", "/foo/bar/match.tf"),
+		testserver.WithRepo(vcs.NewMustRepo("leg100", "otf-workspaces")),
+		testserver.WithArchive(testutils.ReadFile(t, "../testdata/github.tar.gz")),
+		testserver.WithPullRequest("2", "/nomatch.tf", "/foo/bar/match.tf"),
 	))
 
 	provider := daemon.createVCSProvider(t, ctx, org, nil)
@@ -54,7 +54,7 @@ func TestGithubPullRequest(t *testing.T) {
 	}
 	for _, event := range events {
 		pull := testutils.ReadFile(t, event.path)
-		daemon.SendEvent(t, github.PullRequest, pull)
+		daemon.SendEvent(t, testserver.PullRequest, pull)
 
 		// commit-triggered run should appear as latest run on workspace
 		browser.New(t, ctx, func(page playwright.Page) {

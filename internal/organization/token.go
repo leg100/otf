@@ -40,11 +40,7 @@ func (f *tokenFactory) NewOrganizationToken(opts CreateOrganizationTokenOptions)
 		Organization: opts.Organization,
 		Expiry:       opts.Expiry,
 	}
-	var newTokenOptions []tokens.NewTokenOption
-	if opts.Expiry != nil {
-		newTokenOptions = append(newTokenOptions, tokens.WithExpiry(*opts.Expiry))
-	}
-	token, err := f.tokens.NewToken(ot.ID, newTokenOptions...)
+	token, err := f.tokens.NewToken(ot.ID, opts.Expiry)
 	if err != nil {
 		return nil, nil, err
 	}

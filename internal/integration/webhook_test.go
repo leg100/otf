@@ -3,7 +3,7 @@ package integration
 import (
 	"testing"
 
-	"github.com/leg100/otf/internal/github"
+	"github.com/leg100/otf/internal/github/testserver"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/vcs"
@@ -27,7 +27,7 @@ func TestWebhook(t *testing.T) {
 
 	// create otf daemon with fake github server, on which to create/delete
 	// webhooks.
-	daemon, org, ctx := setup(t, withGithubOption(github.WithRepo(repo)))
+	daemon, org, ctx := setup(t, withGithubOption(testserver.WithRepo(repo)))
 	// create vcs provider for authenticating to github backend
 	provider := daemon.createVCSProvider(t, ctx, org, nil)
 
@@ -38,7 +38,7 @@ func TestWebhook(t *testing.T) {
 
 		// webhook should be registered with github
 		hook := <-daemon.WebhookEvents
-		require.Equal(t, github.WebhookCreated, hook.Action)
+		require.Equal(t, testserver.WebhookCreated, hook.Action)
 
 		// create and connect second workspace
 		workspaceURL2 := createWorkspace(t, page, daemon, org.Name, "workspace-2")
@@ -46,7 +46,7 @@ func TestWebhook(t *testing.T) {
 
 		// second workspace re-uses same webhook on github
 		hook = <-daemon.WebhookEvents
-		require.Equal(t, github.WebhookUpdated, hook.Action)
+		require.Equal(t, testserver.WebhookUpdated, hook.Action)
 
 		// disconnect second workspace
 		disconnectWorkspaceTasks(t, page, workspaceURL2)
@@ -61,7 +61,7 @@ func TestWebhook(t *testing.T) {
 		// No more workspaces are connected to repo, so webhook should have been
 		// deleted
 		hook = <-daemon.WebhookEvents
-		require.Equal(t, github.WebhookDeleted, hook.Action)
+		require.Equal(t, testserver.WebhookDeleted, hook.Action)
 	})
 }
 
@@ -75,7 +75,7 @@ func TestWebhook_Purger(t *testing.T) {
 	// create an otf daemon with a fake github backend, ready to sign in a user,
 	// serve up a repo and its contents via tarball. And register a callback to
 	// test receipt of commit statuses
-	daemon, _, ctx := setup(t, withGithubOption(github.WithRepo(repo)))
+	daemon, _, ctx := setup(t, withGithubOption(testserver.WithRepo(repo)))
 
 	tests := []struct {
 		name  string
@@ -121,13 +121,13 @@ func TestWebhook_Purger(t *testing.T) {
 
 			// webhook should have been registered with github
 			hook := <-daemon.WebhookEvents
-			require.Equal(t, github.WebhookCreated, hook.Action)
+			require.Equal(t, testserver.WebhookCreated, hook.Action)
 
 			tt.event(t, org.Name, ws.ID, provider.ID)
 
 			// webhook should now have been deleted from  github
 			hook = <-daemon.WebhookEvents
-			require.Equal(t, github.WebhookDeleted, hook.Action)
+			require.Equal(t, testserver.WebhookDeleted, hook.Action)
 		})
 	}
 }

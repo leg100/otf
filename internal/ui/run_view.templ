@@ -24,7 +24,7 @@ type runListProps struct {
 templ (t *templates) runList(props runListProps) {
 	<form action="" hx-include="this">
 		<div class="flex flex-col gap-2">
-			@runstatus.Filter(props.status, props.statusFilterVisible)
+			@helpers.RunStatusFilter(props.status, props.statusFilterVisible)
 			@helpers.PollingTable(t.newRunsTable(props.filterByWorkspace), props.page)
 		</div>
 	</form>

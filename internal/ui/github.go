@@ -72,12 +72,12 @@ func (h *Handlers) newGithubApp(w http.ResponseWriter, r *http.Request) {
 		manifest:       string(marshaled),
 		githubHostname: h.GithubHostname.Host,
 	}
-	h.renderPage(
+	helpers.RenderPage(
 		h.templates.newAppView(props),
 		"select app owner",
 		w,
 		r,
-		withBreadcrumbs(helpers.Breadcrumb{Name: "Create GitHub app"}),
+		helpers.WithBreadcrumbs(helpers.Breadcrumb{Name: "Create GitHub app"}),
 	)
 }
 
@@ -105,12 +105,12 @@ func (h *Handlers) getGithubApp(w http.ResponseWriter, r *http.Request) {
 		canCreateApp:   h.Authorizer.CanAccess(r.Context(), authz.CreateGithubAppAction, resource.SiteID),
 		canDeleteApp:   h.Authorizer.CanAccess(r.Context(), authz.DeleteGithubAppAction, resource.SiteID),
 	}
-	h.renderPage(
+	helpers.RenderPage(
 		h.templates.getApps(props),
 		"github app",
 		w,
 		r,
-		withBreadcrumbs(helpers.Breadcrumb{Name: "GitHub app"}),
+		helpers.WithBreadcrumbs(helpers.Breadcrumb{Name: "GitHub app"}),
 	)
 }
 

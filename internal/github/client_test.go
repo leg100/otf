@@ -10,6 +10,7 @@ import (
 	"github.com/google/go-github/v65/github"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authenticator"
+	"github.com/leg100/otf/internal/github/testserver"
 	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/stretchr/testify/assert"
@@ -20,7 +21,7 @@ import (
 func TestGetUser(t *testing.T) {
 	ctx := context.Background()
 	username := user.MustUsername("bobby")
-	client := newTestServerClient(t, WithUsername(username))
+	client := newTestServerClient(t, testserver.WithUsername(username))
 
 	got, err := client.GetCurrentUser(ctx)
 	require.NoError(t, err)
@@ -34,9 +35,9 @@ func TestGetDefaultBranch(t *testing.T) {
 	want, err := os.ReadFile("../testdata/github.tar.gz")
 	require.NoError(t, err)
 	client := newTestServerClient(t,
-		WithRepo(vcs.NewMustRepo("acme", "terraform")),
-		WithDefaultBranch("master"),
-		WithArchive(want),
+		testserver.WithRepo(vcs.NewMustRepo("acme", "terraform")),
+		testserver.WithDefaultBranch("master"),
+		testserver.WithArchive(want),
 	)
 
 	got, err := client.GetDefaultBranch(ctx, "acme/terraform")
@@ -50,8 +51,8 @@ func TestGetRepoTarball(t *testing.T) {
 	want, err := os.ReadFile("../testdata/github.tar.gz")
 	require.NoError(t, err)
 	client := newTestServerClient(t,
-		WithRepo(vcs.NewMustRepo("acme", "terraform")),
-		WithArchive(want),
+		testserver.WithRepo(vcs.NewMustRepo("acme", "terraform")),
+		testserver.WithArchive(want),
 	)
 
 	got, ref, err := client.GetRepoTarball(ctx, vcs.GetRepoTarballOptions{
@@ -70,7 +71,7 @@ func TestCreateWebhook(t *testing.T) {
 	ctx := context.Background()
 
 	client := newTestServerClient(t,
-		WithRepo(vcs.NewMustRepo("acme", "terraform")),
+		testserver.WithRepo(vcs.NewMustRepo("acme", "terraform")),
 	)
 
 	_, err := client.CreateWebhook(ctx, vcs.CreateWebhookOptions{
@@ -84,8 +85,8 @@ func TestGetWebhook(t *testing.T) {
 	ctx := context.Background()
 
 	client := newTestServerClient(t,
-		WithRepo(vcs.NewMustRepo("acme", "terraform")),
-		WithHook(hook{
+		testserver.WithRepo(vcs.NewMustRepo("acme", "terraform")),
+		testserver.WithHook(testserver.Hook{
 			Hook: &github.Hook{
 				Config: &github.HookConfig{
 					URL: new("https://otf-server/hooks"),
@@ -103,8 +104,8 @@ func TestGetWebhook(t *testing.T) {
 
 // newTestServerClient creates a github server for testing purposes and
 // returns a client configured to access the server.
-func newTestServerClient(t *testing.T, opts ...TestServerOption) *Client {
-	_, u := NewTestServer(t, opts...)
+func newTestServerClient(t *testing.T, opts ...testserver.TestServerOption) *Client {
+	_, u := testserver.NewTestServer(t, opts...)
 
 	client, err := NewClient(ClientOptions{
 		BaseURL:             &internal.WebURL{URL: *u},

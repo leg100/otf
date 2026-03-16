@@ -1,0 +1,51 @@
+package helpers
+
+import (
+	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/runstatus"
+	"github.com/leg100/otf/internal/ui/paths"
+	"strings"
+)
+
+var RunStatusThemeMappings = map[runstatus.Status]string{
+	runstatus.Applied:            "success",
+	runstatus.ApplyQueued:        "secondary",
+	runstatus.Applying:           "accent",
+	runstatus.Canceled:           "warning",
+	runstatus.Confirmed:          "info",
+	runstatus.Discarded:          "warning",
+	runstatus.Errored:            "error",
+	runstatus.ForceCanceled:      "warning",
+	runstatus.Pending:            "primary",
+	runstatus.PlanQueued:         "secondary",
+	runstatus.Planned:            "info",
+	runstatus.PlannedAndFinished: "success",
+	runstatus.Planning:           "primary",
+}
+
+templ RunStatusBadge(runID resource.TfeID, status runstatus.Status) {
+	<span id={ runID.String() + "-status" } class={ "run-status text-md truncate badge", "badge-" + status.String() }>
+		<a href={ paths.Run(runID) }>{ strings.ReplaceAll(string(status), "_", " ") }</a>
+	</span>
+}
+
+templ RunStatusFilter(selected []runstatus.Status, visible bool) {
+	@Filter(FilterProps[runstatus.Status]{
+		Title:            "Filter by status",
+		All:              runstatus.All(),
+		Selected:         selected,
+		ParamName:        "search[status]",
+		Visible:          visible,
+		VisibleParamName: "status_filter_visible",
+		Label:            FilterLabel,
+		CheckboxClass: func(status runstatus.Status) string {
+			return "checkbox-" + string(status)
+		},
+	})
+}
+
+templ FilterLabel(status runstatus.Status) {
+	<span class={ "badge", "badge-" + string(status) }>
+		{ strings.ReplaceAll(string(status), "_", " ") }
+	</span>
+}

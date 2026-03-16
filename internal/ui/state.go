@@ -73,15 +73,15 @@ func (h *Handlers) listStateVersions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.renderPage(
+	helpers.RenderPage(
 		h.templates.listStateVersions(listStateVersionsProps{
 			page:      page,
 			currentID: currentID,
 		}),
 		"State Versions",
 		w, r,
-		withWorkspace(ws),
-		withBreadcrumbs(
+		helpers.WithWorkspace(ws, h.Authorizer),
+		helpers.WithBreadcrumbs(
 			helpers.Breadcrumb{Name: "State versions"},
 		),
 	)
@@ -150,12 +150,12 @@ func (h *Handlers) getStateVersion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.renderPage(
+	helpers.RenderPage(
 		h.templates.getStateVersion(pretty.String()),
 		fmt.Sprintf("State version (serial %d)", sv.Serial),
 		w, r,
-		withWorkspace(ws),
-		withBreadcrumbs(
+		helpers.WithWorkspace(ws, h.Authorizer),
+		helpers.WithBreadcrumbs(
 			helpers.Breadcrumb{Name: "State versions", Link: paths.StateVersions(sv.WorkspaceID)},
 			helpers.Breadcrumb{Name: sv.ID.String()},
 		),
@@ -206,7 +206,7 @@ func (h *Handlers) diffStateVersion(w http.ResponseWriter, r *http.Request) {
 		title = fmt.Sprintf("State diff: initial (serial %d)", sv.Serial)
 	}
 
-	h.renderPage(
+	helpers.RenderPage(
 		h.templates.diffStateVersion(diffStateVersionProps{
 			sv:   sv,
 			prev: prev,
@@ -214,8 +214,8 @@ func (h *Handlers) diffStateVersion(w http.ResponseWriter, r *http.Request) {
 		}),
 		title,
 		w, r,
-		withWorkspace(ws),
-		withBreadcrumbs(
+		helpers.WithWorkspace(ws, h.Authorizer),
+		helpers.WithBreadcrumbs(
 			helpers.Breadcrumb{Name: "State versions", Link: paths.StateVersions(sv.WorkspaceID)},
 			helpers.Breadcrumb{Name: fmt.Sprintf("Diff (%s)", sv.ID.String())},
 		),

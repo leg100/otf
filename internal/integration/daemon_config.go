@@ -7,7 +7,7 @@ import (
 	"github.com/leg100/otf/internal/authenticator"
 	"github.com/leg100/otf/internal/daemon"
 	"github.com/leg100/otf/internal/engine"
-	"github.com/leg100/otf/internal/github"
+	"github.com/leg100/otf/internal/github/testserver"
 	"github.com/leg100/otf/internal/runner"
 )
 
@@ -19,7 +19,7 @@ type config struct {
 	// skip setting up an automatic github server stub
 	skipGithubStub bool
 	// github stub server options
-	githubOptions []github.TestServerOption
+	githubOptions []testserver.TestServerOption
 }
 
 type configOption func(*config)
@@ -36,13 +36,13 @@ func withDatabase(dbconn string) configOption {
 	}
 }
 
-func withGithubOption(opt github.TestServerOption) configOption {
+func withGithubOption(opt testserver.TestServerOption) configOption {
 	return func(cfg *config) {
 		cfg.githubOptions = append(cfg.githubOptions, opt)
 	}
 }
 
-func withGithubOptions(opts ...github.TestServerOption) configOption {
+func withGithubOptions(opts ...testserver.TestServerOption) configOption {
 	return func(cfg *config) {
 		cfg.githubOptions = opts
 	}

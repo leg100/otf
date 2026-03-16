@@ -56,16 +56,16 @@ func (h *Handlers) listModules(w http.ResponseWriter, r *http.Request) {
 		allProviders:          providers,
 		selectedProviders:     params.Providers,
 	}
-	h.renderPage(
+	helpers.RenderPage(
 		h.templates.moduleList(props),
 		"Modules",
 		w,
 		r,
-		withOrganization(params.Organization),
-		withBreadcrumbs(
+		helpers.WithOrganization(params.Organization),
+		helpers.WithBreadcrumbs(
 			helpers.Breadcrumb{Name: "Modules"},
 		),
-		withContentActions(moduleListActions(props)),
+		helpers.WithContentActions(moduleListActions(props)),
 	)
 }
 
@@ -110,7 +110,7 @@ func (h *Handlers) getModule(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	h.renderPage(
+	helpers.RenderPage(
 		h.templates.moduleGet(moduleGetProps{
 			module:          mod,
 			terraformModule: tfmod,
@@ -121,8 +121,8 @@ func (h *Handlers) getModule(w http.ResponseWriter, r *http.Request) {
 		"modules",
 		w,
 		r,
-		withOrganization(mod.Organization),
-		withBreadcrumbs(
+		helpers.WithOrganization(mod.Organization),
+		helpers.WithBreadcrumbs(
 			helpers.Breadcrumb{Name: "Modules", Link: paths.Modules(mod.Organization)},
 			helpers.Breadcrumb{Name: mod.Name},
 		),
@@ -142,7 +142,7 @@ func (h *Handlers) newModule(w http.ResponseWriter, r *http.Request) {
 		helpers.Error(r, w, err.Error())
 		return
 	}
-	h.renderPage(
+	helpers.RenderPage(
 		h.templates.newView(newViewProps{
 			organization: params.Organization,
 			providers:    providers,
@@ -150,8 +150,8 @@ func (h *Handlers) newModule(w http.ResponseWriter, r *http.Request) {
 		"new module",
 		w,
 		r,
-		withOrganization(params.Organization),
-		withBreadcrumbs(
+		helpers.WithOrganization(params.Organization),
+		helpers.WithBreadcrumbs(
 			helpers.Breadcrumb{Name: "Modules", Link: paths.Modules(params.Organization)},
 			helpers.Breadcrumb{Name: "new"},
 		),
@@ -201,7 +201,7 @@ func (h *Handlers) connectModule(w http.ResponseWriter, r *http.Request) {
 		filtered = append(filtered, res)
 	}
 
-	h.renderPage(
+	helpers.RenderPage(
 		h.templates.connect(connectProps{
 			repos:    filtered,
 			provider: provider,
@@ -209,8 +209,8 @@ func (h *Handlers) connectModule(w http.ResponseWriter, r *http.Request) {
 		"new module",
 		w,
 		r,
-		withOrganization(provider.Organization),
-		withBreadcrumbs(
+		helpers.WithOrganization(provider.Organization),
+		helpers.WithBreadcrumbs(
 			helpers.Breadcrumb{Name: "Modules", Link: paths.Modules(provider.Organization)},
 			helpers.Breadcrumb{Name: "new"},
 		),

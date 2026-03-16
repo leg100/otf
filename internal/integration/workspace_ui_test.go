@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal/engine"
-	"github.com/leg100/otf/internal/github"
+	"github.com/leg100/otf/internal/github/testserver"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/leg100/otf/internal/ui/paths"
@@ -223,8 +223,8 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 	t.Run("workspace settings", func(t *testing.T) {
 		repo := vcs.NewRandomRepo()
 		daemon, org, ctx := setup(t, withGithubOptions(
-			github.WithRepo(repo),
-			github.WithArchive(testutils.ReadFile(t, "../testdata/github.tar.gz")),
+			testserver.WithRepo(repo),
+			testserver.WithArchive(testutils.ReadFile(t, "../testdata/github.tar.gz")),
 		))
 		// create vcs provider for authenticating to github backend
 		provider := daemon.createVCSProvider(t, ctx, org, nil)

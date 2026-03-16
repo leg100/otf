@@ -56,7 +56,7 @@ templ (t *templates) workspaceList(props workspaceListProps) {
 				id="workspace-search"
 				onblur="if (this.defaultValue != this.value) { this.form.submit() }"
 			/>
-			@runstatus.Filter(props.status, props.statusFilterVisible)
+			@helpers.RunStatusFilter(props.status, props.statusFilterVisible)
 			@helpers.Filter(helpers.FilterProps[string]{
 				Title:            "Filter by tag",
 				All:              props.allTags,
@@ -89,7 +89,7 @@ templ (t workspacesTable) Row(ws *workspace.Workspace) {
 		</td>
 		<td>
 			if ws.LatestRun != nil {
-				@runstatus.Badge(ws.LatestRun.ID, ws.LatestRun.Status)
+				@helpers.RunStatusBadge(ws.LatestRun.ID, ws.LatestRun.Status)
 			}
 		</td>
 		<td>

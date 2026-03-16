@@ -35,7 +35,8 @@ func (f *userTokenFactory) NewUserToken(username Username, opts CreateUserTokenO
 		Description: opts.Description,
 		Username:    username,
 	}
-	token, err := f.tokens.NewToken(ut.ID)
+	// nil for expiry because user token never expires
+	token, err := f.tokens.NewToken(ut.ID, nil)
 	if err != nil {
 		return nil, nil, err
 	}

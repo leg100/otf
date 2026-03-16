@@ -10,6 +10,7 @@ import (
 	gogithub "github.com/google/go-github/v65/github"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/github"
+	"github.com/leg100/otf/internal/github/testserver"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/testutils"
@@ -65,7 +66,7 @@ func TestIntegration_GithubAppsUI(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			daemon, _, _ := setup(t, withGithubOption(github.WithHandler(tt.path, func(w http.ResponseWriter, r *http.Request) {
+			daemon, _, _ := setup(t, withGithubOption(testserver.WithHandler(tt.path, func(w http.ResponseWriter, r *http.Request) {
 				// check that the manifest has been correctly submitted.
 				var (
 					manifest struct {
@@ -131,7 +132,7 @@ func TestIntegration_GithubAppsUI(t *testing.T) {
 	// redirecting to the github app page showing the created app.
 	t.Run("complete creation of github app", func(t *testing.T) {
 		daemon, _, _ := setup(t,
-			withGithubOption(github.WithHandler("/api/v3/app-manifests/anything/conversions", func(w http.ResponseWriter, r *http.Request) {
+			withGithubOption(testserver.WithHandler("/api/v3/app-manifests/anything/conversions", func(w http.ResponseWriter, r *http.Request) {
 				out, err := json.Marshal(&gogithub.AppConfig{
 					ID:            new(int64(123)),
 					Slug:          new("my-otf-app"),
@@ -143,7 +144,7 @@ func TestIntegration_GithubAppsUI(t *testing.T) {
 				w.Header().Add("Content-Type", "application/json")
 				w.Write(out)
 			})),
-			withGithubOption(github.WithHandler("/api/v3/app/installations", func(w http.ResponseWriter, r *http.Request) {
+			withGithubOption(testserver.WithHandler("/api/v3/app/installations", func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Add("Content-Type", "application/json")
 			})),
 		)
@@ -169,7 +170,7 @@ func TestIntegration_GithubAppsUI(t *testing.T) {
 
 	// demonstrate the listing of github installations
 	t.Run("list github app installs", func(t *testing.T) {
-		handler := github.WithHandler("/api/v3/app/installations", func(w http.ResponseWriter, r *http.Request) {
+		handler := testserver.WithHandler("/api/v3/app/installations", func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Add("Content-Type", "application/json")
 			out, err := json.Marshal([]*gogithub.Installation{
 				{
@@ -206,7 +207,7 @@ func TestIntegration_GithubAppsUI(t *testing.T) {
 
 	// demonstrate removing a github app via the UI
 	t.Run("delete github app", func(t *testing.T) {
-		handler := github.WithHandler("/api/v3/app/installations", func(w http.ResponseWriter, r *http.Request) {
+		handler := testserver.WithHandler("/api/v3/app/installations", func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Add("Content-Type", "application/json")
 			out, err := json.Marshal([]*gogithub.Installation{
 				{
@@ -255,9 +256,9 @@ func TestIntegration_GithubApp_Event(t *testing.T) {
 	// create an OTF daemon with a fake github backend, and serve up a repo and
 	// its contents via tarball.
 	daemon, org, ctx := setup(t, withGithubOptions(
-		github.WithRepo(vcs.NewMustRepo("leg100", "otf-workspaces")),
-		github.WithArchive(testutils.ReadFile(t, "../testdata/github.tar.gz")),
-		github.WithHandler("/api/v3/app/installations/42997659", func(w http.ResponseWriter, r *http.Request) {
+		testserver.WithRepo(vcs.NewMustRepo("leg100", "otf-workspaces")),
+		testserver.WithArchive(testutils.ReadFile(t, "../testdata/github.tar.gz")),
+		testserver.WithHandler("/api/v3/app/installations/42997659", func(w http.ResponseWriter, r *http.Request) {
 			out, err := json.Marshal(&gogithub.Installation{
 				ID:    new(int64(42997659)),
 				AppID: new(int64(123)),
@@ -270,7 +271,7 @@ func TestIntegration_GithubApp_Event(t *testing.T) {
 			w.Header().Add("Content-Type", "application/json")
 			w.Write(out)
 		}),
-		github.WithHandler("/api/v3/app/installations/42997659/access_tokens", func(w http.ResponseWriter, r *http.Request) {
+		testserver.WithHandler("/api/v3/app/installations/42997659/access_tokens", func(w http.ResponseWriter, r *http.Request) {
 			out, err := json.Marshal(&gogithub.InstallationToken{})
 			require.NoError(t, err)
 			w.Header().Add("Content-Type", "application/json")
@@ -309,7 +310,7 @@ func TestIntegration_GithubApp_Event(t *testing.T) {
 
 	// send event
 	push := testutils.ReadFile(t, "./fixtures/github_app_push.json")
-	github.SendEventRequest(t, github.PushEvent, daemon.System.URL(github.AppEventsPath), "secret", push)
+	testserver.SendEventRequest(t, testserver.PushEvent, daemon.System.URL(github.AppEventsPath), "secret", push)
 
 	runEvent := <-daemon.runEvents
 	daemon.waitRunStatus(t, ctx, runEvent.Payload.ID, runstatus.Planned)

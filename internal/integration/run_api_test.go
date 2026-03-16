@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	tfe "github.com/hashicorp/go-tfe"
-	"github.com/leg100/otf/internal/github"
+	"github.com/leg100/otf/internal/github/testserver"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/leg100/otf/internal/vcs"
@@ -22,9 +22,9 @@ func TestIntegration_RunAPI(t *testing.T) {
 	// setup daemon along with fake github repo
 	repo := vcs.NewRandomRepo()
 	daemon, org, ctx := setup(t, withGithubOptions(
-		github.WithRepo(repo),
-		github.WithCommit("0335fb07bb0244b7a169ee89d15c7703e4aaf7de"),
-		github.WithArchive(testutils.ReadFile(t, "../testdata/github.tar.gz")),
+		testserver.WithRepo(repo),
+		testserver.WithCommit("0335fb07bb0244b7a169ee89d15c7703e4aaf7de"),
+		testserver.WithArchive(testutils.ReadFile(t, "../testdata/github.tar.gz")),
 	))
 	_, token := daemon.createToken(t, ctx, nil)
 

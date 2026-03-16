@@ -1,4 +1,4 @@
-package github
+package testserver
 
 import (
 	"bytes"
@@ -56,7 +56,7 @@ type (
 		defaultBranch *string
 		tarball       []byte
 		refs          []string
-		webhook       *hook
+		webhook       *Hook
 
 		// pull request stub
 		pullNumber string
@@ -66,7 +66,7 @@ type (
 		url *string
 	}
 
-	hook struct {
+	Hook struct {
 		secret string
 		*github.Hook
 	}
@@ -78,7 +78,7 @@ type (
 
 	webhookEvent struct {
 		Action webhookAction
-		Hook   *hook
+		Hook   *Hook
 	}
 )
 
@@ -181,7 +181,7 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) (*TestServer, *url.UR
 				return
 			}
 			// persist hook to the 'db'
-			srv.testdb.webhook = &hook{
+			srv.testdb.webhook = &Hook{
 				Hook: &github.Hook{
 					ID:     new(int64(123)),
 					Events: opts.Events,
@@ -222,7 +222,7 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) (*TestServer, *url.UR
 					return
 				}
 				// persist hook to the 'db'
-				srv.testdb.webhook = &hook{
+				srv.testdb.webhook = &Hook{
 					Hook: &github.Hook{
 						ID:     new(int64(123)),
 						Events: opts.Events,
@@ -342,7 +342,7 @@ func WithRepo(repo vcs.Repo) TestServerOption {
 	}
 }
 
-func WithHook(hook hook) TestServerOption {
+func WithHook(hook Hook) TestServerOption {
 	return func(srv *TestServer) {
 		srv.webhook = &hook
 	}

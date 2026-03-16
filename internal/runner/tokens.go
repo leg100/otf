@@ -45,7 +45,7 @@ type tokenFactory struct {
 // createJobToken constructs a job token
 func (f *tokenFactory) createJobToken(jobID resource.TfeID) ([]byte, error) {
 	expiry := internal.CurrentTimestamp(nil).Add(defaultJobTokenExpiry)
-	return f.tokens.NewToken(jobID, tokens.WithExpiry(expiry))
+	return f.tokens.NewToken(jobID, &expiry)
 }
 
 // NewAgentToken constructs a token for an agent, returning both the
@@ -60,7 +60,8 @@ func (f *tokenFactory) NewAgentToken(poolID resource.TfeID, opts CreateAgentToke
 		Description: opts.Description,
 		AgentPoolID: poolID,
 	}
-	token, err := f.tokens.NewToken(at.ID)
+	// Agent tokens don't expire.
+	token, err := f.tokens.NewToken(at.ID, nil)
 	if err != nil {
 		return nil, nil, err
 	}

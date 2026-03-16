@@ -12,7 +12,6 @@ import (
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/gitlab"
 	"github.com/leg100/otf/internal/runner"
-	"github.com/leg100/otf/internal/tokens"
 )
 
 var ErrInvalidSecretLength = errors.New("secret must be 16 bytes in size")
@@ -55,8 +54,7 @@ type Config struct {
 	DeleteRunsAfter              time.Duration
 	DeleteConfigsAfter           time.Duration
 	OverrideDeleterInterval      time.Duration
-
-	tokens.GoogleIAPConfig
+	GoogleIAPAudience            string
 }
 
 // NewConfig constructs an otfd configuration with defaults.

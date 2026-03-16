@@ -11,9 +11,9 @@ import (
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
-	"github.com/leg100/otf/internal/tokens"
 	"github.com/leg100/otf/internal/ui/helpers"
 	"github.com/leg100/otf/internal/ui/paths"
+	"github.com/leg100/otf/internal/ui/session"
 	"github.com/leg100/otf/internal/user"
 )
 
@@ -58,7 +58,7 @@ func addUserHandlers(r *mux.Router, h *Handlers) {
 }
 
 func (h *Handlers) logout(w http.ResponseWriter, r *http.Request) {
-	helpers.SetCookie(w, tokens.SessionCookie, "", &time.Time{})
+	helpers.SetCookie(w, session.SessionCookie, "", &time.Time{})
 	http.Redirect(w, r, "/login", http.StatusFound)
 }
 
@@ -78,24 +78,24 @@ func (h *Handlers) listOrganizationUsers(w http.ResponseWriter, r *http.Request)
 		organization: params.Organization,
 		users:        resource.NewPage(users, params.PageOptions, nil),
 	}
-	h.renderPage(
+	helpers.RenderPage(
 		userList(props),
 		"users",
 		w,
 		r,
-		withOrganization(params.Organization),
-		withBreadcrumbs(helpers.Breadcrumb{Name: "Users"}),
+		helpers.WithOrganization(params.Organization),
+		helpers.WithBreadcrumbs(helpers.Breadcrumb{Name: "Users"}),
 	)
 }
 
 func (h *Handlers) profileHandler(w http.ResponseWriter, r *http.Request) {
-	h.renderPage(
+	helpers.RenderPage(
 		h.templates.profile(),
 		"profile",
 		w,
 		r,
-		withBreadcrumbs(helpers.Breadcrumb{Name: "Profile"}),
-		withContentActions(profileActions()),
+		helpers.WithBreadcrumbs(helpers.Breadcrumb{Name: "Profile"}),
+		helpers.WithContentActions(profileActions()),
 	)
 }
 
@@ -150,12 +150,12 @@ func (h *Handlers) removeTeamMember(w http.ResponseWriter, r *http.Request) {
 //
 
 func (h *Handlers) newUserToken(w http.ResponseWriter, r *http.Request) {
-	h.renderPage(
+	helpers.RenderPage(
 		h.templates.newToken(),
 		"new user token",
 		w,
 		r,
-		withBreadcrumbs(
+		helpers.WithBreadcrumbs(
 			helpers.Breadcrumb{Name: "user tokens", Link: paths.Tokens()},
 			helpers.Breadcrumb{Name: "new"},
 		),
@@ -193,13 +193,13 @@ func (h *Handlers) userTokens(w http.ResponseWriter, r *http.Request) {
 		return tokens[i].CreatedAt.After(tokens[j].CreatedAt)
 	})
 
-	h.renderPage(
+	helpers.RenderPage(
 		h.templates.tokenList(tokens),
 		"User tokens",
 		w,
 		r,
-		withBreadcrumbs(helpers.Breadcrumb{Name: "User tokens"}),
-		withContentActions(tokenListActions()),
+		helpers.WithBreadcrumbs(helpers.Breadcrumb{Name: "User tokens"}),
+		helpers.WithContentActions(tokenListActions()),
 	)
 }
 

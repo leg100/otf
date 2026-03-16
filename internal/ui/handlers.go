@@ -3,7 +3,6 @@ package ui
 import (
 	"context"
 	"encoding/json"
-	"net/http"
 
 	"github.com/a-h/templ"
 	"github.com/gorilla/mux"
@@ -24,8 +23,6 @@ import (
 	"github.com/leg100/otf/internal/sshkey"
 	"github.com/leg100/otf/internal/state"
 	"github.com/leg100/otf/internal/team"
-	"github.com/leg100/otf/internal/tokens"
-	"github.com/leg100/otf/internal/ui/helpers"
 	"github.com/leg100/otf/internal/ui/paths"
 	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/variable"
@@ -49,7 +46,7 @@ type Handlers struct {
 	EngineService                *engine.Service
 	Configs                      ConfigVersionService
 	Hostnames                    HostnameClient
-	Tokens                       sessionService
+	Sessions                     sessionService
 	Authorizer                   authz.Interface
 	AuthenticatorService         loginService
 	VariablesService             *variable.Service
@@ -180,7 +177,7 @@ func NewHandlers(
 	EngineService *engine.Service,
 	Configs *configversion.Service,
 	HostnameService *internal.HostnameService,
-	Tokens *tokens.Service,
+	Sessions sessionService,
 	Authorizer *authz.Authorizer,
 	AuthenticatorService *authenticator.Service,
 	VariablesService *variable.Service,
@@ -205,7 +202,7 @@ func NewHandlers(
 		EngineService:                EngineService,
 		Configs:                      Configs,
 		Hostnames:                    HostnameService,
-		Tokens:                       Tokens,
+		Sessions:                     Sessions,
 		Authorizer:                   Authorizer,
 		AuthenticatorService:         AuthenticatorService,
 		VariablesService:             VariablesService,
@@ -245,58 +242,6 @@ func (h *Handlers) AddHandlers(r *mux.Router) {
 	addVCSHandlers(r, h)
 	addGithubAppHandlers(r, h)
 	addSSHKeyHandlers(r, h)
-}
-
-func (h *Handlers) renderPage(comp templ.Component, title string, w http.ResponseWriter, r *http.Request, opts ...renderPageOption) {
-	props := helpers.LayoutProps{
-		Authorizer: h.Authorizer,
-		Title:      title,
-	}
-	for _, o := range opts {
-		o(&props)
-	}
-	// Render component as a child of the layout component.
-	layout := helpers.Layout(props)
-	helpers.Render(layout, w, r, helpers.WithChildren(comp))
-}
-
-type renderPageOption func(opts *helpers.LayoutProps)
-
-func withOrganization(org resource.ID) renderPageOption {
-	return func(opts *helpers.LayoutProps) {
-		opts.Organization = org
-	}
-}
-
-func withWorkspace(ws *workspace.Workspace) renderPageOption {
-	return func(opts *helpers.LayoutProps) {
-		opts.Organization = new(ws.Organization)
-		opts.Workspace = new(ws.Info())
-	}
-}
-
-func withBreadcrumbs(crumbs ...helpers.Breadcrumb) renderPageOption {
-	return func(opts *helpers.LayoutProps) {
-		opts.Breadcrumbs = append(opts.Breadcrumbs, crumbs...)
-	}
-}
-
-func withContentActions(comp templ.Component) renderPageOption {
-	return func(opts *helpers.LayoutProps) {
-		opts.ContentActions = comp
-	}
-}
-
-func withPreContent(comp templ.Component) renderPageOption {
-	return func(opts *helpers.LayoutProps) {
-		opts.PreContent = comp
-	}
-}
-
-func withPostContent(comp templ.Component) renderPageOption {
-	return func(opts *helpers.LayoutProps) {
-		opts.PostContent = comp
-	}
 }
 
 func toJSON(v any) string {

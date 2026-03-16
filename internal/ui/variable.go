@@ -74,13 +74,13 @@ func (h *Handlers) newWorkspaceVariable(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	h.renderPage(
+	helpers.RenderPage(
 		h.templates.newWorkspaceVariable(ws),
 		"new variable",
 		w,
 		r,
-		withWorkspace(ws),
-		withBreadcrumbs(
+		helpers.WithWorkspace(ws, h.Authorizer),
+		helpers.WithBreadcrumbs(
 			helpers.Breadcrumb{Name: "New variable"},
 		),
 	)
@@ -185,16 +185,16 @@ func (h *Handlers) listWorkspaceVariables(w http.ResponseWriter, r *http.Request
 		canDeleteVariable:  h.Authorizer.CanAccess(r.Context(), authz.DeleteWorkspaceVariableAction, ws.ID),
 		canUpdateWorkspace: h.Authorizer.CanAccess(r.Context(), authz.UpdateWorkspaceAction, ws.ID),
 	}
-	h.renderPage(
+	helpers.RenderPage(
 		h.templates.listWorkspaceVariables(props),
 		"variables",
 		w,
 		r,
-		withWorkspace(ws),
-		withBreadcrumbs(
+		helpers.WithWorkspace(ws, h.Authorizer),
+		helpers.WithBreadcrumbs(
 			helpers.Breadcrumb{Name: "Variables", Link: paths.Variables(ws.ID)},
 		),
-		withContentActions(h.templates.newWorkspaceVariableButton(ws.ID)),
+		helpers.WithContentActions(h.templates.newWorkspaceVariableButton(ws.ID)),
 	)
 }
 
@@ -220,13 +220,13 @@ func (h *Handlers) editWorkspaceVariable(w http.ResponseWriter, r *http.Request)
 		ws:       ws,
 		variable: wv.Variable,
 	}
-	h.renderPage(
+	helpers.RenderPage(
 		h.templates.editWorkspaceVariable(props),
 		"edit | "+wv.Variable.ID.String(),
 		w,
 		r,
-		withWorkspace(ws),
-		withBreadcrumbs(
+		helpers.WithWorkspace(ws, h.Authorizer),
+		helpers.WithBreadcrumbs(
 			helpers.Breadcrumb{Name: "Edit variable"},
 		),
 	)
@@ -291,14 +291,14 @@ func (h *Handlers) listVariableSets(w http.ResponseWriter, r *http.Request) {
 		sets:                 resource.NewPage(sets, params.PageOptions, nil),
 		canCreateVariableSet: h.Authorizer.CanAccess(r.Context(), authz.CreateVariableSetAction, params.Organization),
 	}
-	h.renderPage(
+	helpers.RenderPage(
 		h.templates.listVariableSets(props),
 		"variable sets",
 		w,
 		r,
-		withOrganization(params.Organization),
-		withContentActions(listVariableSetsActions(props)),
-		withBreadcrumbs(
+		helpers.WithOrganization(params.Organization),
+		helpers.WithContentActions(listVariableSetsActions(props)),
+		helpers.WithBreadcrumbs(
 			helpers.Breadcrumb{Name: "Variable Sets"},
 		),
 	)
@@ -324,13 +324,13 @@ func (h *Handlers) newVariableSet(w http.ResponseWriter, r *http.Request) {
 		organization:        pathParams.Organization,
 		availableWorkspaces: availableWorkspaces,
 	}
-	h.renderPage(
+	helpers.RenderPage(
 		h.templates.newVariableSet(props),
 		"new variable set",
 		w,
 		r,
-		withOrganization(props.organization),
-		withBreadcrumbs(
+		helpers.WithOrganization(props.organization),
+		helpers.WithBreadcrumbs(
 			helpers.Breadcrumb{Name: "Variable Sets", Link: paths.VariableSets(props.organization)},
 			helpers.Breadcrumb{Name: "new"},
 		),
@@ -423,13 +423,13 @@ func (h *Handlers) editVariableSet(w http.ResponseWriter, r *http.Request) {
 		existingWorkspaces:  existingWorkspaces,
 		canDeleteVariable:   h.Authorizer.CanAccess(r.Context(), authz.DeleteWorkspaceVariableAction, set.Organization),
 	}
-	h.renderPage(
+	helpers.RenderPage(
 		h.templates.editVariableSet(props),
 		"edit variable set",
 		w,
 		r,
-		withOrganization(set.Organization),
-		withBreadcrumbs(
+		helpers.WithOrganization(set.Organization),
+		helpers.WithBreadcrumbs(
 			helpers.Breadcrumb{Name: "Variable Sets", Link: paths.VariableSets(set.Organization)},
 			helpers.Breadcrumb{Name: set.Name},
 			helpers.Breadcrumb{Name: "edit"},
@@ -505,13 +505,13 @@ func (h *Handlers) newVariableSetVariable(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	h.renderPage(
+	helpers.RenderPage(
 		h.templates.newVSV(set),
 		"new variable | variable sets",
 		w,
 		r,
-		withOrganization(set.Organization),
-		withBreadcrumbs(
+		helpers.WithOrganization(set.Organization),
+		helpers.WithBreadcrumbs(
 			helpers.Breadcrumb{Name: "Variable Sets", Link: paths.VariableSets(set.Organization)},
 			helpers.Breadcrumb{Name: set.Name, Link: paths.VariableSet(set.ID)},
 			helpers.Breadcrumb{Name: "new variable"},
@@ -560,13 +560,13 @@ func (h *Handlers) editVariableSetVariable(w http.ResponseWriter, r *http.Reques
 	}
 	v := set.GetVariableByID(variableID)
 
-	h.renderPage(
+	helpers.RenderPage(
 		h.templates.editVSV(editVSVProps{set: set, variable: v}),
 		"edit variable set variable",
 		w,
 		r,
-		withOrganization(set.Organization),
-		withBreadcrumbs(
+		helpers.WithOrganization(set.Organization),
+		helpers.WithBreadcrumbs(
 			helpers.Breadcrumb{Name: "Variable Sets", Link: paths.VariableSets(set.Organization)},
 			helpers.Breadcrumb{Name: set.Name, Link: paths.EditVariableSet(set.ID)},
 			helpers.Breadcrumb{Name: "Variables"},

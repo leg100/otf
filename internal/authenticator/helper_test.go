@@ -15,9 +15,9 @@ func (f fakeTokenHandler) parseUserInfo(ctx context.Context, token *oauth2.Token
 	return UserInfo{}, nil
 }
 
-type fakeTokensService struct{}
+type fakeSessionService struct{}
 
-func (*fakeTokensService) StartSession(w http.ResponseWriter, r *http.Request, userID resource.TfeID) error {
+func (*fakeSessionService) StartSession(w http.ResponseWriter, r *http.Request, userID resource.TfeID) error {
 	w.Header().Set("user-id", userID.String())
 	return nil
 }

@@ -3,7 +3,7 @@ package integration
 import (
 	"testing"
 
-	"github.com/leg100/otf/internal/github"
+	"github.com/leg100/otf/internal/github/testserver"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/leg100/otf/internal/ui/paths"
@@ -21,9 +21,9 @@ func TestConnectRepoE2E(t *testing.T) {
 	// contents via tarball. And register a callback to test receipt of commit
 	// statuses
 	daemon, org, ctx := setup(t,
-		withGithubOption(github.WithRepo(vcs.NewMustRepo("leg100", "tfc-workspaces"))),
-		withGithubOption(github.WithCommit("0335fb07bb0244b7a169ee89d15c7703e4aaf7de")),
-		withGithubOption(github.WithArchive(testutils.ReadFile(t, "../testdata/github.tar.gz"))),
+		withGithubOption(testserver.WithRepo(vcs.NewMustRepo("leg100", "tfc-workspaces"))),
+		withGithubOption(testserver.WithCommit("0335fb07bb0244b7a169ee89d15c7703e4aaf7de")),
+		withGithubOption(testserver.WithArchive(testutils.ReadFile(t, "../testdata/github.tar.gz"))),
 	)
 	// create vcs provider for authenticating to github backend
 	provider := daemon.createVCSProvider(t, ctx, org, nil)
@@ -41,7 +41,7 @@ func TestConnectRepoE2E(t *testing.T) {
 
 		// generate and send push event
 		push := testutils.ReadFile(t, "fixtures/github_push.json")
-		daemon.SendEvent(t, github.PushEvent, push)
+		daemon.SendEvent(t, testserver.PushEvent, push)
 
 		// commit-triggered run should appear as latest run on workspace
 		//

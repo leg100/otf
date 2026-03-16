@@ -88,8 +88,8 @@ func NewService(opts Options) *Service {
 	// response
 	opts.Register(tfeapi.IncludeUsers, svc.tfeapi.includeUsers)
 	// Register site token and site admin with the auth middleware, to permit
-	// the latter to authenticate using the former.
-	opts.TokensService.RegisterSiteToken(opts.SiteToken, &SiteAdmin)
+	// the latter to authenticate the former.
+	//opts.TokensService.RegisterSiteToken(opts.SiteToken, &SiteAdmin)
 	// Register with auth middleware the user token kind and a means of
 	// retrieving user corresponding to token.
 	opts.TokensService.RegisterKind(resource.UserTokenKind, func(ctx context.Context, tokenID resource.TfeID) (authz.Subject, error) {
@@ -100,19 +100,6 @@ func NewService(opts Options) *Service {
 	opts.TokensService.RegisterKind(resource.UserKind, func(ctx context.Context, tokenID resource.TfeID) (authz.Subject, error) {
 		return svc.GetUser(ctx, UserSpec{UserID: &tokenID})
 	})
-	// Register with auth middleware the ability to get or create a user given a
-	// username.
-	opts.TokensService.GetOrCreateUser = func(ctx context.Context, usernameStr string) (authz.Subject, error) {
-		username, err := NewUsername(usernameStr)
-		if err != nil {
-			return nil, fmt.Errorf("invalid username: %w", err)
-		}
-		user, err := svc.GetUser(ctx, UserSpec{Username: &username})
-		if err == internal.ErrResourceNotFound {
-			user, err = svc.Create(ctx, usernameStr)
-		}
-		return user, err
-	}
 
 	return &svc
 }
@@ -141,6 +128,19 @@ func (a *Service) Create(ctx context.Context, username string, opts ...NewUserOp
 	a.V(0).Info("created user", "username", username, "subject", subject)
 
 	return user, nil
+}
+
+// GetOrCreateUser retrieves a user, creating their account if they don't exist.
+func (a *Service) GetOrCreateUser(ctx context.Context, usernameStr string) (authz.Subject, error) {
+	username, err := NewUsername(usernameStr)
+	if err != nil {
+		return nil, fmt.Errorf("invalid username: %w", err)
+	}
+	user, err := a.GetUser(ctx, UserSpec{Username: &username})
+	if err == internal.ErrResourceNotFound {
+		user, err = a.Create(ctx, usernameStr)
+	}
+	return user, err
 }
 
 func (a *Service) UpdateAvatar(ctx context.Context, username Username, avatarURL string) error {

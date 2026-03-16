@@ -15,6 +15,7 @@ import (
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/daemon"
 	"github.com/leg100/otf/internal/github"
+	"github.com/leg100/otf/internal/github/testserver"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/module"
 	"github.com/leg100/otf/internal/notifications"
@@ -41,7 +42,7 @@ type (
 	testDaemon struct {
 		*daemon.Daemon
 		// stub github server for test to use.
-		*github.TestServer
+		*testserver.TestServer
 		// run subscription for tests to check on run events
 		runEvents <-chan pubsub.Event[*run.Event]
 		// Nest the hostname service so that accessing URLs in tests isn't so
@@ -86,10 +87,10 @@ func setup(t *testing.T, opts ...configOption) (*testDaemon, *organization.Organ
 		cfg.DisableLatestChecker = new(true)
 	}
 	// Start stub github server, unless test has set its own github stub
-	var githubServer *github.TestServer
+	var githubServer *testserver.TestServer
 	if !cfg.skipGithubStub {
 		var githubURL *url.URL
-		githubServer, githubURL = github.NewTestServer(t, cfg.githubOptions...)
+		githubServer, githubURL = testserver.NewTestServer(t, cfg.githubOptions...)
 		cfg.GithubHostname = &internal.WebURL{URL: *githubURL}
 	}
 

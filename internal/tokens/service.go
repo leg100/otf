@@ -1,7 +1,6 @@
 package tokens
 
 import (
-	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/lestrrat-go/jwx/v2/jwk"
@@ -13,42 +12,41 @@ type (
 	TokensService = Service
 
 	Service struct {
-		logr.Logger
-
-		*tokenFactory
 		*registry
-
-		middleware mux.MiddlewareFunc
+		*factory
+		Middleware *Middleware
+		logger     logr.Logger
 	}
 
 	Options struct {
-		logr.Logger
-		GoogleIAPConfig
-
+		Logger logr.Logger
 		Secret []byte
 	}
 )
 
 func NewService(opts Options) (*Service, error) {
 	svc := Service{
-		Logger: opts.Logger,
+		logger: opts.Logger,
 	}
 	key, err := jwk.FromRaw([]byte(opts.Secret))
 	if err != nil {
 		return nil, err
 	}
-	svc.tokenFactory = &tokenFactory{key: key}
+	svc.factory = &factory{key: key}
 	svc.registry = &registry{
 		kinds: make(map[resource.Kind]SubjectGetter),
 	}
-	svc.middleware = newMiddleware(middlewareOptions{
-		Logger:          opts.Logger,
-		GoogleIAPConfig: opts.GoogleIAPConfig,
-		key:             key,
-		registry:        svc.registry,
-	})
+	svc.Middleware = &Middleware{
+		logger: opts.Logger,
+		authenticators: []authenticator{
+			&bearerAuthenticator{
+				Client: &svc,
+			},
+		},
+	}
 	return &svc, nil
 }
 
-// Middleware returns middleware for authenticating tokens
-func (a *Service) Middleware() mux.MiddlewareFunc { return a.middleware }
+func (s *Service) AddAuthenticator(authenticator authenticator) {
+	s.Middleware.authenticators = append(s.Middleware.authenticators, authenticator)
+}

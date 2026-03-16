@@ -50,7 +50,7 @@ func (h *Handlers) listSSHKeys(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.renderPage(
+	helpers.RenderPage(
 		h.templates.listSSHKeys(listSSHKeysProps{
 			organization: params.Name,
 			keys:         keys,
@@ -58,8 +58,8 @@ func (h *Handlers) listSSHKeys(w http.ResponseWriter, r *http.Request) {
 		"ssh keys",
 		w,
 		r,
-		withOrganization(params.Name),
-		withBreadcrumbs(
+		helpers.WithOrganization(params.Name),
+		helpers.WithBreadcrumbs(
 			helpers.Breadcrumb{Name: "SSH Keys"},
 		),
 	)

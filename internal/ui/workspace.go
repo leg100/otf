@@ -114,16 +114,16 @@ func (h *Handlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 		page:                page,
 	}
 
-	h.renderPage(
+	helpers.RenderPage(
 		h.templates.workspaceList(props),
 		"workspaces",
 		w,
 		r,
-		withBreadcrumbs(
+		helpers.WithBreadcrumbs(
 			helpers.Breadcrumb{Name: "Workspaces"},
 		),
-		withOrganization(*params.Organization),
-		withContentActions(workspaceListActions(
+		helpers.WithOrganization(*params.Organization),
+		helpers.WithContentActions(workspaceListActions(
 			*params.Organization,
 			h.Authorizer.CanAccess(r.Context(), authz.CreateWorkspaceAction, *params.Organization),
 		)),
@@ -138,12 +138,12 @@ func (h *Handlers) newWorkspace(w http.ResponseWriter, r *http.Request) {
 		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
-	h.renderPage(
+	helpers.RenderPage(
 		h.templates.workspaceNew(params.Organization),
 		"new workspace",
 		w,
 		r,
-		withBreadcrumbs(
+		helpers.WithBreadcrumbs(
 			helpers.Breadcrumb{Name: "workspaces", Link: paths.Workspaces(params.Organization)},
 			helpers.Breadcrumb{Name: "new"},
 		),
@@ -256,13 +256,13 @@ func (h *Handlers) getWorkspace(w http.ResponseWriter, r *http.Request) {
 		},
 		latestRunTable: latestRunTable,
 	}
-	h.renderPage(
+	helpers.RenderPage(
 		h.templates.workspaceGet(props),
 		"workspaces",
 		w,
 		r,
-		withWorkspace(ws),
-		withBreadcrumbs(
+		helpers.WithWorkspace(ws, h.Authorizer),
+		helpers.WithBreadcrumbs(
 			helpers.Breadcrumb{Name: props.ws.Name},
 		),
 	)
@@ -406,13 +406,13 @@ func (h *Handlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 		canDeleteWorkspace: h.Authorizer.CanAccess(r.Context(), authz.DeleteWorkspaceAction, ws.ID),
 		poolsURL:           poolsURL,
 	}
-	h.renderPage(
+	helpers.RenderPage(
 		h.templates.workspaceEdit(props),
 		"edit | "+ws.ID.String(),
 		w,
 		r,
-		withWorkspace(ws),
-		withBreadcrumbs(
+		helpers.WithWorkspace(ws, h.Authorizer),
+		helpers.WithBreadcrumbs(
 			helpers.Breadcrumb{Name: "Settings"},
 		),
 	)
@@ -530,13 +530,13 @@ func (h *Handlers) editWorkspaceSSHKey(w http.ResponseWriter, r *http.Request) {
 		ws:   ws,
 		keys: keys,
 	}
-	h.renderPage(
+	helpers.RenderPage(
 		h.templates.workspaceEditSSHKey(props),
 		"workspace ssh key | "+ws.ID.String(),
 		w,
 		r,
-		withWorkspace(ws),
-		withBreadcrumbs(
+		helpers.WithWorkspace(ws, h.Authorizer),
+		helpers.WithBreadcrumbs(
 			helpers.Breadcrumb{Name: "SSH Key"},
 		),
 	)
@@ -651,13 +651,13 @@ func (h *Handlers) listWorkspaceVCSProviders(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	h.renderPage(
+	helpers.RenderPage(
 		h.templates.listVCSProviders(ws, providers),
 		"list vcs providers | "+ws.ID.String(),
 		w,
 		r,
-		withWorkspace(ws),
-		withBreadcrumbs(
+		helpers.WithWorkspace(ws, h.Authorizer),
+		helpers.WithBreadcrumbs(
 			helpers.Breadcrumb{Name: "Connect workspace to VCS provider"},
 		),
 	)
@@ -693,13 +693,13 @@ func (h *Handlers) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	h.renderPage(
+	helpers.RenderPage(
 		h.templates.listVCSRepos(ws, params.VCSProviderID, repos),
 		"list vcs repos | "+ws.ID.String(),
 		w,
 		r,
-		withWorkspace(ws),
-		withBreadcrumbs(
+		helpers.WithWorkspace(ws, h.Authorizer),
+		helpers.WithBreadcrumbs(
 			helpers.Breadcrumb{Name: "Connect workspace to VCS repository"},
 		),
 	)

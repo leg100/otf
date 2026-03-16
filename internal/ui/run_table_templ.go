@@ -384,7 +384,7 @@ func (t *runsTable) Row(run *runpkg.Run) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = runstatus.Badge(run.ID, run.Status).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = helpers.RunStatusBadge(run.ID, run.Status).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

@@ -29,12 +29,12 @@ func addOrganizationHandlers(r *mux.Router, h *Handlers) {
 }
 
 func (h *Handlers) newOrganization(w http.ResponseWriter, r *http.Request) {
-	h.renderPage(
+	helpers.RenderPage(
 		h.templates.organizationNew(),
 		"new organization",
 		w,
 		r,
-		withBreadcrumbs(
+		helpers.WithBreadcrumbs(
 			helpers.Breadcrumb{Name: "organizations", Link: paths.Organizations()},
 			helpers.Breadcrumb{Name: "new"},
 		),
@@ -81,7 +81,7 @@ func (h *Handlers) listOrganizations(w http.ResponseWriter, r *http.Request) {
 	}
 	canCreate := !h.RestrictOrganizationCreation || subject.CanAccess(authz.CreateOrganizationAction, authz.Request{ID: resource.SiteID})
 
-	h.renderPage(
+	helpers.RenderPage(
 		h.templates.organizationList(organizationListProps{
 			Page:      organizations,
 			CanCreate: canCreate,
@@ -89,10 +89,10 @@ func (h *Handlers) listOrganizations(w http.ResponseWriter, r *http.Request) {
 		"organizations",
 		w,
 		r,
-		withBreadcrumbs(
+		helpers.WithBreadcrumbs(
 			helpers.Breadcrumb{Name: "Organizations"},
 		),
-		withContentActions(organizationListActions(canCreate)),
+		helpers.WithContentActions(organizationListActions(canCreate)),
 	)
 }
 
@@ -122,15 +122,15 @@ func (h *Handlers) editOrganization(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.renderPage(
+	helpers.RenderPage(
 		h.templates.organizationEdit(org),
 		org.Name.String(),
 		w,
 		r,
-		withBreadcrumbs(
+		helpers.WithBreadcrumbs(
 			helpers.Breadcrumb{Name: "Settings"},
 		),
-		withOrganization(org.Name),
+		helpers.WithOrganization(org.Name),
 	)
 }
 
@@ -215,15 +215,15 @@ func (h *Handlers) organizationToken(w http.ResponseWriter, r *http.Request) {
 	if len(tokens) > 0 {
 		token = tokens[0]
 	}
-	h.renderPage(
+	helpers.RenderPage(
 		h.templates.getToken(params.Name, token),
 		params.Name.String(),
 		w,
 		r,
-		withBreadcrumbs(
+		helpers.WithBreadcrumbs(
 			helpers.Breadcrumb{Name: "Organization Token"},
 		),
-		withOrganization(params.Name),
+		helpers.WithOrganization(params.Name),
 	)
 }
 
