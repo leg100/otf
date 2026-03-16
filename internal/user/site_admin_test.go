@@ -10,7 +10,7 @@ import (
 
 func TestSiteAdmin_Authenticator(t *testing.T) {
 	authenticator := &SiteAdminAuthenticator{
-		SiteToken: "valid-token",
+		SiteToken: "site-token",
 	}
 	t.Run("valid site token", func(t *testing.T) {
 		r := httptest.NewRequest("GET", "/api/v2/protected", nil)
@@ -21,11 +21,12 @@ func TestSiteAdmin_Authenticator(t *testing.T) {
 		assert.Equal(t, &SiteAdmin, got)
 	})
 
-	t.Run("invalid site token", func(t *testing.T) {
+	t.Run("not a site token", func(t *testing.T) {
 		r := httptest.NewRequest("GET", "/api/v2/protected", nil)
-		r.Header.Add("Authorization", "Bearer incorrect")
+		r.Header.Add("Authorization", "Bearer not-a-site-token")
 		w := httptest.NewRecorder()
-		_, err := authenticator.Authenticate(w, r)
-		assert.Error(t, err)
+		got, err := authenticator.Authenticate(w, r)
+		assert.Nil(t, got)
+		assert.Nil(t, err)
 	})
 }

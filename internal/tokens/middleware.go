@@ -37,6 +37,11 @@ type (
 // context and the upstream handler is called.
 func (m *Middleware) Authenticate(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !isProtectedPath(r.URL.Path) {
+			next.ServeHTTP(w, r)
+			return
+		}
+
 		// Until request is authenticated, call service endpoints using
 		// superuser privileges. Once authenticated, the authenticated user
 		// replaces the superuser in the context.
@@ -45,10 +50,6 @@ func (m *Middleware) Authenticate(next http.Handler) http.Handler {
 		})
 		r = r.WithContext(ctx)
 
-		if !isProtectedPath(r.URL.Path) {
-			next.ServeHTTP(w, r)
-			return
-		}
 		for _, auth := range m.authenticators {
 			subj, err := auth.Authenticate(w, r)
 			if err != nil {
@@ -60,6 +61,7 @@ func (m *Middleware) Authenticate(next http.Handler) http.Handler {
 				// Successfully authenticated
 				ctx = authz.AddSubjectToContext(r.Context(), subj)
 				next.ServeHTTP(w, r.WithContext(ctx))
+				return
 			}
 		}
 		http.Error(w, "no authentication token found", http.StatusUnauthorized)

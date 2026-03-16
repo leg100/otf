@@ -8,7 +8,52 @@ package helpers
 import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
-import "github.com/leg100/otf/internal/authz"
+import (
+	"context"
+	"github.com/leg100/otf/internal/authz"
+	"github.com/leg100/otf/internal/resource"
+)
+
+func CurrentUsername(ctx context.Context) (string, error) {
+	subject, err := authz.SubjectFromContext(ctx)
+	if err != nil {
+		return "", err
+	}
+	return subject.String(), nil
+}
+
+func Authenticated(ctx context.Context) bool {
+	if _, err := authz.SubjectFromContext(ctx); err != nil {
+		return false
+	}
+	return true
+}
+
+func IsOwner(ctx context.Context, organization resource.ID) bool {
+	subject, err := authz.SubjectFromContext(ctx)
+	if err != nil {
+		return false
+	}
+	if user, ok := subject.(interface {
+		IsOwner(resource.ID) bool
+	}); ok {
+		return user.IsOwner(organization)
+	}
+	return false
+}
+
+func IsSiteAdmin(ctx context.Context) bool {
+	subject, err := authz.SubjectFromContext(ctx)
+	if err != nil {
+		return false
+	}
+	if user, ok := subject.(interface {
+		IsSiteAdmin() bool
+	}); ok {
+		return user.IsSiteAdmin()
+	}
+	return false
+}
 
 func CurrentUserAvatar() templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
@@ -87,7 +132,7 @@ func Avatar(url *string) templ.Component {
 			var templ_7745c5c3_Var3 string
 			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(templ.SafeURL(*url))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/helpers/user.templ`, Line: 27, Col: 34}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/helpers/user.templ`, Line: 72, Col: 34}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 			if templ_7745c5c3_Err != nil {

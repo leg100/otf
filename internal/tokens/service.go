@@ -35,6 +35,7 @@ func NewService(opts Options) (*Service, error) {
 	svc.factory = &factory{key: key}
 	svc.registry = &registry{
 		kinds: make(map[resource.Kind]SubjectGetter),
+		key:   key,
 	}
 	svc.Middleware = &Middleware{
 		logger: opts.Logger,

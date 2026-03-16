@@ -158,16 +158,21 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		return nil, err
 	}
 
-	tokensService.AddAuthenticator(&iap.Authenticator{
-		Audience: cfg.GoogleIAPAudience,
-		Client:   userService,
-	})
-
 	sessionService := session.NewService(logger, tokensService)
 
+	// Authenticate API requests from the site admin containing their token.
+	tokensService.AddAuthenticator(&user.SiteAdminAuthenticator{
+		SiteToken: cfg.SiteToken,
+	})
+	// Authenticate UI session cookies.
 	tokensService.AddAuthenticator(&session.Authenticator{
 		Client: tokensService,
 	})
+	// Authenticate requests from Google IAP.
+	tokensService.AddAuthenticator(iap.NewAuthenticator(
+		cfg.GoogleIAPAudience,
+		userService,
+	))
 
 	configService := configversion.NewService(configversion.Options{
 		Logger:        logger,

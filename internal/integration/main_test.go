@@ -6,11 +6,9 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"os/signal"
 	"path"
 	"path/filepath"
 	"runtime"
-	"syscall"
 	"testing"
 
 	"github.com/leg100/otf/internal/authz"
@@ -60,14 +58,6 @@ func TestMain(m *testing.M) {
 }
 
 func doMain(m *testing.M) (int, error) {
-	// Configure ^C to terminate program
-	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
-	go func() {
-		<-ctx.Done()
-		// Stop handling ^C; another ^C will exit the program.
-		cancel()
-	}()
-
 	// Start external services
 	if err := testcompose.Up(); err != nil {
 		return 0, fmt.Errorf("starting external services: %w", err)
@@ -216,7 +206,7 @@ func doMain(m *testing.M) (int, error) {
 		if err != nil {
 			return 0, fmt.Errorf("creating downloader: %w", err)
 		}
-		terraformPath, err = downloader.Download(ctx, engine.Default.DefaultVersion(), os.Stdout)
+		terraformPath, err = downloader.Download(context.Background(), engine.Default.DefaultVersion(), os.Stdout)
 		if err != nil {
 			return 0, fmt.Errorf("downloading terraform: %w", err)
 		}
@@ -226,7 +216,7 @@ func doMain(m *testing.M) (int, error) {
 		if err != nil {
 			return 0, fmt.Errorf("creating downloader: %w", err)
 		}
-		tofuPath, err = downloader.Download(ctx, engine.Tofu.DefaultVersion(), os.Stdout)
+		tofuPath, err = downloader.Download(context.Background(), engine.Tofu.DefaultVersion(), os.Stdout)
 		if err != nil {
 			return 0, fmt.Errorf("downloading tofu: %w", err)
 		}

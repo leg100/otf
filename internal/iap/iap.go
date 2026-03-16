@@ -14,14 +14,35 @@ import (
 // HTTP header in Google Cloud IAP request containing JWT
 const header string = "x-goog-iap-jwt-assertion"
 
-// Authenticator authenticates Google IAP requests.
-type Authenticator struct {
-	Audience string
-	Client   AuthenticatorClient
+type (
+	// Authenticator authenticates Google IAP requests.
+	Authenticator struct {
+		audience  string
+		users     UserClient
+		validator tokenValidator
+	}
+
+	UserClient interface {
+		GetOrCreateUser(ctx context.Context, username string) (authz.Subject, error)
+	}
+
+	tokenValidator interface {
+		Validate(ctx context.Context, idToken string, audience string) (*idtoken.Payload, error)
+	}
+
+	tokenValidatorFunc func(context.Context, string, string) (*idtoken.Payload, error)
+)
+
+func (f tokenValidatorFunc) Validate(ctx context.Context, idToken string, audience string) (*idtoken.Payload, error) {
+	return f(ctx, idToken, audience)
 }
 
-type AuthenticatorClient interface {
-	GetOrCreateUser(ctx context.Context, username string) (authz.Subject, error)
+func NewAuthenticator(audience string, users UserClient) *Authenticator {
+	return &Authenticator{
+		audience:  audience,
+		users:     users,
+		validator: tokenValidatorFunc(idtoken.Validate),
+	}
 }
 
 func (a *Authenticator) Authenticate(w http.ResponseWriter, r *http.Request) (authz.Subject, error) {
@@ -30,7 +51,7 @@ func (a *Authenticator) Authenticate(w http.ResponseWriter, r *http.Request) (au
 		// Not an IAP request.
 		return nil, nil
 	}
-	payload, err := idtoken.Validate(r.Context(), token, a.Audience)
+	payload, err := a.validator.Validate(r.Context(), token, a.audience)
 	if err != nil {
 		return nil, err
 	}
@@ -42,5 +63,5 @@ func (a *Authenticator) Authenticate(w http.ResponseWriter, r *http.Request) (au
 	if !ok {
 		return nil, fmt.Errorf("expected IAP token email to be a string: %#v", email)
 	}
-	return a.Client.GetOrCreateUser(r.Context(), emailString)
+	return a.users.GetOrCreateUser(r.Context(), emailString)
 }
