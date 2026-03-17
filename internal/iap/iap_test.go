@@ -28,7 +28,7 @@ func TestIAP_Authenticator(t *testing.T) {
 	t.Run("is an iap request", func(t *testing.T) {
 		w := httptest.NewRecorder()
 		r := httptest.NewRequest("GET", "/api/v2/protected", nil)
-		r.Header.Add(header, "google-jwt")
+		r.Header.Add(Header, "google-jwt")
 		got, err := auth.Authenticate(w, r)
 		require.NoError(t, err)
 		assert.Equal(t, &authz.Superuser{}, got)

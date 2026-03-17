@@ -9,10 +9,10 @@ import (
 )
 
 func TestSiteAdmin_Authenticator(t *testing.T) {
-	authenticator := &SiteAdminAuthenticator{
-		SiteToken: "site-token",
-	}
 	t.Run("valid site token", func(t *testing.T) {
+		authenticator := &SiteAdminAuthenticator{
+			SiteToken: "site-token",
+		}
 		r := httptest.NewRequest("GET", "/api/v2/protected", nil)
 		r.Header.Add("Authorization", "Bearer site-token")
 		w := httptest.NewRecorder()
@@ -21,12 +21,24 @@ func TestSiteAdmin_Authenticator(t *testing.T) {
 		assert.Equal(t, &SiteAdmin, got)
 	})
 
-	t.Run("not a site token", func(t *testing.T) {
+	t.Run("invalid site token", func(t *testing.T) {
+		authenticator := &SiteAdminAuthenticator{
+			SiteToken: "site-token",
+		}
 		r := httptest.NewRequest("GET", "/api/v2/protected", nil)
-		r.Header.Add("Authorization", "Bearer not-a-site-token")
+		r.Header.Add("Authorization", "Bearer invalid-site-token")
 		w := httptest.NewRecorder()
 		got, err := authenticator.Authenticate(w, r)
 		assert.Nil(t, got)
 		assert.Nil(t, err)
+	})
+
+	t.Run("no site token configured, and request has no token set", func(t *testing.T) {
+		authenticator := &SiteAdminAuthenticator{}
+		r := httptest.NewRequest("GET", "/api/v2/protected", nil)
+		w := httptest.NewRecorder()
+		got, err := authenticator.Authenticate(w, r)
+		require.NoError(t, err)
+		assert.Nil(t, got)
 	})
 }

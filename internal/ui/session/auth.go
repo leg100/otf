@@ -33,7 +33,8 @@ type AuthenticatorClient interface {
 
 func (a *Authenticator) Authenticate(w http.ResponseWriter, r *http.Request) (authz.Subject, error) {
 	if !strings.HasPrefix(r.URL.Path, paths.UIPrefix) {
-		// Not a request to access the UI.
+		// This is a non-UI request; session authenticator only authenticates
+		// access to the UI.
 		return nil, nil
 	}
 	// Any error results in the user being redirected to the login page with a

@@ -11,8 +11,8 @@ import (
 	"google.golang.org/api/idtoken"
 )
 
-// HTTP header in Google Cloud IAP request containing JWT
-const header string = "x-goog-iap-jwt-assertion"
+// Header in Google Cloud IAP request containing JWT
+const Header string = "x-goog-iap-jwt-assertion"
 
 type (
 	// Authenticator authenticates Google IAP requests.
@@ -46,7 +46,7 @@ func NewAuthenticator(audience string, users UserClient) *Authenticator {
 }
 
 func (a *Authenticator) Authenticate(w http.ResponseWriter, r *http.Request) (authz.Subject, error) {
-	token := r.Header.Get(header)
+	token := r.Header.Get(Header)
 	if token == "" {
 		// Not an IAP request.
 		return nil, nil

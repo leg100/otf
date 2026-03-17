@@ -22,6 +22,10 @@ type SiteAdminAuthenticator struct {
 }
 
 func (a *SiteAdminAuthenticator) Authenticate(w http.ResponseWriter, r *http.Request) (authz.Subject, error) {
+	if a.SiteToken == "" {
+		// No site token configured.
+		return nil, nil
+	}
 	token, err := tokens.ParseBearerToken(r)
 	if err != nil {
 		return nil, err
@@ -30,9 +34,9 @@ func (a *SiteAdminAuthenticator) Authenticate(w http.ResponseWriter, r *http.Req
 		// Authenticated as site admin
 		return &SiteAdmin, nil
 	}
-	// Not a site admin auth request. (or it could be that the user has
-	// used an incorrect token; in either case we cannot return an error because
-	// the underlying middleware needs to also check whether it's a valid JWT
-	// token, e.g. a user or organization token).
+	// Not a site admin auth request. (or it could be that the user has used an
+	// incorrect token; in either case we cannot return an error yet because the
+	// underlying middleware needs to also check whether it's a valid JWT token,
+	// e.g. a user or organization token).
 	return nil, nil
 }
