@@ -74,26 +74,26 @@ func (h *Handlers) listRuns(w http.ResponseWriter, r *http.Request) {
 		pageOptions:         opts.PageOptions,
 	}
 
-	var renderOptions []renderPageOption
+	var renderOptions []helpers.RenderPageOption
 	if opts.ListOptions.WorkspaceID != nil {
 		ws, err := h.Workspaces.GetWorkspace(r.Context(), *opts.WorkspaceID)
 		if err != nil {
 			helpers.Error(r, w, err.Error())
 			return
 		}
-		renderOptions = append(renderOptions, withWorkspace(ws))
+		renderOptions = append(renderOptions, helpers.WithWorkspace(ws, h.Authorizer))
 		props.filterByWorkspace = true
 		props.canUpdateWorkspace = h.Authorizer.CanAccess(r.Context(), authz.UpdateWorkspaceAction, ws.ID)
 	} else if opts.ListOptions.Organization != nil {
 		renderOptions = append(
 			renderOptions,
-			withOrganization(*opts.ListOptions.Organization),
+			helpers.WithOrganization(*opts.ListOptions.Organization),
 		)
 	} else {
 		helpers.Error(r, w, "must provide either organization_name or workspace_id", helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
-	renderOptions = append(renderOptions, withBreadcrumbs(
+	renderOptions = append(renderOptions, helpers.WithBreadcrumbs(
 		helpers.Breadcrumb{Name: "Runs"},
 	))
 
@@ -104,7 +104,7 @@ func (h *Handlers) listRuns(w http.ResponseWriter, r *http.Request) {
 	}
 	props.page = page
 
-	h.renderPage(
+	helpers.RenderPage(
 		h.templates.runList(props),
 		"runs",
 		w,
@@ -156,15 +156,15 @@ func (h *Handlers) getRun(w http.ResponseWriter, r *http.Request) {
 		planLogs:  runpkg.Chunk{Data: planLogs.Data},
 		applyLogs: runpkg.Chunk{Data: applyLogs.Data},
 	}
-	h.renderPage(
+	helpers.RenderPage(
 		h.templates.getRun(props),
 		run.ID.String(),
 		w,
 		r,
-		withWorkspace(ws),
-		withPreContent(getPreContent()),
-		withPostContent(getPostContent(props)),
-		withBreadcrumbs(
+		helpers.WithWorkspace(ws, h.Authorizer),
+		helpers.WithPreContent(getPreContent()),
+		helpers.WithPostContent(getPostContent(props)),
+		helpers.WithBreadcrumbs(
 			helpers.Breadcrumb{Name: props.run.ID.String()},
 		),
 	)

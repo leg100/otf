@@ -61,7 +61,7 @@ func newTestOAuthServerClient(t *testing.T, userID resource.TfeID) *OAuthClient 
 		logr.Discard(),
 		fakeTokenHandler{},
 		&fakeURLClient{}, //("otf-server.com"),
-		&fakeTokensService{},
+		&fakeSessionService{},
 		&fakeUserService{userID},
 		OAuthConfig{
 			BaseURL: &internal.WebURL{URL: *u},

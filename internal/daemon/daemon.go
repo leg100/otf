@@ -20,6 +20,7 @@ import (
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/gitlab"
 	"github.com/leg100/otf/internal/http"
+	"github.com/leg100/otf/internal/iap"
 	"github.com/leg100/otf/internal/loginserver"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/module"
@@ -36,6 +37,7 @@ import (
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/tokens"
 	"github.com/leg100/otf/internal/ui"
+	"github.com/leg100/otf/internal/ui/session"
 	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/variable"
 	"github.com/leg100/otf/internal/vcs"
@@ -56,6 +58,7 @@ type (
 		Modules       *module.Service
 		VCSProviders  *vcs.Service
 		Tokens        *tokens.Service
+		Sessions      *session.Service
 		Teams         *team.Service
 		Users         *user.Service
 		GithubApp     *github.Service
@@ -115,9 +118,8 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	signer := internal.NewSigner(cfg.Secret)
 
 	tokensService, err := tokens.NewService(tokens.Options{
-		Logger:          logger,
-		GoogleIAPConfig: cfg.GoogleIAPConfig,
-		Secret:          cfg.Secret,
+		Logger: logger,
+		Secret: cfg.Secret,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("setting up authentication middleware: %w", err)
@@ -154,6 +156,38 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	// promote nominated users to site admin
 	if err := userService.SetSiteAdmins(ctx, cfg.SiteAdmins...); err != nil {
 		return nil, err
+	}
+
+	sessionService := session.NewService(logger, tokensService)
+
+	// Authenticate API/UI requests. An authenticated request is one that
+	// has a particular header containing a credential. The token service
+	// middleware checks the request against a series of 'authenticators': each
+	// authenticator checks if the request contains a particular credential; if
+	// there is a successful match then it returns the corresponding subject,
+	// e.g. a user or organization API token, etc.
+	tokensService.Middleware.Authenticators = []tokens.Authenticator{
+		// Authenticate UI session cookies.
+		&session.Authenticator{
+			Client: tokensService,
+		},
+		// Authenticate requests from Google IAP.
+		iap.NewAuthenticator(
+			cfg.GoogleIAPAudience,
+			userService,
+		),
+		// Authenticate API requests from the site admin using their special
+		// non-JWT token. It's important that this authenticator comes *before*
+		// the JWT authenticator otherwise the JWT authenticator would try to
+		// parse the site token as a JWT and return an error.
+		&user.SiteAdminAuthenticator{
+			SiteToken: cfg.SiteToken,
+		},
+		// Authenticate API requests with an authorization header containing a
+		// JWT token.
+		&tokens.JWTAuthenticator{
+			Client: tokensService,
+		},
 	}
 
 	configService := configversion.NewService(configversion.Options{
@@ -299,7 +333,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	authenticatorService, err := authenticator.NewAuthenticatorService(ctx, authenticator.Options{
 		Logger:               logger,
 		URLClient:            hostnameService,
-		TokensService:        tokensService,
+		SessionClient:        sessionService,
 		UserService:          userService,
 		IDTokenHandlerConfig: cfg.OIDC,
 		SkipTLSVerification:  cfg.SkipTLSVerification,
@@ -429,7 +463,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 			engineService,
 			configService,
 			hostnameService,
-			tokensService,
+			sessionService,
 			authorizer,
 			authenticatorService,
 			variableService,
@@ -575,7 +609,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		CertFile:             cfg.CertFile,
 		KeyFile:              cfg.KeyFile,
 		EnableRequestLogging: cfg.EnableRequestLogging,
-		Middleware:           []mux.MiddlewareFunc{tokensService.Middleware()},
+		Middleware:           []mux.MiddlewareFunc{tokensService.Middleware.Authenticate},
 		Handlers:             handlers,
 	})
 	if err != nil {
@@ -594,6 +628,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Modules:       moduleService,
 		VCSProviders:  vcsService,
 		Tokens:        tokensService,
+		Sessions:      sessionService,
 		Teams:         teamService,
 		Users:         userService,
 		RepoHooks:     repoService,

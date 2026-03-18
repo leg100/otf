@@ -3,7 +3,7 @@ package integration
 import (
 	"testing"
 
-	"github.com/leg100/otf/internal/github"
+	"github.com/leg100/otf/internal/github/testserver"
 	"github.com/leg100/otf/internal/ui/paths"
 	"github.com/leg100/otf/internal/user"
 	"github.com/playwright-community/playwright-go"
@@ -19,7 +19,7 @@ func TestGithubLogin(t *testing.T) {
 		// specifying oauth credentials turns on the option to login via
 		// github
 		withGithubOAuthCredentials("stub-client-id", "stub-client-secret"),
-		withGithubOption(github.WithUsername(user.MustUsername("bobby"))),
+		withGithubOption(testserver.WithUsername(user.MustUsername("bobby"))),
 	)
 
 	browser.New(t, nil, func(page playwright.Page) {

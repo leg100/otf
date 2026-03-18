@@ -75,13 +75,13 @@ func (h *Handlers) listRunners(w http.ResponseWriter, r *http.Request) {
 		hideServerRunners: params.HideServerRunners,
 		page:              resource.NewPage(runners, resource.PageOptions{}, nil),
 	}
-	h.renderPage(
+	helpers.RenderPage(
 		listRunners(props),
 		"runners",
 		w,
 		r,
-		withOrganization(*params.Organization),
-		withBreadcrumbs(helpers.Breadcrumb{Name: "Runners"}),
+		helpers.WithOrganization(*params.Organization),
+		helpers.WithBreadcrumbs(helpers.Breadcrumb{Name: "Runners"}),
 	)
 }
 
@@ -164,13 +164,13 @@ func (h *Handlers) listAgentPools(w http.ResponseWriter, r *http.Request) {
 		organization: params.Organization,
 		pools:        resource.NewPage(pools, params.PageOptions, nil),
 	}
-	h.renderPage(
+	helpers.RenderPage(
 		h.templates.listAgentPools(props),
 		"agent pools",
 		w,
 		r,
-		withOrganization(params.Organization),
-		withBreadcrumbs(helpers.Breadcrumb{Name: "Agent Pools"}),
+		helpers.WithOrganization(params.Organization),
+		helpers.WithBreadcrumbs(helpers.Breadcrumb{Name: "Agent Pools"}),
 	)
 }
 
@@ -248,13 +248,13 @@ func (h *Handlers) getAgentPool(w http.ResponseWriter, r *http.Request) {
 		agents:                         resource.NewPage(agents, resource.PageOptions{}, nil),
 		canDeleteAgentPool:             h.Authorizer.CanAccess(r.Context(), authz.DeleteAgentPoolAction, pool.Organization),
 	}
-	h.renderPage(
+	helpers.RenderPage(
 		h.templates.getAgentPool(props),
 		pool.Name,
 		w,
 		r,
-		withOrganization(pool.Organization),
-		withBreadcrumbs(
+		helpers.WithOrganization(pool.Organization),
+		helpers.WithBreadcrumbs(
 			helpers.Breadcrumb{Name: "Agent Pools", Link: paths.AgentPools(props.pool.Organization)},
 			helpers.Breadcrumb{Name: props.pool.Name},
 		),

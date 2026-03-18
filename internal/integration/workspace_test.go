@@ -7,7 +7,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/connections"
-	"github.com/leg100/otf/internal/github"
+	"github.com/leg100/otf/internal/github/testserver"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
@@ -50,7 +50,7 @@ func TestWorkspace(t *testing.T) {
 	})
 
 	t.Run("create connected workspace", func(t *testing.T) {
-		daemon, org, ctx := setup(t, withGithubOption(github.WithRepo(vcs.NewMustRepo("test", "dummy"))))
+		daemon, org, ctx := setup(t, withGithubOption(testserver.WithRepo(vcs.NewMustRepo("test", "dummy"))))
 
 		vcsprov := daemon.createVCSProvider(t, ctx, org, nil)
 		ws, err := daemon.Workspaces.CreateWorkspace(ctx, workspace.CreateOptions{
@@ -65,7 +65,7 @@ func TestWorkspace(t *testing.T) {
 
 		// webhook should be registered with github
 		hook := <-daemon.WebhookEvents
-		require.Equal(t, github.WebhookCreated, hook.Action)
+		require.Equal(t, testserver.WebhookCreated, hook.Action)
 
 		t.Run("delete workspace connection", func(t *testing.T) {
 			err := daemon.Connections.Disconnect(ctx, connections.DisconnectOptions{
@@ -76,11 +76,11 @@ func TestWorkspace(t *testing.T) {
 
 		// webhook should now have been deleted from github
 		hook = <-daemon.WebhookEvents
-		require.Equal(t, github.WebhookDeleted, hook.Action)
+		require.Equal(t, testserver.WebhookDeleted, hook.Action)
 	})
 
 	t.Run("deleting connected workspace also deletes webhook", func(t *testing.T) {
-		daemon, org, ctx := setup(t, withGithubOption(github.WithRepo(vcs.NewMustRepo("test", "dummy"))))
+		daemon, org, ctx := setup(t, withGithubOption(testserver.WithRepo(vcs.NewMustRepo("test", "dummy"))))
 
 		vcsprov := daemon.createVCSProvider(t, ctx, org, nil)
 		ws, err := daemon.Workspaces.CreateWorkspace(ctx, workspace.CreateOptions{
@@ -95,18 +95,18 @@ func TestWorkspace(t *testing.T) {
 
 		// webhook should be registered with github
 		hook := <-daemon.WebhookEvents
-		require.Equal(t, github.WebhookCreated, hook.Action)
+		require.Equal(t, testserver.WebhookCreated, hook.Action)
 
 		_, err = daemon.Workspaces.DeleteWorkspace(ctx, ws.ID)
 		require.NoError(t, err)
 
 		// webhook should now have been deleted from github
 		hook = <-daemon.WebhookEvents
-		require.Equal(t, github.WebhookDeleted, hook.Action)
+		require.Equal(t, testserver.WebhookDeleted, hook.Action)
 	})
 
 	t.Run("connect workspace", func(t *testing.T) {
-		daemon, org, ctx := setup(t, withGithubOption(github.WithRepo(vcs.NewMustRepo("test", "dummy"))))
+		daemon, org, ctx := setup(t, withGithubOption(testserver.WithRepo(vcs.NewMustRepo("test", "dummy"))))
 
 		ws := daemon.createWorkspace(t, ctx, org)
 		vcsprov := daemon.createVCSProvider(t, ctx, org, nil)

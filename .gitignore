@@ -109,3 +109,5 @@ Session.vim
 .history
 # allow anything under testdata
 !**/testdata/**
+# google cloud service account key for IAP testing
+/internal/integration/testdata/google-account-key-iap-testing.json

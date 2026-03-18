@@ -6,54 +6,11 @@ import (
 	gohttp "net/http"
 	"net/url"
 
-	"github.com/leg100/otf/internal/authz"
-	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/ui/static"
 )
 
 func AssetPath(ctx context.Context, path string) (string, error) {
 	return static.AssetsFS.Path(path)
-}
-
-func CurrentUsername(ctx context.Context) (string, error) {
-	subject, err := authz.SubjectFromContext(ctx)
-	if err != nil {
-		return "", err
-	}
-	return subject.String(), nil
-}
-
-func Authenticated(ctx context.Context) bool {
-	if _, err := authz.SubjectFromContext(ctx); err != nil {
-		return false
-	}
-	return true
-}
-
-func IsOwner(ctx context.Context, organization resource.ID) bool {
-	subject, err := authz.SubjectFromContext(ctx)
-	if err != nil {
-		return false
-	}
-	if user, ok := subject.(interface {
-		IsOwner(resource.ID) bool
-	}); ok {
-		return user.IsOwner(organization)
-	}
-	return false
-}
-
-func IsSiteAdmin(ctx context.Context) bool {
-	subject, err := authz.SubjectFromContext(ctx)
-	if err != nil {
-		return false
-	}
-	if user, ok := subject.(interface {
-		IsSiteAdmin() bool
-	}); ok {
-		return user.IsSiteAdmin()
-	}
-	return false
 }
 
 func CurrentPath(ctx context.Context) string {

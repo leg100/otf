@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal/connections"
-	"github.com/leg100/otf/internal/github"
+	"github.com/leg100/otf/internal/github/testserver"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/stretchr/testify/require"
 )
@@ -13,7 +13,7 @@ func TestRepo(t *testing.T) {
 	integrationTest(t)
 
 	t.Run("create multiple connections", func(t *testing.T) {
-		daemon, org, ctx := setup(t, withGithubOption(github.WithRepo(vcs.NewMustRepo("test", "dummy"))))
+		daemon, org, ctx := setup(t, withGithubOption(testserver.WithRepo(vcs.NewMustRepo("test", "dummy"))))
 
 		vcsprov := daemon.createVCSProvider(t, ctx, org, nil)
 
@@ -26,7 +26,7 @@ func TestRepo(t *testing.T) {
 		require.NoError(t, err)
 
 		hook := <-daemon.WebhookEvents
-		require.Equal(t, github.WebhookCreated, hook.Action)
+		require.Equal(t, testserver.WebhookCreated, hook.Action)
 
 		mod2 := daemon.createModule(t, ctx, org)
 		_, err = daemon.Connections.Connect(ctx, connections.ConnectOptions{
@@ -37,7 +37,7 @@ func TestRepo(t *testing.T) {
 		require.NoError(t, err)
 
 		hook = <-daemon.WebhookEvents
-		require.Equal(t, github.WebhookUpdated, hook.Action)
+		require.Equal(t, testserver.WebhookUpdated, hook.Action)
 
 		ws1 := daemon.createWorkspace(t, ctx, org)
 		_, err = daemon.Connections.Connect(ctx, connections.ConnectOptions{
@@ -48,7 +48,7 @@ func TestRepo(t *testing.T) {
 		require.NoError(t, err)
 
 		hook = <-daemon.WebhookEvents
-		require.Equal(t, github.WebhookUpdated, hook.Action)
+		require.Equal(t, testserver.WebhookUpdated, hook.Action)
 
 		ws2 := daemon.createWorkspace(t, ctx, org)
 		_, err = daemon.Connections.Connect(ctx, connections.ConnectOptions{
@@ -59,7 +59,7 @@ func TestRepo(t *testing.T) {
 		require.NoError(t, err)
 
 		hook = <-daemon.WebhookEvents
-		require.Equal(t, github.WebhookUpdated, hook.Action)
+		require.Equal(t, testserver.WebhookUpdated, hook.Action)
 
 		t.Run("delete multiple connections", func(t *testing.T) {
 			err = daemon.Connections.Disconnect(ctx, connections.DisconnectOptions{
@@ -84,7 +84,7 @@ func TestRepo(t *testing.T) {
 
 			// webhook should now have been deleted from github
 			hook = <-daemon.WebhookEvents
-			require.Equal(t, github.WebhookDeleted, hook.Action)
+			require.Equal(t, testserver.WebhookDeleted, hook.Action)
 		})
 	})
 }

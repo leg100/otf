@@ -47,11 +47,7 @@ func (f *teamTokenFactory) NewTeamToken(opts CreateTokenOptions) (*Token, []byte
 		TeamID:    opts.TeamID,
 		Expiry:    opts.Expiry,
 	}
-	var newTokenOptions []tokens.NewTokenOption
-	if opts.Expiry != nil {
-		newTokenOptions = append(newTokenOptions, tokens.WithExpiry(*opts.Expiry))
-	}
-	token, err := f.tokens.NewToken(tt.ID, newTokenOptions...)
+	token, err := f.tokens.NewToken(tt.ID, opts.Expiry)
 	if err != nil {
 		return nil, nil, err
 	}

@@ -14,15 +14,6 @@ import (
 	"github.com/leg100/otf/internal/team"
 )
 
-var (
-	SiteAdminUsername = Username{name: "site-admin"}
-	// SiteAdminID is the hardcoded user id for the site admin user. The ID must
-	// be the same as the hardcoded value in the database migrations.
-	SiteAdminID               = resource.MustHardcodeTfeID(resource.UserKind, "36atQC2oGQng7pVz")
-	SiteAdmin                 = User{ID: SiteAdminID, Username: SiteAdminUsername}
-	_           authz.Subject = (*User)(nil)
-)
-
 type (
 	// User represents an OTF user account.
 	User struct {

@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
-	"github.com/leg100/otf/internal/github"
+	"github.com/leg100/otf/internal/github/testserver"
 	"github.com/leg100/otf/internal/module"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/stretchr/testify/assert"
@@ -26,7 +26,7 @@ func TestModule(t *testing.T) {
 	})
 
 	t.Run("create connected module", func(t *testing.T) {
-		daemon, org, ctx := setup(t, withGithubOption(github.WithRepo(vcs.NewMustRepo("leg100", "terraform-aws-stuff"))))
+		daemon, org, ctx := setup(t, withGithubOption(testserver.WithRepo(vcs.NewMustRepo("leg100", "terraform-aws-stuff"))))
 
 		vcsprov := daemon.createVCSProvider(t, ctx, org, nil)
 
@@ -38,7 +38,7 @@ func TestModule(t *testing.T) {
 
 		// webhook should be registered with github
 		hook := <-daemon.WebhookEvents
-		require.Equal(t, github.WebhookCreated, hook.Action)
+		require.Equal(t, testserver.WebhookCreated, hook.Action)
 
 		t.Run("delete module", func(t *testing.T) {
 			_, err := daemon.Modules.DeleteModule(ctx, mod.ID)
@@ -47,7 +47,7 @@ func TestModule(t *testing.T) {
 
 		// webhook should now have been deleted from github
 		hook = <-daemon.WebhookEvents
-		require.Equal(t, github.WebhookDeleted, hook.Action)
+		require.Equal(t, testserver.WebhookDeleted, hook.Action)
 	})
 
 	t.Run("get", func(t *testing.T) {

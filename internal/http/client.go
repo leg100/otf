@@ -73,11 +73,6 @@ func NewClient(config ClientConfig) (*Client, error) {
 		baseURL.Path += "/"
 	}
 
-	// This value must be provided by the user.
-	if config.Token == "" {
-		return nil, fmt.Errorf("missing API token")
-	}
-
 	// Create the client.
 	client := &Client{
 		baseURL: baseURL,

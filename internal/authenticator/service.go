@@ -5,7 +5,6 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal/logr"
-	"github.com/leg100/otf/internal/tokens"
 	"github.com/leg100/otf/internal/user"
 )
 
@@ -14,7 +13,7 @@ type (
 		Logger               logr.Logger
 		URLClient            urlClient
 		UserService          userService
-		TokensService        *tokens.Service
+		SessionClient        SessionStarter
 		IDTokenHandlerConfig OIDCConfig
 		SkipTLSVerification  bool
 	}
@@ -26,10 +25,10 @@ type (
 	Service struct {
 		logr.Logger
 
-		urls          urlClient
-		UserService   userService
-		TokensService *tokens.Service
-		clients       []*OAuthClient
+		urls        urlClient
+		UserService userService
+		sessions    SessionStarter
+		clients     []*OAuthClient
 	}
 
 	userService interface {
@@ -48,10 +47,10 @@ type (
 // opaque token, and one client that supports IDToken/OIDC.
 func NewAuthenticatorService(ctx context.Context, opts Options) (*Service, error) {
 	svc := Service{
-		Logger:        opts.Logger,
-		UserService:   opts.UserService,
-		TokensService: opts.TokensService,
-		urls:          opts.URLClient,
+		Logger:      opts.Logger,
+		UserService: opts.UserService,
+		sessions:    opts.SessionClient,
+		urls:        opts.URLClient,
 	}
 	// Construct client with OIDC IDToken handler
 	if opts.IDTokenHandlerConfig.ClientID == "" && opts.IDTokenHandlerConfig.ClientSecret == "" {
@@ -67,7 +66,7 @@ func NewAuthenticatorService(ctx context.Context, opts Options) (*Service, error
 		opts.Logger,
 		handler,
 		opts.URLClient,
-		opts.TokensService,
+		opts.SessionClient,
 		opts.UserService,
 		OAuthConfig{
 			Endpoint:            handler.provider.Endpoint(),
@@ -107,7 +106,7 @@ func (a *Service) RegisterOAuthClient(cfg OpaqueHandlerConfig) error {
 		a.Logger,
 		&opaqueHandler{cfg},
 		a.urls,
-		a.TokensService,
+		a.sessions,
 		a.UserService,
 		cfg.OAuthConfig,
 	)

@@ -45,13 +45,13 @@ func (h *Handlers) newVCSProvider(w http.ResponseWriter, r *http.Request) {
 		organization: params.Organization,
 		kind:         kind,
 	}
-	h.renderPage(
+	helpers.RenderPage(
 		h.templates.newProvider(props),
 		"new vcs provider",
 		w,
 		r,
-		withOrganization(params.Organization),
-		withBreadcrumbs(helpers.Breadcrumb{Name: "New VCS Provider"}),
+		helpers.WithOrganization(params.Organization),
+		helpers.WithBreadcrumbs(helpers.Breadcrumb{Name: "New VCS Provider"}),
 	)
 }
 
@@ -83,13 +83,13 @@ func (h *Handlers) editVCSProvider(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.renderPage(
+	helpers.RenderPage(
 		h.templates.edit(provider),
 		"edit vcs provider",
 		w,
 		r,
-		withOrganization(provider.Organization),
-		withBreadcrumbs(
+		helpers.WithOrganization(provider.Organization),
+		helpers.WithBreadcrumbs(
 			helpers.Breadcrumb{Name: "VCS Providers", Link: paths.VCSProviders(provider.Organization)},
 			helpers.Breadcrumb{Name: provider.String()},
 			helpers.Breadcrumb{Name: "settings"},
@@ -144,13 +144,13 @@ func (h *Handlers) listVCSProviders(w http.ResponseWriter, r *http.Request) {
 		providers:    resource.NewPage(providers, params.PageOptions, nil),
 		kinds:        h.VCSProviders.GetKinds(),
 	}
-	h.renderPage(
+	helpers.RenderPage(
 		h.templates.list(props),
 		"vcs providers",
 		w,
 		r,
-		withOrganization(params.Organization),
-		withBreadcrumbs(helpers.Breadcrumb{Name: "VCS Providers"}),
+		helpers.WithOrganization(params.Organization),
+		helpers.WithBreadcrumbs(helpers.Breadcrumb{Name: "VCS Providers"}),
 	)
 }
 

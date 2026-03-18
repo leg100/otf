@@ -54,7 +54,7 @@ func (t *templates) runList(props runListProps) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = runstatus.Filter(props.status, props.statusFilterVisible).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = helpers.RunStatusFilter(props.status, props.statusFilterVisible).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

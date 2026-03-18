@@ -155,7 +155,7 @@ func (t *templates) workspaceList(props workspaceListProps) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = runstatus.Filter(props.status, props.statusFilterVisible).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = helpers.RunStatusFilter(props.status, props.statusFilterVisible).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -286,7 +286,7 @@ func (t workspacesTable) Row(ws *workspace.Workspace) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		if ws.LatestRun != nil {
-			templ_7745c5c3_Err = runstatus.Badge(ws.LatestRun.ID, ws.LatestRun.Status).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = helpers.RunStatusBadge(ws.LatestRun.ID, ws.LatestRun.Status).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

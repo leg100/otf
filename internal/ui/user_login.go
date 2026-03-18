@@ -42,7 +42,7 @@ func (h *Handlers) adminLoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.Tokens.StartSession(w, r, user.SiteAdminID)
+	err = h.Sessions.StartSession(w, r, user.SiteAdminID)
 	if err != nil {
 		helpers.Error(r, w, err.Error())
 		return

@@ -35,13 +35,13 @@ func (h *Handlers) newTeam(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.renderPage(
+	helpers.RenderPage(
 		h.templates.newTeamView(*params.Organization),
 		"new team",
 		w,
 		r,
-		withOrganization(params.Organization),
-		withBreadcrumbs(
+		helpers.WithOrganization(params.Organization),
+		helpers.WithBreadcrumbs(
 			helpers.Breadcrumb{Name: "Teams", Link: paths.Teams(params.Organization)},
 			helpers.Breadcrumb{Name: "new"},
 		),
@@ -155,13 +155,13 @@ func (h *Handlers) getTeam(w http.ResponseWriter, r *http.Request) {
 			Width:       helpers.WideDropDown,
 		},
 	}
-	h.renderPage(
+	helpers.RenderPage(
 		h.templates.getTeam(props),
 		team.ID.String(),
 		w,
 		r,
-		withOrganization(team.Organization),
-		withBreadcrumbs(
+		helpers.WithOrganization(team.Organization),
+		helpers.WithBreadcrumbs(
 			helpers.Breadcrumb{Name: "Teams", Link: paths.Teams(props.team.Organization)},
 			helpers.Breadcrumb{Name: props.team.Name},
 		),
@@ -186,14 +186,14 @@ func (h *Handlers) listTeams(w http.ResponseWriter, r *http.Request) {
 		teams:         resource.NewPage(teams, params.PageOptions, nil),
 		canCreateTeam: h.Authorizer.CanAccess(r.Context(), authz.CreateTeamAction, params.Organization),
 	}
-	h.renderPage(
+	helpers.RenderPage(
 		h.templates.listTeams(props),
 		"teams",
 		w,
 		r,
-		withOrganization(params.Organization),
-		withContentActions(listTeamsActions(props)),
-		withBreadcrumbs(helpers.Breadcrumb{Name: "Teams"}),
+		helpers.WithOrganization(params.Organization),
+		helpers.WithContentActions(listTeamsActions(props)),
+		helpers.WithBreadcrumbs(helpers.Breadcrumb{Name: "Teams"}),
 	)
 }
 

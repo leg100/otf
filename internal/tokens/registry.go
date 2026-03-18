@@ -7,6 +7,9 @@ import (
 
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/lestrrat-go/jwx/v2/jwa"
+	"github.com/lestrrat-go/jwx/v2/jwk"
+	"github.com/lestrrat-go/jwx/v2/jwt"
 )
 
 type (
@@ -19,22 +22,14 @@ type (
 	// of the different types of subjects - organizations, teams, users, etc, - to
 	// other packages.
 	registry struct {
-		GetOrCreateUser
-
-		SiteToken string
-		SiteAdmin authz.Subject
-
 		kinds map[resource.Kind]SubjectGetter
 		mu    sync.Mutex
+		key   jwk.Key
 	}
 
 	// SubjectGetter retrieves an OTF subject given the jwtSubject string, which is the
 	// value of the 'subject' field parsed from a JWT.
 	SubjectGetter func(ctx context.Context, jwtSubject resource.TfeID) (authz.Subject, error)
-
-	// GetOrCreateUser retrieves the user with the given username. If the
-	// user does not exist it is created.
-	GetOrCreateUser func(ctx context.Context, username string) (authz.Subject, error)
 )
 
 // RegisterKind registers a kind of authentication token, providing a func that
@@ -45,20 +40,23 @@ func (r *registry) RegisterKind(k resource.Kind, fn SubjectGetter) {
 	r.mu.Unlock()
 }
 
-func (r *registry) GetSubject(ctx context.Context, jwtSubject resource.TfeID) (authz.Subject, error) {
+// GetSubject retrieves the subject from a JWT.
+func (r *registry) GetSubject(ctx context.Context, token []byte) (authz.Subject, error) {
+	parsed, err := jwt.Parse(token, jwt.WithKey(jwa.HS256, r.key))
+	if err != nil {
+		return nil, err
+	}
+	id, err := resource.ParseTfeID(parsed.Subject())
+	if err != nil {
+		return nil, err
+	}
+
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	subjectGetter, ok := r.kinds[jwtSubject.Kind()]
+	subjectGetter, ok := r.kinds[id.Kind()]
 	if !ok {
-		return nil, fmt.Errorf("unknown authentication token kind: %s", jwtSubject.Kind())
+		return nil, fmt.Errorf("unknown authentication token kind: %s", id.Kind())
 	}
-	return subjectGetter(ctx, jwtSubject)
-}
-
-// RegisterSiteToken registers a site token which the middleware, and the
-// subject to return as the site admin upon successful authentication.
-func (r *registry) RegisterSiteToken(token string, siteAdmin authz.Subject) {
-	r.SiteToken = token
-	r.SiteAdmin = siteAdmin
+	return subjectGetter(ctx, id)
 }
