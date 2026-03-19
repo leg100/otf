@@ -785,7 +785,7 @@ templ (t *templates) workspaceEditSSHKey(props workspaceEditSSHKeyProps) {
 					}
 				}
 			</select>
-			<button class="btn" disabled?={ len(props.keys) == 0 }>
+			<button class="btn" id="update-ssh-key" disabled?={ len(props.keys) == 0 }>
 				Update SSH Key
 			</button>
 		</form>
