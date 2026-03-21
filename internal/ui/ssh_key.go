@@ -2,6 +2,7 @@ package ui
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal/http/decode"
@@ -24,6 +25,11 @@ func (h *Handlers) createSSHKey(w http.ResponseWriter, r *http.Request) {
 		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
+	// Browsers convert \n to \r\n in the textarea input but this results in an
+	// invalid private key, so we undo this conversion here.
+	//
+	// https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/textarea#wrap
+	opts.PrivateKey = strings.ReplaceAll(opts.PrivateKey, "\r\n", "\n")
 
 	key, err := h.SSHKeys.CreateSSHKey(r.Context(), opts)
 	if err != nil {

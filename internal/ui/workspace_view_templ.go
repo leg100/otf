@@ -2467,7 +2467,7 @@ func (t *templates) workspaceEditSSHKey(props workspaceEditSSHKeyProps) templ.Co
 				}
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 205, "</select> <button class=\"btn\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 205, "</select> <button class=\"btn\" id=\"update-ssh-key\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

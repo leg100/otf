@@ -17,8 +17,9 @@ import (
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runstatus"
-	"github.com/leg100/otf/internal/sshkey"
+	"github.com/leg100/otf/internal/ui/paths"
 	"github.com/leg100/otf/internal/workspace"
+	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/ssh"
 )
@@ -60,16 +61,34 @@ func TestSSHKeyPrivateModule(t *testing.T) {
 	// Start an in-process SSH git server that only accepts the generated key.
 	sshAddr := startSSHGitServer(t, repoDir, sshPub)
 
+	// Start both a daemon and an agent.
 	daemon, org, ctx := setup(t)
 	agent, _ := daemon.startAgent(t, ctx, org.Name, nil, "")
 
-	// Register the SSH key with OTF.
-	key, err := daemon.SSHKeys.CreateSSHKey(ctx, sshkey.CreateOptions{
-		Organization: org.Name,
-		Name:         "test-key",
-		PrivateKey:   string(privKeyBytes),
+	// Register the SSH key with OTF via the UI.
+	browser.New(t, ctx, func(page playwright.Page) {
+		_, err := page.Goto(daemon.URL(paths.Organization(org.Name)))
+		require.NoError(t, err)
+
+		err = page.Locator(`//li[@id='menu-item-ssh-keys']/a`).Click()
+		require.NoError(t, err)
+
+		err = page.Locator("input#name").Fill("test-key")
+		require.NoError(t, err)
+
+		err = page.Locator("textarea#private-key").Fill(string(privKeyBytes))
+		require.NoError(t, err)
+
+		err = page.Locator("button#create-button").Click()
+		require.NoError(t, err)
+
+		// confirm key created
+		err = expect.Locator(page.GetByRole("alert")).ToHaveText("created ssh key: test-key")
+		require.NoError(t, err)
+
+		err = expect.Locator(page.Locator(`//table//tr[@id='ssh-key-item-test-key']/td[1]`)).ToHaveText("test-key")
+		require.NoError(t, err)
 	})
-	require.NoError(t, err)
 
 	// two tests: one run on the daemon, one via the agent.
 	tests := []struct {
@@ -94,12 +113,29 @@ func TestSSHKeyPrivateModule(t *testing.T) {
 				ExecutionMode: new(tt.mode),
 				AgentPoolID:   tt.poolID,
 			})
-			_, err = daemon.Workspaces.UpdateWorkspace(ctx, ws.ID, workspace.UpdateOptions{
-				UpdateSSHKeyOptions: &workspace.UpdateSSHKeyOptions{
-					SSHKeyID: &key.ID,
-				},
-			})
 			require.NoError(t, err)
+
+			// Update workspace via UI to use ssh key.
+			browser.New(t, ctx, func(page playwright.Page) {
+				_, err := page.Goto(daemon.URL(paths.Workspace(ws.ID)))
+				require.NoError(t, err)
+
+				err = page.Locator(`//li[@id='menu-item-ssh-key']/a`).Click()
+				require.NoError(t, err)
+
+				selectValues := []string{"test-key"}
+				_, err = page.Locator(`//select[@id="ssh-key-id-selector"]`).SelectOption(playwright.SelectOptionValues{
+					ValuesOrLabels: &selectValues,
+				})
+				require.NoError(t, err)
+
+				err = page.Locator("button#update-ssh-key").Click()
+				require.NoError(t, err)
+
+				// confirm workspace updated to use key
+				err = expect.Locator(page.GetByRole("alert")).ToHaveText("updated workspace")
+				require.NoError(t, err)
+			})
 
 			// Build a terraform config that sources the private module over SSH.  The
 			// module itself has no resources, so no providers need to be downloaded;
