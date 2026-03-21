@@ -61,6 +61,16 @@ func (h *Handlers) createVCSProvider(w http.ResponseWriter, r *http.Request) {
 		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
+
+	// Browsers convert \n to \r\n in the provider's token textarea input but
+	// this can result in an invalid token for the user, so we undo this
+	// conversion here.
+	//
+	// https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/textarea#wrap
+	if params.Token != nil {
+		*params.Token = strings.ReplaceAll(*params.Token, "\r\n", "\n")
+	}
+
 	provider, err := h.VCSProviders.CreateVCSProvider(r.Context(), params)
 	if err != nil {
 		helpers.Error(r, w, err.Error())

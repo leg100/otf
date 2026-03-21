@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"slices"
+	"strings"
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal/authz"
@@ -94,6 +95,15 @@ func (h *Handlers) createWorkspaceVariable(w http.ResponseWriter, r *http.Reques
 	if err := decode.All(&params, r); err != nil {
 		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
+	}
+
+	// Browsers convert \n to \r\n in the variable's value textarea input but
+	// this can result in an invalid value for the user, so we undo this
+	// conversion here.
+	//
+	// https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/textarea#wrap
+	if params.Value != nil {
+		*params.Value = strings.ReplaceAll(*params.Value, "\r\n", "\n")
 	}
 
 	variable, err := h.VariablesService.CreateWorkspaceVariable(r.Context(), params.WorkspaceID, variable.CreateVariableOptions{
