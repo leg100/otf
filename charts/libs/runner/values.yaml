@@ -6,11 +6,11 @@ concurrency:
 kubernetesRequestCPU: ~
 # -- Set the requested memory resources for kubernetes jobs.
 kubernetesRequestMemory: ~
-# -- Set the requested CPU resources for kubernetes jobs.
-kubernetesLimitCPU: ~
 # -- Set a CPU limit for kubernetes jobs.
-kubernetesLimitMemory: ~
+kubernetesLimitCPU: ~
 # -- Set a memory limit for kubernetes jobs.
+kubernetesLimitMemory: ~
+# -- Set additional labels on kubernetes jobs. Name and value are separated by an equals sign, e.g. `foo=bar`.
 kubernetesLabels: []
 # -- Delete finished kubernetes jobs after this duration.
 kubernetesTTLAfterFinish:

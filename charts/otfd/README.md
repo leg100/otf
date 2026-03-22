@@ -108,9 +108,9 @@ Note: you should only use this for testing purposes.
 | runner.cacheVolume.storageClass | string | `nil` | Persistent volume storage class. # If defined, storageClassName: <storageClass> # If set to "-", storageClassName: "", which disables dynamic provisioning # If undefined (the default) or set to null, no storageClassName spec is # set, choosing the default provisioner. |
 | runner.concurrency | int | `nil` | Set the number of runs that can be processed concurrently. See [docs](https://docs.otf.ninja/config/flags/#-concurrency). |
 | runner.executor | string | `""` | The executor to use. See [docs](https://docs.otf.ninja/config/flags/#-executor) |
-| runner.kubernetesLabels | list | `[]` | Set a memory limit for kubernetes jobs. |
-| runner.kubernetesLimitCPU | string | `nil` | Set the requested CPU resources for kubernetes jobs. |
-| runner.kubernetesLimitMemory | string | `nil` | Set a CPU limit for kubernetes jobs. |
+| runner.kubernetesLabels | list | `[]` | Set additional labels on kubernetes jobs. Name and value are separated by an equals sign, e.g. `foo=bar`. |
+| runner.kubernetesLimitCPU | string | `nil` | Set a CPU limit for kubernetes jobs. |
+| runner.kubernetesLimitMemory | string | `nil` | Set a memory limit for kubernetes jobs. |
 | runner.kubernetesRequestCPU | string | `nil` | Set the requested CPU resources for kubernetes jobs. |
 | runner.kubernetesRequestMemory | string | `nil` | Set the requested memory resources for kubernetes jobs. |
 | runner.kubernetesTTLAfterFinish | string | `nil` | Delete finished kubernetes jobs after this duration. |

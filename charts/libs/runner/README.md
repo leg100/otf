@@ -14,9 +14,9 @@ A Helm chart library for otf runner resources and configuration.
 | cacheVolume.storageClass | string | `nil` | Persistent volume storage class. # If defined, storageClassName: <storageClass> # If set to "-", storageClassName: "", which disables dynamic provisioning # If undefined (the default) or set to null, no storageClassName spec is # set, choosing the default provisioner. |
 | concurrency | int | `nil` | Set the number of runs that can be processed concurrently. See [docs](https://docs.otf.ninja/config/flags/#-concurrency). |
 | executor | string | `""` | The executor to use. See [docs](https://docs.otf.ninja/config/flags/#-executor) |
-| kubernetesLabels | list | `[]` | Set a memory limit for kubernetes jobs. |
-| kubernetesLimitCPU | string | `nil` | Set the requested CPU resources for kubernetes jobs. |
-| kubernetesLimitMemory | string | `nil` | Set a CPU limit for kubernetes jobs. |
+| kubernetesLabels | list | `[]` | Set additional labels on kubernetes jobs. Name and value are separated by an equals sign, e.g. `foo=bar`. |
+| kubernetesLimitCPU | string | `nil` | Set a CPU limit for kubernetes jobs. |
+| kubernetesLimitMemory | string | `nil` | Set a memory limit for kubernetes jobs. |
 | kubernetesRequestCPU | string | `nil` | Set the requested CPU resources for kubernetes jobs. |
 | kubernetesRequestMemory | string | `nil` | Set the requested memory resources for kubernetes jobs. |
 | kubernetesTTLAfterFinish | string | `nil` | Delete finished kubernetes jobs after this duration. |
