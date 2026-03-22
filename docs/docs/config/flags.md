@@ -133,14 +133,35 @@ It is advisable to set this flag in a production deployment. Otherwise it defaul
 * System: `otfd`, `otf-agent`
 * Default: `500m`
 
-Set the requested CPU resources for a kubernetes job.
+Set the requested CPU resources for kubernetes jobs.
 
 ## `--kubernetes-request-memory`
 
 * System: `otfd`, `otf-agent`
 * Default: `128Mi`
 
-Set the requested memory resources for a kubernetes job.
+Set the requested memory resources for kubernetes jobs.
+
+## `--kubernetes-limit-cpu`
+
+* System: `otfd`, `otf-agent`
+* Default: unset
+
+Set a CPU limit for kubernetes jobs.
+
+## `--kubernetes-limit-memory`
+
+* System: `otfd`, `otf-agent`
+* Default: unset
+
+Set a memory limit for kubernetes jobs.
+
+## `--kubernetes-labels`
+
+* System: `otfd`, `otf-agent`
+* Default: `""`
+
+Set additional labels on kubernetes jobs. Name and value are separated by an equals sign, e.g. `foo=bar`.
 
 ## `--kubernetes-ttl-after-finish`
 

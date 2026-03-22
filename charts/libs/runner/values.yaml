@@ -2,6 +2,16 @@
 executor: ""
 # -- (int) Set the number of runs that can be processed concurrently. See [docs](https://docs.otf.ninja/config/flags/#-concurrency).
 concurrency:
+# -- Set the requested CPU resources for kubernetes jobs.
+kubernetesRequestCPU: ~
+# -- Set the requested memory resources for kubernetes jobs.
+kubernetesRequestMemory: ~
+# -- Set the requested CPU resources for kubernetes jobs.
+kubernetesLimitCPU: ~
+# -- Set a CPU limit for kubernetes jobs.
+kubernetesLimitMemory: ~
+# -- Set a memory limit for kubernetes jobs.
+kubernetesLabels: []
 # -- Delete finished kubernetes jobs after this duration.
 kubernetesTTLAfterFinish:
 # -- (bool) Enable shared provider plugin cache for terraform providers. Note this is only concurrency safe in opentofu 1.10.0 and greater.
