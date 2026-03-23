@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -29,7 +30,7 @@ const KubeExecutorKind = "kubernetes"
 func init() {
 	homeDir, _ = os.UserHomeDir()
 
-	defaultKubeConfig = &kubeConfig{
+	defaultKubeConfig = kubeConfig{
 		// Default to using the same version of the job image as the current
 		// version of otfd.
 		Image: fmt.Sprintf("leg100/otf-job:%s", internal.Version),
@@ -59,14 +60,16 @@ func init() {
 		),
 		// Delete job by default 1 hour after it has finished
 		TTLAfterFinish: time.Hour,
-		RequestCPU:     "500m",
-		RequestMemory:  "128Mi",
+		flags: kubeConfigFlags{
+			RequestCPU:    "500m",
+			RequestMemory: "128Mi",
+		},
 	}
 }
 
 var (
 	homeDir           string
-	defaultKubeConfig *kubeConfig
+	defaultKubeConfig kubeConfig
 )
 
 type kubeConfig struct {
@@ -77,26 +80,52 @@ type kubeConfig struct {
 	ServiceAccount string
 	CachePVC       string
 	TTLAfterFinish time.Duration
-	RequestCPU     string
-	RequestMemory  string
+
+	requestCPU    k8sresource.Quantity
+	requestMemory k8sresource.Quantity
+	limitCPU      *k8sresource.Quantity
+	limitMemory   *k8sresource.Quantity
+	labels        map[string]string
+
+	flags kubeConfigFlags
 }
 
-type KubeConfigServerURL interface {
-	String() string
+// kubeConfigFlags are CLI flags that need to be parsed first and should not be
+// used directly by the kubernetes executor.
+type kubeConfigFlags struct {
+	Labels        []string
+	RequestCPU    string
+	RequestMemory string
+	LimitCPU      string
+	LimitMemory   string
 }
 
 func registerKubeFlags(flags *pflag.FlagSet, cfg *kubeConfig) {
 	flags.DurationVar(&cfg.TTLAfterFinish, "kubernetes-ttl-after-finish", cfg.TTLAfterFinish, "Delete finished kubernetes job after this duration.")
-	flags.StringVar(&cfg.RequestCPU, "kubernetes-request-cpu", cfg.RequestCPU, "Requested CPU for kubernetes job.")
-	flags.StringVar(&cfg.RequestMemory, "kubernetes-request-memory", cfg.RequestMemory, "Requested memory for kubernetes job.")
+	flags.StringVar(&cfg.flags.RequestCPU, "kubernetes-request-cpu", cfg.flags.RequestCPU, "Requested CPU for kubernetes job.")
+	flags.StringVar(&cfg.flags.RequestMemory, "kubernetes-request-memory", cfg.flags.RequestMemory, "Requested memory for kubernetes job.")
+	flags.StringVar(&cfg.flags.LimitCPU, "kubernetes-limit-cpu", cfg.flags.LimitCPU, "CPU limit for kubernetes job.")
+	flags.StringVar(&cfg.flags.LimitMemory, "kubernetes-limit-memory", cfg.flags.LimitMemory, "Memory limit for kubernetes job.")
+	flags.StringSliceVar(&cfg.flags.Labels, "kubernetes-labels", cfg.flags.Labels, "Set additional labels on kubernetes jobs. Name and value are separated by an equals sign, e.g. `foo=bar`.")
+
 }
 
 type kubeExecutor struct {
 	Logger          logr.Logger
 	Config          kubeConfig
 	OperationConfig OperationConfig
+	jobs            kubeExecutorJobsClient
+	secrets         kubeExecutorSecretsClient
+}
 
-	kube *kubernetes.Clientset
+type kubeExecutorJobsClient interface {
+	Create(ctx context.Context, job *batchv1.Job, opts metav1.CreateOptions) (*batchv1.Job, error)
+	List(ctx context.Context, opts metav1.ListOptions) (*batchv1.JobList, error)
+}
+
+type kubeExecutorSecretsClient interface {
+	Create(ctx context.Context, secret *corev1.Secret, opts metav1.CreateOptions) (*corev1.Secret, error)
+	Update(ctx context.Context, secret *corev1.Secret, opts metav1.UpdateOptions) (*corev1.Secret, error)
 }
 
 func newKubeExecutor(
@@ -104,13 +133,49 @@ func newKubeExecutor(
 	operationConfig OperationConfig,
 	kubeConfig kubeConfig,
 ) (*kubeExecutor, error) {
-	// validate resource request strings
-	if _, err := k8sresource.ParseQuantity(kubeConfig.RequestCPU); err != nil {
-		return nil, fmt.Errorf("invalid cpu quantity: %s: %w", kubeConfig.RequestCPU, err)
+	executor := &kubeExecutor{
+		Logger:          logger,
+		OperationConfig: operationConfig,
+		Config:          kubeConfig,
 	}
-	if _, err := k8sresource.ParseQuantity(kubeConfig.RequestMemory); err != nil {
-		return nil, fmt.Errorf("invalid memory quantity: %s: %w", kubeConfig.RequestMemory, err)
+
+	requestCPU, err := k8sresource.ParseQuantity(kubeConfig.flags.RequestCPU)
+	if err != nil {
+		return nil, fmt.Errorf("invalid cpu request quantity: %s: %w", kubeConfig.flags.RequestCPU, err)
 	}
+	executor.Config.requestCPU = requestCPU
+
+	requestMemory, err := k8sresource.ParseQuantity(kubeConfig.flags.RequestMemory)
+	if err != nil {
+		return nil, fmt.Errorf("invalid memory request quantity: %s: %w", kubeConfig.flags.RequestMemory, err)
+	}
+	executor.Config.requestMemory = requestMemory
+
+	if kubeConfig.flags.LimitCPU != "" {
+		limitCPU, err := k8sresource.ParseQuantity(kubeConfig.flags.LimitCPU)
+		if err != nil {
+			return nil, fmt.Errorf("invalid cpu limit quantity: %s: %w", kubeConfig.flags.LimitCPU, err)
+		}
+		executor.Config.limitCPU = &limitCPU
+	}
+
+	if kubeConfig.flags.LimitMemory != "" {
+		limitMemory, err := k8sresource.ParseQuantity(kubeConfig.flags.LimitMemory)
+		if err != nil {
+			return nil, fmt.Errorf("invalid memory limit quantity: %s: %w", kubeConfig.flags.LimitMemory, err)
+		}
+		executor.Config.limitMemory = &limitMemory
+	}
+
+	executor.Config.labels = make(map[string]string)
+	for _, label := range kubeConfig.flags.Labels {
+		k, v, ok := strings.Cut(label, "=")
+		if !ok {
+			return nil, fmt.Errorf("invalid label: must be in format name=value")
+		}
+		executor.Config.labels[k] = v
+	}
+
 	// assume running in-cluster; otherwise use config path
 	config, err := rest.InClusterConfig()
 	if errors.Is(err, rest.ErrNotInCluster) {
@@ -119,16 +184,15 @@ func newKubeExecutor(
 	if err != nil {
 		return nil, fmt.Errorf("creating kubernetes config: %w", err)
 	}
+
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		return nil, fmt.Errorf("creating kubernetes clientset: %w", err)
 	}
-	return &kubeExecutor{
-		Logger:          logger,
-		OperationConfig: operationConfig,
-		Config:          kubeConfig,
-		kube:            clientset,
-	}, nil
+	executor.secrets = clientset.CoreV1().Secrets(kubeConfig.Namespace)
+	executor.jobs = clientset.BatchV1().Jobs(kubeConfig.Namespace)
+
+	return executor, nil
 }
 
 func (s *kubeExecutor) SpawnOperation(ctx context.Context, _ *errgroup.Group, job *Job, jobToken []byte) error {
@@ -143,6 +207,7 @@ func (s *kubeExecutor) SpawnOperation(ctx context.Context, _ *errgroup.Group, jo
 		"otf.ninja/workspace-id":     job.WorkspaceID.String(),
 		"otf.ninja/organization":     job.Organization.String(),
 	}
+	maps.Copy(labels, s.Config.labels)
 
 	const (
 		cacheVolumeName   = "cache"
@@ -174,7 +239,7 @@ func (s *kubeExecutor) SpawnOperation(ctx context.Context, _ *errgroup.Group, jo
 			jobTokenSecretKey: string(jobToken),
 		},
 	}
-	ksecret, err := s.kube.CoreV1().Secrets(s.Config.Namespace).Create(ctx, secret, metav1.CreateOptions{})
+	ksecret, err := s.secrets.Create(ctx, secret, metav1.CreateOptions{})
 	if err != nil {
 		return fmt.Errorf("creating kubernetes secret for job token: %w", err)
 	}
@@ -201,8 +266,8 @@ func (s *kubeExecutor) SpawnOperation(ctx context.Context, _ *errgroup.Group, jo
 					RestartPolicy:      corev1.RestartPolicyNever,
 					Resources: &corev1.ResourceRequirements{
 						Requests: corev1.ResourceList{
-							corev1.ResourceCPU:    k8sresource.MustParse(s.Config.RequestCPU),
-							corev1.ResourceMemory: k8sresource.MustParse(s.Config.RequestMemory),
+							corev1.ResourceCPU:    s.Config.requestCPU,
+							corev1.ResourceMemory: s.Config.requestMemory,
 						},
 					},
 					Containers: []corev1.Container{
@@ -280,6 +345,18 @@ func (s *kubeExecutor) SpawnOperation(ctx context.Context, _ *errgroup.Group, jo
 			},
 		},
 	}
+
+	// Populate resource limits if user has specified any.
+	if s.Config.limitCPU != nil || s.Config.limitMemory != nil {
+		spec.Spec.Template.Spec.Resources.Limits = corev1.ResourceList{}
+	}
+	if s.Config.limitCPU != nil {
+		spec.Spec.Template.Spec.Resources.Limits[corev1.ResourceCPU] = *s.Config.limitCPU
+	}
+	if s.Config.limitMemory != nil {
+		spec.Spec.Template.Spec.Resources.Limits[corev1.ResourceMemory] = *s.Config.limitMemory
+	}
+
 	if s.Config.CachePVC != "" {
 		spec.Spec.Template.Spec.Volumes[0].VolumeSource = corev1.VolumeSource{
 			PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
@@ -287,7 +364,7 @@ func (s *kubeExecutor) SpawnOperation(ctx context.Context, _ *errgroup.Group, jo
 			},
 		}
 	}
-	kjob, err := s.kube.BatchV1().Jobs(s.Config.Namespace).Create(ctx, spec, metav1.CreateOptions{})
+	kjob, err := s.jobs.Create(ctx, spec, metav1.CreateOptions{})
 	if err != nil {
 		return fmt.Errorf("creating kubernetes job: %w", err)
 	}
@@ -305,7 +382,7 @@ func (s *kubeExecutor) SpawnOperation(ctx context.Context, _ *errgroup.Group, jo
 			UID:        kjob.UID,
 		},
 	}
-	_, err = s.kube.CoreV1().Secrets(s.Config.Namespace).Update(ctx, secret, metav1.UpdateOptions{})
+	_, err = s.secrets.Update(ctx, secret, metav1.UpdateOptions{})
 	if err != nil {
 		return fmt.Errorf("setting kubernetes job token secret owner reference: %w", err)
 	}
@@ -314,7 +391,7 @@ func (s *kubeExecutor) SpawnOperation(ctx context.Context, _ *errgroup.Group, jo
 }
 
 func (s *kubeExecutor) currentJobs(ctx context.Context, runnerID resource.TfeID) int {
-	jobs, err := s.kube.BatchV1().Jobs(s.Config.Namespace).List(ctx, metav1.ListOptions{
+	jobs, err := s.jobs.List(ctx, metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("otf.ninja/runner-id=%s", runnerID),
 	})
 	if err != nil {

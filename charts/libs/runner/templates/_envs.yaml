@@ -4,14 +4,34 @@
 - name: OTF_CONCURRENCY
   value: "{{ . }}"
 {{- end }}
-{{ with .executor }}
+{{- with .executor }}
 - name: OTF_EXECUTOR
   value: "{{ . }}"
-{{ end }}
-{{ with .kubernetesTTLAfterFinish }}
+{{- end }}
+{{- with .kubernetesTTLAfterFinish }}
 - name: OTF_KUBERNETES_TTL_AFTER_FINISH
   value: "{{ . }}"
-{{ end }}
+{{- end }}
+{{- with .kubernetesLabels }}
+- name: OTF_KUBERNETES_LABELS
+  value: {{ . | join "," }}
+{{- end }}
+{{- with .kubernetesRequestCPU }}
+- name: OTF_KUBERNETES_REQUEST_CPU
+  value: {{ . }}
+{{- end }}
+{{- with .kubernetesRequestMemory }}
+- name: OTF_KUBERNETES_REQUEST_MEMORY
+  value: {{ . }}
+{{- end }}
+{{- with .kubernetesLimitCPU }}
+- name: OTF_KUBERNETES_LIMIT_CPU
+  value: {{ . }}
+{{- end }}
+{{- with .kubernetesLimitMemory }}
+- name: OTF_KUBERNETES_LIMIT_MEMORY
+  value: {{ . }}
+{{- end }}
 - name: OTF_ENGINE_BINS_DIR
   value: "/cache/engines"
 {{- with .pluginCache }}
