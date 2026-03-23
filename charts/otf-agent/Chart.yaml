@@ -2,8 +2,8 @@ apiVersion: v2
 name: otf-agent
 description: Helm chart for the OTF agent
 type: application
-version: 0.1.23
-appVersion: 0.5.17
+version: 0.1.24
+appVersion: 0.5.18
 maintainers:
   - name: Louis Garman
     email: louisgarman@gmail.com
