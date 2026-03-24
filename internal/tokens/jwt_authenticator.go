@@ -2,6 +2,7 @@ package tokens
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/leg100/otf/internal/authz"
@@ -20,7 +21,11 @@ type JWTAuthenticatorClient interface {
 func (a *JWTAuthenticator) Authenticate(w http.ResponseWriter, r *http.Request) (authz.Subject, error) {
 	token, err := ParseBearerToken(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("parsing bearer token: %w", err)
+	}
+	if token == "" {
+		// No Authorization header found.
+		return nil, nil
 	}
 	return a.Client.GetSubject(r.Context(), []byte(token))
 }

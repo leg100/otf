@@ -37,6 +37,8 @@ func (f *factory) NewToken(subjectID resource.TfeID, expiry *time.Time) ([]byte,
 	return jwt.Sign(token, jwt.WithKey(jwa.HS256, f.key))
 }
 
+// ParseBearerToken parses an HTTP Authorization header with a bearer token. It
+// returns an empty string and a nil error if there is no such header.
 func ParseBearerToken(r *http.Request) (string, error) {
 	bearer := r.Header.Get("Authorization")
 	if bearer == "" {
