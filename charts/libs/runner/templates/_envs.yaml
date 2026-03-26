@@ -32,6 +32,10 @@
 - name: OTF_KUBERNETES_LIMIT_MEMORY
   value: {{ . }}
 {{- end }}
+{{- with .kubernetesJobImage }}
+- name: OTF_KUBERNETES_JOB_IMAGE
+  value: "{{ . }}"
+{{- end }}
 - name: OTF_ENGINE_BINS_DIR
   value: "/cache/engines"
 {{- with .pluginCache }}

@@ -128,6 +128,13 @@ Sets the hostname advertised to external clients, for example:
 
 It is advisable to set this flag in a production deployment. Otherwise it defaults to the listening address set with `--address` which is unlikely to be accessible to external clients.
 
+## `--kubernetes-job-image`
+
+* System: `otfd`, `otf-agent`
+* Default: `leg100/otf-job:<version>`
+
+Set the image used for kubernetes jobs. Allows customization of the job image so that you can add custom tools or logic to your run environments.
+
 ## `--kubernetes-request-cpu`
 
 * System: `otfd`, `otf-agent`

@@ -12,6 +12,8 @@ kubernetesLimitCPU: ~
 kubernetesLimitMemory: ~
 # -- Set additional labels on kubernetes jobs. Name and value are separated by an equals sign, e.g. `foo=bar`.
 kubernetesLabels: []
+# -- Set the kubernetes job image. Defaults to `leg100/otf-job` tagged with the current OTF version. See [docs](https://docs.otf.ninja/config/flags/#-kubernetes-job-image).
+kubernetesJobImage: ~
 # -- Delete finished kubernetes jobs after this duration.
 kubernetesTTLAfterFinish:
 # -- (bool) Enable shared provider plugin cache for terraform providers. Note this is only concurrency safe in opentofu 1.10.0 and greater.
