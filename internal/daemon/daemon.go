@@ -39,6 +39,7 @@ import (
 	"github.com/leg100/otf/internal/ui"
 	"github.com/leg100/otf/internal/ui/session"
 	"github.com/leg100/otf/internal/user"
+	userui "github.com/leg100/otf/internal/user/ui"
 	"github.com/leg100/otf/internal/variable"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/workspace"
@@ -448,6 +449,15 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		runnerService,
 		disco.Service{},
 		&tfeapi.Handlers{},
+		&userui.Handlers{
+			Client: struct {
+				*user.UserService
+				*session.Service
+			}{
+				UserService: userService,
+				Service:     sessionService,
+			},
+		},
 		ui.NewHandlers(
 			logger,
 			runService,

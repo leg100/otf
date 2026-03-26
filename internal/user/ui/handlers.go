@@ -17,7 +17,11 @@ import (
 	"github.com/leg100/otf/internal/user"
 )
 
-type UserService interface {
+type Handlers struct {
+	Client Client
+}
+
+type Client interface {
 	Create(ctx context.Context, username string, opts ...user.NewUserOption) (*user.User, error)
 	List(ctx context.Context) ([]*user.User, error)
 	ListOrganizationUsers(ctx context.Context, organization organization.Name) ([]*user.User, error)
@@ -30,14 +34,12 @@ type UserService interface {
 	CreateToken(ctx context.Context, opts user.CreateUserTokenOptions) (*user.UserToken, []byte, error)
 	ListTokens(ctx context.Context) ([]*user.UserToken, error)
 	DeleteToken(ctx context.Context, tokenID resource.TfeID) error
-}
 
-type sessionService interface {
 	StartSession(w http.ResponseWriter, r *http.Request, userID resource.TfeID) error
 }
 
-// addUserHandlers registers user UI handlers with the router
-func addUserHandlers(r *mux.Router, h *Handlers) {
+// AddHandlers registers user UI handlers with the router
+func (h *Handlers) AddHandlers(r *mux.Router) {
 	r.HandleFunc("/logout", h.logout).Methods("POST")
 	r.HandleFunc("/organizations/{name}/users", h.listOrganizationUsers).Methods("GET")
 	r.HandleFunc("/profile", h.profileHandler).Methods("GET")
@@ -68,7 +70,7 @@ func (h *Handlers) listOrganizationUsers(w http.ResponseWriter, r *http.Request)
 		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
-	users, err := h.Users.ListOrganizationUsers(r.Context(), params.Organization)
+	users, err := h.Client.ListOrganizationUsers(r.Context(), params.Organization)
 	if err != nil {
 		helpers.Error(r, w, err.Error())
 		return
@@ -90,7 +92,7 @@ func (h *Handlers) listOrganizationUsers(w http.ResponseWriter, r *http.Request)
 
 func (h *Handlers) profileHandler(w http.ResponseWriter, r *http.Request) {
 	helpers.RenderPage(
-		h.templates.profile(),
+		profile(),
 		"profile",
 		w,
 		r,
@@ -115,7 +117,7 @@ func (h *Handlers) addTeamMember(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := h.Users.AddTeamMembership(r.Context(), params.TeamID, []user.Username{*params.Username})
+	err := h.Client.AddTeamMembership(r.Context(), params.TeamID, []user.Username{*params.Username})
 	if err != nil {
 		helpers.Error(r, w, err.Error())
 		return
@@ -135,7 +137,7 @@ func (h *Handlers) removeTeamMember(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := h.Users.RemoveTeamMembership(r.Context(), params.TeamID, []user.Username{params.Username})
+	err := h.Client.RemoveTeamMembership(r.Context(), params.TeamID, []user.Username{params.Username})
 	if err != nil {
 		helpers.Error(r, w, err.Error())
 		return
@@ -151,7 +153,7 @@ func (h *Handlers) removeTeamMember(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handlers) newUserToken(w http.ResponseWriter, r *http.Request) {
 	helpers.RenderPage(
-		h.templates.newToken(),
+		newToken(),
 		"new user token",
 		w,
 		r,
@@ -168,7 +170,7 @@ func (h *Handlers) createUserToken(w http.ResponseWriter, r *http.Request) {
 		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
-	_, token, err := h.Users.CreateToken(r.Context(), opts)
+	_, token, err := h.Client.CreateToken(r.Context(), opts)
 	if err != nil {
 		helpers.Error(r, w, err.Error())
 		return
@@ -182,7 +184,7 @@ func (h *Handlers) createUserToken(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handlers) userTokens(w http.ResponseWriter, r *http.Request) {
-	tokens, err := h.Users.ListTokens(r.Context())
+	tokens, err := h.Client.ListTokens(r.Context())
 	if err != nil {
 		helpers.Error(r, w, err.Error())
 		return
@@ -194,7 +196,7 @@ func (h *Handlers) userTokens(w http.ResponseWriter, r *http.Request) {
 	})
 
 	helpers.RenderPage(
-		h.templates.tokenList(tokens),
+		tokenList(tokens),
 		"User tokens",
 		w,
 		r,
@@ -209,7 +211,7 @@ func (h *Handlers) deleteUserToken(w http.ResponseWriter, r *http.Request) {
 		helpers.Error(r, w, "missing id", helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
-	if err := h.Users.DeleteToken(r.Context(), id); err != nil {
+	if err := h.Client.DeleteToken(r.Context(), id); err != nil {
 		helpers.Error(r, w, err.Error())
 		return
 	}
