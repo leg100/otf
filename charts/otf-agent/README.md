@@ -89,6 +89,7 @@ address=10.244.0.18 agent.pool_id=apool-5b90443ed82ef769
 | runner.cacheVolume.storageClass | string | `nil` | Persistent volume storage class. # If defined, storageClassName: <storageClass> # If set to "-", storageClassName: "", which disables dynamic provisioning # If undefined (the default) or set to null, no storageClassName spec is # set, choosing the default provisioner. |
 | runner.concurrency | int | `nil` | Set the number of runs that can be processed concurrently. See [docs](https://docs.otf.ninja/config/flags/#-concurrency). |
 | runner.executor | string | `""` | The executor to use. See [docs](https://docs.otf.ninja/config/flags/#-executor) |
+| runner.kubernetesJobImage | string | `""` | Set the kubernetes job image. Defaults to `leg100/otf-job` tagged with the current OTF version. See [docs](https://docs.otf.ninja/config/flags/#-kubernetes-job-image). |
 | runner.kubernetesLabels | list | `[]` | Set additional labels on kubernetes jobs. Name and value are separated by an equals sign, e.g. `foo=bar`. |
 | runner.kubernetesLimitCPU | string | `nil` | Set a CPU limit for kubernetes jobs. |
 | runner.kubernetesLimitMemory | string | `nil` | Set a memory limit for kubernetes jobs. |
