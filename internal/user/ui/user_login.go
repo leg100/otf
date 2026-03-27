@@ -26,7 +26,7 @@ func (h *Handlers) loginHandler(w http.ResponseWriter, r *http.Request) {
 
 // adminLoginPromptHandler presents a prompt for logging in as site admin
 func (h *Handlers) adminLoginPromptHandler(w http.ResponseWriter, r *http.Request) {
-	helpers.Render(h.templates.adminLogin(), w, r)
+	helpers.Render(adminLogin(), w, r)
 }
 
 // adminLoginHandler logs in a site admin
@@ -42,7 +42,7 @@ func (h *Handlers) adminLoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.Sessions.StartSession(w, r, user.SiteAdminID)
+	err = h.Client.StartSession(w, r, user.SiteAdminID)
 	if err != nil {
 		helpers.Error(r, w, err.Error())
 		return

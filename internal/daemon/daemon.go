@@ -24,16 +24,23 @@ import (
 	"github.com/leg100/otf/internal/loginserver"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/module"
+	moduleui "github.com/leg100/otf/internal/module/ui"
 	"github.com/leg100/otf/internal/notifications"
 	"github.com/leg100/otf/internal/organization"
+	orgui "github.com/leg100/otf/internal/organization/ui"
 	"github.com/leg100/otf/internal/repohooks"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
+	runui "github.com/leg100/otf/internal/run/ui"
 	"github.com/leg100/otf/internal/runner"
+	runnerui "github.com/leg100/otf/internal/runner/ui"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sshkey"
+	sshkeyui "github.com/leg100/otf/internal/sshkey/ui"
 	"github.com/leg100/otf/internal/state"
+	stateui "github.com/leg100/otf/internal/state/ui"
 	"github.com/leg100/otf/internal/team"
+	teamui "github.com/leg100/otf/internal/team/ui"
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/tokens"
 	"github.com/leg100/otf/internal/ui"
@@ -41,8 +48,11 @@ import (
 	"github.com/leg100/otf/internal/user"
 	userui "github.com/leg100/otf/internal/user/ui"
 	"github.com/leg100/otf/internal/variable"
+	variableui "github.com/leg100/otf/internal/variable/ui"
 	"github.com/leg100/otf/internal/vcs"
+	vcsui "github.com/leg100/otf/internal/vcs/ui"
 	"github.com/leg100/otf/internal/workspace"
+	workspaceui "github.com/leg100/otf/internal/workspace/ui"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -429,15 +439,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	})
 
 	handlers := []internal.Handlers{
-		teamService,
-		userService,
-		workspaceService,
-		stateService,
-		orgService,
-		variableService,
-		vcsService,
-		moduleService,
-		runService,
 		repoService,
 		authenticatorService,
 		loginserver.NewServer(loginserver.Options{
@@ -446,43 +447,8 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		}),
 		configService,
 		notificationService,
-		runnerService,
 		disco.Service{},
 		&tfeapi.Handlers{},
-		&userui.Handlers{
-			Client: struct {
-				*user.UserService
-				*session.Service
-			}{
-				UserService: userService,
-				Service:     sessionService,
-			},
-		},
-		ui.NewHandlers(
-			logger,
-			runService,
-			workspaceService,
-			userService,
-			teamService,
-			orgService,
-			moduleService,
-			vcsService,
-			stateService,
-			runnerService,
-			githubAppService,
-			engineService,
-			configService,
-			hostnameService,
-			sessionService,
-			authorizer,
-			authenticatorService,
-			variableService,
-			cfg.GithubHostname,
-			sshkeyService,
-			cfg.SkipTLSVerification,
-			cfg.SiteToken,
-			cfg.RestrictOrganizationCreation,
-		),
 		&github.AppEventHandler{
 			Logger:     logger,
 			Publisher:  vcsEventBroker,
@@ -490,7 +456,119 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 			VCSService: vcsService,
 		},
 		dynamiccredsService,
-		sshkeyService,
+	}
+
+	// UI handlers, i.e. the web app
+	runuiHandlers := runui.NewHandlers(
+		logger,
+		struct {
+			*run.RunService
+			*user.UserService
+			*workspace.WorkspaceService
+			*configversion.ConfigService
+		}{
+			RunService:       runService,
+			UserService:      userService,
+			WorkspaceService: workspaceService,
+			ConfigService:    configService,
+		},
+		authorizer,
+	)
+	uiHandlers := ui.Handlers{
+		Handlers: []internal.Handlers{
+			&teamui.Handlers{
+				Teams: struct {
+					*user.UserService
+					*team.TeamService
+				}{
+					UserService: userService,
+					TeamService: teamService,
+				},
+				Authorizer: authorizer,
+			},
+			stateui.NewHandlers(
+				struct {
+					*state.StateService
+					*workspace.WorkspaceService
+				}{
+					WorkspaceService: workspaceService,
+					StateService:     stateService,
+				},
+				authorizer,
+			),
+			orgui.NewHandlers(orgService, cfg.RestrictOrganizationCreation),
+			vcsui.NewHandlers(vcsService),
+			variableui.NewHandlers(
+				struct {
+					*variable.VariableService
+					*workspace.WorkspaceService
+				}{
+					VariableService:  variableService,
+					WorkspaceService: workspaceService,
+				},
+				authorizer,
+			),
+			runuiHandlers,
+			&runnerui.Handlers{
+				Client: struct {
+					*runner.RunnerService
+					*workspace.WorkspaceService
+				}{
+					RunnerService:    runnerService,
+					WorkspaceService: workspaceService,
+				},
+				Authorizer: authorizer,
+			},
+			&sshkeyui.Handlers{
+				Client: sshkeyService,
+			},
+			&userui.Handlers{
+				Client: struct {
+					*user.UserService
+					*session.Service
+				}{
+					UserService: userService,
+					Service:     sessionService,
+				},
+				SiteToken:            cfg.SiteToken,
+				AuthenticatorService: authenticatorService,
+			},
+			&workspaceui.Handlers{
+				Client: struct {
+					*run.RunService
+					*user.UserService
+					*workspace.WorkspaceService
+					*configversion.ConfigService
+					*sshkey.SSHKeyService
+					*engine.EngineService
+					*vcs.VCSService
+					*team.TeamService
+				}{
+					RunService:       runService,
+					UserService:      userService,
+					WorkspaceService: workspaceService,
+					ConfigService:    configService,
+					SSHKeyService:    sshkeyService,
+					EngineService:    engineService,
+					VCSService:       vcsService,
+					TeamService:      teamService,
+				},
+				Authorizer:     authorizer,
+				SingleRunTable: runuiHandlers.SingleRunTable,
+			},
+			moduleui.NewHandlers(
+				struct {
+					*module.ModuleService
+					*vcs.VCSService
+					*internal.HostnameService
+				}{
+					ModuleService:   moduleService,
+					VCSService:      vcsService,
+					HostnameService: hostnameService,
+				},
+				authorizer,
+			),
+		},
 	}
 
 	// Construct subsystems; ordered by start order
@@ -620,7 +698,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		KeyFile:              cfg.KeyFile,
 		EnableRequestLogging: cfg.EnableRequestLogging,
 		Middleware:           []mux.MiddlewareFunc{tokensService.Middleware.Authenticate},
-		Handlers:             handlers,
+		Handlers:             append(handlers, &uiHandlers),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("setting up http server: %w", err)

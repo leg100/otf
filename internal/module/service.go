@@ -31,7 +31,7 @@ type (
 
 		db *pgdb
 
-		api          *api
+		api          *tfe
 		vcsproviders *vcs.Service
 		connections  *connections.Service
 	}
@@ -56,7 +56,7 @@ func NewService(opts Options) *Service {
 		db:           &pgdb{opts.DB},
 		vcsproviders: opts.VCSProviderService,
 	}
-	svc.api = &api{
+	svc.api = &tfe{
 		svc:    &svc,
 		Signer: opts.Signer,
 	}

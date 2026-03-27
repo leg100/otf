@@ -134,3 +134,8 @@ func (f *fakeGithubService) ListInstallations(context.Context) ([]vcs.Installati
 func (f *fakeGithubService) DeleteInstallation(context.Context, int64) error {
 	return nil
 }
+
+type fakeHostnamesClient struct{}
+
+func (f *fakeHostnamesClient) URL(path string) string        { return path }
+func (f *fakeHostnamesClient) WebhookURL(path string) string { return path }

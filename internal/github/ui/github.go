@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/github"
@@ -18,13 +17,6 @@ import (
 	"github.com/leg100/otf/internal/vcs"
 )
 
-func addGithubAppHandlers(r *mux.Router, h *Handlers) {
-	r.HandleFunc("/github-apps", h.getGithubApp).Methods("GET")
-	r.HandleFunc("/github-apps/new", h.newGithubApp).Methods("GET")
-	r.HandleFunc("/github-apps/exchange-code", h.exchangeCodeGithubApp).Methods("GET")
-	r.HandleFunc("/github-apps/{github_app_id}/delete", h.deleteGithubApp).Methods("POST")
-	r.HandleFunc("/github-apps/{github_app_id}/delete-install", h.deleteGithubAppInstall).Methods("POST")
-}
 
 func (h *Handlers) newGithubApp(w http.ResponseWriter, r *http.Request) {
 	// Github manifest documented here:

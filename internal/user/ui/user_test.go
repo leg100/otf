@@ -25,7 +25,7 @@ func TestUserHandlers(t *testing.T) {
 	})
 
 	t.Run("create token", func(t *testing.T) {
-		h := Handlers{Users: &fakeUserService{}}
+		h := Handlers{Client: &fakeUserService{}}
 		r := httptest.NewRequest("GET", "/?", nil)
 		r = r.WithContext(authz.AddSubjectToContext(context.Background(), user.NewTestUser(t)))
 		w := httptest.NewRecorder()
@@ -40,7 +40,7 @@ func TestUserHandlers(t *testing.T) {
 
 	t.Run("list tokens", func(t *testing.T) {
 		h := Handlers{
-			Users: &fakeUserService{
+			Client: &fakeUserService{
 				ut: &user.UserToken{},
 			},
 		}
@@ -55,7 +55,7 @@ func TestUserHandlers(t *testing.T) {
 
 	t.Run("delete token", func(t *testing.T) {
 		h := Handlers{
-			Users: &fakeUserService{},
+			Client: &fakeUserService{},
 		}
 		r := httptest.NewRequest("POST", "/?id=token-123", nil)
 		r = r.WithContext(authz.AddSubjectToContext(context.Background(), user.NewTestUser(t)))
@@ -78,7 +78,9 @@ func TestUser_diffUsers(t *testing.T) {
 	assert.Equal(t, []*user.User{alice}, diffUsers(a, b))
 }
 
-type fakeTokensService struct{}
+type fakeTokensService struct {
+	Client
+}
 
 func (f *fakeTokensService) StartSession(w http.ResponseWriter, r *http.Request, userID resource.TfeID) error {
 	http.Redirect(w, r, paths.Profile(), http.StatusFound)
@@ -86,7 +88,8 @@ func (f *fakeTokensService) StartSession(w http.ResponseWriter, r *http.Request,
 }
 
 type fakeUserService struct {
-	UserService
+	Client
+
 	user  *user.User
 	token []byte
 	ut    *user.UserToken

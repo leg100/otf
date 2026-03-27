@@ -7,11 +7,11 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"path"
 	"strings"
 
 	"github.com/DataDog/jsonapi"
 	"github.com/gorilla/mux"
+	"github.com/leg100/otf/internal"
 )
 
 const (
@@ -36,14 +36,11 @@ func Unmarshal(r io.Reader, v any) error {
 	return nil
 }
 
-type Handlers struct{}
+type Handlers struct {
+	Handlers []*internal.Handlers
+}
 
 func (h *Handlers) AddHandlers(r *mux.Router) {
-	// handle ping sent by go-tfe upon initialization
-	r.HandleFunc(path.Join(APIPrefixV2, "ping"), func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusNoContent)
-	})
-
 	// Middleware to alter requests/responses
 	r.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -62,5 +59,12 @@ func (h *Handlers) AddHandlers(r *mux.Router) {
 
 			next.ServeHTTP(w, r)
 		})
+	})
+
+	r = r.PathPrefix(APIPrefixV2).Subrouter()
+
+	// handle ping sent by go-tfe upon initialization
+	r.HandleFunc("ping", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
 	})
 }

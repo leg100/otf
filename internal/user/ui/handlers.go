@@ -18,7 +18,9 @@ import (
 )
 
 type Handlers struct {
-	Client Client
+	Client               Client
+	SiteToken            string
+	AuthenticatorService loginService
 }
 
 type Client interface {
@@ -40,6 +42,9 @@ type Client interface {
 
 // AddHandlers registers user UI handlers with the router
 func (h *Handlers) AddHandlers(r *mux.Router) {
+	// Unauthenticated routes for login
+	addLoginHandlers(r, h)
+
 	r.HandleFunc("/logout", h.logout).Methods("POST")
 	r.HandleFunc("/organizations/{name}/users", h.listOrganizationUsers).Methods("GET")
 	r.HandleFunc("/profile", h.profileHandler).Methods("GET")

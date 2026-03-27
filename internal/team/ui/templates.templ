@@ -1,0 +1,189 @@
+package ui
+
+import (
+	"context"
+	"fmt"
+	"github.com/leg100/otf/internal/organization"
+	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/team"
+	"github.com/leg100/otf/internal/ui/helpers"
+	"github.com/leg100/otf/internal/ui/paths"
+	"github.com/leg100/otf/internal/user"
+	"io"
+)
+
+templ newTeamView(organization organization.Name) {
+	<form class="flex flex-col gap-2" action={ paths.CreateTeam(organization) } method="POST">
+		<div class="field">
+			<label for="name">Name</label>
+			<input class="input w-80" type="text" name="name" id="name" required/>
+		</div>
+		<div>
+			<button class="btn" id="create-team-button">Create team</button>
+		</div>
+	</form>
+}
+
+type listTeamsProps struct {
+	organization  organization.Name
+	teams         *resource.Page[*team.Team]
+	canCreateTeam bool
+}
+
+type listOptions struct{}
+
+templ listTeams(props listTeamsProps) {
+	<div id="content-list">
+		@helpers.Table(&teamTable{}, props.teams)
+	</div>
+}
+
+type teamTable struct{}
+
+templ (t teamTable) Header() {
+	<th>Name</th>
+	<th>ID</th>
+}
+
+templ (t teamTable) Row(tm *team.Team) {
+	<tr id={ "item-team-" + tm.Name }>
+		<td>
+			<a class="link" href={ paths.Team(tm.ID) }>
+				{ tm.Name }
+			</a>
+		</td>
+		<td>
+			@helpers.Identifier(tm.ID)
+		</td>
+	</tr>
+}
+
+templ listTeamsActions(props listTeamsProps) {
+	if props.canCreateTeam {
+		<form action={ paths.NewTeam(props.organization) } method="GET">
+			<button class="btn" id="new-team-button">
+				New Team
+			</button>
+		</form>
+	}
+}
+
+// getTeamProps defines the properties for the team detail view.
+type getTeamProps struct {
+	team            *team.Team
+	members         []*user.User
+	canUpdateTeam   bool
+	canDeleteTeam   bool
+	canAddMember    bool
+	canRemoveMember bool
+	dropdown        helpers.SearchDropdownProps
+}
+
+// getTeam renders the team detail page.
+func getTeam(props getTeamProps) templ.Component {
+	return templ.ComponentFunc(func(ctx context.Context, w io.Writer) error {
+		_, err := fmt.Fprintf(w, `<div class="flex flex-col gap-4">`)
+		if err != nil {
+			return err
+		}
+
+		// Members section
+		_, err = fmt.Fprintf(w, `<div class="flex flex-col gap-2"><h3 class="text-lg font-semibold">Team Members</h3>`)
+		if err != nil {
+			return err
+		}
+
+		if props.canAddMember {
+			if err := helpers.SearchDropdown(props.dropdown).Render(ctx, w); err != nil {
+				return err
+			}
+		}
+
+		for _, m := range props.members {
+			_, err = fmt.Fprintf(w, `<div class="flex items-center gap-2"><span>%s</span>`, templ.EscapeString(m.Username.String()))
+			if err != nil {
+				return err
+			}
+			if props.canRemoveMember {
+				_, err = fmt.Fprintf(w,
+					`<form action="%s" method="POST"><input type="hidden" name="username" value="%s"/><button class="btn btn-sm btn-error">Remove</button></form>`,
+					templ.EscapeString(string(paths.RemoveMemberTeam(props.team.ID))),
+					templ.EscapeString(m.Username.String()),
+				)
+				if err != nil {
+					return err
+				}
+			}
+			_, err = fmt.Fprintf(w, `</div>`)
+			if err != nil {
+				return err
+			}
+		}
+
+		_, err = fmt.Fprintf(w, `</div>`)
+		if err != nil {
+			return err
+		}
+
+		// Permissions section
+		if props.canUpdateTeam || props.canDeleteTeam {
+			manageWorkspacesChecked := ""
+			if props.team.ManageWorkspaces {
+				manageWorkspacesChecked = " checked"
+			}
+			manageVCSChecked := ""
+			if props.team.ManageVCS {
+				manageVCSChecked = " checked"
+			}
+			manageModulesChecked := ""
+			if props.team.ManageModules {
+				manageModulesChecked = " checked"
+			}
+
+			_, err = fmt.Fprintf(w,
+				`<div class="flex flex-col gap-2"><h3 class="text-lg font-semibold">Permissions</h3>`+
+					`<form action="%s" method="POST"><div class="flex flex-col gap-2">`+
+					`<label class="flex items-center gap-2"><input type="checkbox" name="manage_workspaces" class="checkbox"%s/> Manage Workspaces</label>`+
+					`<label class="flex items-center gap-2"><input type="checkbox" name="manage_vcs" class="checkbox"%s/> Manage VCS</label>`+
+					`<label class="flex items-center gap-2"><input type="checkbox" name="manage_modules" class="checkbox"%s/> Manage Modules</label>`,
+				templ.EscapeString(string(paths.UpdateTeam(props.team.ID))),
+				manageWorkspacesChecked,
+				manageVCSChecked,
+				manageModulesChecked,
+			)
+			if err != nil {
+				return err
+			}
+
+			if props.canUpdateTeam {
+				_, err = fmt.Fprintf(w, `<button class="btn btn-primary" id="save-team-permissions-button">Save</button>`)
+				if err != nil {
+					return err
+				}
+			}
+
+			_, err = fmt.Fprintf(w, `</div></form>`)
+			if err != nil {
+				return err
+			}
+
+			if props.canDeleteTeam {
+				_, err = fmt.Fprintf(w,
+					`<form action="%s" method="POST"><button class="btn btn-error" id="delete-team-button">Delete team</button></form>`,
+					templ.EscapeString(string(paths.DeleteTeam(props.team.ID))),
+				)
+				if err != nil {
+					return err
+				}
+			}
+
+			_, err = fmt.Fprintf(w, `</div>`)
+			if err != nil {
+				return err
+			}
+		}
+
+		_, err = fmt.Fprintf(w, `</div>`)
+		return err
+	})
+}
