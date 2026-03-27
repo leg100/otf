@@ -43,6 +43,9 @@ var healthzPayload = json.MustMarshal(struct {
 })
 
 type (
+	// HealthChecker verifies the health of a dependency.
+	HealthChecker func(ctx context.Context) error
+
 	// ServerConfig is the http server config
 	ServerConfig struct {
 		SSL                  bool
@@ -52,6 +55,9 @@ type (
 		Handlers []internal.Handlers
 		// middleware to intercept requests, executed in the order given.
 		Middleware []mux.MiddlewareFunc
+		// HealthCheck is an optional check invoked on /healthz. If non-nil
+		// and it returns an error, the endpoint responds with 503.
+		HealthCheck HealthChecker
 	}
 
 	// Server is the http server for OTF
@@ -100,6 +106,13 @@ func NewServer(logger logr.Logger, cfg ServerConfig) (*Server, error) {
 	})
 	r.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-type", "application/json")
+		if cfg.HealthCheck != nil {
+			if err := cfg.HealthCheck(r.Context()); err != nil {
+				w.WriteHeader(http.StatusServiceUnavailable)
+				w.Write([]byte(fmt.Sprintf(`{"status":"UNHEALTHY","error":%q}`, err.Error())))
+				return
+			}
+		}
 		w.Write([]byte(`{"status":"OK"}`))
 	})
 

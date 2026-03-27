@@ -611,6 +611,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		EnableRequestLogging: cfg.EnableRequestLogging,
 		Middleware:           []mux.MiddlewareFunc{tokensService.Middleware.Authenticate},
 		Handlers:             handlers,
+		HealthCheck:          db.Ping,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("setting up http server: %w", err)
