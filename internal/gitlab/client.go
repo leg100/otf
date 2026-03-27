@@ -125,7 +125,7 @@ func (g *Client) ListRepositories(ctx context.Context, lopts vcs.ListRepositorie
 }
 
 func (g *Client) ListTags(ctx context.Context, opts vcs.ListTagsOptions) ([]string, error) {
-	results, _, err := g.client.Tags.ListTags(opts.Repo, &gitlab.ListTagsOptions{
+	results, _, err := g.client.Tags.ListTags(opts.Repo.String(), &gitlab.ListTagsOptions{
 		Search: new("^" + opts.Prefix),
 	})
 	if err != nil {
