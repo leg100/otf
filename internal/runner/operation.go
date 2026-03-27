@@ -257,6 +257,33 @@ func (o *operation) do() error {
 		}
 	}()
 	o.workdir = wd
+
+	// Set TFC-compatible built-in environment variables.
+	// TFC_* variants are plain env vars; TF_VAR_* variants make them
+	// available as Terraform input variables (if declared).
+	//
+	// Documented here:
+	// https://developer.hashicorp.com/terraform/cloud-docs/workspaces/run/run-environment#environment-variables
+	o.envs = append(o.envs,
+		"TFC_RUN_ID="+o.run.ID.String(),
+		"TFC_WORKSPACE_NAME="+o.ws.Name,
+		"TFC_WORKSPACE_ID="+o.ws.ID.String(),
+		"TF_VAR_TFC_RUN_ID="+o.run.ID.String(),
+		"TF_VAR_TFC_WORKSPACE_NAME="+o.ws.Name,
+		"TF_VAR_TFC_WORKSPACE_ID="+o.ws.ID.String(),
+		"TFC_WORKSPACE_SLUG="+o.ws.Organization.String()+"/"+o.ws.Name,
+		"TF_VAR_TFC_WORKSPACE_SLUG="+o.ws.Organization.String()+"/"+o.ws.Name,
+	)
+	if o.run.IngressAttributes != nil {
+		ia := o.run.IngressAttributes
+		o.envs = append(o.envs,
+			"TFC_CONFIGURATION_VERSION_GIT_BRANCH="+ia.Branch,
+			"TFC_CONFIGURATION_VERSION_GIT_COMMIT_SHA="+ia.CommitSHA,
+			"TF_VAR_TFC_CONFIGURATION_VERSION_GIT_BRANCH="+ia.Branch,
+			"TF_VAR_TFC_CONFIGURATION_VERSION_GIT_COMMIT_SHA="+ia.CommitSHA,
+		)
+	}
+
 	writer := runpkg.NewPhaseWriter(o.ctx, runpkg.PhaseWriterOptions{
 		RunID:  run.ID,
 		Phase:  run.Phase(),
