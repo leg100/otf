@@ -2,25 +2,42 @@ package run
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"net/http"
 
 	"github.com/gorilla/mux"
-	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/logr"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tfeapi"
 )
 
 type api struct {
-	*Service
 	*tfeapi.Responder
-	logr.Logger
+	Client apiClient
+	Logger logr.Logger
 }
 
-func (a *api) addHandlers(r *mux.Router) {
+type apiClient interface {
+	CreateRun(context.Context, resource.TfeID, CreateOptions) (*Run, error)
+	ListRuns(_ context.Context, opts ListOptions) (*resource.Page[*Run], error)
+	GetRun(ctx context.Context, id resource.TfeID) (*Run, error)
+	GetChunk(ctx context.Context, opts GetChunkOptions) (Chunk, error)
+	TailRun(context.Context, TailOptions) (<-chan Chunk, error)
+	DeleteRun(context.Context, resource.TfeID) error
+	ApplyRun(context.Context, resource.TfeID) error
 
-	r = r.PathPrefix(otfhttp.APIBasePath).Subrouter()
+	GetRunPlanFile(ctx context.Context, id resource.TfeID, format PlanFormat) ([]byte, error)
+	UploadRunPlanFile(ctx context.Context, id resource.TfeID, plan []byte, format PlanFormat) error
+
+	GetLockFile(ctx context.Context, id resource.TfeID) ([]byte, error)
+	UploadLockFile(ctx context.Context, id resource.TfeID, lockFile []byte) error
+
+	PutChunk(ctx context.Context, opts PutChunkOptions) error
+}
+
+func (a *api) AddHandlers(r *mux.Router) {
 	r.HandleFunc("/runs", a.list).Methods("GET")
 	r.HandleFunc("/runs/{id}", a.get).Methods("GET")
 	r.HandleFunc("/runs/{id}/planfile", a.getPlanFile).Methods("GET")
@@ -36,7 +53,7 @@ func (a *api) list(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	page, err := a.ListRuns(r.Context(), params)
+	page, err := a.Client.ListRuns(r.Context(), params)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -50,7 +67,7 @@ func (a *api) get(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	run, err := a.GetRun(r.Context(), id)
+	run, err := a.Client.GetRun(r.Context(), id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -69,7 +86,7 @@ func (a *api) getPlanFile(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	file, err := a.GetRunPlanFile(r.Context(), id, opts.Format)
+	file, err := a.Client.GetRunPlanFile(r.Context(), id, opts.Format)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -96,7 +113,7 @@ func (a *api) uploadPlanFile(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	if err := a.UploadRunPlanFile(r.Context(), id, buf.Bytes(), opts.Format); err != nil {
+	if err := a.Client.UploadRunPlanFile(r.Context(), id, buf.Bytes(), opts.Format); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
@@ -109,7 +126,7 @@ func (a *api) getLockFile(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	file, err := a.GetLockFile(r.Context(), id)
+	file, err := a.Client.GetLockFile(r.Context(), id)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -131,7 +148,7 @@ func (a *api) uploadLockFile(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	if err := a.UploadLockFile(r.Context(), id, buf.Bytes()); err != nil {
+	if err := a.Client.UploadLockFile(r.Context(), id, buf.Bytes()); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
@@ -150,7 +167,7 @@ func (a *api) putLogs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	opts.Data = buf.Bytes()
-	if err := a.PutChunk(r.Context(), opts); err != nil {
+	if err := a.Client.PutChunk(r.Context(), opts); err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}

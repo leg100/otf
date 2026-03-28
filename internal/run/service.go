@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/a-h/templ"
-	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/configversion/source"
@@ -35,7 +34,6 @@ type (
 
 		client                 serviceClient
 		db                     *pgdb
-		api                    *api
 		afterCancelHooks       []func(context.Context, *Run) error
 		afterForceCancelHooks  []func(context.Context, *Run) error
 		afterEnqueuePlanHooks  []func(context.Context, *Run) error
@@ -135,10 +133,6 @@ func NewService(opts Options) *Service {
 	opts.Client.AfterCreateWorkspace(svc.autoQueueRun)
 
 	return &svc
-}
-
-func (s *Service) AddHandlers(r *mux.Router) {
-	s.api.addHandlers(r)
 }
 
 func (s *Service) CreateRun(ctx context.Context, workspaceID resource.TfeID, opts CreateOptions) (*Run, error) {

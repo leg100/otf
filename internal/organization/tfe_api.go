@@ -12,6 +12,9 @@ import (
 	"github.com/leg100/otf/internal/tfeapi"
 )
 
+// Implements TFC organizations API:
+//
+// https://developer.hashicorp.com/terraform/cloud-docs/api-docs/organizations
 type tfe struct {
 	*tfeapi.Responder
 	client tfeClient
@@ -48,12 +51,7 @@ func NewTFEAPI(
 	return api
 }
 
-// Implements TFC organizations API:
-//
-// https://developer.hashicorp.com/terraform/cloud-docs/api-docs/organizations
 func (a *tfe) AddHandlers(r *mux.Router) {
-	r = r.PathPrefix(tfeapi.APIPrefixV2).Subrouter()
-
 	r.HandleFunc("/organizations", a.createOrganization).Methods("POST")
 	r.HandleFunc("/organizations", a.listOrganizations).Methods("GET")
 	r.HandleFunc("/organizations/{name}", a.getOrganization).Methods("GET")
