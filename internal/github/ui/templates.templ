@@ -14,7 +14,7 @@ type newAppViewProps struct {
 	githubHostname string
 }
 
-templ (t *templates) newAppView(props newAppViewProps) {
+templ newAppView(props newAppViewProps) {
 	<script src={ helpers.AssetPath(ctx, "/js/github_apps_new.js") }></script>
 	<div x-data={ "action('" + props.githubHostname + "', '" + props.manifest + "')" }>
 		<form class="flex flex-col gap-4" :action="action" method="post">
@@ -44,7 +44,7 @@ type getAppsProps struct {
 	canDeleteApp   bool
 }
 
-templ (t *templates) getApps(props getAppsProps) {
+templ getApps(props getAppsProps) {
 	if props.app != nil {
 		@helpers.UnpaginatedTable(
 			&appTable{githubHostname: props.githubHostname, canDeleteApp: props.canDeleteApp},

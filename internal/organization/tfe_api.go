@@ -8,18 +8,50 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/decode"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tfeapi"
 )
 
 type tfe struct {
-	*Service
 	*tfeapi.Responder
+	client tfeClient
+}
+
+type tfeClient interface {
+	CreateOrganization(ctx context.Context, opts CreateOptions) (*Organization, error)
+	UpdateOrganization(ctx context.Context, name Name, opts UpdateOptions) (*Organization, error)
+	GetOrganization(ctx context.Context, name Name) (*Organization, error)
+	ListOrganizations(ctx context.Context, opts ListOptions) (*resource.Page[*Organization], error)
+	DeleteOrganization(ctx context.Context, name Name) error
+
+	CreateOrganizationToken(ctx context.Context, opts CreateOrganizationTokenOptions) (*OrganizationToken, []byte, error)
+	GetOrganizationToken(ctx context.Context, organization Name) (*OrganizationToken, error)
+	ListOrganizationTokens(ctx context.Context, org Name) ([]*OrganizationToken, error)
+	DeleteOrganizationToken(ctx context.Context, org Name) error
+
+	GetOrganizationEntitlements(ctx context.Context, organization Name) (Entitlements, error)
+}
+
+func NewTFEAPI(
+	client tfeClient,
+	responder *tfeapi.Responder,
+) *tfe {
+	api := &tfe{
+		Responder: responder,
+		client:    client,
+	}
+
+	// Fetch organization when API calls request organization be included in the
+	// response
+	responder.Register(tfeapi.IncludeOrganization, api.include)
+
+	return api
 }
 
 // Implements TFC organizations API:
 //
 // https://developer.hashicorp.com/terraform/cloud-docs/api-docs/organizations
-func (a *tfe) addHandlers(r *mux.Router) {
+func (a *tfe) AddHandlers(r *mux.Router) {
 	r = r.PathPrefix(tfeapi.APIPrefixV2).Subrouter()
 
 	r.HandleFunc("/organizations", a.createOrganization).Methods("POST")
@@ -42,7 +74,7 @@ func (a *tfe) createOrganization(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	org, err := a.CreateOrganization(r.Context(), CreateOptions{
+	org, err := a.client.CreateOrganization(r.Context(), CreateOptions{
 		Name:                       opts.Name,
 		Email:                      opts.Email,
 		CollaboratorAuthPolicy:     (*string)(opts.CollaboratorAuthPolicy),
@@ -68,7 +100,7 @@ func (a *tfe) getOrganization(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	org, err := a.GetOrganization(r.Context(), params.Name)
+	org, err := a.client.GetOrganization(r.Context(), params.Name)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -84,7 +116,7 @@ func (a *tfe) listOrganizations(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	page, err := a.ListOrganizations(r.Context(), opts)
+	page, err := a.client.ListOrganizations(r.Context(), opts)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -112,7 +144,7 @@ func (a *tfe) updateOrganization(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	org, err := a.UpdateOrganization(r.Context(), params.Name, UpdateOptions{
+	org, err := a.client.UpdateOrganization(r.Context(), params.Name, UpdateOptions{
 		Name:                       opts.Name,
 		Email:                      opts.Email,
 		CollaboratorAuthPolicy:     (*string)(opts.CollaboratorAuthPolicy),
@@ -138,7 +170,7 @@ func (a *tfe) deleteOrganization(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := a.DeleteOrganization(r.Context(), params.Name); err != nil {
+	if err := a.client.DeleteOrganization(r.Context(), params.Name); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
@@ -155,7 +187,7 @@ func (a *tfe) getEntitlements(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	entitlements, err := a.GetOrganizationEntitlements(r.Context(), params.Name)
+	entitlements, err := a.client.GetOrganizationEntitlements(r.Context(), params.Name)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -178,7 +210,7 @@ func (a *tfe) createOrganizationToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ot, token, err := a.CreateOrganizationToken(r.Context(), CreateOrganizationTokenOptions{
+	ot, token, err := a.client.CreateOrganizationToken(r.Context(), CreateOrganizationTokenOptions{
 		Organization: params.Name,
 		Expiry:       opts.ExpiredAt,
 	})
@@ -205,7 +237,7 @@ func (a *tfe) getOrganizationToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ot, err := a.GetOrganizationToken(r.Context(), params.Name)
+	ot, err := a.client.GetOrganizationToken(r.Context(), params.Name)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -232,7 +264,7 @@ func (a *tfe) deleteOrganizationToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := a.DeleteOrganizationToken(r.Context(), params.Name)
+	err := a.client.DeleteOrganizationToken(r.Context(), params.Name)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -257,7 +289,7 @@ func (a *tfe) include(ctx context.Context, v any) ([]any, error) {
 	if !ok {
 		return nil, nil
 	}
-	org, err := a.GetOrganization(ctx, tfeOrganization.Name)
+	org, err := a.client.GetOrganization(ctx, tfeOrganization.Name)
 	if err != nil {
 		return nil, err
 	}

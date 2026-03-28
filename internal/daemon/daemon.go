@@ -18,6 +18,7 @@ import (
 	"github.com/leg100/otf/internal/engine"
 	"github.com/leg100/otf/internal/forgejo"
 	"github.com/leg100/otf/internal/github"
+	githubui "github.com/leg100/otf/internal/github/ui"
 	"github.com/leg100/otf/internal/gitlab"
 	"github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/iap"
@@ -142,7 +143,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Logger:                       logger,
 		Authorizer:                   authorizer,
 		DB:                           db,
-		Responder:                    responder,
 		RestrictOrganizationCreation: cfg.RestrictOrganizationCreation,
 		TokensService:                tokensService,
 	})
@@ -304,7 +304,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Logger:           logger,
 		Authorizer:       authorizer,
 		DB:               db,
-		Responder:        responder,
 		WorkspaceService: workspaceService,
 		RunClient:        runService,
 	})
@@ -321,7 +320,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Logger:                    logger,
 		Authorizer:                authorizer,
 		DB:                        db,
-		Responder:                 responder,
 		RunService:                runService,
 		WorkspaceService:          workspaceService,
 		TokensService:             tokensService,
@@ -446,9 +444,26 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 			Verifier: signer,
 			Handlers: []internal.Handlers{
 				repoService,
-				notificationService,
+				&variable.TFEAPI{
+					Client: struct {
+						*variable.VariableService
+						*workspace.WorkspaceService
+					}{
+						VariableService:  variableService,
+						WorkspaceService: workspaceService,
+					},
+					Responder: responder,
+				},
+				&notifications.TFEAPI{
+					Client:    notificationService,
+					Responder: responder,
+				},
 				&vcs.TFEAPI{
 					Client:    vcsService,
+					Responder: responder,
+				},
+				&runner.TFEAPI{
+					Client:    runnerService,
 					Responder: responder,
 				},
 				&team.TFEAPI{
@@ -465,6 +480,10 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 					responder,
 					signer,
 					cfg.MaxConfigSize,
+				),
+				organization.NewTFEAPI(
+					orgService,
+					responder,
 				),
 				user.NewTFEAPI(
 					userService,
@@ -599,6 +618,13 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 					Authorizer:     authorizer,
 					SingleRunTable: runuiHandlers.SingleRunTable,
 				},
+				githubui.NewHandlers(
+					githubAppService,
+					hostnameService,
+					cfg.GithubHostname,
+					cfg.SkipTLSVerification,
+					authorizer,
+				),
 				moduleui.NewHandlers(
 					struct {
 						*module.ModuleService

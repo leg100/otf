@@ -92,6 +92,8 @@ func (a *tfe) AddHandlers(r *mux.Router) {
 
 	r.HandleFunc("/workspaces/{workspace_id}/relationships/ssh-key", a.assignSSHKey).Methods("PATCH")
 	r.HandleFunc("/workspaces/{workspace_id}/relationships/ssh-key", a.unassignSSHKey).Methods("PATCH")
+
+	a.addTagHandlers(r)
 }
 
 func (a *tfe) createWorkspace(w http.ResponseWriter, r *http.Request) {

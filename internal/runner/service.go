@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/dynamiccreds"
@@ -17,7 +16,6 @@ import (
 	"github.com/leg100/otf/internal/resource"
 	otfrun "github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/tokens"
 	"github.com/leg100/otf/internal/workspace"
 )
@@ -33,8 +31,6 @@ type (
 		logr.Logger
 		*authz.Authorizer
 
-		tfeapi       *tfe
-		api          *api
 		poolBroker   pubsub.SubscriptionService[*Pool]
 		runnerBroker pubsub.SubscriptionService[*RunnerEvent]
 		jobBroker    pubsub.SubscriptionService[*JobEvent]
@@ -52,7 +48,6 @@ type (
 		Logger                    logr.Logger
 		DB                        *sql.DB
 		Listener                  *sql.Listener
-		Responder                 *tfeapi.Responder
 		RunService                *otfrun.Service
 		WorkspaceService          *workspace.Service
 		TokensService             *tokens.Service
@@ -81,14 +76,6 @@ func NewService(opts ServiceOptions) *Service {
 	}
 	svc.tokenFactory = &tokenFactory{
 		tokens: opts.TokensService,
-	}
-	svc.tfeapi = &tfe{
-		Service:   svc,
-		Responder: opts.Responder,
-	}
-	svc.api = &api{
-		Service:   svc,
-		Responder: opts.Responder,
 	}
 	svc.poolBroker = pubsub.NewBroker[*Pool](
 		opts.Logger,
@@ -152,11 +139,6 @@ func NewService(opts ServiceOptions) *Service {
 		return svc.GetJob(ctx, jobID)
 	})
 	return svc
-}
-
-func (s *Service) AddHandlers(r *mux.Router) {
-	s.tfeapi.addHandlers(r)
-	s.api.addHandlers(r)
 }
 
 func (s *Service) NewAllocator(logger logr.Logger) *allocator {
