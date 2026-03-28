@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/connections"
 	"github.com/leg100/otf/internal/logr"
@@ -58,7 +57,7 @@ func NewService(opts Options) *Service {
 	}
 	svc.api = &tfe{
 		svc:    &svc,
-		Signer: opts.Signer,
+		signer: opts.Signer,
 	}
 	publisher := &publisher{
 		Logger:       opts.Logger.WithValues("component", "publisher"),
@@ -69,10 +68,6 @@ func NewService(opts Options) *Service {
 	opts.VCSEventSubscriber.Subscribe(publisher.handle)
 
 	return &svc
-}
-
-func (s *Service) AddHandlers(r *mux.Router) {
-	s.api.addHandlers(r)
 }
 
 // PublishModule publishes a new module from a VCS repository, enumerating through

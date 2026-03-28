@@ -37,7 +37,8 @@ func Unmarshal(r io.Reader, v any) error {
 }
 
 type Handlers struct {
-	Handlers []*internal.Handlers
+	Handlers []internal.Handlers
+	Verifier Verifier
 }
 
 func (h *Handlers) AddHandlers(r *mux.Router) {
@@ -55,16 +56,30 @@ func (h *Handlers) AddHandlers(r *mux.Router) {
 			}
 
 			// Remove trailing slash from all requests
+			//
+			// TODO: does this actually do anything? The mux router will return
+			// a 404 for any paths not matching a handler *before* the request
+			// is sent to this middleware, so if all handlers don't have a
+			// trailing slash then a 404 will be returned.
 			r.URL.Path = strings.TrimSuffix(r.URL.Path, "/")
 
 			next.ServeHTTP(w, r)
 		})
 	})
+	r.Use(verifySignedURL(h.Verifier))
 
-	r = r.PathPrefix(APIPrefixV2).Subrouter()
+	apiRouter := r.PathPrefix(APIPrefixV2).Subrouter()
+	signedRouter := r.PathPrefix(signedPrefixWithSignature).Subrouter()
 
 	// handle ping sent by go-tfe upon initialization
-	r.HandleFunc("ping", func(w http.ResponseWriter, r *http.Request) {
+	apiRouter.HandleFunc("ping", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 	})
+
+	// Register each handler, both with an API prefix and with a signed URL
+	// prefix (to allow each route to be accessible with a signed URL as well).
+	for _, h := range h.Handlers {
+		h.AddHandlers(apiRouter)
+		h.AddHandlers(signedRouter)
+	}
 }

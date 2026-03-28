@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf/internal"
 	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/logr"
@@ -14,17 +13,12 @@ import (
 )
 
 type api struct {
-	internal.Verifier // for verifying upload url
 	*Service
 	*tfeapi.Responder
 	logr.Logger
 }
 
 func (a *api) addHandlers(r *mux.Router) {
-	// client is typically terraform-cli
-	signed := r.PathPrefix("/signed/{signature.expiry}").Subrouter()
-	signed.Use(internal.VerifySignedURL(a.Verifier))
-	signed.HandleFunc("/runs/{run_id}/logs/{phase}", a.getLogs).Methods("GET")
 
 	r = r.PathPrefix(otfhttp.APIBasePath).Subrouter()
 	r.HandleFunc("/runs", a.list).Methods("GET")
@@ -142,23 +136,6 @@ func (a *api) uploadLockFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusAccepted)
-}
-
-func (a *api) getLogs(w http.ResponseWriter, r *http.Request) {
-	var opts GetChunkOptions
-	if err := decode.All(&opts, r); err != nil {
-		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
-		return
-	}
-	chunk, err := a.GetChunk(r.Context(), opts)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
-		return
-	}
-	if _, err := w.Write(chunk.Data); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
 }
 
 func (a *api) putLogs(w http.ResponseWriter, r *http.Request) {

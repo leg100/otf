@@ -2,7 +2,6 @@ package tfeapi
 
 import (
 	"net/http"
-	"path"
 	"strings"
 	"time"
 
@@ -10,11 +9,15 @@ import (
 	"github.com/leg100/surl/v2"
 )
 
-var signedPrefix = path.Join("/signed", APIPrefixV2)
+const (
+	signedPrefix              = "/signed"
+	signedPrefixWithSignature = signedPrefix + "/{signature.expiry}"
+)
 
 // NewSigner constructs a signer for signing and verifying URLs
 func NewSigner(secret []byte) *surl.Signer {
-	return surl.New(secret,
+	return surl.New(
+		secret,
 		surl.PrefixPath(signedPrefix),
 		surl.WithPathFormatter(),
 		surl.WithBase58Expiry(),
@@ -32,10 +35,11 @@ type Verifier interface {
 	Verify(string) error
 }
 
-// VerifySignedURL is middleware that verifies signed URLs
-func VerifySignedURL(v Verifier) mux.MiddlewareFunc {
+// verifySignedURL is middleware that verifies signed URLs
+func verifySignedURL(v Verifier) mux.MiddlewareFunc {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Skip non-signed URLs
 			if !strings.HasPrefix(r.URL.Path, signedPrefix) {
 				next.ServeHTTP(w, r)
 			}

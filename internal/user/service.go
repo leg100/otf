@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/logr"
@@ -13,7 +12,6 @@ import (
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/team"
-	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/tokens"
 )
 
@@ -28,10 +26,8 @@ type (
 		logr.Logger
 		*authz.Authorizer
 
-		teams  *team.Service
-		db     *pgdb
-		tfeapi *tfe
-		api    *api
+		teams *team.Service
+		db    *pgdb
 
 		*userTokenFactory
 	}
@@ -43,7 +39,6 @@ type (
 		Authorizer    *authz.Authorizer
 
 		*sql.DB
-		*tfeapi.Responder
 		logr.Logger
 	}
 )
@@ -57,14 +52,6 @@ func NewService(opts Options) *Service {
 			tokens: opts.TokensService,
 		},
 		teams: opts.TeamService,
-	}
-	svc.tfeapi = &tfe{
-		Service:   &svc,
-		Responder: opts.Responder,
-	}
-	svc.api = &api{
-		Service:   &svc,
-		Responder: opts.Responder,
 	}
 
 	// Whenever an owners team is created, add the creator as a member.
@@ -84,9 +71,6 @@ func NewService(opts Options) *Service {
 		user.Teams = append(user.Teams, team)
 		return nil
 	})
-	// Fetch users when API calls request users be included in the
-	// response
-	opts.Register(tfeapi.IncludeUsers, svc.tfeapi.includeUsers)
 	// Register site token and site admin with the auth middleware, to permit
 	// the latter to authenticate the former.
 	//opts.TokensService.RegisterSiteToken(opts.SiteToken, &SiteAdmin)
@@ -102,11 +86,6 @@ func NewService(opts Options) *Service {
 	})
 
 	return &svc
-}
-
-func (a *Service) AddHandlers(r *mux.Router) {
-	a.tfeapi.addHandlers(r)
-	a.api.addHandlers(r)
 }
 
 func (a *Service) Create(ctx context.Context, username string, opts ...NewUserOption) (*User, error) {

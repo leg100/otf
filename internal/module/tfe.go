@@ -8,34 +8,31 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/tfeapi"
-	"github.com/leg100/surl/v2"
 )
 
 type tfe struct {
-	*surl.Signer
-
-	svc *Service
+	svc    *Service
+	signer tfeapi.Signer
 }
 
-func (h *tfe) addHandlers(r *mux.Router) {
-	// signed routes
-	signed := r.PathPrefix("/signed/{signature.expiry}").Subrouter()
-	signed.Use(internal.VerifySignedURL(h.Signer))
-	signed.HandleFunc("/modules/download/{module_version_id}.tar.gz", h.downloadModuleVersion).Methods("GET")
-
-	// authenticated module api routes
-	//
-	// Implements the Module Registry Protocol:
-	//
-	// https://developer.hashicorp.com/terraform/internals/module-registry-protocol
+// AddRegistryHandlers registers handlers for the module registry. It implements
+// the Module Registry Protocol:
+//
+// https://developer.hashicorp.com/terraform/internals/module-registry-protocol
+func (h *tfe) AddRegistryHandlers(r *mux.Router) {
 	r = r.PathPrefix(tfeapi.ModuleV1Prefix).Subrouter()
 
 	r.HandleFunc("/{organization}/{name}/{provider}/versions", h.listAvailableVersions).Methods("GET")
 	r.HandleFunc("/{organization}/{name}/{provider}/{version}/download", h.getModuleVersionDownloadLink).Methods("GET")
+}
+
+// AddSignedHandlers registers handlers for signed URLs produced by the module
+// registry.
+func (h *tfe) AddSignedHandlers(r *mux.Router) {
+	r.HandleFunc("/modules/download/{module_version_id}.tar.gz", h.downloadModuleVersion).Methods("GET")
 }
 
 type (
@@ -122,7 +119,7 @@ func (h *tfe) getModuleVersionDownloadLink(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	signed, err := h.Sign(fmt.Sprintf("/modules/download/%s.tar.gz", version.ID), time.Now().Add(time.Hour))
+	signed, err := h.signer.Sign(fmt.Sprintf("/modules/download/%s.tar.gz", version.ID), time.Now().Add(time.Hour))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

@@ -21,15 +21,36 @@ const (
 type (
 	teamMembersAction int
 
-	tfe struct {
-		*Service
+	TFEAPI struct {
 		*tfeapi.Responder
+		Client tfeClient
+	}
+
+	tfeClient interface {
+		Create(ctx context.Context, username string, opts ...NewUserOption) (*User, error)
+		ListOrganizationUsers(ctx context.Context, organization organization.Name) ([]*User, error)
+		ListTeamUsers(ctx context.Context, teamID resource.TfeID) ([]*User, error)
+		GetUser(ctx context.Context, spec UserSpec) (*User, error)
+		Delete(ctx context.Context, username Username) error
+		AddTeamMembership(ctx context.Context, teamID resource.TfeID, usernames []Username) error
+		RemoveTeamMembership(ctx context.Context, teamID resource.TfeID, usernames []Username) error
 	}
 )
 
-func (a *tfe) addHandlers(r *mux.Router) {
-	r = r.PathPrefix(tfeapi.APIPrefixV2).Subrouter()
+func NewTFEAPI(client tfeClient, responder *tfeapi.Responder) *TFEAPI {
+	api := &TFEAPI{
+		Responder: responder,
+		Client:    client,
+	}
 
+	// Fetch users when API calls request users be included in the
+	// response
+	responder.Register(tfeapi.IncludeUsers, api.includeUsers)
+
+	return api
+}
+
+func (a *TFEAPI) AddHandlers(r *mux.Router) {
 	r.HandleFunc("/account/details", a.getCurrentUser).Methods("GET")
 	r.HandleFunc("/teams/{team_id}/memberships/{username}", a.addTeamMembership).Methods("POST")
 	r.HandleFunc("/teams/{team_id}/memberships/{username}", a.removeTeamMembership).Methods("DELETE")
@@ -48,7 +69,7 @@ func (a *tfe) addHandlers(r *mux.Router) {
 	r.HandleFunc("/organization-memberships/{id}", a.deleteMembership).Methods("DELETE")
 }
 
-func (a *tfe) addTeamMembership(w http.ResponseWriter, r *http.Request) {
+func (a *TFEAPI) addTeamMembership(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		TeamID   resource.TfeID `schema:"team_id,required"`
 		Username Username       `schema:"username,required"`
@@ -58,7 +79,7 @@ func (a *tfe) addTeamMembership(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := a.AddTeamMembership(r.Context(), params.TeamID, []Username{params.Username}); err != nil {
+	if err := a.Client.AddTeamMembership(r.Context(), params.TeamID, []Username{params.Username}); err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
@@ -66,7 +87,7 @@ func (a *tfe) addTeamMembership(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
-func (a *tfe) removeTeamMembership(w http.ResponseWriter, r *http.Request) {
+func (a *TFEAPI) removeTeamMembership(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		TeamID   resource.TfeID `schema:"team_id,required"`
 		Username Username       `schema:"username,required"`
@@ -76,7 +97,7 @@ func (a *tfe) removeTeamMembership(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := a.RemoveTeamMembership(r.Context(), params.TeamID, []Username{params.Username}); err != nil {
+	if err := a.Client.RemoveTeamMembership(r.Context(), params.TeamID, []Username{params.Username}); err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
@@ -84,7 +105,7 @@ func (a *tfe) removeTeamMembership(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (a *tfe) getCurrentUser(w http.ResponseWriter, r *http.Request) {
+func (a *TFEAPI) getCurrentUser(w http.ResponseWriter, r *http.Request) {
 	user, err := UserFromContext(r.Context())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
@@ -94,7 +115,7 @@ func (a *tfe) getCurrentUser(w http.ResponseWriter, r *http.Request) {
 }
 
 // https://developer.hashicorp.com/terraform/cloud-docs/api-docs/team-members#add-a-user-to-team-with-user-id
-func (a *tfe) addTeamMembers(w http.ResponseWriter, r *http.Request) {
+func (a *TFEAPI) addTeamMembers(w http.ResponseWriter, r *http.Request) {
 	if err := a.modifyTeamMembers(r, addTeamMembersAction); err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -102,7 +123,7 @@ func (a *tfe) addTeamMembers(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
-func (a *tfe) removeTeamMembers(w http.ResponseWriter, r *http.Request) {
+func (a *TFEAPI) removeTeamMembers(w http.ResponseWriter, r *http.Request) {
 	if err := a.modifyTeamMembers(r, removeTeamMembersAction); err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -110,7 +131,7 @@ func (a *tfe) removeTeamMembers(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (a *tfe) modifyTeamMembers(r *http.Request, action teamMembersAction) error {
+func (a *TFEAPI) modifyTeamMembers(r *http.Request, action teamMembersAction) error {
 	teamID, err := decode.ID("team_id", r)
 	if err != nil {
 		return err
@@ -132,15 +153,15 @@ func (a *tfe) modifyTeamMembers(r *http.Request, action teamMembersAction) error
 
 	switch action {
 	case addTeamMembersAction:
-		return a.AddTeamMembership(r.Context(), teamID, usernames)
+		return a.Client.AddTeamMembership(r.Context(), teamID, usernames)
 	case removeTeamMembersAction:
-		return a.RemoveTeamMembership(r.Context(), teamID, usernames)
+		return a.Client.RemoveTeamMembership(r.Context(), teamID, usernames)
 	default:
 		return fmt.Errorf("unknown team membership action: %v", action)
 	}
 }
 
-func (a *tfe) inviteUser(w http.ResponseWriter, r *http.Request) {
+func (a *TFEAPI) inviteUser(w http.ResponseWriter, r *http.Request) {
 	var pathParams struct {
 		Organization organization.Name `schema:"organization_name"`
 	}
@@ -167,23 +188,23 @@ func (a *tfe) inviteUser(w http.ResponseWriter, r *http.Request) {
 	a.Respond(w, r, membership, http.StatusCreated)
 }
 
-func (a *tfe) deleteMembership(w http.ResponseWriter, r *http.Request) {
+func (a *TFEAPI) deleteMembership(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (a *tfe) convertUser(from *User) *TFEUser {
+func (a *TFEAPI) convertUser(from *User) *TFEUser {
 	return &TFEUser{
 		ID:       from.ID,
 		Username: from.Username.String(),
 	}
 }
 
-func (a *tfe) includeUsers(ctx context.Context, v any) ([]any, error) {
+func (a *TFEAPI) includeUsers(ctx context.Context, v any) ([]any, error) {
 	team, ok := v.(*teampkg.TFETeam)
 	if !ok {
 		return nil, nil
 	}
-	users, err := a.ListTeamUsers(ctx, team.ID)
+	users, err := a.Client.ListTeamUsers(ctx, team.ID)
 	if err != nil {
 		return nil, err
 	}

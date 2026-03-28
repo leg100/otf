@@ -1,6 +1,7 @@
 package vcs
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -10,24 +11,35 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/organization"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tfeapi"
 )
 
-type tfe struct {
-	*Service
-	*tfeapi.Responder
+type TFEAPI struct {
+	Client    tfeClient
+	Responder *tfeapi.Responder
 }
 
-func (a *tfe) addHandlers(r *mux.Router) {
-	r = r.PathPrefix(tfeapi.APIPrefixV2).Subrouter()
+type tfeClient interface {
+	CreateVCSProvider(ctx context.Context, opts CreateOptions) (*Provider, error)
+	GetVCSProvider(ctx context.Context, id resource.TfeID) (*Provider, error)
+	UpdateVCSProvider(ctx context.Context, id resource.TfeID, opts UpdateOptions) (*Provider, error)
+	ListVCSProviders(ctx context.Context, organization organization.Name) ([]*Provider, error)
+	DeleteVCSProvider(ctx context.Context, id resource.TfeID) (*Provider, error)
 
+	GetKind(id KindID) (Kind, error)
+	GetKinds() []Kind
+	GetKindByTFEServiceProviderType(sp TFEServiceProviderType) (Kind, error)
+}
+
+func (a *TFEAPI) AddHandlers(r *mux.Router) {
 	r.HandleFunc("/organizations/{organization_name}/oauth-clients", a.createOAuthClient).Methods("POST")
 	r.HandleFunc("/organizations/{organization_name}/oauth-clients", a.listOAuthClients).Methods("GET")
 	r.HandleFunc("/oauth-clients/{oauth_client_id}", a.getOAuthClient).Methods("GET")
 	r.HandleFunc("/oauth-clients/{oauth_client_id}", a.deleteOAuthClient).Methods("DELETE")
 }
 
-func (a *tfe) createOAuthClient(w http.ResponseWriter, r *http.Request) {
+func (a *TFEAPI) createOAuthClient(w http.ResponseWriter, r *http.Request) {
 	var pathParams struct {
 		Organization organization.Name `schema:"organization_name"`
 	}
@@ -74,7 +86,7 @@ func (a *tfe) createOAuthClient(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	kind, err := a.Service.GetKindByTFEServiceProviderType(*params.ServiceProvider)
+	kind, err := a.Client.GetKindByTFEServiceProviderType(*params.ServiceProvider)
 	if err != nil {
 		tfeapi.Error(w, fmt.Errorf("service-provider=%s is unsupported", string(*params.ServiceProvider)))
 		return
@@ -85,7 +97,7 @@ func (a *tfe) createOAuthClient(w http.ResponseWriter, r *http.Request) {
 		params.Name = new("")
 	}
 
-	oauthClient, err := a.CreateVCSProvider(r.Context(), CreateOptions{
+	oauthClient, err := a.Client.CreateVCSProvider(r.Context(), CreateOptions{
 		Name:                   *params.Name,
 		Organization:           pathParams.Organization,
 		Token:                  params.OAuthToken,
@@ -99,10 +111,10 @@ func (a *tfe) createOAuthClient(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.Respond(w, r, a.convert(oauthClient), http.StatusCreated)
+	a.Responder.Respond(w, r, a.convert(oauthClient), http.StatusCreated)
 }
 
-func (a *tfe) listOAuthClients(w http.ResponseWriter, r *http.Request) {
+func (a *TFEAPI) listOAuthClients(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		Organization organization.Name `schema:"organization_name"`
 	}
@@ -111,7 +123,7 @@ func (a *tfe) listOAuthClients(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	providers, err := a.ListVCSProviders(r.Context(), params.Organization)
+	providers, err := a.Client.ListVCSProviders(r.Context(), params.Organization)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -122,33 +134,33 @@ func (a *tfe) listOAuthClients(w http.ResponseWriter, r *http.Request) {
 	for i, from := range providers {
 		to[i] = a.convert(from)
 	}
-	a.Respond(w, r, to, http.StatusOK)
+	a.Responder.Respond(w, r, to, http.StatusOK)
 }
 
-func (a *tfe) getOAuthClient(w http.ResponseWriter, r *http.Request) {
+func (a *TFEAPI) getOAuthClient(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.ID("oauth_client_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
 
-	oauthClient, err := a.GetVCSProvider(r.Context(), id)
+	oauthClient, err := a.Client.GetVCSProvider(r.Context(), id)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
 
-	a.Respond(w, r, a.convert(oauthClient), http.StatusOK)
+	a.Responder.Respond(w, r, a.convert(oauthClient), http.StatusOK)
 }
 
-func (a *tfe) deleteOAuthClient(w http.ResponseWriter, r *http.Request) {
+func (a *TFEAPI) deleteOAuthClient(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.ID("oauth_client_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
 
-	if _, err = a.DeleteVCSProvider(r.Context(), id); err != nil {
+	if _, err = a.Client.DeleteVCSProvider(r.Context(), id); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
@@ -156,7 +168,7 @@ func (a *tfe) deleteOAuthClient(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (a *tfe) convert(from *Provider) *TFEOAuthClient {
+func (a *TFEAPI) convert(from *Provider) *TFEOAuthClient {
 	to := &TFEOAuthClient{
 		ID:              from.ID,
 		CreatedAt:       from.CreatedAt,

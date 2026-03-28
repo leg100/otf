@@ -4,14 +4,11 @@ import (
 	"context"
 	"time"
 
-	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/configversion/source"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/tfeapi"
-	"github.com/leg100/surl/v2"
 )
 
 type (
@@ -24,18 +21,13 @@ type (
 		*authz.Authorizer
 		*source.IconDB
 
-		db     *pgdb
-		tfeapi *tfe
-		api    *api
+		db *pgdb
 	}
 
 	Options struct {
-		Logger        logr.Logger
-		MaxConfigSize int64
-		Authorizer    *authz.Authorizer
-		DB            *sql.DB
-		Signer        *surl.Signer
-		Responder     *tfeapi.Responder
+		Logger     logr.Logger
+		Authorizer *authz.Authorizer
+		DB         *sql.DB
 	}
 )
 
@@ -46,24 +38,6 @@ func NewService(opts Options) *Service {
 		IconDB:     source.NewIconDB(),
 	}
 	svc.db = &pgdb{opts.DB}
-	svc.tfeapi = &tfe{
-		Logger:        opts.Logger,
-		tfeClient:     &svc,
-		Signer:        opts.Signer,
-		Responder:     opts.Responder,
-		maxConfigSize: opts.MaxConfigSize,
-	}
-	svc.api = &api{
-		Service:   &svc,
-		Responder: opts.Responder,
-	}
-
-	// Fetch config version when API requests config version be included in the
-	// response
-	opts.Responder.Register(tfeapi.IncludeConfig, svc.tfeapi.include)
-	// Fetch ingress attributes when API requests ingress attributes be included
-	// in the response
-	opts.Responder.Register(tfeapi.IncludeIngress, svc.tfeapi.includeIngressAttributes)
 
 	// Provide a means of looking up a config version's parent workspace.
 	opts.Authorizer.RegisterParentResolver(resource.ConfigVersionKind,
@@ -79,11 +53,6 @@ func NewService(opts Options) *Service {
 	)
 
 	return &svc
-}
-
-func (s *Service) AddHandlers(r *mux.Router) {
-	s.tfeapi.addHandlers(r)
-	s.api.addHandlers(r)
 }
 
 func (s *Service) CreateConfigVersion(ctx context.Context, workspaceID resource.TfeID, opts CreateOptions) (*ConfigurationVersion, error) {

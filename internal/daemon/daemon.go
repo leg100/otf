@@ -126,7 +126,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	responder := tfeapi.NewResponder(logger)
 
 	// Setup url signer
-	signer := internal.NewSigner(cfg.Secret)
+	signer := tfeapi.NewSigner(cfg.Secret)
 
 	tokensService, err := tokens.NewService(tokens.Options{
 		Logger: logger,
@@ -151,7 +151,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Logger:              logger,
 		Authorizer:          authorizer,
 		DB:                  db,
-		Responder:           responder,
 		OrganizationService: orgService,
 		TokensService:       tokensService,
 	})
@@ -159,7 +158,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Logger:        logger,
 		Authorizer:    authorizer,
 		DB:            db,
-		Responder:     responder,
 		TokensService: tokensService,
 		SiteToken:     cfg.SiteToken,
 		TeamService:   teamService,
@@ -202,19 +200,15 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	}
 
 	configService := configversion.NewService(configversion.Options{
-		Logger:        logger,
-		Authorizer:    authorizer,
-		DB:            db,
-		Responder:     responder,
-		Signer:        signer,
-		MaxConfigSize: cfg.MaxConfigSize,
+		Logger:     logger,
+		Authorizer: authorizer,
+		DB:         db,
 	})
 
 	vcsService := vcs.NewService(vcs.Options{
 		Logger:              logger,
 		Authorizer:          authorizer,
 		DB:                  db,
-		Responder:           responder,
 		SourceIconRegistrar: configService,
 		SkipTLSVerification: cfg.SkipTLSVerification,
 	})
@@ -263,7 +257,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Authorizer:        authorizer,
 		DB:                db,
 		Listener:          sqlListener,
-		Responder:         responder,
 		ConnectionService: connectionService,
 		DefaultEngine:     cfg.DefaultEngine,
 		EngineService:     engineService,
@@ -274,7 +267,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Authorizer: authorizer,
 		DB:         db,
 		Listener:   sqlListener,
-		Responder:  responder,
 		Client: struct {
 			*organization.OrganizationService
 			*workspace.WorkspaceService
@@ -291,7 +283,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 			TokensService:       tokensService,
 		},
 		VCSEventSubscriber: vcsEventBroker,
-		Signer:             signer,
 		DaemonCtx:          ctx,
 	})
 	moduleService := module.NewService(module.Options{
@@ -305,12 +296,9 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		VCSEventSubscriber: vcsEventBroker,
 	})
 	stateService := state.NewService(state.Options{
-		Logger:           logger,
-		Authorizer:       authorizer,
-		DB:               db,
-		WorkspaceService: workspaceService,
-		Responder:        responder,
-		Signer:           signer,
+		Logger:     logger,
+		Authorizer: authorizer,
+		DB:         db,
 	})
 	variableService := variable.NewService(variable.Options{
 		Logger:           logger,
@@ -393,7 +381,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Logger:     logger,
 		Authorizer: authorizer,
 		DB:         db,
-		Responder:  responder,
 	})
 
 	serverRunner, err := runner.New(
@@ -438,27 +425,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Responder:  responder,
 	})
 
-	handlers := []internal.Handlers{
-		repoService,
-		authenticatorService,
-		loginserver.NewServer(loginserver.Options{
-			Secret:      cfg.Secret,
-			UserService: userService,
-		}),
-		configService,
-		notificationService,
-		disco.Service{},
-		&tfeapi.Handlers{},
-		&github.AppEventHandler{
-			Logger:     logger,
-			Publisher:  vcsEventBroker,
-			GithubApps: githubAppService,
-			VCSService: vcsService,
-		},
-		dynamiccredsService,
-	}
-
-	// UI handlers, i.e. the web app
+	// Build a list of request handlers for all APIs and the UI.
 	runuiHandlers := runui.NewHandlers(
 		logger,
 		struct {
@@ -474,100 +441,177 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		},
 		authorizer,
 	)
-	uiHandlers := ui.Handlers{
-		Handlers: []internal.Handlers{
-			&teamui.Handlers{
-				Teams: struct {
-					*user.UserService
-					*team.TeamService
-				}{
-					UserService: userService,
-					TeamService: teamService,
+	handlers := []internal.Handlers{
+		&tfeapi.Handlers{
+			Verifier: signer,
+			Handlers: []internal.Handlers{
+				repoService,
+				notificationService,
+				&vcs.TFEAPI{
+					Client:    vcsService,
+					Responder: responder,
 				},
-				Authorizer: authorizer,
+				&team.TFEAPI{
+					Client:    teamService,
+					Responder: responder,
+				},
+				&sshkey.TFEAPI{
+					Client:    sshkeyService,
+					Responder: responder,
+				},
+				configversion.NewTFEAPI(
+					logger,
+					configService,
+					responder,
+					signer,
+					cfg.MaxConfigSize,
+				),
+				user.NewTFEAPI(
+					userService,
+					responder,
+				),
+				user.NewTFEAPI(
+					userService,
+					responder,
+				),
+				run.NewTFEAPI(
+					struct {
+						*run.RunService
+						*workspace.WorkspaceService
+					}{
+						RunService:       runService,
+						WorkspaceService: workspaceService,
+					},
+					authorizer,
+					signer,
+					responder,
+				),
+				workspace.NewTFEAPI(
+					workspaceService,
+					responder,
+					authorizer,
+				),
+				state.NewTFEAPI(
+					struct {
+						*state.StateService
+						*workspace.WorkspaceService
+					}{
+						StateService:     stateService,
+						WorkspaceService: workspaceService,
+					},
+					responder,
+					signer,
+				),
 			},
-			stateui.NewHandlers(
-				struct {
-					*state.StateService
-					*workspace.WorkspaceService
-				}{
-					WorkspaceService: workspaceService,
-					StateService:     stateService,
+		},
+		authenticatorService,
+		loginserver.NewServer(loginserver.Options{
+			Secret:      cfg.Secret,
+			UserService: userService,
+		}),
+		disco.Service{},
+		&github.AppEventHandler{
+			Logger:     logger,
+			Publisher:  vcsEventBroker,
+			GithubApps: githubAppService,
+			VCSService: vcsService,
+		},
+		dynamiccredsService,
+		&ui.Handlers{
+			Handlers: []internal.Handlers{
+				&teamui.Handlers{
+					Teams: struct {
+						*user.UserService
+						*team.TeamService
+					}{
+						UserService: userService,
+						TeamService: teamService,
+					},
+					Authorizer: authorizer,
 				},
-				authorizer,
-			),
-			orgui.NewHandlers(orgService, cfg.RestrictOrganizationCreation),
-			vcsui.NewHandlers(vcsService),
-			variableui.NewHandlers(
-				struct {
-					*variable.VariableService
-					*workspace.WorkspaceService
-				}{
-					VariableService:  variableService,
-					WorkspaceService: workspaceService,
+				stateui.NewHandlers(
+					struct {
+						*state.StateService
+						*workspace.WorkspaceService
+					}{
+						WorkspaceService: workspaceService,
+						StateService:     stateService,
+					},
+					authorizer,
+				),
+				orgui.NewHandlers(orgService, cfg.RestrictOrganizationCreation),
+				vcsui.NewHandlers(vcsService),
+				variableui.NewHandlers(
+					struct {
+						*variable.VariableService
+						*workspace.WorkspaceService
+					}{
+						VariableService:  variableService,
+						WorkspaceService: workspaceService,
+					},
+					authorizer,
+				),
+				runuiHandlers,
+				&runnerui.Handlers{
+					Client: struct {
+						*runner.RunnerService
+						*workspace.WorkspaceService
+					}{
+						RunnerService:    runnerService,
+						WorkspaceService: workspaceService,
+					},
+					Authorizer: authorizer,
 				},
-				authorizer,
-			),
-			runuiHandlers,
-			&runnerui.Handlers{
-				Client: struct {
-					*runner.RunnerService
-					*workspace.WorkspaceService
-				}{
-					RunnerService:    runnerService,
-					WorkspaceService: workspaceService,
+				&sshkeyui.Handlers{
+					Client: sshkeyService,
 				},
-				Authorizer: authorizer,
+				&userui.Handlers{
+					Client: struct {
+						*user.UserService
+						*session.Service
+					}{
+						UserService: userService,
+						Service:     sessionService,
+					},
+					SiteToken:            cfg.SiteToken,
+					AuthenticatorService: authenticatorService,
+				},
+				&workspaceui.Handlers{
+					Client: struct {
+						*run.RunService
+						*user.UserService
+						*workspace.WorkspaceService
+						*configversion.ConfigService
+						*sshkey.SSHKeyService
+						*engine.EngineService
+						*vcs.VCSService
+						*team.TeamService
+					}{
+						RunService:       runService,
+						UserService:      userService,
+						WorkspaceService: workspaceService,
+						ConfigService:    configService,
+						SSHKeyService:    sshkeyService,
+						EngineService:    engineService,
+						VCSService:       vcsService,
+						TeamService:      teamService,
+					},
+					Authorizer:     authorizer,
+					SingleRunTable: runuiHandlers.SingleRunTable,
+				},
+				moduleui.NewHandlers(
+					struct {
+						*module.ModuleService
+						*vcs.VCSService
+						*internal.HostnameService
+					}{
+						ModuleService:   moduleService,
+						VCSService:      vcsService,
+						HostnameService: hostnameService,
+					},
+					authorizer,
+				),
 			},
-			&sshkeyui.Handlers{
-				Client: sshkeyService,
-			},
-			&userui.Handlers{
-				Client: struct {
-					*user.UserService
-					*session.Service
-				}{
-					UserService: userService,
-					Service:     sessionService,
-				},
-				SiteToken:            cfg.SiteToken,
-				AuthenticatorService: authenticatorService,
-			},
-			&workspaceui.Handlers{
-				Client: struct {
-					*run.RunService
-					*user.UserService
-					*workspace.WorkspaceService
-					*configversion.ConfigService
-					*sshkey.SSHKeyService
-					*engine.EngineService
-					*vcs.VCSService
-					*team.TeamService
-				}{
-					RunService:       runService,
-					UserService:      userService,
-					WorkspaceService: workspaceService,
-					ConfigService:    configService,
-					SSHKeyService:    sshkeyService,
-					EngineService:    engineService,
-					VCSService:       vcsService,
-					TeamService:      teamService,
-				},
-				Authorizer:     authorizer,
-				SingleRunTable: runuiHandlers.SingleRunTable,
-			},
-			moduleui.NewHandlers(
-				struct {
-					*module.ModuleService
-					*vcs.VCSService
-					*internal.HostnameService
-				}{
-					ModuleService:   moduleService,
-					VCSService:      vcsService,
-					HostnameService: hostnameService,
-				},
-				authorizer,
-			),
 		},
 	}
 
@@ -698,7 +742,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		KeyFile:              cfg.KeyFile,
 		EnableRequestLogging: cfg.EnableRequestLogging,
 		Middleware:           []mux.MiddlewareFunc{tokensService.Middleware.Authenticate},
-		Handlers:             append(handlers, &uiHandlers),
+		Handlers:             handlers,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("setting up http server: %w", err)

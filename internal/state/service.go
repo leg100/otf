@@ -4,15 +4,11 @@ import (
 	"context"
 	"errors"
 
-	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/tfeapi"
-	"github.com/leg100/otf/internal/workspace"
-	"github.com/leg100/surl/v2"
 )
 
 var ErrCurrentVersionDeletionAttempt = errors.New("deleting the current state version is not allowed")
@@ -26,21 +22,16 @@ type (
 	Service struct {
 		logr.Logger
 
-		db     *pgdb
-		tfeapi *tfe
-		api    *api
+		db *pgdb
 
 		*factory // for creating state versions
 		*authz.Authorizer
 	}
 
 	Options struct {
-		Logger           logr.Logger
-		DB               *sql.DB
-		Responder        *tfeapi.Responder
-		Signer           *surl.Signer
-		WorkspaceService *workspace.Service
-		Authorizer       *authz.Authorizer
+		Logger     logr.Logger
+		DB         *sql.DB
+		Authorizer *authz.Authorizer
 	}
 )
 
@@ -52,20 +43,6 @@ func NewService(opts Options) *Service {
 		db:         db,
 		factory:    &factory{db},
 	}
-	svc.tfeapi = &tfe{
-		Responder:  opts.Responder,
-		Signer:     opts.Signer,
-		state:      &svc,
-		workspaces: opts.WorkspaceService,
-	}
-	svc.api = &api{
-		Service:   &svc,
-		Responder: opts.Responder,
-		tfeapi:    svc.tfeapi,
-	}
-	// include state version outputs in api responses when requested.
-	opts.Responder.Register(tfeapi.IncludeOutputs, svc.tfeapi.includeOutputs)
-	opts.Responder.Register(tfeapi.IncludeOutputs, svc.tfeapi.includeWorkspaceCurrentOutputs)
 
 	// Provide a means of looking up a state versions's parent workspace.
 	opts.Authorizer.RegisterParentResolver(resource.StateVersionKind,
@@ -80,11 +57,6 @@ func NewService(opts Options) *Service {
 		},
 	)
 	return &svc
-}
-
-func (a *Service) AddHandlers(r *mux.Router) {
-	a.tfeapi.addHandlers(r)
-	a.api.addHandlers(r)
 }
 
 func (a *Service) CreateStateVersion(ctx context.Context, opts CreateStateVersionOptions) (*Version, error) {
