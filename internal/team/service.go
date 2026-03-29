@@ -26,7 +26,7 @@ type (
 
 		db     *pgdb
 		tfeapi *TFEAPI
-		api    *api
+		api    *API
 
 		afterCreateHooks []func(context.Context, *Team) error
 
@@ -51,9 +51,6 @@ func NewService(opts Options) *Service {
 		teamTokenFactory: &teamTokenFactory{
 			tokens: opts.TokensService,
 		},
-	}
-	svc.api = &api{
-		Service: &svc,
 	}
 
 	// Whenever an organization is created, also create an owners team. (The

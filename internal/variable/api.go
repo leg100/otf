@@ -1,33 +1,35 @@
 package variable
 
 import (
+	"context"
 	"net/http"
-
-	otfhttp "github.com/leg100/otf/internal/http"
-
-	"github.com/leg100/otf/internal/tfeapi"
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal/http/decode"
+	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/tfeapi"
 )
 
-type api struct {
-	*Service
+type API struct {
 	*tfeapi.Responder
+	Client apiClient
 }
 
-func (a *api) addHandlers(r *mux.Router) {
-	r = r.PathPrefix(otfhttp.APIBasePath).Subrouter()
+type apiClient interface {
+	ListEffectiveVariables(ctx context.Context, runID resource.TfeID) ([]*Variable, error)
+}
+
+func (a *API) AddHandlers(r *mux.Router) {
 	r.HandleFunc("/vars/effective/{run_id}", a.listEffectiveVariables).Methods("GET")
 }
 
-func (a *api) listEffectiveVariables(w http.ResponseWriter, r *http.Request) {
+func (a *API) listEffectiveVariables(w http.ResponseWriter, r *http.Request) {
 	runID, err := decode.ID("run_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
-	variables, err := a.ListEffectiveVariables(r.Context(), runID)
+	variables, err := a.Client.ListEffectiveVariables(r.Context(), runID)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return

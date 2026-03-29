@@ -8,15 +8,13 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal/http/decode"
-	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tfeapi"
 )
 
-type api struct {
+type API struct {
 	*tfeapi.Responder
 	Client apiClient
-	Logger logr.Logger
 }
 
 type apiClient interface {
@@ -37,7 +35,7 @@ type apiClient interface {
 	PutChunk(ctx context.Context, opts PutChunkOptions) error
 }
 
-func (a *api) AddHandlers(r *mux.Router) {
+func (a *API) AddHandlers(r *mux.Router) {
 	r.HandleFunc("/runs", a.list).Methods("GET")
 	r.HandleFunc("/runs/{id}", a.get).Methods("GET")
 	r.HandleFunc("/runs/{id}/planfile", a.getPlanFile).Methods("GET")
@@ -47,7 +45,7 @@ func (a *api) AddHandlers(r *mux.Router) {
 	r.HandleFunc("/runs/{run_id}/logs/{phase}", a.putLogs).Methods("PUT")
 }
 
-func (a *api) list(w http.ResponseWriter, r *http.Request) {
+func (a *API) list(w http.ResponseWriter, r *http.Request) {
 	var params ListOptions
 	if err := decode.All(&params, r); err != nil {
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -61,7 +59,7 @@ func (a *api) list(w http.ResponseWriter, r *http.Request) {
 	a.RespondWithPage(w, r, page.Items, page.Pagination)
 }
 
-func (a *api) get(w http.ResponseWriter, r *http.Request) {
+func (a *API) get(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.ID("id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
@@ -75,7 +73,7 @@ func (a *api) get(w http.ResponseWriter, r *http.Request) {
 	a.Respond(w, r, run, http.StatusOK)
 }
 
-func (a *api) getPlanFile(w http.ResponseWriter, r *http.Request) {
+func (a *API) getPlanFile(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.ID("id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
@@ -97,7 +95,7 @@ func (a *api) getPlanFile(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (a *api) uploadPlanFile(w http.ResponseWriter, r *http.Request) {
+func (a *API) uploadPlanFile(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.ID("id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
@@ -120,7 +118,7 @@ func (a *api) uploadPlanFile(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusAccepted)
 }
 
-func (a *api) getLockFile(w http.ResponseWriter, r *http.Request) {
+func (a *API) getLockFile(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.ID("id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
@@ -137,7 +135,7 @@ func (a *api) getLockFile(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (a *api) uploadLockFile(w http.ResponseWriter, r *http.Request) {
+func (a *API) uploadLockFile(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.ID("id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
@@ -155,7 +153,7 @@ func (a *api) uploadLockFile(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusAccepted)
 }
 
-func (a *api) putLogs(w http.ResponseWriter, r *http.Request) {
+func (a *API) putLogs(w http.ResponseWriter, r *http.Request) {
 	var opts PutChunkOptions
 	if err := decode.All(&opts, r); err != nil {
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)

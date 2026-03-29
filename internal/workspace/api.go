@@ -1,25 +1,37 @@
 package workspace
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 
 	"github.com/gorilla/mux"
-	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/http/decode"
+	"github.com/leg100/otf/internal/organization"
+	"github.com/leg100/otf/internal/pubsub"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tfeapi"
 )
 
-type (
-	api struct {
-		*Service
-		*tfeapi.Responder
-	}
-)
+type API struct {
+	*tfeapi.Responder
+	Client apiClient
+}
 
-func (a *api) addHandlers(r *mux.Router) {
-	r = r.PathPrefix(otfhttp.APIBasePath).Subrouter()
+type apiClient interface {
+	GetWorkspace(context.Context, resource.TfeID) (*Workspace, error)
+	WatchWorkspaces(ctx context.Context) (<-chan pubsub.Event[*Event], func())
+	ListWorkspaces(ctx context.Context, opts ListOptions) (*resource.Page[*Workspace], error)
+	CreateWorkspace(ctx context.Context, opts CreateOptions) (*Workspace, error)
+	GetWorkspaceByName(ctx context.Context, organization organization.Name, name string) (*Workspace, error)
+	GetWorkspacePolicy(ctx context.Context, workspaceID resource.TfeID) (Policy, error)
+	UpdateWorkspace(ctx context.Context, workspaceID resource.TfeID, opts UpdateOptions) (*Workspace, error)
+	DeleteWorkspace(ctx context.Context, workspaceID resource.TfeID) (*Workspace, error)
+	Lock(ctx context.Context, workspaceID resource.TfeID, runID *resource.TfeID) (*Workspace, error)
+	Unlock(ctx context.Context, workspaceID resource.TfeID, runID *resource.TfeID, force bool) (*Workspace, error)
+}
 
+func (a *API) AddHandlers(r *mux.Router) {
 	r.HandleFunc("/organizations/{organization_name}/workspaces", a.listWorkspaces).Methods("GET")
 	r.HandleFunc("/organizations/{organization_name}/workspaces/{workspace_name}", a.getWorkspaceByName).Methods("GET")
 
@@ -30,14 +42,14 @@ func (a *api) addHandlers(r *mux.Router) {
 	r.HandleFunc("/workspaces/{workspace_id}/actions/force-unlock", a.forceUnlockWorkspace).Methods("POST")
 }
 
-func (a *api) getWorkspace(w http.ResponseWriter, r *http.Request) {
+func (a *API) getWorkspace(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.ID("workspace_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
 
-	ws, err := a.GetWorkspace(r.Context(), id)
+	ws, err := a.Client.GetWorkspace(r.Context(), id)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -46,14 +58,14 @@ func (a *api) getWorkspace(w http.ResponseWriter, r *http.Request) {
 	a.Respond(w, r, ws, http.StatusOK)
 }
 
-func (a *api) getWorkspaceByName(w http.ResponseWriter, r *http.Request) {
+func (a *API) getWorkspaceByName(w http.ResponseWriter, r *http.Request) {
 	var params byWorkspaceName
 	if err := decode.All(&params, r); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
 
-	ws, err := a.GetWorkspaceByName(r.Context(), params.Organization, params.Name)
+	ws, err := a.Client.GetWorkspaceByName(r.Context(), params.Organization, params.Name)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -62,14 +74,14 @@ func (a *api) getWorkspaceByName(w http.ResponseWriter, r *http.Request) {
 	a.Respond(w, r, ws, http.StatusOK)
 }
 
-func (a *api) listWorkspaces(w http.ResponseWriter, r *http.Request) {
+func (a *API) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 	var params ListOptions
 	if err := decode.All(&params, r); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
 
-	page, err := a.ListWorkspaces(r.Context(), params)
+	page, err := a.Client.ListWorkspaces(r.Context(), params)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -78,7 +90,7 @@ func (a *api) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 	a.RespondWithPage(w, r, page.Items, page.Pagination)
 }
 
-func (a *api) updateWorkspace(w http.ResponseWriter, r *http.Request) {
+func (a *API) updateWorkspace(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.ID("workspace_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
@@ -91,7 +103,7 @@ func (a *api) updateWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := a.UpdateWorkspace(r.Context(), id, params)
+	ws, err := a.Client.UpdateWorkspace(r.Context(), id, params)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -100,14 +112,14 @@ func (a *api) updateWorkspace(w http.ResponseWriter, r *http.Request) {
 	a.Respond(w, r, ws, http.StatusOK)
 }
 
-func (a *api) lockWorkspace(w http.ResponseWriter, r *http.Request) {
+func (a *API) lockWorkspace(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.ID("workspace_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
 
-	ws, err := a.Lock(r.Context(), id, nil)
+	ws, err := a.Client.Lock(r.Context(), id, nil)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -116,22 +128,22 @@ func (a *api) lockWorkspace(w http.ResponseWriter, r *http.Request) {
 	a.Respond(w, r, ws, http.StatusOK)
 }
 
-func (a *api) unlockWorkspace(w http.ResponseWriter, r *http.Request) {
+func (a *API) unlockWorkspace(w http.ResponseWriter, r *http.Request) {
 	a.unlock(w, r, false)
 }
 
-func (a *api) forceUnlockWorkspace(w http.ResponseWriter, r *http.Request) {
+func (a *API) forceUnlockWorkspace(w http.ResponseWriter, r *http.Request) {
 	a.unlock(w, r, true)
 }
 
-func (a *api) unlock(w http.ResponseWriter, r *http.Request, force bool) {
+func (a *API) unlock(w http.ResponseWriter, r *http.Request, force bool) {
 	id, err := decode.ID("workspace_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
 
-	ws, err := a.Unlock(r.Context(), id, nil, force)
+	ws, err := a.Client.Unlock(r.Context(), id, nil, force)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return

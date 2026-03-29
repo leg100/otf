@@ -9,6 +9,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/authenticator"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/configversion"
@@ -424,6 +425,17 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	})
 
 	// Handlers for the TFE API
+	stateTFEAPI := state.NewTFEAPI(
+		struct {
+			*state.StateService
+			*workspace.WorkspaceService
+		}{
+			StateService:     stateService,
+			WorkspaceService: workspaceService,
+		},
+		responder,
+		signer,
+	)
 	tfeapiHandlers := &tfeapi.Handlers{
 		Verifier: signer,
 		Handlers: []internal.Handlers{
@@ -494,17 +506,47 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 				responder,
 				authorizer,
 			),
-			state.NewTFEAPI(
-				struct {
-					*state.StateService
-					*workspace.WorkspaceService
-				}{
-					StateService:     stateService,
-					WorkspaceService: workspaceService,
-				},
-				responder,
-				signer,
-			),
+			stateTFEAPI,
+		},
+	}
+
+	apihandlers := &api.Handlers{
+		Handlers: []internal.Handlers{
+			&organization.API{
+				Responder: responder,
+				Client:    orgService,
+			},
+			&workspace.API{
+				Responder: responder,
+				Client:    workspaceService,
+			},
+			&run.API{
+				Responder: responder,
+				Client:    runService,
+			},
+			&configversion.API{
+				Responder: responder,
+				Client:    configService,
+			},
+			&user.API{
+				Responder: responder,
+				Client:    userService,
+			},
+			&team.API{
+				Responder: responder,
+				Client:    teamService,
+			},
+			&state.API{
+				Responder: responder,
+				Client:    stateService,
+				TFEAPI:    stateTFEAPI,
+			},
+			&sshkey.API{
+				Client: sshkeyService,
+			},
+			&variable.API{
+				Client: variableService,
+			},
 		},
 	}
 
@@ -630,6 +672,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 
 	// Compile list of all handlers
 	handlers := []internal.Handlers{
+		apihandlers,
 		tfeapiHandlers,
 		uiHandlers,
 		authenticatorService,
