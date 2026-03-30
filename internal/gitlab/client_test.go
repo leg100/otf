@@ -54,7 +54,7 @@ func TestClient_ListRepositories(t *testing.T) {
 
 	mux.HandleFunc("/api/v4/projects", func(w http.ResponseWriter, r *http.Request) {
 		require.Equal(t, "GET", r.Method)
-		fmt.Fprint(w, `[{"namespace": {"path": "acme"}, "path":"terraform"}]`)
+		fmt.Fprint(w, `[{"namespace": {"full_path": "acme"}, "path":"terraform"}]`)
 	})
 
 	got, err := client.ListRepositories(context.Background(), vcs.ListRepositoriesOptions{})
