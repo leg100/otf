@@ -21,6 +21,7 @@ import (
 	"github.com/leg100/otf/internal/github"
 	githubui "github.com/leg100/otf/internal/github/ui"
 	"github.com/leg100/otf/internal/gitlab"
+	"github.com/leg100/otf/internal/healthz"
 	"github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/iap"
 	"github.com/leg100/otf/internal/loginserver"
@@ -666,6 +667,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 
 	// Compile list of all handlers
 	handlers := []internal.Handlers{
+		&healthz.Check{Client: db},
 		apihandlers,
 		tfeapiHandlers,
 		uiHandlers,

@@ -30,7 +30,7 @@ const (
 	headersKey      key = "headers"
 )
 
-var healthzPayload = json.MustMarshal(struct {
+var versionPayload = json.MustMarshal(struct {
 	Version string
 	Commit  string
 	Built   string
@@ -87,11 +87,7 @@ func NewServer(logger logr.Logger, cfg ServerConfig) (*Server, error) {
 
 	r.HandleFunc("/version", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-type", "application/json")
-		w.Write(healthzPayload)
-	})
-	r.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-type", "application/json")
-		w.Write([]byte(`{"status":"OK"}`))
+		w.Write(versionPayload)
 	})
 
 	// Subrouter for service routes
