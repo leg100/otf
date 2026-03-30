@@ -19,6 +19,7 @@ import (
 	"github.com/leg100/otf/internal/forgejo"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/gitlab"
+	"github.com/leg100/otf/internal/healthz"
 	"github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/iap"
 	"github.com/leg100/otf/internal/loginserver"
@@ -428,6 +429,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	})
 
 	handlers := []internal.Handlers{
+		&healthz.Check{Client: db},
 		teamService,
 		userService,
 		workspaceService,
@@ -611,7 +613,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		EnableRequestLogging: cfg.EnableRequestLogging,
 		Middleware:           []mux.MiddlewareFunc{tokensService.Middleware.Authenticate},
 		Handlers:             handlers,
-		HealthCheck:          db.Ping,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("setting up http server: %w", err)
