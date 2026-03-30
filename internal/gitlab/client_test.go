@@ -54,13 +54,28 @@ func TestClient_ListRepositories(t *testing.T) {
 
 	mux.HandleFunc("/api/v4/projects", func(w http.ResponseWriter, r *http.Request) {
 		require.Equal(t, "GET", r.Method)
-		fmt.Fprint(w, `[{"namespace": {"path": "acme"}, "path":"terraform"}]`)
+		fmt.Fprint(w, `[{"namespace": {"full_path": "acme"}, "path":"terraform"}]`)
 	})
 
 	got, err := client.ListRepositories(context.Background(), vcs.ListRepositoriesOptions{})
 	require.NoError(t, err)
 
 	want := vcs.NewMustRepo("acme", "terraform")
+	assert.Equal(t, []vcs.Repo{want}, got)
+}
+
+func TestClient_ListRepositories_Subgroup(t *testing.T) {
+	mux, client := setup(t)
+
+	mux.HandleFunc("/api/v4/projects", func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(t, "GET", r.Method)
+		fmt.Fprint(w, `[{"namespace": {"full_path": "acme/infra/team-a"}, "path":"terraform"}]`)
+	})
+
+	got, err := client.ListRepositories(context.Background(), vcs.ListRepositoriesOptions{})
+	require.NoError(t, err)
+
+	want := vcs.NewMustRepo("acme/infra/team-a", "terraform")
 	assert.Equal(t, []vcs.Repo{want}, got)
 }
 
