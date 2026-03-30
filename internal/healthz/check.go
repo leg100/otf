@@ -25,24 +25,26 @@ type CheckClient interface {
 }
 
 func (c *Check) AddHandlers(r *mux.Router) {
-	r.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
-		var response struct {
-			Status status
-			Error  string `json:"omitempty"`
-		}
+	r.HandleFunc("/healthz", c.healthz)
+}
 
-		w.Header().Set("Content-type", "application/json")
+func (c *Check) healthz(w http.ResponseWriter, r *http.Request) {
+	var response struct {
+		Status status `json:"status"`
+		Error  string `json:"error,omitempty"`
+	}
 
-		if err := c.Client.Ping(r.Context()); err != nil {
-			w.WriteHeader(http.StatusServiceUnavailable)
+	w.Header().Set("Content-type", "application/json")
 
-			response.Status = notok
-			response.Error = err.Error()
-		} else {
-			response.Status = ok
-		}
-		if err := json.NewEncoder(w).Encode(response); err != nil {
-			w.Write(fmt.Appendf(nil, "unable to encode health check response to json: %s", err.Error()))
-		}
-	})
+	if err := c.Client.Ping(r.Context()); err != nil {
+		w.WriteHeader(http.StatusServiceUnavailable)
+
+		response.Status = notok
+		response.Error = err.Error()
+	} else {
+		response.Status = ok
+	}
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		w.Write(fmt.Appendf(nil, "unable to encode health check response to json: %s", err.Error()))
+	}
 }
