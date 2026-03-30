@@ -544,7 +544,8 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 				Client: sshkeyService,
 			},
 			&variable.API{
-				Client: variableService,
+				Client:    variableService,
+				Responder: responder,
 			},
 			&runner.API{
 				Client:    runnerService,

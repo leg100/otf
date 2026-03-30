@@ -1,15 +1,13 @@
 package ui
 
 import (
-	"context"
-	"fmt"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/ui/helpers"
 	"github.com/leg100/otf/internal/ui/paths"
 	"github.com/leg100/otf/internal/user"
-	"io"
+	userui "github.com/leg100/otf/internal/user/ui"
 )
 
 templ newTeamView(organization organization.Name) {
@@ -79,111 +77,83 @@ type getTeamProps struct {
 	dropdown        helpers.SearchDropdownProps
 }
 
-// getTeam renders the team detail page.
-func getTeam(props getTeamProps) templ.Component {
-	return templ.ComponentFunc(func(ctx context.Context, w io.Writer) error {
-		_, err := fmt.Fprintf(w, `<div class="flex flex-col gap-4">`)
-		if err != nil {
-			return err
-		}
-
-		// Members section
-		_, err = fmt.Fprintf(w, `<div class="flex flex-col gap-2"><h3 class="text-lg font-semibold">Team Members</h3>`)
-		if err != nil {
-			return err
-		}
-
-		if props.canAddMember {
-			if err := helpers.SearchDropdown(props.dropdown).Render(ctx, w); err != nil {
-				return err
+templ getTeam(props getTeamProps) {
+	if props.canUpdateTeam {
+		<h3 class="font-semibold my-2 text-lg">Permissions</h3>
+		<form class="flex flex-col gap-5" action={ paths.UpdateTeam(props.team.ID) } method="POST">
+			<div class="form-checkbox">
+				<input
+					type="checkbox"
+					name="manage_workspaces"
+					id="manage_workspaces"
+					value="true"
+					checked?={ props.team.ManageWorkspaces || props.team.IsOwners() }
+					if props.team.IsOwners() {
+						title="cannot change permissions of owners team"
+						disabled
+					}
+				/>
+				<label for="manage_workspaces">Manage Workspaces</label>
+				<span class="description">Allows members to create and administrate all workspaces within the organization.</span>
+			</div>
+			<div class="form-checkbox">
+				<input
+					type="checkbox"
+					name="manage_vcs"
+					id="manage_vcs"
+					value="true"
+					checked?={ props.team.ManageVCS || props.team.IsOwners() }
+					if props.team.IsOwners() {
+						title="cannot change permissions of owners team"
+						disabled
+					}
+				/>
+				<label for="manage_vcs">Manage VCS Settings</label>
+				<span class="description">Allows members to manage the set of VCS providers available within the organization.</span>
+			</div>
+			<div class="form-checkbox">
+				<input
+					type="checkbox"
+					name="manage_modules"
+					id="manage_modules"
+					value="true"
+					checked?={ props.team.ManageModules || props.team.IsOwners() }
+					if props.team.IsOwners() {
+						title="cannot change permissions of owners team"
+						disabled
+					}
+				/>
+				<label for="manage_modules">Manage Modules</label>
+				<span class="description" for="manage_modules">Allows members to publish and delete modules within the organization.</span>
+			</div>
+			if !props.team.IsOwners() {
+				<div class="field">
+					<button class="btn w-40">Save changes</button>
+				</div>
 			}
-		}
-
-		for _, m := range props.members {
-			_, err = fmt.Fprintf(w, `<div class="flex items-center gap-2"><span>%s</span>`, templ.EscapeString(m.Username.String()))
-			if err != nil {
-				return err
-			}
-			if props.canRemoveMember {
-				_, err = fmt.Fprintf(w,
-					`<form action="%s" method="POST"><input type="hidden" name="username" value="%s"/><button class="btn btn-sm btn-error">Remove</button></form>`,
-					templ.EscapeString(string(paths.RemoveMemberTeam(props.team.ID))),
-					templ.EscapeString(m.Username.String()),
-				)
-				if err != nil {
-					return err
-				}
-			}
-			_, err = fmt.Fprintf(w, `</div>`)
-			if err != nil {
-				return err
-			}
-		}
-
-		_, err = fmt.Fprintf(w, `</div>`)
-		if err != nil {
-			return err
-		}
-
-		// Permissions section
-		if props.canUpdateTeam || props.canDeleteTeam {
-			manageWorkspacesChecked := ""
-			if props.team.ManageWorkspaces {
-				manageWorkspacesChecked = " checked"
-			}
-			manageVCSChecked := ""
-			if props.team.ManageVCS {
-				manageVCSChecked = " checked"
-			}
-			manageModulesChecked := ""
-			if props.team.ManageModules {
-				manageModulesChecked = " checked"
-			}
-
-			_, err = fmt.Fprintf(w,
-				`<div class="flex flex-col gap-2"><h3 class="text-lg font-semibold">Permissions</h3>`+
-					`<form action="%s" method="POST"><div class="flex flex-col gap-2">`+
-					`<label class="flex items-center gap-2"><input type="checkbox" name="manage_workspaces" class="checkbox"%s/> Manage Workspaces</label>`+
-					`<label class="flex items-center gap-2"><input type="checkbox" name="manage_vcs" class="checkbox"%s/> Manage VCS</label>`+
-					`<label class="flex items-center gap-2"><input type="checkbox" name="manage_modules" class="checkbox"%s/> Manage Modules</label>`,
-				templ.EscapeString(string(paths.UpdateTeam(props.team.ID))),
-				manageWorkspacesChecked,
-				manageVCSChecked,
-				manageModulesChecked,
-			)
-			if err != nil {
-				return err
-			}
-
-			if props.canUpdateTeam {
-				_, err = fmt.Fprintf(w, `<button class="btn btn-primary" id="save-team-permissions-button">Save</button>`)
-				if err != nil {
-					return err
-				}
-			}
-
-			_, err = fmt.Fprintf(w, `</div></form>`)
-			if err != nil {
-				return err
-			}
-
-			if props.canDeleteTeam {
-				_, err = fmt.Fprintf(w,
-					`<form action="%s" method="POST"><button class="btn btn-error" id="delete-team-button">Delete team</button></form>`,
-					templ.EscapeString(string(paths.DeleteTeam(props.team.ID))),
-				)
-				if err != nil {
-					return err
-				}
-			}
-
-			_, err = fmt.Fprintf(w, `</div>`)
-			if err != nil {
-				return err
-			}
-		}
-
-		_, err = fmt.Fprintf(w, `</div>`)
-		return err
-	})
+		</form>
+		<hr class="my-4"/>
+	}
+	<h3 class="font-semibold my-2 text-lg">Members</h3>
+	<div id="content-list">
+		@helpers.UnpaginatedTable(
+			&userui.UserTable{TeamID: &props.team.ID, CanRemoveMember: props.canRemoveMember},
+			props.members,
+		)
+	</div>
+	if props.canAddMember {
+		<div>
+			@helpers.SearchDropdown(props.dropdown)
+		</div>
+	}
+	if !props.team.IsOwners() && props.canDeleteTeam {
+		<hr class="my-4"/>
+		<h3 class="font-semibold my-2 text-lg">Advanced</h3>
+		<form action={ paths.DeleteTeam(props.team.ID) } method="POST">
+			<button class="btn btn-error btn-outline" onclick="return confirm('Are you sure you want to delete?')">
+				Delete team
+			</button>
+			<input type="hidden" name="id" value={ props.team.ID.String() }/>
+		</form>
+	}
 }
