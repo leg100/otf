@@ -21,22 +21,20 @@ import (
 
 func TestRunsHandlers(t *testing.T) {
 	ws := workspace.NewTestWorkspace(t, nil)
-	workspaces := &fakeWorkspaceClient{
-		ws: ws,
-	}
 	cv := configversion.NewConfigurationVersion(ws.ID, configversion.CreateOptions{})
 	run, err := run.NewRun(ws, cv, run.CreateOptions{})
 	require.NoError(t, err)
+	client := &fakeRunClient{
+		run: run,
+		ws:  ws,
+	}
 
 	h := &Handlers{
-		Workspaces: workspaces,
-		client: &fakeRunClient{
-			run: run,
-		},
+		client:     client,
 		authorizer: authz.NewAllowAllAuthorizer(),
 		templates: &templates{
-			workspaces: workspaces,
-			configs:    &fakeConfigsClient{},
+			workspaces:  client,
+			sourceIcons: client,
 		},
 	}
 	user := &user.User{ID: resource.NewTfeID(resource.UserKind)}
@@ -154,8 +152,9 @@ func TestTailLogs(t *testing.T) {
 }
 
 type fakeRunClient struct {
-	RunService
+	Client
 	run    *run.Run
+	ws     *workspace.Workspace
 	chunks chan run.Chunk
 }
 
@@ -191,17 +190,10 @@ func (f *fakeRunClient) TailRun(context.Context, run.TailOptions) (<-chan run.Ch
 	return f.chunks, nil
 }
 
-type fakeWorkspaceClient struct {
-	WorkspaceService
-	ws *workspace.Workspace
-}
-
-func (f *fakeWorkspaceClient) GetWorkspace(context.Context, resource.TfeID) (*workspace.Workspace, error) {
+func (f *fakeRunClient) GetWorkspace(context.Context, resource.TfeID) (*workspace.Workspace, error) {
 	return f.ws, nil
 }
 
-type fakeConfigsClient struct{}
-
-func (f *fakeConfigsClient) GetSourceIcon(source source.Source) templ.Component {
+func (f *fakeRunClient) GetSourceIcon(source source.Source) templ.Component {
 	return templ.Raw("")
 }

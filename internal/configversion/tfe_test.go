@@ -17,10 +17,10 @@ import (
 
 func TestUploadConfigurationVersion(t *testing.T) {
 	api := &tfe{
-		Logger: logr.Discard(),
+		logger: logr.Discard(),
 		// only permit upto 100 byte uploads
 		maxConfigSize: 100,
-		tfeClient:     &fakeConfigService{},
+		client:        &fakeConfigService{},
 	}
 
 	// setup web server

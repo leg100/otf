@@ -421,7 +421,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Authorizer: authorizer,
 		DB:         db,
 		Listener:   sqlListener,
-		Responder:  responder,
 	})
 
 	// Handlers for the TFE API
@@ -547,6 +546,10 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 			&variable.API{
 				Client: variableService,
 			},
+			&runner.API{
+				Client:    runnerService,
+				Responder: responder,
+			},
 		},
 	}
 
@@ -569,7 +572,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	uiHandlers := &ui.Handlers{
 		Handlers: []internal.Handlers{
 			&teamui.Handlers{
-				Teams: struct {
+				Client: struct {
 					*user.UserService
 					*team.TeamService
 				}{

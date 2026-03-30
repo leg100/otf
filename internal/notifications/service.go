@@ -8,7 +8,6 @@ import (
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/tfeapi"
 )
 
 type (
@@ -21,14 +20,12 @@ type (
 		*authz.Authorizer
 
 		db     *pgdb
-		api    *TFEAPI
 		broker *pubsub.Broker[*Config]
 	}
 
 	Options struct {
 		DB         *sql.DB
 		Listener   *sql.Listener
-		Responder  *tfeapi.Responder
 		Logger     logr.Logger
 		Authorizer *authz.Authorizer
 	}

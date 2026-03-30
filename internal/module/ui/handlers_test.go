@@ -73,7 +73,6 @@ func TestGetModule(t *testing.T) {
 					mod:     &tt.mod,
 					tarball: tarball,
 				},
-				Hostnames: &fakeHostnamesClient{},
 			}
 
 			q := "/?module_id=mod-123&version=1.0.0"
@@ -107,6 +106,4 @@ func (f *fakeModuleService) GetModuleInfo(context.Context, resource.TfeID) (*mod
 	return module.UnmarshalTerraformModule(f.tarball)
 }
 
-type fakeHostnamesClient struct{}
-
-func (f *fakeHostnamesClient) Hostname() string { return "localhost" }
+func (f *fakeModuleService) Hostname() string { return "localhost" }

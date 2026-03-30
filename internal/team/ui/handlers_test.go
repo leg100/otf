@@ -38,7 +38,7 @@ func TestTeam_WebHandlers(t *testing.T) {
 
 	t.Run("update", func(t *testing.T) {
 		team := &team.Team{Name: "acme-org", ID: testutils.ParseID(t, "team-123")}
-		h := &Handlers{Teams: &fakeTeamService{team: team}}
+		h := &Handlers{Client: &fakeClient{team: team}}
 
 		q := "/?team_id=team-123&manage_workspaces=true"
 		r := httptest.NewRequest("GET", q, nil)
@@ -55,8 +55,7 @@ func TestTeam_WebHandlers(t *testing.T) {
 		require.NoError(t, err)
 		h := &Handlers{
 			Authorizer: authz.NewAllowAllAuthorizer(),
-			Teams:      &fakeTeamService{team: owners},
-			Users:      &fakeUserService{user: owner},
+			Client:     &fakeClient{team: owners, user: owner},
 		}
 
 		q := "/?team_id=team-123"
@@ -71,7 +70,7 @@ func TestTeam_WebHandlers(t *testing.T) {
 	t.Run("list", func(t *testing.T) {
 		team := &team.Team{Name: "acme-org", ID: testutils.ParseID(t, "team-123")}
 		h := &Handlers{
-			Teams:      &fakeTeamService{team: team},
+			Client:     &fakeClient{team: team},
 			Authorizer: authz.NewAllowAllAuthorizer(),
 		}
 		// make request with user with full perms, to ensure parts of
@@ -88,7 +87,7 @@ func TestTeam_WebHandlers(t *testing.T) {
 
 	t.Run("delete", func(t *testing.T) {
 		team := &team.Team{Name: "acme-org", ID: testutils.ParseID(t, "team-123"), Organization: organization.NewTestName(t)}
-		h := &Handlers{Teams: &fakeTeamService{team: team}}
+		h := &Handlers{Client: &fakeClient{team: team}}
 		q := "/?team_id=team-123"
 		r := httptest.NewRequest("POST", q, nil)
 		w := httptest.NewRecorder()
@@ -97,46 +96,44 @@ func TestTeam_WebHandlers(t *testing.T) {
 	})
 }
 
-type fakeTeamService struct {
+type fakeClient struct {
+	Client
 	team *team.Team
-}
-
-func (f *fakeTeamService) CreateTeam(context.Context, organization.Name, team.CreateTeamOptions) (*team.Team, error) {
-	return f.team, nil
-}
-
-func (f *fakeTeamService) UpdateTeam(context.Context, resource.TfeID, team.UpdateTeamOptions) (*team.Team, error) {
-	return f.team, nil
-}
-
-func (f *fakeTeamService) GetTeam(context.Context, organization.Name, string) (*team.Team, error) {
-	return f.team, nil
-}
-
-func (f *fakeTeamService) GetTeamByID(context.Context, resource.TfeID) (*team.Team, error) {
-	return f.team, nil
-}
-
-func (f *fakeTeamService) ListTeams(context.Context, organization.Name) ([]*team.Team, error) {
-	return []*team.Team{f.team}, nil
-}
-
-func (f *fakeTeamService) DeleteTeam(context.Context, resource.TfeID) error {
-	return nil
-}
-
-type fakeUserService struct {
 	user *user.User
 }
 
-func (f *fakeUserService) List(context.Context) ([]*user.User, error) {
+func (f *fakeClient) CreateTeam(context.Context, organization.Name, team.CreateTeamOptions) (*team.Team, error) {
+	return f.team, nil
+}
+
+func (f *fakeClient) UpdateTeam(context.Context, resource.TfeID, team.UpdateTeamOptions) (*team.Team, error) {
+	return f.team, nil
+}
+
+func (f *fakeClient) GetTeam(context.Context, organization.Name, string) (*team.Team, error) {
+	return f.team, nil
+}
+
+func (f *fakeClient) GetTeamByID(context.Context, resource.TfeID) (*team.Team, error) {
+	return f.team, nil
+}
+
+func (f *fakeClient) ListTeams(context.Context, organization.Name) ([]*team.Team, error) {
+	return []*team.Team{f.team}, nil
+}
+
+func (f *fakeClient) DeleteTeam(context.Context, resource.TfeID) error {
+	return nil
+}
+
+func (f *fakeClient) List(context.Context) ([]*user.User, error) {
 	if f.user != nil {
 		return []*user.User{f.user}, nil
 	}
 	return nil, nil
 }
 
-func (f *fakeUserService) ListTeamUsers(context.Context, resource.TfeID) ([]*user.User, error) {
+func (f *fakeClient) ListTeamUsers(context.Context, resource.TfeID) ([]*user.User, error) {
 	if f.user != nil {
 		return []*user.User{f.user}, nil
 	}

@@ -24,10 +24,7 @@ type (
 		logr.Logger
 		*authz.Authorizer
 
-		db     *pgdb
-		tfeapi *TFEAPI
-		api    *API
-
+		db               *pgdb
 		afterCreateHooks []func(context.Context, *Team) error
 
 		*teamTokenFactory

@@ -14,6 +14,10 @@ import (
 	"github.com/leg100/otf/internal/http/decode"
 )
 
+// Implements TFC workspace variables and variable set APIs:
+//
+// https://developer.hashicorp.com/terraform/cloud-docs/api-docs/workspace-variables
+// https://developer.hashicorp.com/terraform/cloud-docs/api-docs/variable-sets
 type TFEAPI struct {
 	*tfeapi.Responder
 	Client tfeClient
@@ -38,14 +42,10 @@ type tfeClient interface {
 	GetWorkspace(context.Context, resource.TfeID) (*workspace.Workspace, error)
 	ListWorkspaces(ctx context.Context, opts workspace.ListOptions) (*resource.Page[*workspace.Workspace], error)
 
-	applySetToWorkspaces(ctx context.Context, setID resource.TfeID, workspaceIDs []resource.TfeID) error
-	deleteSetFromWorkspaces(ctx context.Context, setID resource.TfeID, workspaceIDs []resource.TfeID) error
+	ApplySetToWorkspaces(ctx context.Context, setID resource.TfeID, workspaceIDs []resource.TfeID) error
+	DeleteSetFromWorkspaces(ctx context.Context, setID resource.TfeID, workspaceIDs []resource.TfeID) error
 }
 
-// Implements TFC workspace variables and variable set APIs:
-//
-// https://developer.hashicorp.com/terraform/cloud-docs/api-docs/workspace-variables
-// https://developer.hashicorp.com/terraform/cloud-docs/api-docs/variable-sets
 func (a *TFEAPI) AddHandlers(r *mux.Router) {
 	r.HandleFunc("/workspaces/{workspace_id}/vars", a.createWorkspaceVariable).Methods("POST")
 	r.HandleFunc("/workspaces/{workspace_id}/vars", a.list).Methods("GET")
@@ -418,7 +418,7 @@ func (a *TFEAPI) applySetToWorkspaces(w http.ResponseWriter, r *http.Request) {
 		workspaceIDs[i] = ws.ID
 	}
 
-	err = a.Client.applySetToWorkspaces(r.Context(), setID, workspaceIDs)
+	err = a.Client.ApplySetToWorkspaces(r.Context(), setID, workspaceIDs)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -443,7 +443,7 @@ func (a *TFEAPI) deleteSetFromWorkspaces(w http.ResponseWriter, r *http.Request)
 		workspaceIDs[i] = ws.ID
 	}
 
-	err = a.Client.deleteSetFromWorkspaces(r.Context(), setID, workspaceIDs)
+	err = a.Client.DeleteSetFromWorkspaces(r.Context(), setID, workspaceIDs)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
