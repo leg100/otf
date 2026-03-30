@@ -25,9 +25,9 @@ This executor is only functional when `otfd` or `otf-agent` is deployed via the 
 
 There are a number of flags that customise the jobs:
 
+* [`--kubernetes-job-image`](config/flags.md#-kubernetes-job-image)
 * [`--kubernetes-request-cpu`](config/flags.md#-kubernetes-request-cpu)
 * [`--kubernetes-request-memory`](config/flags.md#-kubernetes-request-memory)
 * [`--kubernetes-ttl-after-finish`](config/flags.md#-kubernetes-ttl-after-finish)
 
 It's advisable to provide a persistent volume for the cache. Otherwise the terraform or tofu binary is downloaded at the beginning of every job. See the helm chart settings to enable the persistent volume claim. You will need to make available a persistent volume that supports the [ReadWriteMany](https://kubernetes.io/docs/concepts/storage/persistent-volumes/#access-modes) access mode.
-
