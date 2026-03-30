@@ -55,7 +55,7 @@ func NewService(ctx context.Context, opts Options) *Service {
 		Logger: opts.Logger,
 		client: opts.Client,
 		db:     db,
-		handlers: newHandler(
+		handlers: newHandlers(
 			opts.Logger,
 			opts.VCSEventBroker,
 			opts.Client,

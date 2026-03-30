@@ -19,8 +19,6 @@ const (
 type tagOperation int
 
 func (a *tfe) addTagHandlers(r *mux.Router) {
-	r = r.PathPrefix(tfeapi.APIPrefixV2).Subrouter()
-
 	r.HandleFunc("/workspaces/{workspace_id}/relationships/tags", a.addTags).Methods("POST")
 	r.HandleFunc("/workspaces/{workspace_id}/relationships/tags", a.removeTags).Methods("DELETE")
 	r.HandleFunc("/workspaces/{workspace_id}/relationships/tags", a.getTags).Methods("GET")
@@ -44,7 +42,7 @@ func (a *tfe) listTags(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	page, err := a.ListTags(r.Context(), pathParams.Organization, params)
+	page, err := a.client.ListTags(r.Context(), pathParams.Organization, params)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -78,7 +76,7 @@ func (a *tfe) deleteTags(w http.ResponseWriter, r *http.Request) {
 		tagIDs[i] = p.ID
 	}
 
-	if err := a.DeleteTags(r.Context(), pathParams.Organization, tagIDs); err != nil {
+	if err := a.client.DeleteTags(r.Context(), pathParams.Organization, tagIDs); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
@@ -102,7 +100,7 @@ func (a *tfe) tagWorkspaces(w http.ResponseWriter, r *http.Request) {
 		workspaceIDs[i] = p.ID
 	}
 
-	if err := a.TagWorkspaces(r.Context(), tagID, workspaceIDs); err != nil {
+	if err := a.client.TagWorkspaces(r.Context(), tagID, workspaceIDs); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
@@ -138,9 +136,9 @@ func (a *tfe) alterWorkspaceTags(w http.ResponseWriter, r *http.Request, op tagO
 
 	switch op {
 	case addTags:
-		err = a.AddTags(r.Context(), workspaceID, specs)
+		err = a.client.AddTags(r.Context(), workspaceID, specs)
 	case removeTags:
-		err = a.RemoveTags(r.Context(), workspaceID, specs)
+		err = a.client.RemoveTags(r.Context(), workspaceID, specs)
 	default:
 		err = errors.New("unknown tag operation")
 	}
@@ -164,7 +162,7 @@ func (a *tfe) getTags(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	page, err := a.ListWorkspaceTags(r.Context(), workspaceID, params)
+	page, err := a.client.ListWorkspaceTags(r.Context(), workspaceID, params)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return

@@ -1,29 +1,36 @@
 package state
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/gorilla/mux"
-	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tfeapi"
 )
 
-type api struct {
-	*Service
+type API struct {
 	*tfeapi.Responder
-
-	tfeapi *tfe
+	Client apiClient
+	TFEAPI *tfe
 }
 
-func (a *api) addHandlers(r *mux.Router) {
-	r = r.PathPrefix(otfhttp.APIBasePath).Subrouter()
+type apiClient interface {
+	CreateStateVersion(ctx context.Context, opts CreateStateVersionOptions) (*Version, error)
+	GetCurrentStateVersion(ctx context.Context, workspaceID resource.TfeID) (*Version, error)
+	ListStateVersions(ctx context.Context, workspaceID resource.TfeID, opts resource.PageOptions) (*resource.Page[*Version], error)
+	GetStateVersion(ctx context.Context, id resource.TfeID) (*Version, error)
+	RollbackStateVersion(ctx context.Context, id resource.TfeID) (*Version, error)
+	DeleteStateVersion(ctx context.Context, id resource.TfeID) error
+	DownloadState(ctx context.Context, svID resource.TfeID) ([]byte, error)
+}
 
+func (a *API) AddHandlers(r *mux.Router) {
 	// proxy this endpoint to the tfeapi endpoint because the behaviour is
 	// identical (although it returns a tfe struct the only user of this
 	// endpoint, the agent, ignores the return value).
-	r.HandleFunc("/workspaces/{workspace_id}/state-versions", a.tfeapi.createVersion).Methods("POST")
+	r.HandleFunc("/workspaces/{workspace_id}/state-versions", a.TFEAPI.createVersion).Methods("POST")
 
 	r.HandleFunc("/workspaces/{workspace_id}/current-state-version", a.getCurrentVersion).Methods("GET")
 	r.HandleFunc("/workspaces/{workspace_id}/state-versions", a.listVersions).Methods("GET")
@@ -33,7 +40,7 @@ func (a *api) addHandlers(r *mux.Router) {
 	r.HandleFunc("/state-versions/{id}", a.deleteVersion).Methods("DELETE")
 }
 
-func (a *api) listVersions(w http.ResponseWriter, r *http.Request) {
+func (a *API) listVersions(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		WorkspaceID resource.TfeID `schema:"workspace_id,required"`
 		resource.PageOptions
@@ -42,7 +49,7 @@ func (a *api) listVersions(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	page, err := a.ListStateVersions(r.Context(), params.WorkspaceID, params.PageOptions)
+	page, err := a.Client.ListStateVersions(r.Context(), params.WorkspaceID, params.PageOptions)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -50,14 +57,14 @@ func (a *api) listVersions(w http.ResponseWriter, r *http.Request) {
 	a.RespondWithPage(w, r, page.Items, page.Pagination)
 }
 
-func (a *api) getCurrentVersion(w http.ResponseWriter, r *http.Request) {
+func (a *API) getCurrentVersion(w http.ResponseWriter, r *http.Request) {
 	workspaceID, err := decode.ID("workspace_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
 
-	sv, err := a.GetCurrentStateVersion(r.Context(), workspaceID)
+	sv, err := a.Client.GetCurrentStateVersion(r.Context(), workspaceID)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -66,26 +73,26 @@ func (a *api) getCurrentVersion(w http.ResponseWriter, r *http.Request) {
 	a.Respond(w, r, sv, http.StatusOK)
 }
 
-func (a *api) deleteVersion(w http.ResponseWriter, r *http.Request) {
+func (a *API) deleteVersion(w http.ResponseWriter, r *http.Request) {
 	versionID, err := decode.ID("id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
-	if err := a.DeleteStateVersion(r.Context(), versionID); err != nil {
+	if err := a.Client.DeleteStateVersion(r.Context(), versionID); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (a *api) rollbackVersion(w http.ResponseWriter, r *http.Request) {
+func (a *API) rollbackVersion(w http.ResponseWriter, r *http.Request) {
 	versionID, err := decode.ID("id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
-	sv, err := a.RollbackStateVersion(r.Context(), versionID)
+	sv, err := a.Client.RollbackStateVersion(r.Context(), versionID)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -93,13 +100,13 @@ func (a *api) rollbackVersion(w http.ResponseWriter, r *http.Request) {
 	a.Respond(w, r, sv, http.StatusOK)
 }
 
-func (a *api) downloadState(w http.ResponseWriter, r *http.Request) {
+func (a *API) downloadState(w http.ResponseWriter, r *http.Request) {
 	versionID, err := decode.ID("id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
-	resp, err := a.DownloadState(r.Context(), versionID)
+	resp, err := a.Client.DownloadState(r.Context(), versionID)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return

@@ -5,13 +5,11 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/tokens"
 )
 
@@ -27,8 +25,6 @@ type (
 		logr.Logger
 
 		db           *pgdb
-		tfeapi       *tfe
-		api          *api
 		tokenFactory *tokenFactory
 
 		afterCreateHooks  []func(context.Context, *Organization) error
@@ -40,7 +36,6 @@ type (
 		TokensService                *tokens.Service
 		Authorizer                   *authz.Authorizer
 		DB                           *sql.DB
-		Responder                    *tfeapi.Responder
 		Logger                       logr.Logger
 	}
 
@@ -58,29 +53,12 @@ func NewService(opts Options) *Service {
 		db:                           &pgdb{opts.DB},
 		tokenFactory:                 &tokenFactory{tokens: opts.TokensService},
 	}
-	svc.tfeapi = &tfe{
-		Service:   &svc,
-		Responder: opts.Responder,
-	}
-
-	svc.api = &api{
-		Service:   &svc,
-		Responder: opts.Responder,
-	}
-	// Fetch organization when API calls request organization be included in the
-	// response
-	opts.Responder.Register(tfeapi.IncludeOrganization, svc.tfeapi.include)
 	// Register with auth middleware the organization token and a means of
 	// retrieving organization corresponding to token.
 	opts.TokensService.RegisterKind(resource.OrganizationTokenKind, func(ctx context.Context, tokenID resource.TfeID) (authz.Subject, error) {
 		return svc.getOrganizationTokenByID(ctx, tokenID)
 	})
 	return &svc
-}
-
-func (s *Service) AddHandlers(r *mux.Router) {
-	s.tfeapi.addHandlers(r)
-	s.api.addHandlers(r)
 }
 
 // CreateOrganization creates an organization. Only users can create

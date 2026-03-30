@@ -1,11 +1,10 @@
 package runner
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
-
-	otfhttp "github.com/leg100/otf/internal/http"
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
@@ -15,9 +14,24 @@ import (
 )
 
 type (
-	api struct {
-		*Service
+	API struct {
 		*tfeapi.Responder
+		Client apiClient
+	}
+
+	apiClient interface {
+		CreateAgentToken(ctx context.Context, poolID resource.TfeID, opts CreateAgentTokenOptions) (*AgentToken, []byte, error)
+
+		Register(ctx context.Context, opts RegisterRunnerOptions) (*RunnerMeta, error)
+		awaitAllocatedJobs(ctx context.Context, agentID resource.TfeID) ([]*Job, error)
+		updateStatus(ctx context.Context, agentID resource.TfeID, status RunnerStatus) error
+
+		GetJob(ctx context.Context, jobID resource.TfeID) (*Job, error)
+		startJob(ctx context.Context, jobID resource.TfeID) ([]byte, error)
+		awaitJobSignal(ctx context.Context, jobID resource.TfeID) func() (jobSignal, error)
+		finishJob(ctx context.Context, jobID resource.TfeID, opts finishJobOptions) error
+
+		GenerateDynamicCredentialsToken(ctx context.Context, jobID resource.TfeID, audience string) ([]byte, error)
 	}
 
 	updateAgentStatusParams struct {
@@ -39,9 +53,7 @@ type (
 	}
 )
 
-func (a *api) addHandlers(r *mux.Router) {
-	r = r.PathPrefix(otfhttp.APIBasePath).Subrouter()
-
+func (a *API) AddHandlers(r *mux.Router) {
 	r.HandleFunc("/agents/register", a.registerAgent).Methods("POST")
 	r.HandleFunc("/agents/status", a.updateAgentStatus).Methods("POST")
 	r.HandleFunc("/agents/await-allocated-jobs", a.awaitAllocatedJobs).Methods("GET")
@@ -55,7 +67,7 @@ func (a *api) addHandlers(r *mux.Router) {
 	r.HandleFunc("/agent-tokens/{pool_id}/create", a.createAgentToken).Methods("POST")
 }
 
-func (a *api) registerAgent(w http.ResponseWriter, r *http.Request) {
+func (a *API) registerAgent(w http.ResponseWriter, r *http.Request) {
 	var opts RegisterRunnerOptions
 	if err := json.NewDecoder(r.Body).Decode(&opts); err != nil {
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -70,7 +82,7 @@ func (a *api) registerAgent(w http.ResponseWriter, r *http.Request) {
 	}
 	opts.IPAddress = &ip
 
-	agent, err := a.Service.Register(r.Context(), opts)
+	agent, err := a.Client.Register(r.Context(), opts)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -79,7 +91,7 @@ func (a *api) registerAgent(w http.ResponseWriter, r *http.Request) {
 	a.Respond(w, r, agent, http.StatusCreated)
 }
 
-func (a *api) awaitAllocatedJobs(w http.ResponseWriter, r *http.Request) {
+func (a *API) awaitAllocatedJobs(w http.ResponseWriter, r *http.Request) {
 	// retrieve runner, which contains ID of calling agent
 	runner, err := runnerFromContext(r.Context())
 	if err != nil {
@@ -87,7 +99,7 @@ func (a *api) awaitAllocatedJobs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jobs, err := a.Service.awaitAllocatedJobs(r.Context(), runner.ID)
+	jobs, err := a.Client.awaitAllocatedJobs(r.Context(), runner.ID)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -96,14 +108,14 @@ func (a *api) awaitAllocatedJobs(w http.ResponseWriter, r *http.Request) {
 	a.Respond(w, r, jobs, http.StatusOK)
 }
 
-func (a *api) getJob(w http.ResponseWriter, r *http.Request) {
+func (a *API) getJob(w http.ResponseWriter, r *http.Request) {
 	jobID, err := decode.ID("job_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
 
-	job, err := a.Service.GetJob(r.Context(), jobID)
+	job, err := a.Client.GetJob(r.Context(), jobID)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -112,14 +124,14 @@ func (a *api) getJob(w http.ResponseWriter, r *http.Request) {
 	a.Respond(w, r, job, http.StatusOK)
 }
 
-func (a *api) awaitJobSignal(w http.ResponseWriter, r *http.Request) {
+func (a *API) awaitJobSignal(w http.ResponseWriter, r *http.Request) {
 	jobID, err := decode.ID("job_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
 
-	signal, err := a.Service.awaitJobSignal(r.Context(), jobID)()
+	signal, err := a.Client.awaitJobSignal(r.Context(), jobID)()
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -129,7 +141,7 @@ func (a *api) awaitJobSignal(w http.ResponseWriter, r *http.Request) {
 }
 
 // updateAgentStatus receives a status update from an agent
-func (a *api) updateAgentStatus(w http.ResponseWriter, r *http.Request) {
+func (a *API) updateAgentStatus(w http.ResponseWriter, r *http.Request) {
 	// retrieve runner, which contains ID of calling agent
 	runner, err := runnerFromContext(r.Context())
 	if err != nil {
@@ -143,7 +155,7 @@ func (a *api) updateAgentStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = a.Service.updateStatus(r.Context(), runner.ID, params.Status)
+	err = a.Client.updateStatus(r.Context(), runner.ID, params.Status)
 	if err != nil {
 		if errors.Is(err, ErrInvalidStateTransition) {
 			tfeapi.Error(w, err)
@@ -154,7 +166,7 @@ func (a *api) updateAgentStatus(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (a *api) createAgentToken(w http.ResponseWriter, r *http.Request) {
+func (a *API) createAgentToken(w http.ResponseWriter, r *http.Request) {
 	poolID, err := decode.ID("pool_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
@@ -165,7 +177,7 @@ func (a *api) createAgentToken(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	_, token, err := a.CreateAgentToken(r.Context(), poolID, opts)
+	_, token, err := a.Client.CreateAgentToken(r.Context(), poolID, opts)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -173,13 +185,13 @@ func (a *api) createAgentToken(w http.ResponseWriter, r *http.Request) {
 	w.Write(token)
 }
 
-func (a *api) startJob(w http.ResponseWriter, r *http.Request) {
+func (a *API) startJob(w http.ResponseWriter, r *http.Request) {
 	var params startJobParams
 	if err := json.NewDecoder(r.Body).Decode(&params); err != nil {
 		tfeapi.Error(w, err, tfeapi.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
-	token, err := a.Service.startJob(r.Context(), params.JobID)
+	token, err := a.Client.startJob(r.Context(), params.JobID)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -187,20 +199,20 @@ func (a *api) startJob(w http.ResponseWriter, r *http.Request) {
 	w.Write(token)
 }
 
-func (a *api) finishJob(w http.ResponseWriter, r *http.Request) {
+func (a *API) finishJob(w http.ResponseWriter, r *http.Request) {
 	var params finishJobParams
 	if err := json.NewDecoder(r.Body).Decode(&params); err != nil {
 		tfeapi.Error(w, err, tfeapi.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
-	err := a.Service.finishJob(r.Context(), params.JobID, params.finishJobOptions)
+	err := a.Client.finishJob(r.Context(), params.JobID, params.finishJobOptions)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
 }
 
-func (a *api) generateDynamicCredentialsToken(w http.ResponseWriter, r *http.Request) {
+func (a *API) generateDynamicCredentialsToken(w http.ResponseWriter, r *http.Request) {
 	jobID, err := decode.ID("job_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
@@ -211,7 +223,7 @@ func (a *api) generateDynamicCredentialsToken(w http.ResponseWriter, r *http.Req
 		tfeapi.Error(w, err, tfeapi.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
-	token, err := a.Service.GenerateDynamicCredentialsToken(
+	token, err := a.Client.GenerateDynamicCredentialsToken(
 		r.Context(),
 		jobID,
 		params.Audience,

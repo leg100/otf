@@ -26,41 +26,69 @@ import (
 
 type tfe struct {
 	*tfeapi.Responder
-	*surl.Signer
+	client tfeClient
+	signer tfeapi.Signer
+}
 
-	state      *Service
-	workspaces *workspace.Service
+type tfeClient interface {
+	CreateStateVersion(ctx context.Context, opts CreateStateVersionOptions) (*Version, error)
+	GetCurrentStateVersion(ctx context.Context, workspaceID resource.TfeID) (*Version, error)
+	ListStateVersions(ctx context.Context, workspaceID resource.TfeID, opts resource.PageOptions) (*resource.Page[*Version], error)
+	GetStateVersion(ctx context.Context, id resource.TfeID) (*Version, error)
+	RollbackStateVersion(ctx context.Context, id resource.TfeID) (*Version, error)
+	DeleteStateVersion(ctx context.Context, id resource.TfeID) error
+	GetPreviousStateVersion(ctx context.Context, sv *Version) (*Version, error)
+	GetWorkspaceByName(ctx context.Context, organization organization.Name, workspace string) (*workspace.Workspace, error)
+	UploadState(ctx context.Context, svID resource.TfeID, state []byte) error
+	DownloadState(ctx context.Context, svID resource.TfeID) ([]byte, error)
+	GetStateOutput(ctx context.Context, outputID resource.TfeID) (*Output, error)
+}
+
+func NewTFEAPI(
+	client tfeClient,
+	responder *tfeapi.Responder,
+	signer *surl.Signer,
+) *tfe {
+	api := &tfe{
+		Responder: responder,
+		client:    client,
+		signer:    signer,
+	}
+
+	// include state version outputs in api responses when requested.
+	responder.Register(tfeapi.IncludeOutputs, api.includeOutputs)
+	responder.Register(tfeapi.IncludeOutputs, api.includeWorkspaceCurrentOutputs)
+
+	return api
 }
 
 // Implements TFC state versions API:
 //
 // https://developer.hashicorp.com/terraform/cloud-docs/api-docs/state-versions#state-versions-api
-func (a *tfe) addHandlers(r *mux.Router) {
-	api := r.PathPrefix(tfeapi.APIPrefixV2).Subrouter()
+func (a *tfe) AddHandlers(r *mux.Router) {
+	r.HandleFunc("/workspaces/{workspace_id}/state-versions", a.createVersion).Methods("POST")
+	r.HandleFunc("/workspaces/{workspace_id}/current-state-version", a.getCurrentVersion).Methods("GET")
+	r.HandleFunc("/workspaces/{workspace_id}/state-versions", a.rollbackVersion).Methods("PATCH")
+	r.HandleFunc("/state-versions/{id}", a.getVersion).Methods("GET")
+	r.HandleFunc("/state-versions", a.listVersionsByName).Methods("GET")
+	r.HandleFunc("/state-versions/{id}/download", a.downloadState).Methods("GET")
+	r.HandleFunc("/state-versions/{id}", a.deleteVersion).Methods("DELETE")
 
-	api.HandleFunc("/workspaces/{workspace_id}/state-versions", a.createVersion).Methods("POST")
-	api.HandleFunc("/workspaces/{workspace_id}/current-state-version", a.getCurrentVersion).Methods("GET")
-	api.HandleFunc("/workspaces/{workspace_id}/state-versions", a.rollbackVersion).Methods("PATCH")
-	api.HandleFunc("/state-versions/{id}", a.getVersion).Methods("GET")
-	api.HandleFunc("/state-versions", a.listVersionsByName).Methods("GET")
-	api.HandleFunc("/state-versions/{id}/download", a.downloadState).Methods("GET")
-	api.HandleFunc("/state-versions/{id}", a.deleteVersion).Methods("DELETE")
+	r.HandleFunc("/workspaces/{workspace_id}/current-state-version-outputs", a.getCurrentVersionOutputs).Methods("GET")
+	r.HandleFunc("/state-versions/{id}/outputs", a.listOutputs).Methods("GET")
+	r.HandleFunc("/state-version-outputs/{id}", a.getOutput).Methods("GET")
 
-	api.HandleFunc("/workspaces/{workspace_id}/current-state-version-outputs", a.getCurrentVersionOutputs).Methods("GET")
-	api.HandleFunc("/state-versions/{id}/outputs", a.listOutputs).Methods("GET")
-	api.HandleFunc("/state-version-outputs/{id}", a.getOutput).Methods("GET")
-
-	// verify signed URLs
-	signed := r.PathPrefix("/signed/{signature.expiry}").Subrouter()
-	signed.Use(internal.VerifySignedURL(a.Signer))
-	signed.HandleFunc("/state-versions/{id}/upload", a.uploadState).Methods("PUT")
+	//
+	// Signed URLs
+	//
+	r.HandleFunc("/state-versions/{id}/upload", a.uploadState).Methods("PUT")
 	// terraform as of v1.6.0 uploads a 'JSON' version of the state (by
 	// which they mean a state using a well documented, public, schema rather than their
 	// internal schema). OTF doesn't do anything yet with the JSON version but
 	// in order to avoid breaking terraform (see
 	// https://github.com/leg100/otf/issues/626) OTF accepts the upload but does
 	// nothing with it.
-	signed.HandleFunc("/state-versions/{id}/upload/json", func(http.ResponseWriter, *http.Request) {})
+	r.HandleFunc("/state-versions/{id}/upload/json", func(http.ResponseWriter, *http.Request) {})
 }
 
 func (a *tfe) createVersion(w http.ResponseWriter, r *http.Request) {
@@ -109,7 +137,7 @@ func (a *tfe) createVersion(w http.ResponseWriter, r *http.Request) {
 
 	// TODO: validate lineage
 
-	sv, err := a.state.CreateStateVersion(r.Context(), CreateStateVersionOptions{
+	sv, err := a.client.CreateStateVersion(r.Context(), CreateStateVersionOptions{
 		WorkspaceID: workspaceID,
 		State:       state,
 		Serial:      opts.Serial,
@@ -137,12 +165,12 @@ func (a *tfe) listVersionsByName(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	ws, err := a.workspaces.GetWorkspaceByName(r.Context(), opts.Organization, opts.Workspace)
+	ws, err := a.client.GetWorkspaceByName(r.Context(), opts.Organization, opts.Workspace)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
-	page, err := a.state.ListStateVersions(r.Context(), ws.ID, resource.PageOptions(opts.ListOptions))
+	page, err := a.client.ListStateVersions(r.Context(), ws.ID, resource.PageOptions(opts.ListOptions))
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -164,7 +192,7 @@ func (a *tfe) getCurrentVersion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sv, err := a.state.GetCurrentStateVersion(r.Context(), workspaceID)
+	sv, err := a.client.GetCurrentStateVersion(r.Context(), workspaceID)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -184,7 +212,7 @@ func (a *tfe) getVersion(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	sv, err := a.state.GetStateVersion(r.Context(), versionID)
+	sv, err := a.client.GetStateVersion(r.Context(), versionID)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -204,7 +232,7 @@ func (a *tfe) deleteVersion(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	if err := a.state.DeleteStateVersion(r.Context(), versionID); err != nil {
+	if err := a.client.DeleteStateVersion(r.Context(), versionID); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
@@ -218,7 +246,7 @@ func (a *tfe) rollbackVersion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sv, err := a.state.RollbackStateVersion(r.Context(), opts.RollbackStateVersion.ID)
+	sv, err := a.client.RollbackStateVersion(r.Context(), opts.RollbackStateVersion.ID)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -242,7 +270,7 @@ func (a *tfe) uploadState(w http.ResponseWriter, r *http.Request) {
 	if _, err := io.Copy(buf, r.Body); err != nil {
 		tfeapi.Error(w, err)
 	}
-	if err := a.state.UploadState(r.Context(), versionID, buf.Bytes()); err != nil {
+	if err := a.client.UploadState(r.Context(), versionID, buf.Bytes()); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
@@ -254,7 +282,7 @@ func (a *tfe) downloadState(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	resp, err := a.state.DownloadState(r.Context(), versionID)
+	resp, err := a.client.DownloadState(r.Context(), versionID)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -269,7 +297,7 @@ func (a *tfe) getCurrentVersionOutputs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sv, err := a.state.GetCurrentStateVersion(r.Context(), workspaceID)
+	sv, err := a.client.GetCurrentStateVersion(r.Context(), workspaceID)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -296,7 +324,7 @@ func (a *tfe) listOutputs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sv, err := a.state.GetStateVersion(r.Context(), params.StateVersionID)
+	sv, err := a.client.GetStateVersion(r.Context(), params.StateVersionID)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -319,7 +347,7 @@ func (a *tfe) getOutput(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	out, err := a.state.GetStateOutput(r.Context(), outputID)
+	out, err := a.client.GetStateOutput(r.Context(), outputID)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -399,7 +427,7 @@ func (a *tfe) includeOutputs(ctx context.Context, v any) ([]any, error) {
 	}
 	// re-retrieve the state version, because the tfe state version only
 	// possesses the IDs of the outputs, whereas we need the full output structs
-	from, err := a.state.GetStateVersion(ctx, to.ID)
+	from, err := a.client.GetStateVersion(ctx, to.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -417,7 +445,7 @@ func (a *tfe) includeWorkspaceCurrentOutputs(ctx context.Context, v any) ([]any,
 	if !ok {
 		return nil, nil
 	}
-	sv, err := a.state.GetCurrentStateVersion(ctx, ws.ID)
+	sv, err := a.client.GetCurrentStateVersion(ctx, ws.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -447,7 +475,7 @@ func (a *tfe) includeWorkspaceCurrentOutputs(ctx context.Context, v any) ([]any,
 
 func (a *tfe) generateSignedURL(r *http.Request, fmtpath string, args ...any) (string, error) {
 	path := fmt.Sprintf(fmtpath, args...)
-	signedPath, err := a.Sign(path, time.Now().Add(time.Hour))
+	signedPath, err := a.signer.Sign(path, time.Now().Add(time.Hour))
 	if err != nil {
 		return "", err
 	}

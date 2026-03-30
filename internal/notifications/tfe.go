@@ -1,23 +1,33 @@
 package notifications
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/decode"
+	"github.com/leg100/otf/internal/pubsub"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/workspace"
 )
 
-type tfe struct {
-	*Service
+type TFEAPI struct {
 	*tfeapi.Responder
+	Client tfeClient
 }
 
-func (a *tfe) addHandlers(r *mux.Router) {
-	r = r.PathPrefix(tfeapi.APIPrefixV2).Subrouter()
+type tfeClient interface {
+	CreateNotificationConfig(ctx context.Context, workspaceID resource.TfeID, opts CreateConfigOptions) (*Config, error)
+	UpdateNotificationConfig(ctx context.Context, id resource.TfeID, opts UpdateConfigOptions) (*Config, error)
+	GetNotificationConfig(ctx context.Context, id resource.TfeID) (*Config, error)
+	ListNotificationConfigs(ctx context.Context, workspaceID resource.TfeID) ([]*Config, error)
+	DeleteNotificationConfig(ctx context.Context, id resource.TfeID) error
+	WatchNotificationConfigs(ctx context.Context) (<-chan pubsub.Event[*Config], func())
+}
 
+func (a *TFEAPI) AddHandlers(r *mux.Router) {
 	r.HandleFunc("/workspaces/{workspace_id}/notification-configurations", a.createNotification).Methods("POST")
 	r.HandleFunc("/workspaces/{workspace_id}/notification-configurations", a.listNotifications).Methods("GET")
 	r.HandleFunc("/notification-configurations/{id}", a.getNotification).Methods("GET")
@@ -26,7 +36,7 @@ func (a *tfe) addHandlers(r *mux.Router) {
 	r.HandleFunc("/notification-configurations/{id}", a.deleteNotification).Methods("DELETE")
 }
 
-func (a *tfe) createNotification(w http.ResponseWriter, r *http.Request) {
+func (a *TFEAPI) createNotification(w http.ResponseWriter, r *http.Request) {
 	workspaceID, err := decode.ID("workspace_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
@@ -52,7 +62,7 @@ func (a *tfe) createNotification(w http.ResponseWriter, r *http.Request) {
 		opts.Triggers = append(opts.Triggers, Trigger(t))
 	}
 
-	nc, err := a.CreateNotificationConfig(r.Context(), workspaceID, opts)
+	nc, err := a.Client.CreateNotificationConfig(r.Context(), workspaceID, opts)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -61,14 +71,14 @@ func (a *tfe) createNotification(w http.ResponseWriter, r *http.Request) {
 	a.Respond(w, r, a.convert(nc), http.StatusCreated)
 }
 
-func (a *tfe) listNotifications(w http.ResponseWriter, r *http.Request) {
+func (a *TFEAPI) listNotifications(w http.ResponseWriter, r *http.Request) {
 	workspaceID, err := decode.ID("workspace_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
 
-	configs, err := a.ListNotificationConfigs(r.Context(), workspaceID)
+	configs, err := a.Client.ListNotificationConfigs(r.Context(), workspaceID)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -82,14 +92,14 @@ func (a *tfe) listNotifications(w http.ResponseWriter, r *http.Request) {
 	a.Respond(w, r, to, http.StatusOK)
 }
 
-func (a *tfe) getNotification(w http.ResponseWriter, r *http.Request) {
+func (a *TFEAPI) getNotification(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.ID("id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
 
-	nc, err := a.GetNotificationConfig(r.Context(), id)
+	nc, err := a.Client.GetNotificationConfig(r.Context(), id)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -98,7 +108,7 @@ func (a *tfe) getNotification(w http.ResponseWriter, r *http.Request) {
 	a.Respond(w, r, a.convert(nc), http.StatusOK)
 }
 
-func (a *tfe) updateNotification(w http.ResponseWriter, r *http.Request) {
+func (a *TFEAPI) updateNotification(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.ID("id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
@@ -119,7 +129,7 @@ func (a *tfe) updateNotification(w http.ResponseWriter, r *http.Request) {
 		opts.Triggers = append(opts.Triggers, Trigger(t))
 	}
 
-	updated, err := a.UpdateNotificationConfig(r.Context(), id, opts)
+	updated, err := a.Client.UpdateNotificationConfig(r.Context(), id, opts)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -128,16 +138,16 @@ func (a *tfe) updateNotification(w http.ResponseWriter, r *http.Request) {
 	a.Respond(w, r, a.convert(updated), http.StatusOK)
 }
 
-func (a *tfe) verifyNotification(w http.ResponseWriter, r *http.Request) {}
+func (a *TFEAPI) verifyNotification(w http.ResponseWriter, r *http.Request) {}
 
-func (a *tfe) deleteNotification(w http.ResponseWriter, r *http.Request) {
+func (a *TFEAPI) deleteNotification(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.ID("id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
 
-	if err := a.DeleteNotificationConfig(r.Context(), id); err != nil {
+	if err := a.Client.DeleteNotificationConfig(r.Context(), id); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
@@ -145,7 +155,7 @@ func (a *tfe) deleteNotification(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (a *tfe) convert(from *Config) *TFENotificationConfiguration {
+func (a *TFEAPI) convert(from *Config) *TFENotificationConfiguration {
 	to := &TFENotificationConfiguration{
 		ID:              from.ID,
 		CreatedAt:       from.CreatedAt,

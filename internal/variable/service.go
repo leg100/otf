@@ -4,14 +4,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/workspace"
 )
 
@@ -24,10 +22,8 @@ type (
 		logr.Logger
 		*authz.Authorizer
 
-		db     *pgdb
-		tfeapi *tfe
-		api    *api
-		runs   runClient
+		db   *pgdb
+		runs runClient
 	}
 
 	Options struct {
@@ -35,7 +31,6 @@ type (
 		RunClient        runClient
 		Authorizer       *authz.Authorizer
 		DB               *sql.DB
-		Responder        *tfeapi.Responder
 		Logger           logr.Logger
 	}
 
@@ -52,21 +47,7 @@ func NewService(opts Options) *Service {
 		runs:       opts.RunClient,
 	}
 
-	svc.tfeapi = &tfe{
-		Service:   &svc,
-		Responder: opts.Responder,
-	}
-	svc.api = &api{
-		Service:   &svc,
-		Responder: opts.Responder,
-	}
-
 	return &svc
-}
-
-func (s *Service) AddHandlers(r *mux.Router) {
-	s.tfeapi.addHandlers(r)
-	s.api.addHandlers(r)
 }
 
 func (s *Service) ListEffectiveVariables(ctx context.Context, runID resource.TfeID) ([]*Variable, error) {
@@ -484,7 +465,7 @@ func (s *Service) DeleteVariableSetVariable(ctx context.Context, variableID reso
 	return set, nil
 }
 
-func (s *Service) applySetToWorkspaces(ctx context.Context, setID resource.TfeID, workspaceIDs []resource.TfeID) error {
+func (s *Service) ApplySetToWorkspaces(ctx context.Context, setID resource.TfeID, workspaceIDs []resource.TfeID) error {
 	// retrieve set first in order to retrieve organization name for authorization
 	set, err := s.db.getVariableSet(ctx, setID)
 	if err != nil {
@@ -505,7 +486,7 @@ func (s *Service) applySetToWorkspaces(ctx context.Context, setID resource.TfeID
 	return nil
 }
 
-func (s *Service) deleteSetFromWorkspaces(ctx context.Context, setID resource.TfeID, workspaceIDs []resource.TfeID) error {
+func (s *Service) DeleteSetFromWorkspaces(ctx context.Context, setID resource.TfeID, workspaceIDs []resource.TfeID) error {
 	// retrieve set first in order to retrieve organization name for authorization
 	set, err := s.db.getVariableSet(ctx, setID)
 	if err != nil {

@@ -1,0 +1,52 @@
+package ui
+
+import (
+	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/ui/helpers"
+	"github.com/leg100/otf/internal/ui/paths"
+	"github.com/leg100/otf/internal/user"
+)
+
+type UserTable struct {
+	CanRemoveMember bool
+	TeamID          *resource.TfeID
+}
+
+templ (t UserTable) Header() {
+	<th>Name</th>
+	<th>ID</th>
+	<th>Site Admin</th>
+	if t.TeamID != nil {
+		<th>Actions</th>
+	}
+}
+
+templ (t UserTable) Row(user *user.User) {
+	<tr id={ "item-user-" + user.Username.String() }>
+		<td id="username">
+			{ user.Username.String() }
+		</td>
+		<td>
+			@helpers.Identifier(user.ID)
+		</td>
+		<td>
+			if user.IsSiteAdmin() {
+				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+					<path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"></path>
+				</svg>
+			}
+		</td>
+		if t.TeamID != nil {
+			<td>
+				if t.CanRemoveMember {
+					<form action={ paths.RemoveMemberTeam(t.TeamID) } method="POST">
+						<input type="hidden" name="username" id="delete-username" value={ user.Username.String() }/>
+						<button id="remove-member-button" class="btn btn-error btn-outline">
+							Remove member
+						</button>
+					</form>
+				}
+			</td>
+		}
+	</tr>
+}

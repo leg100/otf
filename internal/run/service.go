@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/a-h/templ"
-	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/configversion/source"
@@ -18,11 +17,9 @@ import (
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/workspace"
-	"github.com/leg100/surl/v2"
 )
 
 type (
@@ -37,8 +34,6 @@ type (
 
 		client                 serviceClient
 		db                     *pgdb
-		tfeapi                 *tfe
-		api                    *api
 		afterCancelHooks       []func(context.Context, *Run) error
 		afterForceCancelHooks  []func(context.Context, *Run) error
 		afterEnqueuePlanHooks  []func(context.Context, *Run) error
@@ -57,8 +52,6 @@ type (
 		Client             serviceClient
 		Logger             logr.Logger
 		DB                 *sql.DB
-		Responder          *tfeapi.Responder
-		Signer             *surl.Signer
 		Listener           *sql.Listener
 	}
 
@@ -95,19 +88,6 @@ func NewService(opts Options) *Service {
 	svc.factory = &factory{
 		client: opts.Client,
 	}
-	svc.tfeapi = &tfe{
-		Service:    &svc,
-		client:     opts.Client,
-		Responder:  opts.Responder,
-		Signer:     opts.Signer,
-		authorizer: opts.Authorizer,
-	}
-	svc.api = &api{
-		Service:   &svc,
-		Responder: opts.Responder,
-		Logger:    opts.Logger,
-		Verifier:  opts.Signer,
-	}
 	svc.tailer = &tailer{
 		broker: pubsub.NewBroker[Chunk](
 			opts.Logger,
@@ -132,11 +112,6 @@ func NewService(opts Options) *Service {
 		"runs",
 	)
 
-	// Fetch related resources when API requests their inclusion
-	opts.Responder.Register(tfeapi.IncludeCreatedBy, svc.tfeapi.includeCreatedBy)
-	opts.Responder.Register(tfeapi.IncludeCurrentRun, svc.tfeapi.includeCurrentRun)
-	opts.Responder.Register(tfeapi.IncludeWorkspace, svc.tfeapi.includeWorkspace)
-
 	// Provide a means of looking up a run's parent workspace.
 	opts.Authorizer.RegisterParentResolver(resource.RunKind,
 		func(ctx context.Context, runID resource.ID) (resource.ID, error) {
@@ -158,11 +133,6 @@ func NewService(opts Options) *Service {
 	opts.Client.AfterCreateWorkspace(svc.autoQueueRun)
 
 	return &svc
-}
-
-func (s *Service) AddHandlers(r *mux.Router) {
-	s.tfeapi.addHandlers(r)
-	s.api.addHandlers(r)
 }
 
 func (s *Service) CreateRun(ctx context.Context, workspaceID resource.TfeID, opts CreateOptions) (*Run, error) {

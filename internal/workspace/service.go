@@ -3,7 +3,6 @@ package workspace
 import (
 	"context"
 
-	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/connections"
@@ -13,7 +12,6 @@ import (
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/vcs"
 )
@@ -29,8 +27,6 @@ type (
 		*factory
 
 		db          *pgdb
-		tfeapi      *tfe
-		api         *api
 		broker      *pubsub.Broker[*Event]
 		connections *connections.Service
 
@@ -42,7 +38,6 @@ type (
 	Options struct {
 		DB                *sql.DB
 		Listener          *sql.Listener
-		Responder         *tfeapi.Responder
 		Authorizer        *authz.Authorizer
 		Logger            logr.Logger
 		ConnectionService *connections.Service
@@ -63,24 +58,11 @@ func NewService(opts Options) *Service {
 			engines:       opts.EngineService,
 		},
 	}
-	svc.tfeapi = &tfe{
-		Service:    &svc,
-		Responder:  opts.Responder,
-		Authorizer: opts.Authorizer,
-	}
-	svc.api = &api{
-		Service:   &svc,
-		Responder: opts.Responder,
-	}
 	svc.broker = pubsub.NewBroker[*Event](
 		opts.Logger,
 		opts.Listener,
 		"workspaces",
 	)
-	// Fetch workspace when API calls request workspace be included in the
-	// response
-	opts.Responder.Register(tfeapi.IncludeWorkspace, svc.tfeapi.include)
-	opts.Responder.Register(tfeapi.IncludeWorkspaces, svc.tfeapi.includeMany)
 
 	// Provide a way for other components to find the parent resource of a
 	// workspace given its ID.
@@ -101,12 +83,6 @@ func NewService(opts Options) *Service {
 		return db.GetWorkspacePolicy(ctx, workspaceID)
 	}
 	return &svc
-}
-
-func (s *Service) AddHandlers(r *mux.Router) {
-	s.tfeapi.addHandlers(r)
-	s.tfeapi.addTagHandlers(r)
-	s.api.addHandlers(r)
 }
 
 func (s *Service) WatchWorkspaces(ctx context.Context) (<-chan pubsub.Event[*Event], func()) {

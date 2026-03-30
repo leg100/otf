@@ -3,13 +3,11 @@ package sshkey
 import (
 	"context"
 
-	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/tfeapi"
 )
 
 type (
@@ -21,14 +19,11 @@ type (
 		logr.Logger
 		*authz.Authorizer
 
-		db  *pgdb
-		tfe *tfe
-		api *api
+		db *pgdb
 	}
 
 	Options struct {
 		DB         *sql.DB
-		Responder  *tfeapi.Responder
 		Logger     logr.Logger
 		Authorizer *authz.Authorizer
 	}
@@ -39,13 +34,6 @@ func NewService(opts Options) *Service {
 		Logger:     opts.Logger,
 		Authorizer: opts.Authorizer,
 		db:         &pgdb{opts.DB},
-	}
-	svc.api = &api{
-		Service: svc,
-	}
-	svc.tfe = &tfe{
-		Service:   svc,
-		Responder: opts.Responder,
 	}
 	// Register parent resolver so the authorizer can resolve ssh key -> org
 	opts.Authorizer.RegisterParentResolver(resource.SSHKeyKind,
@@ -58,11 +46,6 @@ func NewService(opts Options) *Service {
 		},
 	)
 	return svc
-}
-
-func (s *Service) AddHandlers(r *mux.Router) {
-	s.api.addHandlers(r)
-	s.tfe.addHandlers(r)
 }
 
 func (s *Service) CreateSSHKey(ctx context.Context, opts CreateOptions) (*SSHKey, error) {

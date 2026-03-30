@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/connections"
 	"github.com/leg100/otf/internal/logr"
@@ -16,7 +15,6 @@ import (
 	"github.com/leg100/otf/internal/semver"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/vcs"
-	"github.com/leg100/surl/v2"
 )
 
 type (
@@ -31,7 +29,6 @@ type (
 
 		db *pgdb
 
-		api          *api
 		vcsproviders *vcs.Service
 		connections  *connections.Service
 	}
@@ -39,7 +36,6 @@ type (
 	Options struct {
 		Logger             logr.Logger
 		DB                 *sql.DB
-		Signer             *surl.Signer
 		Authorizer         *authz.Authorizer
 		RepohookService    *repohooks.Service
 		VCSProviderService *vcs.Service
@@ -56,10 +52,6 @@ func NewService(opts Options) *Service {
 		db:           &pgdb{opts.DB},
 		vcsproviders: opts.VCSProviderService,
 	}
-	svc.api = &api{
-		svc:    &svc,
-		Signer: opts.Signer,
-	}
 	publisher := &publisher{
 		Logger:       opts.Logger.WithValues("component", "publisher"),
 		vcsproviders: opts.VCSProviderService,
@@ -69,10 +61,6 @@ func NewService(opts Options) *Service {
 	opts.VCSEventSubscriber.Subscribe(publisher.handle)
 
 	return &svc
-}
-
-func (s *Service) AddHandlers(r *mux.Router) {
-	s.api.addHandlers(r)
 }
 
 // PublishModule publishes a new module from a VCS repository, enumerating through

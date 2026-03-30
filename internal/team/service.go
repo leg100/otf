@@ -5,13 +5,11 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/tokens"
 )
 
@@ -26,10 +24,7 @@ type (
 		logr.Logger
 		*authz.Authorizer
 
-		db     *pgdb
-		tfeapi *tfe
-		api    *api
-
+		db               *pgdb
 		afterCreateHooks []func(context.Context, *Team) error
 
 		*teamTokenFactory
@@ -37,7 +32,6 @@ type (
 
 	Options struct {
 		*sql.DB
-		*tfeapi.Responder
 		logr.Logger
 
 		OrganizationService *organization.Service
@@ -54,14 +48,6 @@ func NewService(opts Options) *Service {
 		teamTokenFactory: &teamTokenFactory{
 			tokens: opts.TokensService,
 		},
-	}
-	svc.tfeapi = &tfe{
-		Service:   &svc,
-		Responder: opts.Responder,
-	}
-	svc.api = &api{
-		Service:   &svc,
-		Responder: opts.Responder,
 	}
 
 	// Whenever an organization is created, also create an owners team. (The
@@ -97,11 +83,6 @@ func NewService(opts Options) *Service {
 	})
 
 	return &svc
-}
-
-func (a *Service) AddHandlers(r *mux.Router) {
-	a.tfeapi.addHandlers(r)
-	a.api.addHandlers(r)
 }
 
 func (a *Service) CreateTeam(ctx context.Context, organization organization.Name, opts CreateTeamOptions) (*Team, error) {

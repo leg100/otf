@@ -2,31 +2,40 @@ package run
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf/internal"
-	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/http/decode"
-	"github.com/leg100/otf/internal/logr"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tfeapi"
 )
 
-type api struct {
-	internal.Verifier // for verifying upload url
-	*Service
+type API struct {
 	*tfeapi.Responder
-	logr.Logger
+	Client apiClient
 }
 
-func (a *api) addHandlers(r *mux.Router) {
-	// client is typically terraform-cli
-	signed := r.PathPrefix("/signed/{signature.expiry}").Subrouter()
-	signed.Use(internal.VerifySignedURL(a.Verifier))
-	signed.HandleFunc("/runs/{run_id}/logs/{phase}", a.getLogs).Methods("GET")
+type apiClient interface {
+	CreateRun(context.Context, resource.TfeID, CreateOptions) (*Run, error)
+	ListRuns(_ context.Context, opts ListOptions) (*resource.Page[*Run], error)
+	GetRun(ctx context.Context, id resource.TfeID) (*Run, error)
+	GetChunk(ctx context.Context, opts GetChunkOptions) (Chunk, error)
+	TailRun(context.Context, TailOptions) (<-chan Chunk, error)
+	DeleteRun(context.Context, resource.TfeID) error
+	ApplyRun(context.Context, resource.TfeID) error
 
-	r = r.PathPrefix(otfhttp.APIBasePath).Subrouter()
+	GetRunPlanFile(ctx context.Context, id resource.TfeID, format PlanFormat) ([]byte, error)
+	UploadRunPlanFile(ctx context.Context, id resource.TfeID, plan []byte, format PlanFormat) error
+
+	GetLockFile(ctx context.Context, id resource.TfeID) ([]byte, error)
+	UploadLockFile(ctx context.Context, id resource.TfeID, lockFile []byte) error
+
+	PutChunk(ctx context.Context, opts PutChunkOptions) error
+}
+
+func (a *API) AddHandlers(r *mux.Router) {
 	r.HandleFunc("/runs", a.list).Methods("GET")
 	r.HandleFunc("/runs/{id}", a.get).Methods("GET")
 	r.HandleFunc("/runs/{id}/planfile", a.getPlanFile).Methods("GET")
@@ -36,13 +45,13 @@ func (a *api) addHandlers(r *mux.Router) {
 	r.HandleFunc("/runs/{run_id}/logs/{phase}", a.putLogs).Methods("PUT")
 }
 
-func (a *api) list(w http.ResponseWriter, r *http.Request) {
+func (a *API) list(w http.ResponseWriter, r *http.Request) {
 	var params ListOptions
 	if err := decode.All(&params, r); err != nil {
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	page, err := a.ListRuns(r.Context(), params)
+	page, err := a.Client.ListRuns(r.Context(), params)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -50,13 +59,13 @@ func (a *api) list(w http.ResponseWriter, r *http.Request) {
 	a.RespondWithPage(w, r, page.Items, page.Pagination)
 }
 
-func (a *api) get(w http.ResponseWriter, r *http.Request) {
+func (a *API) get(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.ID("id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
-	run, err := a.GetRun(r.Context(), id)
+	run, err := a.Client.GetRun(r.Context(), id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -64,7 +73,7 @@ func (a *api) get(w http.ResponseWriter, r *http.Request) {
 	a.Respond(w, r, run, http.StatusOK)
 }
 
-func (a *api) getPlanFile(w http.ResponseWriter, r *http.Request) {
+func (a *API) getPlanFile(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.ID("id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
@@ -75,7 +84,7 @@ func (a *api) getPlanFile(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	file, err := a.GetRunPlanFile(r.Context(), id, opts.Format)
+	file, err := a.Client.GetRunPlanFile(r.Context(), id, opts.Format)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -86,7 +95,7 @@ func (a *api) getPlanFile(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (a *api) uploadPlanFile(w http.ResponseWriter, r *http.Request) {
+func (a *API) uploadPlanFile(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.ID("id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
@@ -102,20 +111,20 @@ func (a *api) uploadPlanFile(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	if err := a.UploadRunPlanFile(r.Context(), id, buf.Bytes(), opts.Format); err != nil {
+	if err := a.Client.UploadRunPlanFile(r.Context(), id, buf.Bytes(), opts.Format); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
 	w.WriteHeader(http.StatusAccepted)
 }
 
-func (a *api) getLockFile(w http.ResponseWriter, r *http.Request) {
+func (a *API) getLockFile(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.ID("id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
-	file, err := a.GetLockFile(r.Context(), id)
+	file, err := a.Client.GetLockFile(r.Context(), id)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -126,7 +135,7 @@ func (a *api) getLockFile(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (a *api) uploadLockFile(w http.ResponseWriter, r *http.Request) {
+func (a *API) uploadLockFile(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.ID("id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
@@ -137,31 +146,14 @@ func (a *api) uploadLockFile(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	if err := a.UploadLockFile(r.Context(), id, buf.Bytes()); err != nil {
+	if err := a.Client.UploadLockFile(r.Context(), id, buf.Bytes()); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
 	w.WriteHeader(http.StatusAccepted)
 }
 
-func (a *api) getLogs(w http.ResponseWriter, r *http.Request) {
-	var opts GetChunkOptions
-	if err := decode.All(&opts, r); err != nil {
-		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
-		return
-	}
-	chunk, err := a.GetChunk(r.Context(), opts)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
-		return
-	}
-	if _, err := w.Write(chunk.Data); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-}
-
-func (a *api) putLogs(w http.ResponseWriter, r *http.Request) {
+func (a *API) putLogs(w http.ResponseWriter, r *http.Request) {
 	var opts PutChunkOptions
 	if err := decode.All(&opts, r); err != nil {
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -173,7 +165,7 @@ func (a *api) putLogs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	opts.Data = buf.Bytes()
-	if err := a.PutChunk(r.Context(), opts); err != nil {
+	if err := a.Client.PutChunk(r.Context(), opts); err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
