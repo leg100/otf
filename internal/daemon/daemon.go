@@ -618,15 +618,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 				Client: sshkeyService,
 			},
 			&userui.Handlers{
-				Client: struct {
-					*user.UserService
-					*session.Service
-				}{
-					UserService: userService,
-					Service:     sessionService,
-				},
-				SiteToken:            cfg.SiteToken,
-				AuthenticatorService: authenticatorService,
+				Client: userService,
 			},
 			&workspaceui.Handlers{
 				Client: struct {
@@ -678,6 +670,16 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		apihandlers,
 		tfeapiHandlers,
 		uiHandlers,
+		&userui.LoginHandlers{
+			Client: struct {
+				*authenticator.AuthenticatorService
+				*session.Service
+			}{
+				AuthenticatorService: authenticatorService,
+				Service:              sessionService,
+			},
+			SiteToken: cfg.SiteToken,
+		},
 		authenticatorService,
 		loginserver.NewServer(loginserver.Options{
 			Secret:      cfg.Secret,

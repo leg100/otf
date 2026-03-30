@@ -42,6 +42,7 @@ func verifySignedURL(v Verifier) mux.MiddlewareFunc {
 			// Skip non-signed URLs
 			if !strings.HasPrefix(r.URL.Path, signedPrefix) {
 				next.ServeHTTP(w, r)
+				return
 			}
 
 			if err := v.Verify(r.URL.String()); err != nil {

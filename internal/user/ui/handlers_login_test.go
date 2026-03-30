@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"strings"
@@ -8,6 +9,8 @@ import (
 
 	"github.com/leg100/otf/internal/authenticator"
 	"github.com/leg100/otf/internal/github"
+	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/ui/paths"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -15,7 +18,7 @@ import (
 // TestLoginHandler tests the login page handler, testing for the presence of a
 // login button for each configured cloud.
 func TestLoginHandler(t *testing.T) {
-	svc := &fakeLoginService{}
+	svc := &fakeLoginClient{}
 
 	svc.clients = []*authenticator.OAuthClient{
 		{OAuthConfig: authenticator.OAuthConfig{Name: "cloud1", Icon: github.Icon()}},
@@ -24,7 +27,7 @@ func TestLoginHandler(t *testing.T) {
 
 	r := httptest.NewRequest("GET", "/?", nil)
 	w := httptest.NewRecorder()
-	h := &Handlers{AuthenticatorService: svc}
+	h := &LoginHandlers{Client: svc}
 	h.loginHandler(w, r)
 	body := w.Body.String()
 	if assert.Equal(t, 200, w.Code, "output: %s", body) {
@@ -34,9 +37,9 @@ func TestLoginHandler(t *testing.T) {
 }
 
 func TestAdminLoginHandler(t *testing.T) {
-	h := &Handlers{
+	h := &LoginHandlers{
 		SiteToken: "secrettoken",
-		Client:    &fakeTokensService{},
+		Client:    &fakeLoginClient{},
 	}
 
 	tests := []struct {
@@ -76,10 +79,15 @@ func TestAdminLoginHandler(t *testing.T) {
 	}
 }
 
-type fakeLoginService struct {
+type fakeLoginClient struct {
 	clients []*authenticator.OAuthClient
 }
 
-func (f *fakeLoginService) Clients() []*authenticator.OAuthClient {
+func (f *fakeLoginClient) Clients() []*authenticator.OAuthClient {
 	return f.clients
+}
+
+func (f *fakeLoginClient) StartSession(w http.ResponseWriter, r *http.Request, userID resource.TfeID) error {
+	http.Redirect(w, r, paths.Profile(), http.StatusFound)
+	return nil
 }

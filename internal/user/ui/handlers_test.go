@@ -2,7 +2,6 @@ package ui
 
 import (
 	"context"
-	"net/http"
 	"net/http/httptest"
 	"testing"
 
@@ -76,15 +75,6 @@ func TestUser_diffUsers(t *testing.T) {
 	a := []*user.User{bob}
 	b := []*user.User{alice, bob}
 	assert.Equal(t, []*user.User{alice}, diffUsers(a, b))
-}
-
-type fakeTokensService struct {
-	Client
-}
-
-func (f *fakeTokensService) StartSession(w http.ResponseWriter, r *http.Request, userID resource.TfeID) error {
-	http.Redirect(w, r, paths.Profile(), http.StatusFound)
-	return nil
 }
 
 type fakeUserService struct {

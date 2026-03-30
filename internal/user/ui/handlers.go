@@ -18,9 +18,7 @@ import (
 )
 
 type Handlers struct {
-	Client               Client
-	SiteToken            string
-	AuthenticatorService loginService
+	Client Client
 }
 
 type Client interface {
@@ -36,15 +34,10 @@ type Client interface {
 	CreateToken(ctx context.Context, opts user.CreateUserTokenOptions) (*user.UserToken, []byte, error)
 	ListTokens(ctx context.Context) ([]*user.UserToken, error)
 	DeleteToken(ctx context.Context, tokenID resource.TfeID) error
-
-	StartSession(w http.ResponseWriter, r *http.Request, userID resource.TfeID) error
 }
 
 // AddHandlers registers user UI handlers with the router
 func (h *Handlers) AddHandlers(r *mux.Router) {
-	// Unauthenticated routes for login
-	addLoginHandlers(r, h)
-
 	r.HandleFunc("/logout", h.logout).Methods("POST")
 	r.HandleFunc("/organizations/{name}/users", h.listOrganizationUsers).Methods("GET")
 	r.HandleFunc("/profile", h.profileHandler).Methods("GET")
