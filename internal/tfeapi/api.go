@@ -42,18 +42,17 @@ type Handlers struct {
 }
 
 func (h *Handlers) AddHandlers(r *mux.Router) {
+	apiRouter := r.PathPrefix(APIPrefixV2).Subrouter()
+
 	// Middleware to alter requests/responses
-	r.Use(func(next http.Handler) http.Handler {
+	apiRouter.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// API requests/responses
-			if strings.HasPrefix(r.URL.Path, APIPrefixV2) {
-				// Add TFP API version header to every API response.
-				//
-				// Version 2.5 is the minimum version terraform requires for the
-				// newer 'cloud' configuration block:
-				// https://developer.hashicorp.com/terraform/cli/cloud/settings#the-cloud-block
-				w.Header().Set("TFP-API-Version", "2.5")
-			}
+			// Add TFP API version header to every API response.
+			//
+			// Version 2.5 is the minimum version terraform requires for the
+			// newer 'cloud' configuration block:
+			// https://developer.hashicorp.com/terraform/cli/cloud/settings#the-cloud-block
+			w.Header().Set("TFP-API-Version", "2.5")
 
 			// Remove trailing slash from all requests
 			//
@@ -66,15 +65,15 @@ func (h *Handlers) AddHandlers(r *mux.Router) {
 			next.ServeHTTP(w, r)
 		})
 	})
-	r.Use(verifySignedURL(h.Verifier))
 
-	apiRouter := r.PathPrefix(APIPrefixV2).Subrouter()
-	signedRouter := r.PathPrefix(signedPrefixWithSignature).Subrouter()
-
-	// handle ping sent by go-tfe upon initialization
-	apiRouter.HandleFunc("ping", func(w http.ResponseWriter, r *http.Request) {
+	// Handle ping sent by go-tfe upon initialization
+	apiRouter.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 	})
+
+	// Verify signed URLs
+	signedRouter := r.PathPrefix(SignedPrefixWithSignature).Subrouter()
+	signedRouter.Use(verifySignedURL(h.Verifier))
 
 	// Register each handler, both with an API prefix and with a signed URL
 	// prefix (to allow each route to be accessible with a signed URL as well).

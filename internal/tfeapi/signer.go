@@ -10,8 +10,8 @@ import (
 )
 
 const (
+	SignedPrefixWithSignature = signedPrefix + "/{signature.expiry}"
 	signedPrefix              = "/signed"
-	signedPrefixWithSignature = signedPrefix + "/{signature.expiry}"
 )
 
 // NewSigner constructs a signer for signing and verifying URLs

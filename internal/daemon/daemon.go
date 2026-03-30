@@ -291,7 +291,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Authorizer:         authorizer,
 		DB:                 db,
 		VCSProviderService: vcsService,
-		Signer:             signer,
 		ConnectionsService: connectionService,
 		RepohookService:    repoService,
 		VCSEventSubscriber: vcsEventBroker,
@@ -438,7 +437,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	tfeapiHandlers := &tfeapi.Handlers{
 		Verifier: signer,
 		Handlers: []internal.Handlers{
-			repoService,
 			&variable.TFEAPI{
 				Client: struct {
 					*variable.VariableService
@@ -693,7 +691,12 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 			GithubApps: githubAppService,
 			VCSService: vcsService,
 		},
+		repoService,
 		dynamiccredsService,
+		&module.Registry{
+			Client: moduleService,
+			Signer: signer,
+		},
 	}
 
 	// Construct subsystems; ordered by start order

@@ -23,7 +23,7 @@ func Test_repohookHandler(t *testing.T) {
 	require.NoError(t, err)
 
 	broker := &fakeBroker{}
-	handler := newHandler(
+	handler := newHandlers(
 		logr.Discard(),
 		broker,
 		&fakeVCSKindDB{

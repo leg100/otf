@@ -1,6 +1,7 @@
 package module
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -10,29 +11,32 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/organization"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tfeapi"
 )
 
-type tfe struct {
-	svc    *Service
-	signer tfeapi.Signer
+type Registry struct {
+	Client registryClient
+	Signer tfeapi.Signer
 }
 
-// AddRegistryHandlers registers handlers for the module registry. It implements
+type registryClient interface {
+	GetModule(ctx context.Context, opts GetModuleOptions) (*Module, error)
+	downloadVersion(ctx context.Context, versionID resource.TfeID) ([]byte, error)
+}
+
+// AddHandlers registers handlers for the module registry. It implements
 // the Module Registry Protocol:
 //
 // https://developer.hashicorp.com/terraform/internals/module-registry-protocol
-func (h *tfe) AddRegistryHandlers(r *mux.Router) {
-	r = r.PathPrefix(tfeapi.ModuleV1Prefix).Subrouter()
+func (h *Registry) AddHandlers(r *mux.Router) {
+	registry := r.PathPrefix(tfeapi.ModuleV1Prefix).Subrouter()
+	registry.HandleFunc("/{organization}/{name}/{provider}/versions", h.listAvailableVersions).Methods("GET")
+	registry.HandleFunc("/{organization}/{name}/{provider}/{version}/download", h.getModuleVersionDownloadLink).Methods("GET")
 
-	r.HandleFunc("/{organization}/{name}/{provider}/versions", h.listAvailableVersions).Methods("GET")
-	r.HandleFunc("/{organization}/{name}/{provider}/{version}/download", h.getModuleVersionDownloadLink).Methods("GET")
-}
-
-// AddSignedHandlers registers handlers for signed URLs produced by the module
-// registry.
-func (h *tfe) AddSignedHandlers(r *mux.Router) {
-	r.HandleFunc("/modules/download/{module_version_id}.tar.gz", h.downloadModuleVersion).Methods("GET")
+	// Signed paths
+	signed := r.PathPrefix(tfeapi.SignedPrefixWithSignature).Subrouter()
+	signed.HandleFunc("/modules/download/{module_version_id}.tar.gz", h.downloadModuleVersion).Methods("GET")
 }
 
 type (
@@ -51,7 +55,7 @@ type (
 // List Available Versions for a Specific Module.
 //
 // https://developer.hashicorp.com/terraform/registry/api-docs#list-available-versions-for-a-specific-module
-func (h *tfe) listAvailableVersions(w http.ResponseWriter, r *http.Request) {
+func (h *Registry) listAvailableVersions(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		Name         string            `schema:"name,required"`
 		Provider     string            `schema:"provider,required"`
@@ -62,7 +66,7 @@ func (h *tfe) listAvailableVersions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	mod, err := h.svc.GetModule(r.Context(), GetModuleOptions{
+	mod, err := h.Client.GetModule(r.Context(), GetModuleOptions{
 		Name:         params.Name,
 		Provider:     params.Provider,
 		Organization: params.Organization,
@@ -91,7 +95,7 @@ func (h *tfe) listAvailableVersions(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *tfe) getModuleVersionDownloadLink(w http.ResponseWriter, r *http.Request) {
+func (h *Registry) getModuleVersionDownloadLink(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		Name         string            `schema:"name,required"`
 		Provider     string            `schema:"provider,required"`
@@ -103,7 +107,7 @@ func (h *tfe) getModuleVersionDownloadLink(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	mod, err := h.svc.GetModule(r.Context(), GetModuleOptions{
+	mod, err := h.Client.GetModule(r.Context(), GetModuleOptions{
 		Name:         params.Name,
 		Provider:     params.Provider,
 		Organization: params.Organization,
@@ -119,7 +123,7 @@ func (h *tfe) getModuleVersionDownloadLink(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	signed, err := h.signer.Sign(fmt.Sprintf("/modules/download/%s.tar.gz", version.ID), time.Now().Add(time.Hour))
+	signed, err := h.Signer.Sign(fmt.Sprintf("/modules/download/%s.tar.gz", version.ID), time.Now().Add(time.Hour))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -129,14 +133,14 @@ func (h *tfe) getModuleVersionDownloadLink(w http.ResponseWriter, r *http.Reques
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (h *tfe) downloadModuleVersion(w http.ResponseWriter, r *http.Request) {
+func (h *Registry) downloadModuleVersion(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.ID("module_version_id", r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	tarball, err := h.svc.downloadVersion(r.Context(), id)
+	tarball, err := h.Client.downloadVersion(r.Context(), id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return

@@ -15,7 +15,6 @@ import (
 	"github.com/leg100/otf/internal/semver"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/vcs"
-	"github.com/leg100/surl/v2"
 )
 
 type (
@@ -30,7 +29,6 @@ type (
 
 		db *pgdb
 
-		api          *tfe
 		vcsproviders *vcs.Service
 		connections  *connections.Service
 	}
@@ -38,7 +36,6 @@ type (
 	Options struct {
 		Logger             logr.Logger
 		DB                 *sql.DB
-		Signer             *surl.Signer
 		Authorizer         *authz.Authorizer
 		RepohookService    *repohooks.Service
 		VCSProviderService *vcs.Service
@@ -54,10 +51,6 @@ func NewService(opts Options) *Service {
 		connections:  opts.ConnectionsService,
 		db:           &pgdb{opts.DB},
 		vcsproviders: opts.VCSProviderService,
-	}
-	svc.api = &tfe{
-		svc:    &svc,
-		signer: opts.Signer,
 	}
 	publisher := &publisher{
 		Logger:       opts.Logger.WithValues("component", "publisher"),
