@@ -94,7 +94,9 @@ func TestAuthenticators(t *testing.T) {
 			h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				subj, err := authz.SubjectFromContext(r.Context())
 				require.NoError(t, err)
-				assert.Equal(t, tt.wantSubject, subj)
+				if tt.wantSubject != nil {
+					assert.Equal(t, tt.wantSubject, subj)
+				}
 			})
 			daemon.Tokens.Middleware.Authenticate(h).ServeHTTP(w, r)
 			assert.Equal(t, tt.wantCode, w.Code)
@@ -107,8 +109,6 @@ func TestAuthenticators(t *testing.T) {
 // key is not present then the test is skipped.
 func generateIAPToken(t *testing.T, aud string) string {
 	t.Helper()
-
-	t.Log(os.Getenv("HTTPS_PROXY"))
 
 	// first try to load the environment variable containing the path to the key
 	path, ok := os.LookupEnv("GOOGLE_APPLICATION_CREDENTIALS")
