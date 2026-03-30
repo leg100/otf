@@ -43,7 +43,7 @@ type (
 	}
 )
 
-func newHandler(
+func newHandlers(
 	logger logr.Logger,
 	publisher vcs.Publisher,
 	vcsKindDB vcsKindDB,

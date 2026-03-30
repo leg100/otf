@@ -1,34 +1,37 @@
 package organization
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 
 	"github.com/gorilla/mux"
-	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/tfeapi"
 )
 
-type api struct {
-	*Service
+type API struct {
 	*tfeapi.Responder
+	Client apiClient
 }
 
-func (a *api) addHandlers(r *mux.Router) {
-	r = r.PathPrefix(otfhttp.APIBasePath).Subrouter()
+type apiClient interface {
+	CreateOrganization(ctx context.Context, opts CreateOptions) (*Organization, error)
+	DeleteOrganization(ctx context.Context, name Name) error
+}
 
+func (a *API) AddHandlers(r *mux.Router) {
 	r.HandleFunc("/organizations", a.createOrganization).Methods("POST")
 	r.HandleFunc("/organizations/{name}", a.deleteOrganization).Methods("DELETE")
 }
 
-func (a *api) createOrganization(w http.ResponseWriter, r *http.Request) {
+func (a *API) createOrganization(w http.ResponseWriter, r *http.Request) {
 	var opts CreateOptions
 	if err := json.NewDecoder(r.Body).Decode(&opts); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
-	org, err := a.CreateOrganization(r.Context(), opts)
+	org, err := a.Client.CreateOrganization(r.Context(), opts)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -36,7 +39,7 @@ func (a *api) createOrganization(w http.ResponseWriter, r *http.Request) {
 	a.Respond(w, r, org, http.StatusCreated)
 }
 
-func (a *api) deleteOrganization(w http.ResponseWriter, r *http.Request) {
+func (a *API) deleteOrganization(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		Name Name `schema:"name"`
 	}
@@ -44,7 +47,7 @@ func (a *api) deleteOrganization(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	if err := a.DeleteOrganization(r.Context(), params.Name); err != nil {
+	if err := a.Client.DeleteOrganization(r.Context(), params.Name); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}

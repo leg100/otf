@@ -1,24 +1,37 @@
 package team
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/organization"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/tfeapi/types"
 )
 
-type tfe struct {
-	*Service
+type TFEAPI struct {
 	*tfeapi.Responder
+	Client tfeClient
 }
 
-func (a *tfe) addHandlers(r *mux.Router) {
-	r = r.PathPrefix(tfeapi.APIPrefixV2).Subrouter()
+type tfeClient interface {
+	CreateTeam(ctx context.Context, organization organization.Name, opts CreateTeamOptions) (*Team, error)
+	GetTeam(ctx context.Context, organization organization.Name, name string) (*Team, error)
+	GetTeamByID(ctx context.Context, teamID resource.TfeID) (*Team, error)
+	ListTeams(ctx context.Context, organization organization.Name) ([]*Team, error)
+	UpdateTeam(ctx context.Context, teamID resource.TfeID, opts UpdateTeamOptions) (*Team, error)
+	DeleteTeam(ctx context.Context, teamID resource.TfeID) error
 
+	CreateTeamToken(ctx context.Context, opts CreateTokenOptions) (*Token, []byte, error)
+	GetTeamToken(ctx context.Context, teamID resource.TfeID) (*Token, error)
+	DeleteTeamToken(ctx context.Context, teamID resource.TfeID) error
+}
+
+func (a *TFEAPI) AddHandlers(r *mux.Router) {
 	r.HandleFunc("/organizations/{organization_name}/teams", a.createTeam).Methods("POST")
 	r.HandleFunc("/organizations/{organization_name}/teams", a.listTeams).Methods("GET")
 	r.HandleFunc("/organizations/{organization_name}/teams/{team_name}", a.getTeamByName).Methods("GET")
@@ -32,7 +45,7 @@ func (a *tfe) addHandlers(r *mux.Router) {
 	r.HandleFunc("/teams/{team_id}/authentication-token", a.deleteTeamToken).Methods("DELETE")
 }
 
-func (a *tfe) createTeam(w http.ResponseWriter, r *http.Request) {
+func (a *TFEAPI) createTeam(w http.ResponseWriter, r *http.Request) {
 	var pathParams struct {
 		Organization organization.Name `schema:"organization_name"`
 	}
@@ -62,7 +75,7 @@ func (a *tfe) createTeam(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	team, err := a.CreateTeam(r.Context(), pathParams.Organization, opts)
+	team, err := a.Client.CreateTeam(r.Context(), pathParams.Organization, opts)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -71,7 +84,7 @@ func (a *tfe) createTeam(w http.ResponseWriter, r *http.Request) {
 	a.Respond(w, r, a.convertTeam(team), http.StatusCreated)
 }
 
-func (a *tfe) updateTeam(w http.ResponseWriter, r *http.Request) {
+func (a *TFEAPI) updateTeam(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.ID("team_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
@@ -100,7 +113,7 @@ func (a *tfe) updateTeam(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	team, err := a.UpdateTeam(r.Context(), id, opts)
+	team, err := a.Client.UpdateTeam(r.Context(), id, opts)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -109,7 +122,7 @@ func (a *tfe) updateTeam(w http.ResponseWriter, r *http.Request) {
 	a.Respond(w, r, a.convertTeam(team), http.StatusOK)
 }
 
-func (a *tfe) listTeams(w http.ResponseWriter, r *http.Request) {
+func (a *TFEAPI) listTeams(w http.ResponseWriter, r *http.Request) {
 	var pathParams struct {
 		Organization organization.Name `schema:"organization_name"`
 	}
@@ -118,7 +131,7 @@ func (a *tfe) listTeams(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	teams, err := a.ListTeams(r.Context(), pathParams.Organization)
+	teams, err := a.Client.ListTeams(r.Context(), pathParams.Organization)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -132,7 +145,7 @@ func (a *tfe) listTeams(w http.ResponseWriter, r *http.Request) {
 	a.Respond(w, r, items, http.StatusOK)
 }
 
-func (a *tfe) getTeamByName(w http.ResponseWriter, r *http.Request) {
+func (a *TFEAPI) getTeamByName(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		Organization *organization.Name `schema:"organization_name,required"`
 		Name         *string            `schema:"team_name,required"`
@@ -142,7 +155,7 @@ func (a *tfe) getTeamByName(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	team, err := a.GetTeam(r.Context(), *params.Organization, *params.Name)
+	team, err := a.Client.GetTeam(r.Context(), *params.Organization, *params.Name)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -151,13 +164,13 @@ func (a *tfe) getTeamByName(w http.ResponseWriter, r *http.Request) {
 	a.Respond(w, r, a.convertTeam(team), http.StatusOK)
 }
 
-func (a *tfe) getTeam(w http.ResponseWriter, r *http.Request) {
+func (a *TFEAPI) getTeam(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.ID("team_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
-	team, err := a.GetTeamByID(r.Context(), id)
+	team, err := a.Client.GetTeamByID(r.Context(), id)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -165,14 +178,14 @@ func (a *tfe) getTeam(w http.ResponseWriter, r *http.Request) {
 	a.Respond(w, r, a.convertTeam(team), http.StatusOK)
 }
 
-func (a *tfe) deleteTeam(w http.ResponseWriter, r *http.Request) {
+func (a *TFEAPI) deleteTeam(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.ID("team_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
 
-	if err := a.DeleteTeam(r.Context(), id); err != nil {
+	if err := a.Client.DeleteTeam(r.Context(), id); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
@@ -180,7 +193,7 @@ func (a *tfe) deleteTeam(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (a *tfe) convertTeam(from *Team) *TFETeam {
+func (a *TFEAPI) convertTeam(from *Team) *TFETeam {
 	return &TFETeam{
 		ID:         from.ID,
 		Name:       from.Name,
@@ -202,7 +215,7 @@ func (a *tfe) convertTeam(from *Team) *TFETeam {
 	}
 }
 
-func (a *tfe) createTeamToken(w http.ResponseWriter, r *http.Request) {
+func (a *TFEAPI) createTeamToken(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.ID("team_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
@@ -213,7 +226,7 @@ func (a *tfe) createTeamToken(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	ot, token, err := a.CreateTeamToken(r.Context(), CreateTokenOptions{
+	ot, token, err := a.Client.CreateTeamToken(r.Context(), CreateTokenOptions{
 		TeamID: id,
 		Expiry: opts.ExpiredAt,
 	})
@@ -231,14 +244,14 @@ func (a *tfe) createTeamToken(w http.ResponseWriter, r *http.Request) {
 	a.Respond(w, r, to, http.StatusCreated)
 }
 
-func (a *tfe) getTeamToken(w http.ResponseWriter, r *http.Request) {
+func (a *TFEAPI) getTeamToken(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.ID("team_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
 
-	ot, err := a.GetTeamToken(r.Context(), id)
+	ot, err := a.Client.GetTeamToken(r.Context(), id)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -256,14 +269,14 @@ func (a *tfe) getTeamToken(w http.ResponseWriter, r *http.Request) {
 	a.Respond(w, r, to, http.StatusOK)
 }
 
-func (a *tfe) deleteTeamToken(w http.ResponseWriter, r *http.Request) {
+func (a *TFEAPI) deleteTeamToken(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.ID("team_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
 
-	err = a.DeleteTeamToken(r.Context(), id)
+	err = a.Client.DeleteTeamToken(r.Context(), id)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return

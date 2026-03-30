@@ -3,13 +3,11 @@ package vcs
 import (
 	"context"
 
-	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/tfeapi"
 )
 
 type (
@@ -22,7 +20,6 @@ type (
 		*authz.Authorizer
 
 		db                *pgdb
-		api               *tfe
 		beforeDeleteHooks []func(context.Context, *Provider) error
 
 		*factory
@@ -31,7 +28,6 @@ type (
 
 	Options struct {
 		DB                  *sql.DB
-		Responder           *tfeapi.Responder
 		Logger              logr.Logger
 		SourceIconRegistrar SourceIconRegistrar
 		SkipTLSVerification bool
@@ -52,15 +48,7 @@ func NewService(opts Options) *Service {
 		},
 		kindDB: kindDB,
 	}
-	svc.api = &tfe{
-		Service:   &svc,
-		Responder: opts.Responder,
-	}
 	return &svc
-}
-
-func (a *Service) AddHandlers(r *mux.Router) {
-	a.api.addHandlers(r)
 }
 
 func (a *Service) CreateVCSProvider(ctx context.Context, opts CreateOptions) (*Provider, error) {

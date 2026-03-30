@@ -1,33 +1,38 @@
 package team
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 
 	"github.com/gorilla/mux"
-	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/organization"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tfeapi"
 )
 
 type (
-	api struct {
-		*Service
+	API struct {
 		*tfeapi.Responder
+		Client apiClient
+	}
+
+	apiClient interface {
+		CreateTeam(ctx context.Context, organization organization.Name, opts CreateTeamOptions) (*Team, error)
+		GetTeam(ctx context.Context, organization organization.Name, name string) (*Team, error)
+		DeleteTeam(ctx context.Context, teamID resource.TfeID) error
 	}
 )
 
-func (a *api) addHandlers(r *mux.Router) {
-	r = r.PathPrefix(otfhttp.APIBasePath).Subrouter()
-
+func (a *API) AddHandlers(r *mux.Router) {
 	r.HandleFunc("/organizations/{organization_name}/teams", a.createTeam).Methods("POST")
 	r.HandleFunc("/organizations/{organization_name}/teams/{team_name}", a.getTeamByName).Methods("GET")
 
 	r.HandleFunc("/teams/{team_id}", a.deleteTeam).Methods("DELETE")
 }
 
-func (a *api) createTeam(w http.ResponseWriter, r *http.Request) {
+func (a *API) createTeam(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		Name organization.Name `schema:"organization_name"`
 	}
@@ -42,7 +47,7 @@ func (a *api) createTeam(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	team, err := a.CreateTeam(r.Context(), params.Name, opts)
+	team, err := a.Client.CreateTeam(r.Context(), params.Name, opts)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -50,7 +55,7 @@ func (a *api) createTeam(w http.ResponseWriter, r *http.Request) {
 	a.Respond(w, r, team, http.StatusCreated)
 }
 
-func (a *api) getTeamByName(w http.ResponseWriter, r *http.Request) {
+func (a *API) getTeamByName(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		Organization organization.Name `schema:"organization_name,required"`
 		Team         string            `schema:"team_name,required"`
@@ -59,7 +64,7 @@ func (a *api) getTeamByName(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	team, err := a.GetTeam(r.Context(), params.Organization, params.Team)
+	team, err := a.Client.GetTeam(r.Context(), params.Organization, params.Team)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -67,14 +72,14 @@ func (a *api) getTeamByName(w http.ResponseWriter, r *http.Request) {
 	a.Respond(w, r, team, http.StatusOK)
 }
 
-func (a *api) deleteTeam(w http.ResponseWriter, r *http.Request) {
+func (a *API) deleteTeam(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.ID("team_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
 
-	if err := a.DeleteTeam(r.Context(), id); err != nil {
+	if err := a.Client.DeleteTeam(r.Context(), id); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}

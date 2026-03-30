@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/configversion/source"
 	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/http/decode"
@@ -23,12 +22,11 @@ import (
 )
 
 type tfe struct {
-	tfeClient
-
-	logr.Logger
-	*surl.Signer
 	*tfeapi.Responder
 
+	client        tfeClient
+	logger        logr.Logger
+	signer        *surl.Signer
 	maxConfigSize int64 // Maximum permitted config upload size in bytes
 }
 
@@ -44,16 +42,37 @@ type tfeClient interface {
 	DownloadConfig(ctx context.Context, id resource.TfeID) ([]byte, error)
 }
 
-func (a *tfe) addHandlers(r *mux.Router) {
-	signed := r.PathPrefix("/signed/{signature.expiry}").Subrouter()
-	signed.Use(internal.VerifySignedURL(a.Signer))
-	signed.HandleFunc("/configuration-versions/{id}/upload", a.uploadConfigurationVersion()).Methods("PUT")
+func NewTFEAPI(
+	logger logr.Logger,
+	client tfeClient,
+	responder *tfeapi.Responder,
+	signer *surl.Signer,
+	maxConfigSize int64,
+) *tfe {
+	api := &tfe{
+		Responder:     responder,
+		client:        client,
+		logger:        logger,
+		signer:        signer,
+		maxConfigSize: maxConfigSize,
+	}
 
-	r = r.PathPrefix(tfeapi.APIPrefixV2).Subrouter()
+	// Fetch config version when API requests config version be included in the
+	// response
+	responder.Register(tfeapi.IncludeConfig, api.include)
+	// Fetch ingress attributes when API requests ingress attributes be included
+	// in the response
+	responder.Register(tfeapi.IncludeIngress, api.includeIngressAttributes)
+
+	return api
+}
+
+func (a *tfe) AddHandlers(r *mux.Router) {
 	r.HandleFunc("/workspaces/{workspace_id}/configuration-versions", a.createConfigurationVersion).Methods("POST")
 	r.HandleFunc("/configuration-versions/{id}", a.getConfigurationVersion).Methods("GET")
 	r.HandleFunc("/workspaces/{workspace_id}/configuration-versions", a.listConfigurationVersions).Methods("GET")
 	r.HandleFunc("/configuration-versions/{id}/download", a.downloadConfigurationVersion).Methods("GET")
+	r.HandleFunc("/configuration-versions/{id}/upload", a.uploadConfigurationVersion()).Methods("PUT")
 }
 
 func (a *tfe) createConfigurationVersion(w http.ResponseWriter, r *http.Request) {
@@ -77,7 +96,7 @@ func (a *tfe) createConfigurationVersion(w http.ResponseWriter, r *http.Request)
 		opts.Source = source.Terraform
 	}
 
-	cv, err := a.CreateConfigVersion(r.Context(), workspaceID, opts)
+	cv, err := a.client.CreateConfigVersion(r.Context(), workspaceID, opts)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -88,7 +107,7 @@ func (a *tfe) createConfigurationVersion(w http.ResponseWriter, r *http.Request)
 	//
 	// https://developer.hashicorp.com/terraform/cloud-docs/api-docs/configuration-versions#configuration-files-upload-url
 	uploadURL := fmt.Sprintf("/configuration-versions/%s/upload", cv.ID)
-	uploadURL, err = a.Sign(uploadURL, time.Now().Add(time.Hour))
+	uploadURL, err = a.signer.Sign(uploadURL, time.Now().Add(time.Hour))
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -106,7 +125,7 @@ func (a *tfe) getConfigurationVersion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cv, err := a.GetConfigVersion(r.Context(), id)
+	cv, err := a.client.GetConfigVersion(r.Context(), id)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -126,7 +145,7 @@ func (a *tfe) listConfigurationVersions(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	page, err := a.ListConfigVersions(r.Context(), params.WorkspaceID, ListOptions{
+	page, err := a.client.ListConfigVersions(r.Context(), params.WorkspaceID, ListOptions{
 		PageOptions: resource.PageOptions(params.ListOptions),
 	})
 	if err != nil {
@@ -159,13 +178,13 @@ func (a *tfe) uploadConfigurationVersion() http.HandlerFunc {
 				// was received, and they aren't informed that their config
 				// exceeds the max size. To help them diagnose the cause, the
 				// error is logged on the server side too.
-				a.Error(err, "uploaded config exceeds max size", "bytes", a.maxConfigSize)
+				a.logger.Error(err, "uploaded config exceeds max size", "bytes", a.maxConfigSize)
 			} else {
 				tfeapi.Error(w, err)
 			}
 			return
 		}
-		if err := a.UploadConfig(r.Context(), id, buf.Bytes()); err != nil {
+		if err := a.client.UploadConfig(r.Context(), id, buf.Bytes()); err != nil {
 			tfeapi.Error(w, err)
 			return
 		}
@@ -180,7 +199,7 @@ func (a *tfe) downloadConfigurationVersion(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	resp, err := a.DownloadConfig(r.Context(), id)
+	resp, err := a.client.DownloadConfig(r.Context(), id)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -205,7 +224,7 @@ func (a *tfe) include(ctx context.Context, v any) ([]any, error) {
 	if !ok {
 		return nil, nil
 	}
-	cv, err := a.GetConfigVersion(ctx, resourceID)
+	cv, err := a.client.GetConfigVersion(ctx, resourceID)
 	if err != nil {
 		return nil, err
 	}
@@ -222,7 +241,7 @@ func (a *tfe) includeIngressAttributes(ctx context.Context, v any) ([]any, error
 	}
 	// the tfe CV does not by default include ingress attributes, whereas the
 	// otf CV *does*, so we need to fetch it.
-	cv, err := a.GetConfigVersion(ctx, tfeCV.ID)
+	cv, err := a.client.GetConfigVersion(ctx, tfeCV.ID)
 	if err != nil {
 		return nil, err
 	}

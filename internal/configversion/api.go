@@ -1,31 +1,35 @@
 package configversion
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/gorilla/mux"
-	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/http/decode"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tfeapi"
 )
 
-type api struct {
-	*Service
+type API struct {
 	*tfeapi.Responder
+	Client apiClient
 }
 
-func (a *api) addHandlers(r *mux.Router) {
-	r = r.PathPrefix(otfhttp.APIBasePath).Subrouter()
+type apiClient interface {
+	DownloadConfig(ctx context.Context, id resource.TfeID) ([]byte, error)
+}
+
+func (a *API) AddHandlers(r *mux.Router) {
 	r.HandleFunc("/configuration-versions/{id}/download", a.download).Methods("GET")
 }
 
-func (a *api) download(w http.ResponseWriter, r *http.Request) {
+func (a *API) download(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.ID("id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
-	resp, err := a.DownloadConfig(r.Context(), id)
+	resp, err := a.Client.DownloadConfig(r.Context(), id)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return

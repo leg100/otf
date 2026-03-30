@@ -3,13 +3,11 @@ package notifications
 import (
 	"context"
 
-	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/tfeapi"
 )
 
 type (
@@ -22,14 +20,12 @@ type (
 		*authz.Authorizer
 
 		db     *pgdb
-		api    *tfe
 		broker *pubsub.Broker[*Config]
 	}
 
 	Options struct {
 		DB         *sql.DB
 		Listener   *sql.Listener
-		Responder  *tfeapi.Responder
 		Logger     logr.Logger
 		Authorizer *authz.Authorizer
 	}
@@ -41,10 +37,6 @@ func NewService(opts Options) *Service {
 		Authorizer: opts.Authorizer,
 		db:         &pgdb{opts.DB},
 	}
-	svc.api = &tfe{
-		Service:   &svc,
-		Responder: opts.Responder,
-	}
 	// Register with broker so that it can relay run events
 	svc.broker = pubsub.NewBroker[*Config](
 		opts.Logger,
@@ -52,10 +44,6 @@ func NewService(opts Options) *Service {
 		"notification_configurations",
 	)
 	return &svc
-}
-
-func (s *Service) AddHandlers(r *mux.Router) {
-	s.api.addHandlers(r)
 }
 
 func (s *Service) WatchNotificationConfigs(ctx context.Context) (<-chan pubsub.Event[*Config], func()) {

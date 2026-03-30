@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"path"
 	"time"
 
 	"github.com/felixge/httpsnoop"
@@ -22,9 +21,8 @@ import (
 )
 
 const (
-	APIBasePath     = "/otfapi"
-	APIPingEndpoint = "ping"
-	DefaultURL      = "https://localhost:8080"
+	APIBasePath = "/otfapi"
+	DefaultURL  = "https://localhost:8080"
 
 	// shutdownTimeout is the time given for outstanding requests to finish
 	// before shutdown.
@@ -79,17 +77,10 @@ func NewServer(logger logr.Logger, cfg ServerConfig) (*Server, error) {
 	// Catch panics and return 500s
 	r.Use(gorillaHandlers.RecoveryHandler(gorillaHandlers.PrintRecoveryStack(true)))
 
-	r.Handle("/", http.RedirectHandler("/app/organizations", http.StatusFound))
-
 	// Serve static files
 	if err := static.AddHandler(logger, r); err != nil {
 		return nil, err
 	}
-
-	// basic no-op ping handler for API
-	r.HandleFunc(path.Join(APIBasePath, APIPingEndpoint), func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusNoContent)
-	})
 
 	// Prometheus metrics
 	r.HandleFunc("/metrics", promhttp.Handler().ServeHTTP)

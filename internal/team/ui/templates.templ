@@ -1,0 +1,159 @@
+package ui
+
+import (
+	"github.com/leg100/otf/internal/organization"
+	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/team"
+	"github.com/leg100/otf/internal/ui/helpers"
+	"github.com/leg100/otf/internal/ui/paths"
+	"github.com/leg100/otf/internal/user"
+	userui "github.com/leg100/otf/internal/user/ui"
+)
+
+templ newTeamView(organization organization.Name) {
+	<form class="flex flex-col gap-2" action={ paths.CreateTeam(organization) } method="POST">
+		<div class="field">
+			<label for="name">Name</label>
+			<input class="input w-80" type="text" name="name" id="name" required/>
+		</div>
+		<div>
+			<button class="btn" id="create-team-button">Create team</button>
+		</div>
+	</form>
+}
+
+type listTeamsProps struct {
+	organization  organization.Name
+	teams         *resource.Page[*team.Team]
+	canCreateTeam bool
+}
+
+type listOptions struct{}
+
+templ listTeams(props listTeamsProps) {
+	<div id="content-list">
+		@helpers.Table(&teamTable{}, props.teams)
+	</div>
+}
+
+type teamTable struct{}
+
+templ (t teamTable) Header() {
+	<th>Name</th>
+	<th>ID</th>
+}
+
+templ (t teamTable) Row(tm *team.Team) {
+	<tr id={ "item-team-" + tm.Name }>
+		<td>
+			<a class="link" href={ paths.Team(tm.ID) }>
+				{ tm.Name }
+			</a>
+		</td>
+		<td>
+			@helpers.Identifier(tm.ID)
+		</td>
+	</tr>
+}
+
+templ listTeamsActions(props listTeamsProps) {
+	if props.canCreateTeam {
+		<form action={ paths.NewTeam(props.organization) } method="GET">
+			<button class="btn" id="new-team-button">
+				New Team
+			</button>
+		</form>
+	}
+}
+
+// getTeamProps defines the properties for the team detail view.
+type getTeamProps struct {
+	team            *team.Team
+	members         []*user.User
+	canUpdateTeam   bool
+	canDeleteTeam   bool
+	canAddMember    bool
+	canRemoveMember bool
+	dropdown        helpers.SearchDropdownProps
+}
+
+templ getTeam(props getTeamProps) {
+	if props.canUpdateTeam {
+		<h3 class="font-semibold my-2 text-lg">Permissions</h3>
+		<form class="flex flex-col gap-5" action={ paths.UpdateTeam(props.team.ID) } method="POST">
+			<div class="form-checkbox">
+				<input
+					type="checkbox"
+					name="manage_workspaces"
+					id="manage_workspaces"
+					value="true"
+					checked?={ props.team.ManageWorkspaces || props.team.IsOwners() }
+					if props.team.IsOwners() {
+						title="cannot change permissions of owners team"
+						disabled
+					}
+				/>
+				<label for="manage_workspaces">Manage Workspaces</label>
+				<span class="description">Allows members to create and administrate all workspaces within the organization.</span>
+			</div>
+			<div class="form-checkbox">
+				<input
+					type="checkbox"
+					name="manage_vcs"
+					id="manage_vcs"
+					value="true"
+					checked?={ props.team.ManageVCS || props.team.IsOwners() }
+					if props.team.IsOwners() {
+						title="cannot change permissions of owners team"
+						disabled
+					}
+				/>
+				<label for="manage_vcs">Manage VCS Settings</label>
+				<span class="description">Allows members to manage the set of VCS providers available within the organization.</span>
+			</div>
+			<div class="form-checkbox">
+				<input
+					type="checkbox"
+					name="manage_modules"
+					id="manage_modules"
+					value="true"
+					checked?={ props.team.ManageModules || props.team.IsOwners() }
+					if props.team.IsOwners() {
+						title="cannot change permissions of owners team"
+						disabled
+					}
+				/>
+				<label for="manage_modules">Manage Modules</label>
+				<span class="description" for="manage_modules">Allows members to publish and delete modules within the organization.</span>
+			</div>
+			if !props.team.IsOwners() {
+				<div class="field">
+					<button class="btn w-40">Save changes</button>
+				</div>
+			}
+		</form>
+		<hr class="my-4"/>
+	}
+	<h3 class="font-semibold my-2 text-lg">Members</h3>
+	<div id="content-list">
+		@helpers.UnpaginatedTable(
+			&userui.UserTable{TeamID: &props.team.ID, CanRemoveMember: props.canRemoveMember},
+			props.members,
+		)
+	</div>
+	if props.canAddMember {
+		<div>
+			@helpers.SearchDropdown(props.dropdown)
+		</div>
+	}
+	if !props.team.IsOwners() && props.canDeleteTeam {
+		<hr class="my-4"/>
+		<h3 class="font-semibold my-2 text-lg">Advanced</h3>
+		<form action={ paths.DeleteTeam(props.team.ID) } method="POST">
+			<button class="btn btn-error btn-outline" onclick="return confirm('Are you sure you want to delete?')">
+				Delete team
+			</button>
+			<input type="hidden" name="id" value={ props.team.ID.String() }/>
+		</form>
+	}
+}

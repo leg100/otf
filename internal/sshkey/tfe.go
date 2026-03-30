@@ -1,6 +1,7 @@
 package sshkey
 
 import (
+	"context"
 	"net/http"
 	"time"
 
@@ -11,9 +12,17 @@ import (
 	"github.com/leg100/otf/internal/tfeapi"
 )
 
-type tfe struct {
-	*Service
+type TFEAPI struct {
 	*tfeapi.Responder
+	Client tfeClient
+}
+
+type tfeClient interface {
+	CreateSSHKey(ctx context.Context, opts CreateOptions) (*SSHKey, error)
+	UpdateSSHKey(ctx context.Context, id resource.TfeID, opts UpdateOptions) (*SSHKey, error)
+	ListSSHKeys(ctx context.Context, org organization.Name) ([]*SSHKey, error)
+	GetSSHKey(ctx context.Context, id resource.TfeID) (*SSHKey, error)
+	DeleteSSHKey(ctx context.Context, id resource.TfeID) (*SSHKey, error)
 }
 
 // TFESSHKey represents an SSH key in the TFE API.
@@ -45,9 +54,7 @@ type tfeSSHKeyUpdateOptions struct {
 	Name *string `jsonapi:"attribute" json:"name,omitempty"`
 }
 
-func (a *tfe) addHandlers(r *mux.Router) {
-	r = r.PathPrefix(tfeapi.APIPrefixV2).Subrouter()
-
+func (a *TFEAPI) AddHandlers(r *mux.Router) {
 	r.HandleFunc("/organizations/{organization_name}/ssh-keys", a.createSSHKey).Methods("POST")
 	r.HandleFunc("/organizations/{organization_name}/ssh-keys", a.listSSHKeys).Methods("GET")
 	r.HandleFunc("/ssh-keys/{id}", a.getSSHKey).Methods("GET")
@@ -55,7 +62,7 @@ func (a *tfe) addHandlers(r *mux.Router) {
 	r.HandleFunc("/ssh-keys/{id}", a.deleteSSHKey).Methods("DELETE")
 }
 
-func (a *tfe) createSSHKey(w http.ResponseWriter, r *http.Request) {
+func (a *TFEAPI) createSSHKey(w http.ResponseWriter, r *http.Request) {
 	var pathParams struct {
 		Organization organization.Name `schema:"organization_name,required"`
 	}
@@ -68,7 +75,7 @@ func (a *tfe) createSSHKey(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	key, err := a.CreateSSHKey(r.Context(), CreateOptions{
+	key, err := a.Client.CreateSSHKey(r.Context(), CreateOptions{
 		Organization: pathParams.Organization,
 		Name:         params.Name,
 		PrivateKey:   params.Value,
@@ -80,7 +87,7 @@ func (a *tfe) createSSHKey(w http.ResponseWriter, r *http.Request) {
 	a.Respond(w, r, a.convert(key), http.StatusCreated)
 }
 
-func (a *tfe) listSSHKeys(w http.ResponseWriter, r *http.Request) {
+func (a *TFEAPI) listSSHKeys(w http.ResponseWriter, r *http.Request) {
 	var pathParams struct {
 		Organization organization.Name `schema:"organization_name,required"`
 	}
@@ -88,7 +95,7 @@ func (a *tfe) listSSHKeys(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	keys, err := a.ListSSHKeys(r.Context(), pathParams.Organization)
+	keys, err := a.Client.ListSSHKeys(r.Context(), pathParams.Organization)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -100,13 +107,13 @@ func (a *tfe) listSSHKeys(w http.ResponseWriter, r *http.Request) {
 	a.Respond(w, r, to, http.StatusOK)
 }
 
-func (a *tfe) getSSHKey(w http.ResponseWriter, r *http.Request) {
+func (a *TFEAPI) getSSHKey(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.ID("id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
-	key, err := a.GetSSHKey(r.Context(), id)
+	key, err := a.Client.GetSSHKey(r.Context(), id)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -114,7 +121,7 @@ func (a *tfe) getSSHKey(w http.ResponseWriter, r *http.Request) {
 	a.Respond(w, r, a.convert(key), http.StatusOK)
 }
 
-func (a *tfe) updateSSHKey(w http.ResponseWriter, r *http.Request) {
+func (a *TFEAPI) updateSSHKey(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.ID("id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
@@ -125,7 +132,7 @@ func (a *tfe) updateSSHKey(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	key, err := a.UpdateSSHKey(r.Context(), id, UpdateOptions{
+	key, err := a.Client.UpdateSSHKey(r.Context(), id, UpdateOptions{
 		Name: params.Name,
 	})
 	if err != nil {
@@ -135,13 +142,13 @@ func (a *tfe) updateSSHKey(w http.ResponseWriter, r *http.Request) {
 	a.Respond(w, r, a.convert(key), http.StatusOK)
 }
 
-func (a *tfe) deleteSSHKey(w http.ResponseWriter, r *http.Request) {
+func (a *TFEAPI) deleteSSHKey(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.ID("id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
-	_, err = a.DeleteSSHKey(r.Context(), id)
+	_, err = a.Client.DeleteSSHKey(r.Context(), id)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -149,7 +156,7 @@ func (a *tfe) deleteSSHKey(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (a *tfe) convert(from *SSHKey) *TFESSHKey {
+func (a *TFEAPI) convert(from *SSHKey) *TFESSHKey {
 	return &TFESSHKey{
 		ID:   from.ID,
 		Name: from.Name,

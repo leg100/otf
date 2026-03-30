@@ -14,6 +14,7 @@ import (
 	"github.com/leg100/otf/internal/configversion/source"
 	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/http/decode"
+	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/tfeapi"
@@ -25,21 +26,48 @@ import (
 var tfeUser = resource.MustHardcodeTfeID(resource.UserKind, "123")
 
 type tfe struct {
-	*Service
-	internal.Signer
 	*tfeapi.Responder
-
-	client     tfeWorkspaceGetter
+	client     tfeClient
+	signer     tfeapi.Signer
 	authorizer *authz.Authorizer
 }
 
-type tfeWorkspaceGetter interface {
+type tfeClient interface {
+	CreateRun(context.Context, resource.TfeID, CreateOptions) (*Run, error)
+	ListRuns(_ context.Context, opts ListOptions) (*resource.Page[*Run], error)
+	GetRun(ctx context.Context, id resource.TfeID) (*Run, error)
+	GetChunk(ctx context.Context, opts GetChunkOptions) (Chunk, error)
+	CancelRun(ctx context.Context, id resource.TfeID) error
+	ForceCancelRun(ctx context.Context, id resource.TfeID) error
+	DiscardRun(ctx context.Context, id resource.TfeID) error
+	TailRun(context.Context, TailOptions) (<-chan Chunk, error)
+	DeleteRun(context.Context, resource.TfeID) error
+	ApplyRun(context.Context, resource.TfeID) error
+	WatchRuns(ctx context.Context) (<-chan pubsub.Event[*Event], func())
+	GetRunPlanFile(ctx context.Context, id resource.TfeID, format PlanFormat) ([]byte, error)
 	GetWorkspace(ctx context.Context, workspaceID resource.TfeID) (*workspace.Workspace, error)
 }
 
-func (a *tfe) addHandlers(r *mux.Router) {
-	r = r.PathPrefix(tfeapi.APIPrefixV2).Subrouter()
+func NewTFEAPI(
+	client tfeClient,
+	authorizer *authz.Authorizer,
+	signer tfeapi.Signer,
+	responder *tfeapi.Responder,
+) *tfe {
+	api := &tfe{
+		client:     client,
+		authorizer: authorizer,
+		signer:     signer,
+		Responder:  responder,
+	}
+	// Fetch related resources when API requests their inclusion
+	responder.Register(tfeapi.IncludeCreatedBy, api.includeCreatedBy)
+	responder.Register(tfeapi.IncludeCurrentRun, api.includeCurrentRun)
+	responder.Register(tfeapi.IncludeWorkspace, api.includeWorkspace)
+	return api
+}
 
+func (a *tfe) AddHandlers(r *mux.Router) {
 	// Run routes
 	r.HandleFunc("/runs", a.createRun).Methods("POST")
 	r.HandleFunc("/runs/{id}/actions/apply", a.applyRun).Methods("POST")
@@ -60,6 +88,12 @@ func (a *tfe) addHandlers(r *mux.Router) {
 
 	// Run events routes
 	r.HandleFunc("/runs/{id}/run-events", a.listRunEvents).Methods("GET")
+
+	// Log routes
+	//
+	// getLogs is not part of the documented TFEAPI, but called by the
+	// terraform cli with a signed URL
+	r.HandleFunc("/runs/{run_id}/logs/{phase}", a.getLogs).Methods("GET")
 }
 
 func (a *tfe) createRun(w http.ResponseWriter, r *http.Request) {
@@ -97,7 +131,7 @@ func (a *tfe) createRun(w http.ResponseWriter, r *http.Request) {
 		opts.Variables[i] = Variable{Key: from.Key, Value: from.Value}
 	}
 
-	run, err := a.CreateRun(r.Context(), params.Workspace.ID, opts)
+	run, err := a.client.CreateRun(r.Context(), params.Workspace.ID, opts)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -118,7 +152,7 @@ func (a *tfe) getRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	run, err := a.GetRun(r.Context(), id)
+	run, err := a.client.GetRun(r.Context(), id)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -169,7 +203,7 @@ func (a *tfe) getRunQueue(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) listRunsWithOptions(w http.ResponseWriter, r *http.Request, opts ListOptions) {
-	page, err := a.ListRuns(r.Context(), opts)
+	page, err := a.client.ListRuns(r.Context(), opts)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -195,7 +229,7 @@ func (a *tfe) applyRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := a.ApplyRun(r.Context(), id); err != nil {
+	if err := a.client.ApplyRun(r.Context(), id); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
@@ -210,7 +244,7 @@ func (a *tfe) discardRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = a.DiscardRun(r.Context(), id); err != nil {
+	if err = a.client.DiscardRun(r.Context(), id); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
@@ -225,7 +259,7 @@ func (a *tfe) cancelRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = a.CancelRun(r.Context(), id); err != nil {
+	if err = a.client.CancelRun(r.Context(), id); err != nil {
 		if internal.ErrorIs(err, ErrRunCancelNotAllowed, ErrRunForceCancelNotAllowed) {
 			tfeapi.Error(w, err, tfeapi.WithStatus(http.StatusConflict))
 		} else {
@@ -244,7 +278,7 @@ func (a *tfe) forceCancelRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := a.ForceCancelRun(r.Context(), id); err != nil {
+	if err := a.client.ForceCancelRun(r.Context(), id); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
@@ -263,7 +297,7 @@ func (a *tfe) getPlan(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// otf's plan IDs are simply the corresponding run ID
-	run, err := a.GetRun(r.Context(), resource.ConvertTfeID(id, "run"))
+	run, err := a.client.GetRun(r.Context(), resource.ConvertTfeID(id, "run"))
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -289,7 +323,7 @@ func (a *tfe) getPlanJSON(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// otf's plan IDs are simply the corresponding run ID
-	json, err := a.GetRunPlanFile(r.Context(), resource.ConvertTfeID(id, "run"), PlanFormatJSON)
+	json, err := a.client.GetRunPlanFile(r.Context(), resource.ConvertTfeID(id, "run"), PlanFormatJSON)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -308,7 +342,7 @@ func (a *tfe) getApply(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// otf's apply IDs are simply the corresponding run ID
-	run, err := a.GetRun(r.Context(), resource.ConvertTfeID(id, "run"))
+	run, err := a.client.GetRun(r.Context(), resource.ConvertTfeID(id, "run"))
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -320,14 +354,31 @@ func (a *tfe) getApply(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.Respond(w, r, apply, http.StatusOK)
+	a.Responder.Respond(w, r, apply, http.StatusOK)
+}
+
+func (a *tfe) getLogs(w http.ResponseWriter, r *http.Request) {
+	var opts GetChunkOptions
+	if err := decode.All(&opts, r); err != nil {
+		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+	chunk, err := a.client.GetChunk(r.Context(), opts)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+	if _, err := w.Write(chunk.Data); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }
 
 // OTF doesn't implement run events but as of terraform v1.5, the cloud backend
 // makes a call to this endpoint. OTF therefore stubs this endpoint and sends an
 // empty response, to avoid sending a 404 response and triggering an error.
 func (a *tfe) listRunEvents(w http.ResponseWriter, r *http.Request) {
-	a.Respond(w, r, []*TFERunEvent{}, http.StatusOK)
+	a.Responder.Respond(w, r, []*TFERunEvent{}, http.StatusOK)
 }
 
 func (a *tfe) includeCurrentRun(ctx context.Context, v any) ([]any, error) {
@@ -338,7 +389,7 @@ func (a *tfe) includeCurrentRun(ctx context.Context, v any) ([]any, error) {
 	if ws.CurrentRun == nil {
 		return nil, nil
 	}
-	run, err := a.GetRun(ctx, ws.CurrentRun.ID)
+	run, err := a.client.GetRun(ctx, ws.CurrentRun.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -548,7 +599,7 @@ func (a *tfe) toPhaseTimestamps(from []PhaseStatusTimestamp) *TFEPhaseStatusTime
 
 func (a *tfe) logURL(r *http.Request, phase Phase) (string, error) {
 	logs := fmt.Sprintf("/runs/%s/logs/%s", phase.RunID, phase.PhaseType)
-	logs, err := a.Sign(logs, time.Now().Add(time.Hour))
+	logs, err := a.signer.Sign(logs, time.Now().Add(time.Hour))
 	if err != nil {
 		return "", err
 	}
