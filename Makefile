@@ -1,4 +1,7 @@
 LD_FLAGS = '-s -w -X github.com/leg100/otf/internal.Version=edge'
+GOOS ?= linux
+GOARCH ?= amd64
+PLATFORM = $(GOOS)/$(GOARCH)
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
@@ -17,9 +20,9 @@ test:
 
 .PHONY: build
 build:
-	go build \
+	GOOS=$(GOOS) GOARCH=$(GOARCH) go build \
 		-ldflags $(LD_FLAGS) \
-		-o ./_build/linux/amd64/ \
+		-o ./_build/$(GOOS)/$(GOARCH)/ \
 		./cmd/otfd ./cmd/otf-job ./cmd/otf-agent
 
 .PHONY: install
@@ -74,15 +77,15 @@ images: build
 
 .PHONY: image-otfd
 image-otfd: build
-	docker build -f Dockerfile -t leg100/otfd:edge --target otfd _build/
+	docker build -f Dockerfile --platform $(PLATFORM) -t leg100/otfd:edge --target otfd _build/
 
 .PHONY: image-agent
 image-agent: build
-	docker build -f Dockerfile -t leg100/otf-agent:edge --target otf-agent _build/
+	docker build -f Dockerfile --platform $(PLATFORM) -t leg100/otf-agent:edge --target otf-agent _build/
 
 .PHONY: image-job
 image-job: build
-	docker build -f Dockerfile -t leg100/otf-job:edge --target otf-job _build/
+	docker build -f Dockerfile --platform $(PLATFORM) -t leg100/otf-job:edge --target otf-job _build/
 
 # Build and load edge images into kubernetes kind
 .PHONY: load
