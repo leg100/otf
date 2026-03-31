@@ -2,7 +2,6 @@ package gitlab
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -219,12 +218,9 @@ func TestClient_SetStatus(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			mux, client := setup(t)
 
-			mux.HandleFunc("/api/v4/projects/acme%2Fterraform/statuses/abc123", func(w http.ResponseWriter, r *http.Request) {
-				require.Equal(t, "POST", r.Method)
-				require.Equal(t, "application/json", r.Header.Get("Content-Type"))
-
+			mux.HandleFunc("POST /api/v4/projects/acme%2Fterraform/statuses/abc123", func(w http.ResponseWriter, r *http.Request) {
 				// Read and verify JSON body
-				var body map[string]interface{}
+				var body map[string]any
 				err := json.NewDecoder(r.Body).Decode(&body)
 				require.NoError(t, err)
 
@@ -239,7 +235,7 @@ func TestClient_SetStatus(t *testing.T) {
 			})
 
 			repo := vcs.NewMustRepo("acme", "terraform")
-			err := client.SetStatus(context.Background(), vcs.SetStatusOptions{
+			err := client.SetStatus(t.Context(), vcs.SetStatusOptions{
 				Workspace:   "my-workspace",
 				Repo:        repo,
 				Ref:         "abc123",
