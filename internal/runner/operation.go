@@ -83,7 +83,7 @@ type (
 		GetLockFile(ctx context.Context, id resource.TfeID) ([]byte, error)
 		UploadLockFile(ctx context.Context, id resource.TfeID, lockFile []byte) error
 		PutChunk(ctx context.Context, opts runpkg.PutChunkOptions) error
-		GetWorkspace(ctx context.Context, workspaceID resource.TfeID) (*workspace.Workspace, error)
+		GetWorkspace(context.Context, resource.ID) (*workspace.Workspace, error)
 		ListEffectiveVariables(ctx context.Context, runID resource.TfeID) ([]*variable.Variable, error)
 		DownloadConfig(ctx context.Context, id resource.TfeID) ([]byte, error)
 		CreateStateVersion(ctx context.Context, opts state.CreateStateVersionOptions) (*state.Version, error)

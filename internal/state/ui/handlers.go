@@ -31,7 +31,7 @@ type Client interface {
 	RollbackStateVersion(ctx context.Context, id resource.TfeID) (*state.Version, error)
 	DeleteStateVersion(ctx context.Context, id resource.TfeID) error
 	GetPreviousStateVersion(ctx context.Context, sv *state.Version) (*state.Version, error)
-	GetWorkspace(context.Context, resource.TfeID) (*workspace.Workspace, error)
+	GetWorkspace(context.Context, resource.ID) (*workspace.Workspace, error)
 }
 
 func NewHandlers(stateService Client, authorizer authz.Interface) *Handlers {

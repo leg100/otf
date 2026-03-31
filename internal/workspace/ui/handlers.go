@@ -53,12 +53,12 @@ type Handlers struct {
 }
 
 type WorkspaceService interface {
-	GetWorkspace(context.Context, resource.TfeID) (*workspace.Workspace, error)
+	GetWorkspace(context.Context, resource.ID) (*workspace.Workspace, error)
 	WatchWorkspaces(ctx context.Context) (<-chan pubsub.Event[*workspace.Event], func())
 	ListWorkspaces(ctx context.Context, opts workspace.ListOptions) (*resource.Page[*workspace.Workspace], error)
 	ListTags(ctx context.Context, organization organization.Name, opts workspace.ListTagsOptions) (*resource.Page[*workspace.Tag], error)
 	CreateWorkspace(ctx context.Context, opts workspace.CreateOptions) (*workspace.Workspace, error)
-	GetWorkspaceByName(ctx context.Context, organization organization.Name, name string) (*workspace.Workspace, error)
+	GetWorkspaceByName(ctx context.Context, organization resource.ID, name string) (*workspace.Workspace, error)
 	GetWorkspacePolicy(ctx context.Context, workspaceID resource.TfeID) (workspace.Policy, error)
 	UpdateWorkspace(ctx context.Context, workspaceID resource.TfeID, opts workspace.UpdateOptions) (*workspace.Workspace, error)
 	DeleteWorkspace(ctx context.Context, workspaceID resource.TfeID) (*workspace.Workspace, error)

@@ -169,7 +169,7 @@ func (f *fakeFactoryClient) GetOrganization(context.Context, organization.Name) 
 	return f.org, nil
 }
 
-func (f *fakeFactoryClient) GetWorkspace(context.Context, resource.TfeID) (*workspace.Workspace, error) {
+func (f *fakeFactoryClient) GetWorkspace(context.Context, resource.ID) (*workspace.Workspace, error) {
 	return f.ws, nil
 }
 

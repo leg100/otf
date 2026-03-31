@@ -37,11 +37,11 @@ type (
 	}
 
 	tfeClient interface {
-		GetWorkspace(context.Context, resource.TfeID) (*Workspace, error)
+		GetWorkspace(context.Context, resource.ID) (*Workspace, error)
 		WatchWorkspaces(ctx context.Context) (<-chan pubsub.Event[*Event], func())
 		ListWorkspaces(ctx context.Context, opts ListOptions) (*resource.Page[*Workspace], error)
 		CreateWorkspace(ctx context.Context, opts CreateOptions) (*Workspace, error)
-		GetWorkspaceByName(ctx context.Context, organization organization.Name, name string) (*Workspace, error)
+		GetWorkspaceByName(ctx context.Context, organization resource.ID, name string) (*Workspace, error)
 		GetWorkspacePolicy(ctx context.Context, workspaceID resource.TfeID) (Policy, error)
 		UpdateWorkspace(ctx context.Context, workspaceID resource.TfeID, opts UpdateOptions) (*Workspace, error)
 		DeleteWorkspace(ctx context.Context, workspaceID resource.TfeID) (*Workspace, error)

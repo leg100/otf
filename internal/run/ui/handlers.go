@@ -41,7 +41,7 @@ type Client interface {
 	DeleteRun(context.Context, resource.TfeID) error
 	ApplyRun(context.Context, resource.TfeID) error
 	WatchRuns(ctx context.Context) (<-chan pubsub.Event[*runpkg.Event], func())
-	GetWorkspace(context.Context, resource.TfeID) (*workspace.Workspace, error)
+	GetWorkspace(context.Context, resource.ID) (*workspace.Workspace, error)
 	WatchWorkspaces(ctx context.Context) (<-chan pubsub.Event[*workspace.Event], func())
 	GetUser(ctx context.Context, spec user.UserSpec) (*user.User, error)
 	sourceIconGetter

@@ -421,7 +421,7 @@ WHERE w.workspace_id = $1
 	return sql.CollectOneRow(row, scan)
 }
 
-func (db *pgdb) getByName(ctx context.Context, organization organization.Name, workspace string) (*Workspace, error) {
+func (db *pgdb) getByName(ctx context.Context, organization resource.ID, workspace string) (*Workspace, error) {
 	row := db.Query(ctx, `
 SELECT
 	w.*,

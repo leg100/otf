@@ -59,7 +59,7 @@ func (f *fakeCacheDB) listAll(context.Context) ([]*Config, error) {
 	return f.configs, nil
 }
 
-func (f *fakeWorkspaceService) GetWorkspace(context.Context, resource.TfeID) (*workspace.Workspace, error) {
+func (f *fakeWorkspaceService) GetWorkspace(context.Context, resource.ID) (*workspace.Workspace, error) {
 	return nil, nil
 }
 

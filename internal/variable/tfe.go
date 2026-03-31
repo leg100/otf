@@ -39,7 +39,7 @@ type tfeClient interface {
 	CreateVariableSetVariable(ctx context.Context, setID resource.TfeID, opts CreateVariableOptions) (*Variable, error)
 	UpdateVariableSetVariable(ctx context.Context, variableID resource.TfeID, opts UpdateVariableOptions) (*VariableSet, error)
 	DeleteVariableSetVariable(ctx context.Context, variableID resource.TfeID) (*VariableSet, error)
-	GetWorkspace(context.Context, resource.TfeID) (*workspace.Workspace, error)
+	GetWorkspace(context.Context, resource.ID) (*workspace.Workspace, error)
 	ListWorkspaces(ctx context.Context, opts workspace.ListOptions) (*resource.Page[*workspace.Workspace], error)
 
 	ApplySetToWorkspaces(ctx context.Context, setID resource.TfeID, workspaceIDs []resource.TfeID) error

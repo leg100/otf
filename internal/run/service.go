@@ -57,8 +57,8 @@ type (
 
 	serviceClient interface {
 		GetOrganization(ctx context.Context, name organization.Name) (*organization.Organization, error)
-		GetWorkspace(ctx context.Context, workspaceID resource.TfeID) (*workspace.Workspace, error)
-		GetWorkspaceByName(ctx context.Context, organization organization.Name, workspace string) (*workspace.Workspace, error)
+		GetWorkspace(context.Context, resource.ID) (*workspace.Workspace, error)
+		GetWorkspaceByName(ctx context.Context, organization resource.ID, workspace string) (*workspace.Workspace, error)
 		SetWorkspaceLatestRun(ctx context.Context, workspaceID, runID resource.TfeID) (*workspace.Workspace, error)
 		Lock(ctx context.Context, workspaceID resource.TfeID, runID *resource.TfeID) (*workspace.Workspace, error)
 		ListConnectedWorkspaces(ctx context.Context, vcsProviderID resource.TfeID, repoPath vcs.Repo) ([]*workspace.Workspace, error)

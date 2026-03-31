@@ -8,7 +8,6 @@ import (
 	"github.com/leg100/otf/internal/connections"
 	"github.com/leg100/otf/internal/engine"
 	"github.com/leg100/otf/internal/logr"
-	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
@@ -149,7 +148,7 @@ func (s *Service) AfterCreateWorkspace(hook func(context.Context, *Workspace) er
 	s.afterCreateHooks = append(s.afterCreateHooks, hook)
 }
 
-func (s *Service) GetWorkspace(ctx context.Context, workspaceID resource.TfeID) (*Workspace, error) {
+func (s *Service) GetWorkspace(ctx context.Context, workspaceID resource.ID) (*Workspace, error) {
 	subject, err := s.Authorize(ctx, authz.GetWorkspaceAction, workspaceID)
 	if err != nil {
 		return nil, err
@@ -166,7 +165,7 @@ func (s *Service) GetWorkspace(ctx context.Context, workspaceID resource.TfeID) 
 	return ws, nil
 }
 
-func (s *Service) GetWorkspaceByName(ctx context.Context, organization organization.Name, workspace string) (*Workspace, error) {
+func (s *Service) GetWorkspaceByName(ctx context.Context, organization resource.ID, workspace string) (*Workspace, error) {
 	ws, err := s.db.getByName(ctx, organization, workspace)
 	if err != nil {
 		s.Error(err, "retrieving workspace", "organization", organization, "workspace", workspace)

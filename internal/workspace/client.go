@@ -6,7 +6,6 @@ import (
 	"net/url"
 
 	otfhttp "github.com/leg100/otf/internal/http"
-	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 )
 
@@ -18,7 +17,7 @@ type Client struct {
 	*otfhttp.Client
 }
 
-func (c *Client) GetWorkspaceByName(ctx context.Context, organization organization.Name, workspace string) (*Workspace, error) {
+func (c *Client) GetWorkspaceByName(ctx context.Context, organization resource.ID, workspace string) (*Workspace, error) {
 	path := fmt.Sprintf("organizations/%s/workspaces/%s", organization, workspace)
 	req, err := c.NewRequest("GET", path, nil)
 	if err != nil {
@@ -31,7 +30,7 @@ func (c *Client) GetWorkspaceByName(ctx context.Context, organization organizati
 	return &ws, nil
 }
 
-func (c *Client) GetWorkspace(ctx context.Context, workspaceID resource.TfeID) (*Workspace, error) {
+func (c *Client) GetWorkspace(ctx context.Context, workspaceID resource.ID) (*Workspace, error) {
 	path := fmt.Sprintf("workspaces/%s", workspaceID)
 	req, err := c.NewRequest("GET", path, nil)
 	if err != nil {

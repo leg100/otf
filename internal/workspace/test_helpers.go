@@ -60,11 +60,11 @@ func (f *FakeService) ListWorkspaces(ctx context.Context, opts ListOptions) (*re
 	return resource.NewPage(f.Workspaces, opts.PageOptions, nil), nil
 }
 
-func (f *FakeService) GetWorkspace(context.Context, resource.TfeID) (*Workspace, error) {
+func (f *FakeService) GetWorkspace(context.Context, resource.ID) (*Workspace, error) {
 	return f.Workspaces[0], nil
 }
 
-func (f *FakeService) GetWorkspaceByName(context.Context, organization.Name, string) (*Workspace, error) {
+func (f *FakeService) GetWorkspaceByName(context.Context, resource.ID, string) (*Workspace, error) {
 	return f.Workspaces[0], nil
 }
 

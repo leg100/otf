@@ -145,7 +145,7 @@ type fakeReporterWorkspaceClient struct {
 	ws *workspace.Workspace
 }
 
-func (f *fakeReporterWorkspaceClient) GetWorkspace(context.Context, resource.TfeID) (*workspace.Workspace, error) {
+func (f *fakeReporterWorkspaceClient) GetWorkspace(context.Context, resource.ID) (*workspace.Workspace, error) {
 	return f.ws, nil
 }
 

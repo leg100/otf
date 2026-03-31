@@ -40,7 +40,7 @@ type Client interface {
 	CreateVariableSetVariable(ctx context.Context, setID resource.TfeID, opts variable.CreateVariableOptions) (*variable.Variable, error)
 	UpdateVariableSetVariable(ctx context.Context, variableID resource.TfeID, opts variable.UpdateVariableOptions) (*variable.VariableSet, error)
 	DeleteVariableSetVariable(ctx context.Context, variableID resource.TfeID) (*variable.VariableSet, error)
-	GetWorkspace(context.Context, resource.TfeID) (*workspace.Workspace, error)
+	GetWorkspace(context.Context, resource.ID) (*workspace.Workspace, error)
 	ListWorkspaces(ctx context.Context, opts workspace.ListOptions) (*resource.Page[*workspace.Workspace], error)
 }
 

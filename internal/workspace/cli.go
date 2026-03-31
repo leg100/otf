@@ -19,7 +19,7 @@ type CLI struct {
 
 type cliClient interface {
 	ListWorkspaces(ctx context.Context, opts ListOptions) (*resource.Page[*Workspace], error)
-	GetWorkspaceByName(ctx context.Context, organization organization.Name, workspace string) (*Workspace, error)
+	GetWorkspaceByName(ctx context.Context, organization resource.ID, workspace string) (*Workspace, error)
 	UpdateWorkspace(ctx context.Context, workspaceID resource.TfeID, opts UpdateOptions) (*Workspace, error)
 	Lock(ctx context.Context, workspaceID resource.TfeID, runID *resource.TfeID) (*Workspace, error)
 	Unlock(ctx context.Context, workspaceID resource.TfeID, runID *resource.TfeID, force bool) (*Workspace, error)

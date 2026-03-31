@@ -45,7 +45,7 @@ type tfeClient interface {
 	ApplyRun(context.Context, resource.TfeID) error
 	WatchRuns(ctx context.Context) (<-chan pubsub.Event[*Event], func())
 	GetRunPlanFile(ctx context.Context, id resource.TfeID, format PlanFormat) ([]byte, error)
-	GetWorkspace(ctx context.Context, workspaceID resource.TfeID) (*workspace.Workspace, error)
+	GetWorkspace(context.Context, resource.ID) (*workspace.Workspace, error)
 }
 
 func NewTFEAPI(

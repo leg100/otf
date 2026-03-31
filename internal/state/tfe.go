@@ -38,7 +38,7 @@ type tfeClient interface {
 	RollbackStateVersion(ctx context.Context, id resource.TfeID) (*Version, error)
 	DeleteStateVersion(ctx context.Context, id resource.TfeID) error
 	GetPreviousStateVersion(ctx context.Context, sv *Version) (*Version, error)
-	GetWorkspaceByName(ctx context.Context, organization organization.Name, workspace string) (*workspace.Workspace, error)
+	GetWorkspaceByName(ctx context.Context, organization resource.ID, workspace string) (*workspace.Workspace, error)
 	UploadState(ctx context.Context, svID resource.TfeID, state []byte) error
 	DownloadState(ctx context.Context, svID resource.TfeID) ([]byte, error)
 	GetStateOutput(ctx context.Context, outputID resource.TfeID) (*Output, error)

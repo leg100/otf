@@ -33,7 +33,7 @@ type Client interface {
 	CreateAgentToken(ctx context.Context, poolID resource.TfeID, opts runner.CreateAgentTokenOptions) (*runner.AgentToken, []byte, error)
 	ListAgentTokens(ctx context.Context, poolID resource.TfeID) ([]*runner.AgentToken, error)
 	DeleteAgentToken(ctx context.Context, tokenID resource.TfeID) (*runner.AgentToken, error)
-	GetWorkspace(context.Context, resource.TfeID) (*workspace.Workspace, error)
+	GetWorkspace(context.Context, resource.ID) (*workspace.Workspace, error)
 	ListWorkspaces(ctx context.Context, opts workspace.ListOptions) (*resource.Page[*workspace.Workspace], error)
 }
 

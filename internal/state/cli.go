@@ -30,7 +30,7 @@ type cliStateService interface {
 }
 
 type cliWorkspaceService interface {
-	GetWorkspaceByName(ctx context.Context, organization organization.Name, workspace string) (*workspace.Workspace, error)
+	GetWorkspaceByName(ctx context.Context, organization resource.ID, workspace string) (*workspace.Workspace, error)
 }
 
 func NewCommand(client *otfhttp.Client) *cobra.Command {

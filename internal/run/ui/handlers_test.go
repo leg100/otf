@@ -190,7 +190,7 @@ func (f *fakeRunClient) TailRun(context.Context, run.TailOptions) (<-chan run.Ch
 	return f.chunks, nil
 }
 
-func (f *fakeRunClient) GetWorkspace(context.Context, resource.TfeID) (*workspace.Workspace, error) {
+func (f *fakeRunClient) GetWorkspace(context.Context, resource.ID) (*workspace.Workspace, error) {
 	return f.ws, nil
 }
 
