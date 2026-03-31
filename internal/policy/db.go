@@ -198,29 +198,6 @@ ORDER BY ps.name ASC, p.name ASC
 	return sql.CollectRows(rows, db.scanPolicy)
 }
 
-func (db *pgdb) listPoliciesByWorkspace(ctx context.Context, workspaceID resource.TfeID) ([]*Policy, error) {
-	rows := db.Query(ctx, `
-SELECT
-	p.policy_id,
-	p.policy_set_id,
-	p.created_at,
-	p.updated_at,
-	p.name,
-	p.description,
-	p.enforcement_level,
-	p.source,
-	p.path,
-	ps.organization_name,
-	ps.name AS policy_set_name
-FROM policy_set_workspaces psw
-JOIN policy_sets ps ON ps.policy_set_id = psw.policy_set_id
-JOIN policies p ON p.policy_set_id = ps.policy_set_id
-WHERE psw.workspace_id = $1
-ORDER BY ps.name ASC, p.name ASC
-`, workspaceID)
-	return sql.CollectRows(rows, db.scanPolicy)
-}
-
 func (db *pgdb) getPolicy(ctx context.Context, id resource.TfeID) (*Policy, error) {
 	rows := db.Query(ctx, `
 SELECT
@@ -361,30 +338,6 @@ WHERE policy_module_id = $5
 func (db *pgdb) deletePolicyModule(ctx context.Context, id resource.TfeID) error {
 	_, err := db.Exec(ctx, `DELETE FROM policy_modules WHERE policy_module_id = $1`, id)
 	return err
-}
-
-func (db *pgdb) setPolicySetWorkspaces(ctx context.Context, setID resource.TfeID, workspaceIDs []resource.TfeID) error {
-	if _, err := db.Exec(ctx, `DELETE FROM policy_set_workspaces WHERE policy_set_id = $1`, setID); err != nil {
-		return err
-	}
-	for _, workspaceID := range workspaceIDs {
-		if _, err := db.Exec(ctx, `
-INSERT INTO policy_set_workspaces (policy_set_id, workspace_id) VALUES ($1, $2)
-`, setID, workspaceID); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (db *pgdb) listPolicySetWorkspaceIDs(ctx context.Context, setID resource.TfeID) ([]resource.TfeID, error) {
-	rows := db.Query(ctx, `
-SELECT workspace_id
-FROM policy_set_workspaces
-WHERE policy_set_id = $1
-ORDER BY workspace_id
-`, setID)
-	return sql.CollectRows(rows, pgx.RowTo[resource.TfeID])
 }
 
 func (db *pgdb) replacePolicyChecks(ctx context.Context, runID resource.TfeID, checks []*PolicyCheck) error {

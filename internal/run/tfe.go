@@ -571,20 +571,6 @@ func (a *tfe) toApply(apply Phase, r *http.Request) (*TFEApply, error) {
 	}, nil
 }
 
-func (a *tfe) toSentinel(phase Phase, r *http.Request) (*TFESentinel, error) {
-	logURL, err := a.logURL(r, phase)
-	if err != nil {
-		return nil, err
-	}
-
-	return &TFESentinel{
-		ID:               resource.ConvertTfeID(phase.RunID, "sentinel"),
-		LogReadURL:       logURL,
-		Status:           string(phase.Status),
-		StatusTimestamps: a.toPhaseTimestamps(phase.StatusTimestamps),
-	}, nil
-}
-
 func (a *tfe) toResourceReport(from *Report) TFEResourceReport {
 	var to TFEResourceReport
 	if from != nil {
