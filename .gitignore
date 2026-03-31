@@ -111,3 +111,5 @@ Session.vim
 !**/testdata/**
 # google cloud service account key for IAP testing
 /internal/integration/testdata/google-account-key-iap-testing.json
+# macOS system files
+.DS_Store
