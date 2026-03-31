@@ -143,7 +143,7 @@ func TestRun_States(t *testing.T) {
 	})
 
 	t.Run("start sentinel", func(t *testing.T) {
-		run := newTestRun(t, ctx, CreateOptions{})
+		run := newTestRun(t, t.Context(), CreateOptions{})
 		run.Status = runstatus.Planned
 
 		require.NoError(t, run.Start())
@@ -154,7 +154,7 @@ func TestRun_States(t *testing.T) {
 	})
 
 	t.Run("finish sentinel", func(t *testing.T) {
-		run := newTestRun(t, ctx, CreateOptions{})
+		run := newTestRun(t, t.Context(), CreateOptions{})
 		run.Status = runstatus.PolicyChecking
 		run.Sentinel.Status = PhaseRunning
 
