@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.5.19](https://github.com/leg100/otf/compare/v0.5.18...v0.5.19) (2026-03-30)
+
+
+### Features
+
+* Add compatibility for TFC environment variables. ([#923](https://github.com/leg100/otf/issues/923)) ([b3f9aa6](https://github.com/leg100/otf/commit/b3f9aa68a9b2106dc8c82ae0206128f438e548cd))
+* add job image flag for kubernetes executor ([#922](https://github.com/leg100/otf/issues/922)) ([0010dcd](https://github.com/leg100/otf/commit/0010dcd707938b047cb7a67a3a0ea42bfcd5b2d7))
+
+
+### Bug Fixes
+
+* /healthz returns 503 when db unreachable ([#924](https://github.com/leg100/otf/issues/924)) ([813ab87](https://github.com/leg100/otf/commit/813ab87ec873438d4fde19491cee6a88b98322cc))
+* **auth:** don't log error if request doesn't have valid jwt ([3fd9dc5](https://github.com/leg100/otf/commit/3fd9dc51f9660ca22b6ee25ac59cb8d9bbb2b2ef))
+* support subgroups in GitLab vcs provider. ([#920](https://github.com/leg100/otf/issues/920)) ([14c97ef](https://github.com/leg100/otf/commit/14c97ef5146d720201d805386e2d53fe2702c79f))
+* **tests:** IAP test breaks if enabled ([fce6f46](https://github.com/leg100/otf/commit/fce6f46654992e28ddb2f4b543914409d85a72e8))
+* **ui:** path to daisyui.js in tailwind config is wrong ([efe55a1](https://github.com/leg100/otf/commit/efe55a177f813a42fd8916a59602ce32ab3cccb2))
+
+
+### Miscellaneous
+
+* bump dependencies ([0d251ed](https://github.com/leg100/otf/commit/0d251ed5d8bb498131d1539919631b8f6937708b))
+* bump helm charts with app version v0.5.18 ([b44b1c4](https://github.com/leg100/otf/commit/b44b1c4d2a866f1111c144260e5dae9e803a53cb))
+
 ## [0.5.18](https://github.com/leg100/otf/compare/v0.5.17...v0.5.18) (2026-03-23)
 
 
