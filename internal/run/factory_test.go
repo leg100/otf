@@ -19,8 +19,6 @@ import (
 )
 
 func TestFactory(t *testing.T) {
-	ctx := context.Background()
-
 	t.Run("defaults", func(t *testing.T) {
 		f := newTestFactory(
 			&organization.Organization{},
@@ -28,7 +26,7 @@ func TestFactory(t *testing.T) {
 			&configversion.ConfigurationVersion{},
 		)
 
-		got, err := f.NewRun(ctx, resource.TfeID{}, CreateOptions{})
+		got, err := f.NewRun(t.Context(), resource.TfeID{}, CreateOptions{})
 		require.NoError(t, err)
 
 		assert.Equal(t, runstatus.Pending, got.Status)
@@ -46,7 +44,7 @@ func TestFactory(t *testing.T) {
 			&configversion.ConfigurationVersion{Speculative: true},
 		)
 
-		got, err := f.NewRun(ctx, resource.TfeID{}, CreateOptions{})
+		got, err := f.NewRun(t.Context(), resource.TfeID{}, CreateOptions{})
 		require.NoError(t, err)
 
 		assert.True(t, got.PlanOnly)
@@ -59,7 +57,7 @@ func TestFactory(t *testing.T) {
 			&configversion.ConfigurationVersion{},
 		)
 
-		got, err := f.NewRun(ctx, resource.TfeID{}, CreateOptions{PlanOnly: new(true)})
+		got, err := f.NewRun(t.Context(), resource.TfeID{}, CreateOptions{PlanOnly: new(true)})
 		require.NoError(t, err)
 
 		assert.True(t, got.PlanOnly)
@@ -72,7 +70,7 @@ func TestFactory(t *testing.T) {
 			&configversion.ConfigurationVersion{},
 		)
 
-		got, err := f.NewRun(ctx, resource.TfeID{}, CreateOptions{})
+		got, err := f.NewRun(t.Context(), resource.TfeID{}, CreateOptions{})
 		require.NoError(t, err)
 
 		assert.True(t, got.AutoApply)
@@ -85,7 +83,7 @@ func TestFactory(t *testing.T) {
 			&configversion.ConfigurationVersion{},
 		)
 
-		got, err := f.NewRun(ctx, resource.TfeID{}, CreateOptions{
+		got, err := f.NewRun(t.Context(), resource.TfeID{}, CreateOptions{
 			AutoApply: new(true),
 		})
 		require.NoError(t, err)
@@ -100,7 +98,7 @@ func TestFactory(t *testing.T) {
 			&configversion.ConfigurationVersion{},
 		)
 
-		got, err := f.NewRun(ctx, resource.TfeID{}, CreateOptions{})
+		got, err := f.NewRun(t.Context(), resource.TfeID{}, CreateOptions{})
 		require.NoError(t, err)
 
 		assert.True(t, got.CostEstimationEnabled)
@@ -121,7 +119,7 @@ func TestFactory(t *testing.T) {
 			&configversion.ConfigurationVersion{},
 		)
 
-		got, err := f.NewRun(ctx, resource.TfeID{}, CreateOptions{})
+		got, err := f.NewRun(t.Context(), resource.TfeID{}, CreateOptions{})
 		require.NoError(t, err)
 
 		// fake config version service sets the config version ID to the
@@ -139,7 +137,7 @@ func TestFactory(t *testing.T) {
 		)
 		f.client.(*fakeFactoryClient).latestVersion = "2.0.0"
 
-		got, err := f.NewRun(ctx, resource.TfeID{}, CreateOptions{})
+		got, err := f.NewRun(t.Context(), resource.TfeID{}, CreateOptions{})
 		require.NoError(t, err)
 
 		assert.Equal(t, "2.0.0", got.EngineVersion)

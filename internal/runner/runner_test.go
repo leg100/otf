@@ -25,7 +25,7 @@ func TestRunner(t *testing.T) {
 	require.NoError(t, err)
 
 	// Terminate runner at end of test
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	t.Cleanup(cancel)
 
 	startErr := make(chan error)

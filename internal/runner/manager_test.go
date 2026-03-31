@@ -1,7 +1,6 @@
 package runner
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -44,7 +43,7 @@ func TestManager(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			svc := &fakeService{}
 			m := &manager{client: svc}
-			err := m.update(context.Background(), tt.runner)
+			err := m.update(t.Context(), tt.runner)
 			require.NoError(t, err)
 			assert.Equal(t, tt.want, svc.status)
 		})

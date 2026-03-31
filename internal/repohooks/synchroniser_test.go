@@ -1,7 +1,6 @@
 package repohooks
 
 import (
-	"context"
 	"testing"
 
 	"github.com/leg100/otf/internal/logr"
@@ -67,7 +66,7 @@ func TestSynchroniser(t *testing.T) {
 			client := &fakeCloudClient{hook: tt.cloud}
 			db := &fakeDB{hook: tt.got}
 			synchr := &synchroniser{Logger: logr.Discard(), syncdb: db}
-			require.NoError(t, synchr.sync(context.Background(), client, tt.got))
+			require.NoError(t, synchr.sync(t.Context(), client, tt.got))
 			assert.Equal(t, tt.want, tt.got)
 		})
 	}

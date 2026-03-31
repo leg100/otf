@@ -1,7 +1,6 @@
 package run
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -14,19 +13,16 @@ import (
 )
 
 func TestRun_New_CreatedBy(t *testing.T) {
-	ctx := context.Background()
 	user := user.NewTestUser(t)
-	ctx = authz.AddSubjectToContext(ctx, user)
+	ctx := authz.AddSubjectToContext(t.Context(), user)
 	run := newTestRun(t, ctx, CreateOptions{})
 	assert.NotNil(t, run.CreatedBy)
 	assert.Equal(t, user.Username, *run.CreatedBy)
 }
 
 func TestRun_States(t *testing.T) {
-	ctx := context.Background()
-
 	t.Run("pending", func(t *testing.T) {
-		run := newTestRun(t, ctx, CreateOptions{})
+		run := newTestRun(t, t.Context(), CreateOptions{})
 
 		require.Equal(t, runstatus.Pending, run.Status)
 		require.Equal(t, PhasePending, run.Plan.Status)
@@ -35,7 +31,7 @@ func TestRun_States(t *testing.T) {
 	})
 
 	t.Run("enqueue plan", func(t *testing.T) {
-		run := newTestRun(t, ctx, CreateOptions{})
+		run := newTestRun(t, t.Context(), CreateOptions{})
 
 		require.NoError(t, run.EnqueuePlan())
 
@@ -46,7 +42,7 @@ func TestRun_States(t *testing.T) {
 	})
 
 	t.Run("start plan", func(t *testing.T) {
-		run := newTestRun(t, ctx, CreateOptions{})
+		run := newTestRun(t, t.Context(), CreateOptions{})
 		run.Status = runstatus.PlanQueued
 
 		require.NoError(t, run.Start())
@@ -58,7 +54,7 @@ func TestRun_States(t *testing.T) {
 	})
 
 	t.Run("finish plan", func(t *testing.T) {
-		run := newTestRun(t, ctx, CreateOptions{})
+		run := newTestRun(t, t.Context(), CreateOptions{})
 		run.Status = runstatus.Planning
 
 		_, err := run.Finish(PlanPhase, PhaseFinishOptions{})
@@ -71,7 +67,7 @@ func TestRun_States(t *testing.T) {
 	})
 
 	t.Run("finish plan with errors", func(t *testing.T) {
-		run := newTestRun(t, ctx, CreateOptions{})
+		run := newTestRun(t, t.Context(), CreateOptions{})
 		run.Status = runstatus.Planning
 
 		_, err := run.Finish(PlanPhase, PhaseFinishOptions{Errored: true})
@@ -84,7 +80,7 @@ func TestRun_States(t *testing.T) {
 	})
 
 	t.Run("finish plan with resource changes", func(t *testing.T) {
-		run := newTestRun(t, ctx, CreateOptions{})
+		run := newTestRun(t, t.Context(), CreateOptions{})
 		run.Status = runstatus.Planning
 
 		run.Plan.ResourceReport = &Report{Additions: 1}
@@ -99,7 +95,7 @@ func TestRun_States(t *testing.T) {
 	})
 
 	t.Run("finish plan with output changes", func(t *testing.T) {
-		run := newTestRun(t, ctx, CreateOptions{})
+		run := newTestRun(t, t.Context(), CreateOptions{})
 		run.Status = runstatus.Planning
 
 		run.Plan.OutputReport = &Report{Additions: 1}
@@ -114,7 +110,7 @@ func TestRun_States(t *testing.T) {
 	})
 
 	t.Run("finish plan with changes on run with autoapply enabled", func(t *testing.T) {
-		run := newTestRun(t, ctx, CreateOptions{AutoApply: new(true)})
+		run := newTestRun(t, t.Context(), CreateOptions{AutoApply: new(true)})
 		run.Status = runstatus.Planning
 
 		run.Plan.ResourceReport = &Report{Additions: 1}
@@ -130,7 +126,7 @@ func TestRun_States(t *testing.T) {
 	})
 
 	t.Run("finish plan with cost estimation enabled", func(t *testing.T) {
-		run := newTestRun(t, ctx, CreateOptions{})
+		run := newTestRun(t, t.Context(), CreateOptions{})
 		run.CostEstimationEnabled = true
 		run.Status = runstatus.Planning
 
@@ -170,7 +166,7 @@ func TestRun_States(t *testing.T) {
 	})
 
 	t.Run("enqueue apply", func(t *testing.T) {
-		run := newTestRun(t, ctx, CreateOptions{})
+		run := newTestRun(t, t.Context(), CreateOptions{})
 		run.Status = runstatus.Planned
 
 		require.NoError(t, run.EnqueueApply())
@@ -180,7 +176,7 @@ func TestRun_States(t *testing.T) {
 	})
 
 	t.Run("start apply", func(t *testing.T) {
-		run := newTestRun(t, ctx, CreateOptions{})
+		run := newTestRun(t, t.Context(), CreateOptions{})
 		run.Status = runstatus.ApplyQueued
 
 		require.NoError(t, run.Start())
@@ -190,7 +186,7 @@ func TestRun_States(t *testing.T) {
 	})
 
 	t.Run("finish apply", func(t *testing.T) {
-		run := newTestRun(t, ctx, CreateOptions{})
+		run := newTestRun(t, t.Context(), CreateOptions{})
 		run.Status = runstatus.Applying
 
 		_, err := run.Finish(ApplyPhase, PhaseFinishOptions{})
@@ -201,7 +197,7 @@ func TestRun_States(t *testing.T) {
 	})
 
 	t.Run("finish apply with errors", func(t *testing.T) {
-		run := newTestRun(t, ctx, CreateOptions{})
+		run := newTestRun(t, t.Context(), CreateOptions{})
 		run.Status = runstatus.Applying
 
 		_, err := run.Finish(ApplyPhase, PhaseFinishOptions{Errored: true})
@@ -212,7 +208,7 @@ func TestRun_States(t *testing.T) {
 	})
 
 	t.Run("cancel pending run", func(t *testing.T) {
-		run := newTestRun(t, ctx, CreateOptions{})
+		run := newTestRun(t, t.Context(), CreateOptions{})
 		err := run.Cancel(true, false)
 		require.NoError(t, err)
 		// no signal should be sent
@@ -222,7 +218,7 @@ func TestRun_States(t *testing.T) {
 	})
 
 	t.Run("cancel planning run should indicate signal be sent", func(t *testing.T) {
-		run := newTestRun(t, ctx, CreateOptions{})
+		run := newTestRun(t, t.Context(), CreateOptions{})
 		run.Status = runstatus.Planning
 		err := run.Cancel(true, false)
 		require.NoError(t, err)
@@ -231,7 +227,7 @@ func TestRun_States(t *testing.T) {
 	})
 
 	t.Run("when non-user cancels a planning run, it should be placed into canceled state", func(t *testing.T) {
-		run := newTestRun(t, ctx, CreateOptions{})
+		run := newTestRun(t, t.Context(), CreateOptions{})
 		run.Status = runstatus.Planning
 		err := run.Cancel(false, false)
 		require.NoError(t, err)
@@ -241,7 +237,7 @@ func TestRun_States(t *testing.T) {
 	})
 
 	t.Run("user cannot cancel a run twice", func(t *testing.T) {
-		run := newTestRun(t, ctx, CreateOptions{})
+		run := newTestRun(t, t.Context(), CreateOptions{})
 		run.Status = runstatus.Planning
 		err := run.Cancel(true, false)
 		require.NoError(t, err)
@@ -250,14 +246,14 @@ func TestRun_States(t *testing.T) {
 	})
 
 	t.Run("cannot force cancel a run when no previous attempt has been made to cancel run gracefully", func(t *testing.T) {
-		run := newTestRun(t, ctx, CreateOptions{})
+		run := newTestRun(t, t.Context(), CreateOptions{})
 		run.Status = runstatus.Planning
 		err := run.Cancel(true, true)
 		assert.Equal(t, ErrRunForceCancelNotAllowed, err)
 	})
 
 	t.Run("force cancel run when graceful cancel has already been attempted and cool off period has elapsed", func(t *testing.T) {
-		run := newTestRun(t, ctx, CreateOptions{})
+		run := newTestRun(t, t.Context(), CreateOptions{})
 		run.Status = runstatus.Planning
 		// gracefully canceled 11 seconds ago
 		run.CancelSignaledAt = new(time.Now().Add(-11 * time.Second))
@@ -268,7 +264,7 @@ func TestRun_States(t *testing.T) {
 	})
 
 	t.Run("non-user cannot force cancel a run", func(t *testing.T) {
-		run := newTestRun(t, ctx, CreateOptions{})
+		run := newTestRun(t, t.Context(), CreateOptions{})
 		run.Status = runstatus.Planning
 		err := run.Cancel(false, true)
 		assert.Equal(t, ErrRunForceCancelNotAllowed, err)

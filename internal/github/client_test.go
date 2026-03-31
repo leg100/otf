@@ -2,7 +2,6 @@ package github
 
 import (
 	"bytes"
-	"context"
 	"os"
 	"path"
 	"testing"
@@ -19,11 +18,10 @@ import (
 )
 
 func TestGetUser(t *testing.T) {
-	ctx := context.Background()
 	username := user.MustUsername("bobby")
 	client := newTestServerClient(t, testserver.WithUsername(username))
 
-	got, err := client.GetCurrentUser(ctx)
+	got, err := client.GetCurrentUser(t.Context())
 	require.NoError(t, err)
 
 	want := authenticator.UserInfo{Username: username}
@@ -31,7 +29,6 @@ func TestGetUser(t *testing.T) {
 }
 
 func TestGetDefaultBranch(t *testing.T) {
-	ctx := context.Background()
 	want, err := os.ReadFile("../testdata/github.tar.gz")
 	require.NoError(t, err)
 	client := newTestServerClient(t,
@@ -40,14 +37,13 @@ func TestGetDefaultBranch(t *testing.T) {
 		testserver.WithArchive(want),
 	)
 
-	got, err := client.GetDefaultBranch(ctx, "acme/terraform")
+	got, err := client.GetDefaultBranch(t.Context(), "acme/terraform")
 	require.NoError(t, err)
 
 	assert.Equal(t, "master", got)
 }
 
 func TestGetRepoTarball(t *testing.T) {
-	ctx := context.Background()
 	want, err := os.ReadFile("../testdata/github.tar.gz")
 	require.NoError(t, err)
 	client := newTestServerClient(t,
@@ -55,7 +51,7 @@ func TestGetRepoTarball(t *testing.T) {
 		testserver.WithArchive(want),
 	)
 
-	got, ref, err := client.GetRepoTarball(ctx, vcs.GetRepoTarballOptions{
+	got, ref, err := client.GetRepoTarball(t.Context(), vcs.GetRepoTarballOptions{
 		Repo: vcs.NewMustRepo("acme", "terraform"),
 	})
 	require.NoError(t, err)
@@ -68,13 +64,11 @@ func TestGetRepoTarball(t *testing.T) {
 }
 
 func TestCreateWebhook(t *testing.T) {
-	ctx := context.Background()
-
 	client := newTestServerClient(t,
 		testserver.WithRepo(vcs.NewMustRepo("acme", "terraform")),
 	)
 
-	_, err := client.CreateWebhook(ctx, vcs.CreateWebhookOptions{
+	_, err := client.CreateWebhook(t.Context(), vcs.CreateWebhookOptions{
 		Repo:   vcs.NewMustRepo("acme", "terraform"),
 		Secret: "me-secret",
 	})
@@ -82,8 +76,6 @@ func TestCreateWebhook(t *testing.T) {
 }
 
 func TestGetWebhook(t *testing.T) {
-	ctx := context.Background()
-
 	client := newTestServerClient(t,
 		testserver.WithRepo(vcs.NewMustRepo("acme", "terraform")),
 		testserver.WithHook(testserver.Hook{
@@ -95,7 +87,7 @@ func TestGetWebhook(t *testing.T) {
 		}),
 	)
 
-	_, err := client.GetWebhook(ctx, vcs.GetWebhookOptions{
+	_, err := client.GetWebhook(t.Context(), vcs.GetWebhookOptions{
 		Repo: vcs.NewMustRepo("acme", "terraform"),
 		ID:   "123",
 	})

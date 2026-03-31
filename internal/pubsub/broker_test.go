@@ -14,10 +14,9 @@ type foo struct {
 }
 
 func TestBroker_Subscribe(t *testing.T) {
-	ctx := context.Background()
 	broker := NewBroker[*foo](logr.Discard(), &fakeListener{}, "foos")
 
-	sub, unsub := broker.Subscribe(ctx)
+	sub, unsub := broker.Subscribe(t.Context())
 	assert.Equal(t, 1, len(broker.subs))
 
 	unsub()
@@ -26,7 +25,7 @@ func TestBroker_Subscribe(t *testing.T) {
 }
 
 func TestBroker_UnsubscribeViaContext(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	broker := NewBroker[*foo](logr.Discard(), &fakeListener{}, "foos")
 
 	sub, _ := broker.Subscribe(ctx)
@@ -38,10 +37,9 @@ func TestBroker_UnsubscribeViaContext(t *testing.T) {
 }
 
 func TestBroker_forward(t *testing.T) {
-	ctx := context.Background()
 	broker := NewBroker[*foo](logr.Discard(), &fakeListener{}, "foos")
 
-	sub, unsub := broker.Subscribe(ctx)
+	sub, unsub := broker.Subscribe(t.Context())
 	defer unsub()
 
 	broker.forward(sql.Event{Action: sql.InsertAction, Record: []byte(`{"bar": "baz"}`)})
@@ -53,10 +51,9 @@ func TestBroker_forward(t *testing.T) {
 }
 
 func TestBroker_UnsubscribeFullSubscriber(t *testing.T) {
-	ctx := context.Background()
 	broker := NewBroker[*foo](logr.Discard(), &fakeListener{}, "foos")
 
-	broker.Subscribe(ctx)
+	broker.Subscribe(t.Context())
 	assert.Equal(t, 1, len(broker.subs))
 
 	// deliberating publish more than subBufferSize events to trigger broker to

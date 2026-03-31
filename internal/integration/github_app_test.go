@@ -1,7 +1,6 @@
 package integration
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
 	"net/url"
@@ -28,7 +27,7 @@ func TestIntegration_GithubAppsUI(t *testing.T) {
 	integrationTest(t)
 
 	// creating a github app requires site-admin role
-	ctx := authz.AddSubjectToContext(context.Background(), &user.SiteAdmin)
+	ctx := authz.AddSubjectToContext(t.Context(), &user.SiteAdmin)
 
 	// these tests submit the create github app form using different
 	// combinations of form fields, and then checking that a (stub) github server

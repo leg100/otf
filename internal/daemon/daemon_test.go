@@ -1,7 +1,6 @@
 package daemon
 
 import (
-	"context"
 	"errors"
 	"testing"
 
@@ -12,6 +11,6 @@ import (
 
 func TestDaemon_MissingSecretError(t *testing.T) {
 	var missing *internal.ErrMissingParameter
-	_, err := New(context.Background(), logr.Discard(), Config{})
+	_, err := New(t.Context(), logr.Discard(), Config{})
 	require.True(t, errors.As(err, &missing))
 }

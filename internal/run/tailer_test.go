@@ -11,8 +11,6 @@ import (
 )
 
 func TestTail(t *testing.T) {
-	ctx := context.Background()
-
 	t.Run("receive chunk event", func(t *testing.T) {
 		sub := make(chan pubsub.Event[Chunk])
 		app := &tailer{
@@ -20,7 +18,7 @@ func TestTail(t *testing.T) {
 			broker: &fakeSubService{stream: sub},
 		}
 
-		stream, err := app.Tail(ctx, TailOptions{
+		stream, err := app.Tail(t.Context(), TailOptions{
 			RunID: testutils.ParseID(t, "run-123"),
 			Phase: PlanPhase,
 		})
@@ -50,7 +48,7 @@ func TestTail(t *testing.T) {
 				chunk: want,
 			},
 		}
-		stream, err := tailer.Tail(ctx, TailOptions{
+		stream, err := tailer.Tail(t.Context(), TailOptions{
 			RunID: testutils.ParseID(t, "run-123"),
 			Phase: PlanPhase,
 		})
@@ -71,7 +69,7 @@ func TestTail(t *testing.T) {
 			client: &fakeTailerClient{chunk: want},
 		}
 
-		stream, err := svc.Tail(ctx, TailOptions{
+		stream, err := svc.Tail(t.Context(), TailOptions{
 			RunID: testutils.ParseID(t, "run-123"),
 			Phase: PlanPhase,
 		})
@@ -112,7 +110,7 @@ func TestTail(t *testing.T) {
 			client: &fakeTailerClient{chunk: want},
 		}
 
-		stream, err := svc.Tail(ctx, TailOptions{
+		stream, err := svc.Tail(t.Context(), TailOptions{
 			RunID: testutils.ParseID(t, "run-123"),
 			Phase: PlanPhase,
 		})
@@ -149,7 +147,7 @@ func TestTail(t *testing.T) {
 			client: &fakeTailerClient{},
 		}
 
-		stream, err := svc.Tail(ctx, TailOptions{
+		stream, err := svc.Tail(t.Context(), TailOptions{
 			RunID: testutils.ParseID(t, "run-123"),
 			Phase: PlanPhase,
 		})
