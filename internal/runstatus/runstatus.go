@@ -18,6 +18,10 @@ const (
 	ForceCanceled      Status = "force_canceled"
 	Pending            Status = "pending"
 	PlanQueued         Status = "plan_queued"
+	PolicyChecking     Status = "policy_checking"
+	PolicyChecked      Status = "policy_checked"
+	PolicySoftFailed   Status = "policy_soft_failed"
+	PolicyFailed       Status = "policy_failed"
 	Planned            Status = "planned"
 	PlannedAndFinished Status = "planned_and_finished"
 	Planning           Status = "planning"
@@ -41,6 +45,10 @@ func All() []Status {
 		ForceCanceled,
 		Pending,
 		PlanQueued,
+		PolicyChecking,
+		PolicyChecked,
+		PolicySoftFailed,
+		PolicyFailed,
 		Planned,
 		PlannedAndFinished,
 		Planning,
@@ -50,7 +58,7 @@ func All() []Status {
 // Done determines whether status is an end state, e.g. applied, discarded, etc.
 func Done(status Status) bool {
 	switch status {
-	case Applied, PlannedAndFinished, Discarded, Canceled, ForceCanceled, Errored:
+	case Applied, PlannedAndFinished, PolicyFailed, Discarded, Canceled, ForceCanceled, Errored:
 		return true
 	default:
 		return false

@@ -3,6 +3,7 @@ package ui
 import (
 	"fmt"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/policy"
 	runpkg "github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/ui/helpers"
@@ -40,7 +41,9 @@ type getRunProps struct {
 	run       *runpkg.Run
 	ws        *workspace.Workspace
 	planLogs  runpkg.Chunk
+	sentinelLogs runpkg.Chunk
 	applyLogs runpkg.Chunk
+	policyChecks []*policy.PolicyCheck
 }
 
 templ (t *templates) getRun(props getRunProps) {
@@ -100,6 +103,60 @@ templ (t *templates) getRun(props getRunProps) {
 					<div id="tailed-plan-logs"></div>
 				</div>
 			</details>
+			<details class="collapse collapse-arrow border-base-content/20 border" id="sentinel" open>
+				<summary class="collapse-title">
+					<div class="flex gap-2 items-center">
+						<span class="font-semibold">Sentinel</span>
+						<div sse-swap={ sentinelStatusUpdate }>
+							@phaseStatus(props.run.Sentinel)
+						</div>
+						<div sse-swap={ sentinelTimeUpdate }>
+							@runningTime(&props.run.Sentinel)
+						</div>
+						if len(props.policyChecks) > 0 {
+							<span class="badge badge-soft">{ fmt.Sprintf("%d", len(props.policyChecks)) }</span>
+						}
+					</div>
+				</summary>
+				<div class="collapse-content flex flex-col gap-4">
+					<div class="bg-black text-white whitespace-pre-wrap break-words p-4 text-sm leading-snug font-mono">
+						@templ.Raw(strings.TrimSpace(props.sentinelLogs.ToHTML()))
+						<div id="tailed-sentinel-logs"></div>
+					</div>
+					if len(props.policyChecks) > 0 {
+						<div class="overflow-x-auto">
+							<table class="table table-sm">
+								<thead>
+									<tr>
+										<th>Policy Set</th>
+										<th>Policy</th>
+										<th>Level</th>
+										<th>Result</th>
+										<th>Output</th>
+									</tr>
+								</thead>
+								<tbody>
+									for _, check := range props.policyChecks {
+										<tr>
+											<td>{ check.PolicySetName }</td>
+											<td>{ check.PolicyName }</td>
+											<td>{ string(check.EnforcementLevel) }</td>
+											<td>
+												if check.Passed {
+													<span class="badge badge-success">pass</span>
+												} else {
+													<span class="badge badge-error">fail</span>
+												}
+											</td>
+											<td><pre class="whitespace-pre-wrap text-xs">{ check.Output }</pre></td>
+										</tr>
+									}
+								</tbody>
+							</table>
+						</div>
+					}
+				</div>
+			</details>
 			<details class="collapse collapse-arrow border-base-content/20 border" id="apply" open>
 				<summary class="collapse-title">
 					<div class="flex gap-2 items-center">
@@ -130,6 +187,9 @@ templ getPreContent() {
 templ getPostContent(props getRunProps) {
 	if !props.planLogs.IsEnd() {
 		@templ.JSFuncCall("setupTail", paths.TailRun(props.run.ID), "plan", props.planLogs.NextOffset())
+	}
+	if !props.sentinelLogs.IsEnd() {
+		@templ.JSFuncCall("setupTail", paths.TailRun(props.run.ID), "sentinel", props.sentinelLogs.NextOffset())
 	}
 	if !props.applyLogs.IsEnd() {
 		@templ.JSFuncCall("setupTail", paths.TailRun(props.run.ID), "apply", props.applyLogs.NextOffset())

@@ -124,6 +124,12 @@ WHERE NOT EXISTS (
     SELECT FROM repo_connections rc
     WHERE rc.vcs_provider_id = w.vcs_provider_id
     AND   rc.repo_path = w.repo_path
+)
+AND NOT EXISTS (
+    SELECT FROM policy_sets ps
+    WHERE ps.source = 'vcs'
+    AND   ps.vcs_provider_id = w.vcs_provider_id
+    AND   ps.vcs_repo = w.repo_path
 )`)
 	return sql.CollectRows(rows, db.scan)
 }

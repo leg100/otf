@@ -31,6 +31,7 @@ import (
 	"github.com/leg100/otf/internal/notifications"
 	"github.com/leg100/otf/internal/organization"
 	orgui "github.com/leg100/otf/internal/organization/ui"
+	"github.com/leg100/otf/internal/policy"
 	"github.com/leg100/otf/internal/repohooks"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
@@ -63,6 +64,7 @@ type (
 	Daemon struct {
 		DB            *sql.DB
 		Organizations *organization.Service
+		Policies      *policy.Service
 		Runs          *run.Service
 		Workspaces    *workspace.Service
 		Variables     *variable.Service
@@ -87,6 +89,107 @@ type (
 		subsystems  []*Subsystem
 	}
 )
+
+type policyPlanAdapter struct {
+	runs *run.Service
+}
+
+func (a policyPlanAdapter) GetRunPlanJSON(ctx context.Context, runID resource.TfeID) ([]byte, error) {
+	return a.runs.GetRunPlanJSON(ctx, runID)
+}
+
+type policyRunAdapter struct {
+	runs       *run.Service
+	workspaces *workspace.Service
+}
+
+func (a policyRunAdapter) GetRunInfo(ctx context.Context, runID resource.TfeID) (*policy.RunInfo, error) {
+	r, err := a.runs.GetRun(ctx, runID)
+	if err != nil {
+		return nil, err
+	}
+	ws, err := a.workspaces.GetWorkspace(ctx, r.WorkspaceID)
+	if err != nil {
+		return nil, err
+	}
+	info := &policy.RunInfo{
+		ID:                     r.ID.String(),
+		CreatedAt:              r.CreatedAt.Format(time.RFC3339),
+		Message:                r.Message,
+		IsDestroy:              r.IsDestroy,
+		Refresh:                r.Refresh,
+		RefreshOnly:            r.RefreshOnly,
+		ReplaceAddrs:           r.ReplaceAddrs,
+		Speculative:            r.PlanOnly,
+		TargetAddrs:            r.TargetAddrs,
+		ConfigurationVersionID: r.ConfigurationVersionID,
+		Variables:              map[string]policy.RunVariableInfo{},
+	}
+	if r.CreatedBy != nil {
+		info.CreatedBy = r.CreatedBy.String()
+	}
+	info.Organization.Name = r.Organization.String()
+	info.Project.ID = ""
+	info.Project.Name = ""
+	info.Workspace.ID = ws.ID.String()
+	info.Workspace.Name = ws.Name
+	info.Workspace.CreatedAt = ws.CreatedAt.Format(time.RFC3339)
+	info.Workspace.Description = ws.Description
+	info.Workspace.ExecutionMode = string(ws.ExecutionMode)
+	info.Workspace.AutoApply = ws.AutoApply
+	info.Workspace.WorkingDirectory = ws.WorkingDirectory
+	info.Workspace.Tags = append([]string(nil), ws.Tags...)
+	info.Workspace.TagBindings = make([]policy.TagBinding, 0, len(ws.Tags))
+	for _, tag := range ws.Tags {
+		info.Workspace.TagBindings = append(info.Workspace.TagBindings, policy.TagBinding{
+			Key:       tag,
+			Value:     nil,
+			Inherited: false,
+		})
+	}
+	if ws.Connection != nil {
+		info.Workspace.VCSRepo = map[string]any{
+			"identifier":         ws.Connection.Repo.String(),
+			"display_identifier": ws.Connection.Repo.String(),
+			"branch":             ws.Connection.Branch,
+			"ingress_submodules": false,
+		}
+	}
+	if r.IngressAttributes != nil {
+		info.CommitSHA = r.IngressAttributes.CommitSHA
+	}
+	for _, v := range r.Variables {
+		info.Variables[v.Key] = policy.RunVariableInfo{
+			Category:  "terraform",
+			Sensitive: false,
+		}
+	}
+	return info, nil
+}
+
+type policyVariableAdapter struct {
+	variables *variable.Service
+}
+
+func (a policyVariableAdapter) ListRunVariables(ctx context.Context, runID resource.TfeID) ([]policy.Variable, error) {
+	vars, err := a.variables.ListEffectiveVariables(ctx, runID)
+	if err != nil {
+		return nil, err
+	}
+	items := make([]policy.Variable, len(vars))
+	for i, v := range vars {
+		items[i] = policy.Variable{
+			Key:       v.Key,
+			Category:  string(v.Category),
+			Sensitive: v.Sensitive,
+			HCL:       v.HCL,
+		}
+		if !v.Sensitive {
+			items[i].Value = v.Value
+		}
+	}
+	return items, nil
+}
 
 // New builds a new daemon, establishes a connection to the database and
 // migrates it to the latest schema, constructs services and subsystems and
@@ -308,6 +411,23 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		WorkspaceService: workspaceService,
 		RunClient:        runService,
 	})
+	policyService := policy.NewService(policy.Options{
+		Logger:          logger,
+		Authorizer:      authorizer,
+		DB:              db,
+		Runs:            policyRunAdapter{runs: runService, workspaces: workspaceService},
+		Workspaces:      workspaceService,
+		Configs:         configService,
+		VCSProviders:    vcsService,
+		RepoHooks:       repoService,
+		States:          stateService,
+		Variables:       policyVariableAdapter{variables: variableService},
+		Plans:           policyPlanAdapter{runs: runService},
+		VCSEventSub:     vcsEventBroker,
+		SentinelPath:    cfg.RunnerConfig.SentinelPath,
+		SentinelWorkDir: cfg.RunnerConfig.SentinelWorkDir,
+	})
+	runService.SetPolicyService(policyService)
 	dynamiccredsService, err := dynamiccreds.NewService(dynamiccreds.Options{
 		HostnameService: hostnameService,
 		PublicKeyPath:   cfg.PublicKeyPath,
@@ -570,6 +690,10 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		authorizer,
 	)
 	uiHandlers := &ui.Handlers{
+		Authorizer:   authorizer,
+		Policies:     policyService,
+		VCSProviders: vcsService,
+		Workspaces:   workspaceService,
 		Handlers: []internal.Handlers{
 			&teamui.Handlers{
 				Client: struct {
@@ -836,6 +960,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 
 	return &Daemon{
 		Organizations: orgService,
+		Policies:      policyService,
 		System:        hostnameService,
 		Runs:          runService,
 		Workspaces:    workspaceService,

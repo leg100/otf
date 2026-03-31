@@ -24,6 +24,7 @@ var themeMappings = map[runstatus.Status]string{
 	runstatus.ForceCanceled:      "warning",
 	runstatus.Pending:            "primary",
 	runstatus.PlanQueued:         "secondary",
+	runstatus.PolicyChecking:     "primary",
 	runstatus.Planned:            "info",
 	runstatus.PlannedAndFinished: "success",
 	runstatus.Planning:           "primary",

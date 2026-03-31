@@ -16,11 +16,12 @@ const (
 	PhaseErrored     PhaseStatus = "errored"
 	PhaseUnreachable PhaseStatus = "unreachable"
 
-	PendingPhase PhaseType = "pending"
-	PlanPhase    PhaseType = "plan"
-	ApplyPhase   PhaseType = "apply"
-	FinalPhase   PhaseType = "final"
-	UnknownPhase PhaseType = "unknown"
+	PendingPhase  PhaseType = "pending"
+	PlanPhase     PhaseType = "plan"
+	SentinelPhase PhaseType = "sentinel"
+	ApplyPhase    PhaseType = "apply"
+	FinalPhase    PhaseType = "final"
+	UnknownPhase  PhaseType = "unknown"
 )
 
 type (

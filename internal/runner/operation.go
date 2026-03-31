@@ -95,11 +95,13 @@ type (
 	}
 
 	OperationConfig struct {
-		Debug          bool   // toggle debug mode
-		PluginCache    bool   // toggle use of engine's shared plugin cache
-		PluginCacheDir string // directory for shared plugin cache.
-		EngineBinDir   string // destination directory for engine binaries
-		IsAgent        bool   // set to true if operation is running on an agent
+		Debug           bool   // toggle debug mode
+		PluginCache     bool   // toggle use of engine's shared plugin cache
+		PluginCacheDir  string // directory for shared plugin cache.
+		EngineBinDir    string // destination directory for engine binaries
+		SentinelPath    string // path to the sentinel CLI binary
+		SentinelWorkDir string // directory for sentinel evaluation artifacts
+		IsAgent         bool   // set to true if operation is running on an agent
 	}
 
 	OperationOptions struct {
@@ -119,8 +121,10 @@ type (
 
 func defaultOperationConfig() OperationConfig {
 	return OperationConfig{
-		PluginCacheDir: filepath.Join(os.TempDir(), "plugin-cache"),
-		EngineBinDir:   engine.DefaultBinDir,
+		PluginCacheDir:  filepath.Join(os.TempDir(), "plugin-cache"),
+		EngineBinDir:    engine.DefaultBinDir,
+		SentinelPath:    "sentinel",
+		SentinelWorkDir: os.TempDir(),
 	}
 }
 
@@ -129,6 +133,8 @@ func RegisterOperationFlags(flags *pflag.FlagSet, cfg *OperationConfig) {
 	flags.BoolVar(&cfg.PluginCache, "plugin-cache", cfg.PluginCache, "Enable shared plugin cache for provider plugins.")
 	flags.StringVar(&cfg.PluginCacheDir, "plugin-cache-dir", cfg.PluginCacheDir, "Directory for shared plugin cache.")
 	flags.StringVar(&cfg.EngineBinDir, "engine-bins-dir", cfg.EngineBinDir, "Destination directory for engine binary downloads.")
+	flags.StringVar(&cfg.SentinelPath, "sentinel-bin", cfg.SentinelPath, "Path to the Sentinel CLI binary used for policy checks.")
+	flags.StringVar(&cfg.SentinelWorkDir, "sentinel-work-dir", cfg.SentinelWorkDir, "Directory for temporary Sentinel policy evaluation files.")
 }
 
 func DoOperation(runnerCtx context.Context, g *errgroup.Group, opts OperationOptions) {

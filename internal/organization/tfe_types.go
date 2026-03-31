@@ -10,6 +10,7 @@ var DefaultOrganizationPermissions = TFEOrganizationPermissions{
 	CanCreateWorkspace: true,
 	CanUpdate:          true,
 	CanDestroy:         true,
+	CanUpdateSentinel:  true,
 }
 
 // TFEOrganization represents a Terraform Enterprise organization.

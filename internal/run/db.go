@@ -116,11 +116,21 @@ INSERT INTO runs (
 		if err != nil {
 			return fmt.Errorf("inserting apply: %w", err)
 		}
+		_, err = db.Exec(ctx, `INSERT INTO sentinels (run_id, status) VALUES ($1, $2)`,
+			run.ID,
+			run.Sentinel.Status,
+		)
+		if err != nil {
+			return fmt.Errorf("inserting sentinel: %w", err)
+		}
 		if err := db.insertRunStatusTimestamp(ctx, run); err != nil {
 			return fmt.Errorf("inserting run status timestamp: %w", err)
 		}
 		if err := db.insertPhaseStatusTimestamp(ctx, run.Plan); err != nil {
 			return fmt.Errorf("inserting plan status timestamp: %w", err)
+		}
+		if err := db.insertPhaseStatusTimestamp(ctx, run.Sentinel); err != nil {
+			return fmt.Errorf("inserting sentinel status timestamp: %w", err)
 		}
 		if err := db.insertPhaseStatusTimestamp(ctx, run.Apply); err != nil {
 			return fmt.Errorf("inserting apply status timestamp: %w", err)
@@ -134,6 +144,7 @@ func (db *pgdb) UpdateStatus(ctx context.Context, runID resource.TfeID, fn func(
 	var (
 		runStatus        runstatus.Status
 		planStatus       PhaseStatus
+		sentinelStatus   PhaseStatus
 		applyStatus      PhaseStatus
 		cancelSignaledAt *time.Time
 	)
@@ -147,6 +158,7 @@ SELECT
     plans.status        AS plan_status,
     plans.resource_report::"report" AS plan_resource_report,
     plans.output_report::"report" AS plan_output_report,
+    sentinels.status    AS sentinel_status,
     applies.status      AS apply_status,
     applies.resource_report::"report" AS apply_resource_report,
     workspaces.organization_name,
@@ -154,6 +166,7 @@ SELECT
     organizations.cost_estimation_enabled,
     rst.run_status_timestamps,
     pst.plan_status_timestamps,
+    sst.sentinel_status_timestamps,
     ast.apply_status_timestamps,
     rv.run_variables,
     ia::"ingress_attributes" AS ingress_attributes,
@@ -162,6 +175,7 @@ SELECT
     END AS latest
 FROM runs
 JOIN plans USING (run_id)
+JOIN sentinels USING (run_id)
 JOIN applies USING (run_id)
 JOIN workspaces ON runs.workspace_id = workspaces.workspace_id
 JOIN organizations ON workspaces.organization_name = organizations.name
@@ -191,13 +205,21 @@ LEFT JOIN (
 LEFT JOIN (
     SELECT
         run_id,
+        array_agg(sst.*)::phase_status_timestamps[] AS sentinel_status_timestamps
+    FROM phase_status_timestamps sst
+    WHERE sst.phase = 'sentinel'
+    GROUP BY run_id
+) AS sst ON sst.run_id = runs.run_id
+LEFT JOIN (
+    SELECT
+        run_id,
         array_agg(ast.*)::phase_status_timestamps[] AS apply_status_timestamps
     FROM phase_status_timestamps ast
     WHERE ast.phase = 'apply'
     GROUP BY run_id
 ) AS ast ON ast.run_id = runs.run_id
 WHERE runs.run_id = $1
-FOR UPDATE OF runs, plans, applies
+FOR UPDATE OF runs, plans, sentinels, applies
 `, runID)
 			run, err := sql.CollectOneRow(row, db.scan)
 			if err != nil {
@@ -206,6 +228,7 @@ FOR UPDATE OF runs, plans, applies
 			// Make copies of run attributes before update
 			runStatus = run.Status
 			planStatus = run.Plan.Status
+			sentinelStatus = run.Sentinel.Status
 			applyStatus = run.Apply.Status
 			cancelSignaledAt = run.CancelSignaledAt
 			return run, nil
@@ -263,6 +286,24 @@ WHERE run_id = $2
 				}
 
 				if err := db.insertPhaseStatusTimestamp(ctx, run.Apply); err != nil {
+					return err
+				}
+			}
+
+			if run.Sentinel.Status != sentinelStatus {
+				_, err := db.Exec(ctx, `
+UPDATE sentinels
+SET status = $1
+WHERE run_id = $2
+`,
+					run.Sentinel.Status,
+					run.ID,
+				)
+				if err != nil {
+					return err
+				}
+
+				if err := db.insertPhaseStatusTimestamp(ctx, run.Sentinel); err != nil {
 					return err
 				}
 			}
@@ -376,6 +417,7 @@ SELECT
     plans.status        AS plan_status,
     plans.resource_report::"report" AS plan_resource_report,
     plans.output_report::"report" AS plan_output_report,
+    sentinels.status    AS sentinel_status,
     applies.status      AS apply_status,
     applies.resource_report::"report" AS apply_resource_report,
     workspaces.organization_name,
@@ -383,6 +425,7 @@ SELECT
     organizations.cost_estimation_enabled,
     rst.run_status_timestamps,
     pst.plan_status_timestamps,
+    sst.sentinel_status_timestamps,
     ast.apply_status_timestamps,
     rv.run_variables,
     ia::"ingress_attributes" AS ingress_attributes,
@@ -391,6 +434,7 @@ SELECT
     END AS latest
 FROM runs
 JOIN plans USING (run_id)
+JOIN sentinels USING (run_id)
 JOIN applies USING (run_id)
 JOIN workspaces ON runs.workspace_id = workspaces.workspace_id
 JOIN organizations ON workspaces.organization_name = organizations.name
@@ -417,6 +461,14 @@ LEFT JOIN (
     WHERE pst.phase = 'plan'
     GROUP BY run_id
 ) AS pst ON pst.run_id = runs.run_id
+LEFT JOIN (
+    SELECT
+        run_id,
+        array_agg(sst.*)::phase_status_timestamps[] AS sentinel_status_timestamps
+    FROM phase_status_timestamps sst
+    WHERE sst.phase = 'sentinel'
+    GROUP BY run_id
+) AS sst ON sst.run_id = runs.run_id
 LEFT JOIN (
     SELECT
         run_id,
@@ -509,6 +561,7 @@ SELECT
     plans.status        AS plan_status,
     plans.resource_report::"report" AS plan_resource_report,
     plans.output_report::"report" AS plan_output_report,
+    sentinels.status    AS sentinel_status,
     applies.status      AS apply_status,
     applies.resource_report::"report" AS apply_resource_report,
     workspaces.organization_name,
@@ -516,6 +569,7 @@ SELECT
     organizations.cost_estimation_enabled,
     rst.run_status_timestamps,
     pst.plan_status_timestamps,
+    sst.sentinel_status_timestamps,
     ast.apply_status_timestamps,
     rv.run_variables,
     ia::"ingress_attributes" AS ingress_attributes,
@@ -524,6 +578,7 @@ SELECT
     END AS latest
 FROM runs
 JOIN plans USING (run_id)
+JOIN sentinels USING (run_id)
 JOIN applies USING (run_id)
 JOIN workspaces ON runs.workspace_id = workspaces.workspace_id
 JOIN organizations ON workspaces.organization_name = organizations.name
@@ -550,6 +605,14 @@ LEFT JOIN (
     WHERE pst.phase = 'plan'
     GROUP BY run_id
 ) AS pst ON pst.run_id = runs.run_id
+LEFT JOIN (
+    SELECT
+        run_id,
+        array_agg(sst.*)::phase_status_timestamps[] AS sentinel_status_timestamps
+    FROM phase_status_timestamps sst
+    WHERE sst.phase = 'sentinel'
+    GROUP BY run_id
+) AS sst ON sst.run_id = runs.run_id
 LEFT JOIN (
     SELECT
         run_id,
@@ -802,40 +865,42 @@ func (db *pgdb) scan(row pgx.CollectableRow) (*Run, error) {
 			Value string
 		}
 		model struct {
-			ID                     resource.TfeID                        `db:"run_id"`
-			CreatedAt              time.Time                             `db:"created_at"`
-			IsDestroy              bool                                  `db:"is_destroy"`
-			CancelSignaledAt       *time.Time                            `db:"cancel_signaled_at"`
-			Organization           organization.Name                     `db:"organization_name"`
-			Refresh                bool                                  `db:"refresh"`
-			RefreshOnly            bool                                  `db:"refresh_only"`
-			ReplaceAddrs           []string                              `db:"replace_addrs"`
-			PositionInQueue        int                                   `db:"position_in_queue"`
-			TargetAddrs            []string                              `db:"target_addrs"`
-			Engine                 *engine.Engine                        `db:"engine"`
-			EngineVersion          string                                `db:"engine_version"`
-			AllowEmptyApply        bool                                  `db:"allow_empty_apply"`
-			AutoApply              bool                                  `db:"auto_apply"`
-			PlanOnly               bool                                  `db:"plan_only"`
-			Source                 source.Source                         `db:"source"`
-			Status                 runstatus.Status                      `db:"status"`
-			PlanStatus             PhaseStatus                           `db:"plan_status"`
-			ApplyStatus            PhaseStatus                           `db:"apply_status"`
-			WorkspaceID            resource.TfeID                        `db:"workspace_id"`
-			ConfigurationVersionID resource.TfeID                        `db:"configuration_version_id"`
-			ExecutionMode          workspace.ExecutionMode               `db:"execution_mode"`
-			RunVariables           []runVariableModel                    `db:"run_variables"`
-			PlanResourceReport     *Report                               `db:"plan_resource_report"`
-			PlanOutputReport       *Report                               `db:"plan_output_report"`
-			ApplyResourceReport    *Report                               `db:"apply_resource_report"`
-			RunStatusTimestamps    []statusTimestampModel                `db:"run_status_timestamps"`
-			PlanStatusTimestamps   []phaseStatusTimestampModel           `db:"plan_status_timestamps"`
-			ApplyStatusTimestamps  []phaseStatusTimestampModel           `db:"apply_status_timestamps"`
-			Latest                 bool                                  `db:"latest"`
-			IngressAttributes      *configversion.IngressAttributesModel `db:"ingress_attributes"`
-			CreatedBy              *user.Username                        `db:"created_by"`
-			CostEstimationEnabled  bool                                  `db:"cost_estimation_enabled"`
-			LockFile               []byte                                `db:"lock_file"`
+			ID                       resource.TfeID                        `db:"run_id"`
+			CreatedAt                time.Time                             `db:"created_at"`
+			IsDestroy                bool                                  `db:"is_destroy"`
+			CancelSignaledAt         *time.Time                            `db:"cancel_signaled_at"`
+			Organization             organization.Name                     `db:"organization_name"`
+			Refresh                  bool                                  `db:"refresh"`
+			RefreshOnly              bool                                  `db:"refresh_only"`
+			ReplaceAddrs             []string                              `db:"replace_addrs"`
+			PositionInQueue          int                                   `db:"position_in_queue"`
+			TargetAddrs              []string                              `db:"target_addrs"`
+			Engine                   *engine.Engine                        `db:"engine"`
+			EngineVersion            string                                `db:"engine_version"`
+			AllowEmptyApply          bool                                  `db:"allow_empty_apply"`
+			AutoApply                bool                                  `db:"auto_apply"`
+			PlanOnly                 bool                                  `db:"plan_only"`
+			Source                   source.Source                         `db:"source"`
+			Status                   runstatus.Status                      `db:"status"`
+			PlanStatus               PhaseStatus                           `db:"plan_status"`
+			SentinelStatus           PhaseStatus                           `db:"sentinel_status"`
+			ApplyStatus              PhaseStatus                           `db:"apply_status"`
+			WorkspaceID              resource.TfeID                        `db:"workspace_id"`
+			ConfigurationVersionID   resource.TfeID                        `db:"configuration_version_id"`
+			ExecutionMode            workspace.ExecutionMode               `db:"execution_mode"`
+			RunVariables             []runVariableModel                    `db:"run_variables"`
+			PlanResourceReport       *Report                               `db:"plan_resource_report"`
+			PlanOutputReport         *Report                               `db:"plan_output_report"`
+			ApplyResourceReport      *Report                               `db:"apply_resource_report"`
+			RunStatusTimestamps      []statusTimestampModel                `db:"run_status_timestamps"`
+			PlanStatusTimestamps     []phaseStatusTimestampModel           `db:"plan_status_timestamps"`
+			SentinelStatusTimestamps []phaseStatusTimestampModel           `db:"sentinel_status_timestamps"`
+			ApplyStatusTimestamps    []phaseStatusTimestampModel           `db:"apply_status_timestamps"`
+			Latest                   bool                                  `db:"latest"`
+			IngressAttributes        *configversion.IngressAttributesModel `db:"ingress_attributes"`
+			CreatedBy                *user.Username                        `db:"created_by"`
+			CostEstimationEnabled    bool                                  `db:"cost_estimation_enabled"`
+			LockFile                 []byte                                `db:"lock_file"`
 		}
 	)
 	m, err := pgx.RowToStructByName[model](row)
@@ -871,6 +936,12 @@ func (db *pgdb) scan(row pgx.CollectableRow) (*Run, error) {
 			ResourceReport:   m.PlanResourceReport,
 			OutputReport:     m.PlanOutputReport,
 		},
+		Sentinel: Phase{
+			RunID:            m.ID,
+			PhaseType:        SentinelPhase,
+			Status:           m.SentinelStatus,
+			StatusTimestamps: make([]PhaseStatusTimestamp, len(m.SentinelStatusTimestamps)),
+		},
 		Apply: Phase{
 			RunID:            m.ID,
 			PhaseType:        ApplyPhase,
@@ -905,6 +976,13 @@ func (db *pgdb) scan(row pgx.CollectableRow) (*Run, error) {
 			Timestamp: model.Timestamp,
 		}
 	}
+	for i, model := range m.SentinelStatusTimestamps {
+		run.Sentinel.StatusTimestamps[i] = PhaseStatusTimestamp{
+			Phase:     SentinelPhase,
+			Status:    model.Status,
+			Timestamp: model.Timestamp,
+		}
+	}
 	for i, model := range m.ApplyStatusTimestamps {
 		run.Apply.StatusTimestamps[i] = PhaseStatusTimestamp{
 			Phase:     ApplyPhase,
@@ -920,6 +998,9 @@ func (db *pgdb) scan(row pgx.CollectableRow) (*Run, error) {
 	})
 	sort.Slice(run.Plan.StatusTimestamps, func(i, j int) bool {
 		return run.Plan.StatusTimestamps[i].Timestamp.Before(run.Plan.StatusTimestamps[j].Timestamp)
+	})
+	sort.Slice(run.Sentinel.StatusTimestamps, func(i, j int) bool {
+		return run.Sentinel.StatusTimestamps[i].Timestamp.Before(run.Sentinel.StatusTimestamps[j].Timestamp)
 	})
 	sort.Slice(run.Apply.StatusTimestamps, func(i, j int) bool {
 		return run.Apply.StatusTimestamps[i].Timestamp.Before(run.Apply.StatusTimestamps[j].Timestamp)

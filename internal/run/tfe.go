@@ -447,8 +447,14 @@ func (a *tfe) toRun(from *Run, ctx context.Context) (*TFERun, error) {
 			timestamps.PlanQueuedAt = &rst.Timestamp
 		case runstatus.Planning:
 			timestamps.PlanningAt = &rst.Timestamp
+		case runstatus.PolicyChecking:
+			timestamps.PolicyCheckingAt = &rst.Timestamp
 		case runstatus.Planned:
 			timestamps.PlannedAt = &rst.Timestamp
+		case runstatus.PolicyChecked:
+			timestamps.PolicyCheckedAt = &rst.Timestamp
+		case runstatus.PolicySoftFailed:
+			timestamps.PolicySoftFailedAt = &rst.Timestamp
 		case runstatus.PlannedAndFinished:
 			timestamps.PlannedAndFinishedAt = &rst.Timestamp
 		case runstatus.ApplyQueued:
@@ -495,8 +501,9 @@ func (a *tfe) toRun(from *Run, ctx context.Context) (*TFERun, error) {
 		TargetAddrs:      from.TargetAddrs,
 		TerraformVersion: from.EngineVersion,
 		// Relations
-		Plan:  &TFEPlan{ID: resource.ConvertTfeID(from.ID, "plan")},
-		Apply: &TFEApply{ID: resource.ConvertTfeID(from.ID, "apply")},
+		Plan:     &TFEPlan{ID: resource.ConvertTfeID(from.ID, "plan")},
+		Sentinel: &TFESentinel{ID: resource.ConvertTfeID(from.ID, "sentinel")},
+		Apply:    &TFEApply{ID: resource.ConvertTfeID(from.ID, "apply")},
 		// TODO: populate with real user.
 		CreatedBy: &user.TFEUser{
 			ID:       tfeUser,
@@ -561,6 +568,20 @@ func (a *tfe) toApply(apply Phase, r *http.Request) (*TFEApply, error) {
 		TFEResourceReport: a.toResourceReport(apply.ResourceReport),
 		Status:            string(apply.Status),
 		StatusTimestamps:  a.toPhaseTimestamps(apply.StatusTimestamps),
+	}, nil
+}
+
+func (a *tfe) toSentinel(phase Phase, r *http.Request) (*TFESentinel, error) {
+	logURL, err := a.logURL(r, phase)
+	if err != nil {
+		return nil, err
+	}
+
+	return &TFESentinel{
+		ID:               resource.ConvertTfeID(phase.RunID, "sentinel"),
+		LogReadURL:       logURL,
+		Status:           string(phase.Status),
+		StatusTimestamps: a.toPhaseTimestamps(phase.StatusTimestamps),
 	}, nil
 }
 
