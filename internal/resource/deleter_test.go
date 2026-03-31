@@ -42,7 +42,7 @@ func TestDeleter(t *testing.T) {
 				Client:       client,
 				AgeThreshold: tt.threshold,
 			}
-			deleter.deleteResources(context.Background())
+			deleter.deleteResources(t.Context())
 			assert.Equal(t, tt.delete, client.deleted)
 		})
 	}

@@ -1,7 +1,6 @@
 package integration
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -173,7 +172,7 @@ func TestIntegration_VCSProviderAppUI(t *testing.T) {
 	daemon, org, _ := setup(t, withGithubHostname(githubHostname))
 
 	// creating a github app requires site-admin role
-	ctx := authz.AddSubjectToContext(context.Background(), &user.SiteAdmin)
+	ctx := authz.AddSubjectToContext(t.Context(), &user.SiteAdmin)
 
 	// create app
 	_, err := daemon.GithubApp.CreateApp(ctx, github.CreateAppOptions{

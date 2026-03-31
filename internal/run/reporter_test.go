@@ -16,8 +16,6 @@ import (
 )
 
 func TestReporter_HandleRun(t *testing.T) {
-	ctx := context.Background()
-
 	tests := []struct {
 		name  string
 		event *Event
@@ -78,7 +76,7 @@ func TestReporter_HandleRun(t *testing.T) {
 				urls:       &fakeReporterURLClient{},
 				cache:      make(map[resource.TfeID]vcs.Status),
 			}
-			err := reporter.handleRun(ctx, tt.event)
+			err := reporter.handleRun(t.Context(), tt.event)
 			require.NoError(t, err)
 
 			if tt.want == nil {
@@ -93,8 +91,6 @@ func TestReporter_HandleRun(t *testing.T) {
 // TestReporter_DontSetStatusTwice tests that the same status is not set more
 // than once for a given run.
 func TestReporter_DontSetStatusTwice(t *testing.T) {
-	ctx := context.Background()
-
 	event := &Event{ID: testutils.ParseID(t, "run-123"), Status: runstatus.Pending}
 	ws := &workspace.Workspace{
 		Name:       "dev",
@@ -118,7 +114,7 @@ func TestReporter_DontSetStatusTwice(t *testing.T) {
 	}
 
 	// handle run the first time and expect status to be set
-	err := reporter.handleRun(ctx, event)
+	err := reporter.handleRun(t.Context(), event)
 	require.NoError(t, err)
 
 	want := vcs.SetStatusOptions{
@@ -132,7 +128,7 @@ func TestReporter_DontSetStatusTwice(t *testing.T) {
 
 	// handle run the second time with the same status and expect status to
 	// *not* be set
-	err = reporter.handleRun(ctx, event)
+	err = reporter.handleRun(t.Context(), event)
 	require.NoError(t, err)
 	assert.Equal(t, 0, len(got))
 }

@@ -266,7 +266,7 @@ role_arn                = my-arn
 		t.Run(tt.name, func(t *testing.T) {
 			workdir := t.TempDir()
 			got, err := Setup(
-				context.Background(),
+				t.Context(),
 				&fakeTokenGenerator{},
 				workdir,
 				resource.NewTfeID(resource.JobKind),

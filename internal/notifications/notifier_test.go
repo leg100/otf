@@ -1,7 +1,6 @@
 package notifications
 
 import (
-	"context"
 	"testing"
 
 	"github.com/leg100/otf/internal/logr"
@@ -15,7 +14,6 @@ import (
 )
 
 func TestNotifier_handleRun(t *testing.T) {
-	ctx := context.Background()
 	ws1 := testutils.ParseID(t, "ws-matching")
 	ws2 := testutils.ParseID(t, "ws-zzz")
 
@@ -86,7 +84,7 @@ func TestNotifier_handleRun(t *testing.T) {
 				cache:      newTestCache(t, &fakeFactory{published}, tt.cfg),
 			}
 
-			err := notifier.handleRunEvent(ctx, tt.event)
+			err := notifier.handleRunEvent(t.Context(), tt.event)
 			require.NoError(t, err)
 			if tt.want != nil {
 				assert.Equal(t, tt.want, <-published)
@@ -100,7 +98,6 @@ func TestNotifier_handleRun(t *testing.T) {
 // TestNotifier_handleRun_multiple tests handleRun() publishing multiple
 // notifications
 func TestNotifier_handleRun_multiple(t *testing.T) {
-	ctx := context.Background()
 	ws1 := testutils.ParseID(t, "ws-123")
 
 	planningRunEvent := pubsub.Event[*run.Event]{Payload: &run.Event{
@@ -120,7 +117,7 @@ func TestNotifier_handleRun_multiple(t *testing.T) {
 		cache:      newTestCache(t, &fakeFactory{published}, config1, config2),
 	}
 
-	err := notifier.handleRunEvent(ctx, planningRunEvent)
+	err := notifier.handleRunEvent(t.Context(), planningRunEvent)
 	require.NoError(t, err)
 
 	// Expect two notifications to be published

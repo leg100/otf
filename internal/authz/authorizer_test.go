@@ -1,7 +1,6 @@
 package authz
 
 import (
-	"context"
 	"testing"
 
 	"github.com/leg100/otf/internal/logr"
@@ -13,7 +12,7 @@ import (
 func TestAuthorizer(t *testing.T) {
 	authorizer := NewAuthorizer(logr.Discard())
 	user := &Superuser{}
-	ctx := AddSubjectToContext(context.Background(), user)
+	ctx := AddSubjectToContext(t.Context(), user)
 
 	got, err := authorizer.Authorize(ctx, ListUsersAction, resource.SiteID)
 	require.NoError(t, err)

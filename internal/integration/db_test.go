@@ -18,14 +18,13 @@ import (
 func TestWaitAndLock(t *testing.T) {
 	integrationTest(t)
 
-	ctx := context.Background()
-	db, err := sql.New(ctx, logr.Discard(), sql.NewTestDB(t))
+	db, err := sql.New(t.Context(), logr.Discard(), sql.NewTestDB(t))
 	require.NoError(t, err)
 	t.Cleanup(db.Close)
 
 	for range 100 {
 		func() {
-			err := db.WaitAndLock(ctx, 123, func(context.Context) error { return nil })
+			err := db.WaitAndLock(t.Context(), 123, func(context.Context) error { return nil })
 			require.NoError(t, err)
 		}()
 	}

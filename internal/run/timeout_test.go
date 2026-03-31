@@ -84,7 +84,7 @@ func TestTimeout(t *testing.T) {
 				PlanningTimeout: tt.planningTimeout,
 				ApplyingTimeout: tt.applyingTimeout,
 			}
-			timeout.check(context.Background())
+			timeout.check(t.Context())
 			assert.Equal(t, tt.canceled, client.canceled)
 		})
 	}

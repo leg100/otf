@@ -2,7 +2,6 @@ package forgejo
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"os"
 	"path"
@@ -17,7 +16,6 @@ import (
 )
 
 func TestGetDefaultBranch(t *testing.T) {
-	ctx := context.Background()
 	want, err := os.ReadFile("../testdata/forgejo.tar.gz")
 	require.NoError(t, err)
 	testuser, err := user.NewUsername("user")
@@ -30,22 +28,21 @@ func TestGetDefaultBranch(t *testing.T) {
 		WithArchive(want),
 	)
 
-	got, err := client.GetDefaultBranch(ctx, "acme/test")
+	got, err := client.GetDefaultBranch(t.Context(), "acme/test")
 	require.NoError(t, err)
 
 	assert.Equal(t, "main", got)
 
-	got, err = client.GetDefaultBranch(ctx, "acme/nonexistent-repo")
+	got, err = client.GetDefaultBranch(t.Context(), "acme/nonexistent-repo")
 	require.Error(t, err)
 	require.Zero(t, got)
 
-	got, err = client.GetDefaultBranch(ctx, "nonexistent-org/test")
+	got, err = client.GetDefaultBranch(t.Context(), "nonexistent-org/test")
 	require.Error(t, err)
 	require.Zero(t, got)
 }
 
 func TestListRepositories(t *testing.T) {
-	ctx := context.Background()
 	want, err := os.ReadFile("../testdata/forgejo.tar.gz")
 	require.NoError(t, err)
 	testuser, err := user.NewUsername("user")
@@ -58,14 +55,13 @@ func TestListRepositories(t *testing.T) {
 		WithArchive(want),
 	)
 
-	got, err := client.ListRepositories(ctx, vcs.ListRepositoriesOptions{})
+	got, err := client.ListRepositories(t.Context(), vcs.ListRepositoriesOptions{})
 	require.NoError(t, err)
 
 	assert.Equal(t, []vcs.Repo{vcs.NewMustRepo("acme", "test")}, got)
 }
 
 func TestGetRepoTarball(t *testing.T) {
-	ctx := context.Background()
 	want, err := os.ReadFile("../testdata/forgejo.tar.gz")
 	require.NoError(t, err)
 	client := newTestServerClient(t,
@@ -75,7 +71,7 @@ func TestGetRepoTarball(t *testing.T) {
 		WithArchive(want),
 	)
 
-	got, gotref, err := client.GetRepoTarball(ctx, vcs.GetRepoTarballOptions{
+	got, gotref, err := client.GetRepoTarball(t.Context(), vcs.GetRepoTarballOptions{
 		Repo: vcs.NewMustRepo("acme", "test"),
 	})
 	require.NoError(t, err)
@@ -102,14 +98,14 @@ func TestGetRepoTarball(t *testing.T) {
 	assert.True(t, len(got) > 0)
 	assert.Equal(t, "main", gotref)
 
-	got, gotref, err = client.GetRepoTarball(ctx, vcs.GetRepoTarballOptions{
+	got, gotref, err = client.GetRepoTarball(t.Context(), vcs.GetRepoTarballOptions{
 		Repo: vcs.NewMustRepo("acme", "nonexistent-repo"),
 	})
 	require.Error(t, err)
 	require.Zero(t, got)
 	require.Zero(t, gotref)
 
-	got, gotref, err = client.GetRepoTarball(ctx, vcs.GetRepoTarballOptions{
+	got, gotref, err = client.GetRepoTarball(t.Context(), vcs.GetRepoTarballOptions{
 		Repo: vcs.NewMustRepo("nonexisting-org", "test"),
 	})
 	require.Error(t, err)
@@ -118,7 +114,6 @@ func TestGetRepoTarball(t *testing.T) {
 }
 
 func TestListPullRequestFiles(t *testing.T) {
-	ctx := context.Background()
 	client := newTestServerClient(t,
 		WithRepo(vcs.NewMustRepo("acme", "test")),
 		WithDefaultBranch("main"),
@@ -126,20 +121,19 @@ func TestListPullRequestFiles(t *testing.T) {
 		WithPullRequest("432", "foo", "bar"),
 	)
 
-	files, err := client.ListPullRequestFiles(ctx, vcs.NewMustRepo("acme", "test"), 432)
+	files, err := client.ListPullRequestFiles(t.Context(), vcs.NewMustRepo("acme", "test"), 432)
 	require.NoError(t, err)
 	// archive returned and non-empty
 	assert.Equal(t, 2, len(files))
 	assert.Contains(t, files, "foo")
 	assert.Contains(t, files, "bar")
 
-	_, err = client.ListPullRequestFiles(ctx, vcs.NewMustRepo("acme", "test"), 234)
+	_, err = client.ListPullRequestFiles(t.Context(), vcs.NewMustRepo("acme", "test"), 234)
 	require.Error(t, err)
 }
 
 func TestGetCommit(t *testing.T) {
 	sha := "000111222333444555666777888999aaabbbcccd"
-	ctx := context.Background()
 	testuser, err := user.NewUsername("user")
 	require.NoError(t, err)
 	client := newTestServerClient(t,
@@ -151,50 +145,48 @@ func TestGetCommit(t *testing.T) {
 	)
 
 	// empty refname returns HEAD of default branch
-	got, err := client.GetCommit(ctx, vcs.NewMustRepo("acme", "test"), "")
+	got, err := client.GetCommit(t.Context(), vcs.NewMustRepo("acme", "test"), "")
 	require.NoError(t, err)
 
 	assert.Equal(t, sha, got.SHA)
 	assert.Equal(t, "user", got.Author.Username)
 
 	// branch name returns HEAD of that branch
-	got, err = client.GetCommit(ctx, vcs.NewMustRepo("acme", "test"), "main")
+	got, err = client.GetCommit(t.Context(), vcs.NewMustRepo("acme", "test"), "main")
 	require.NoError(t, err)
 
 	assert.Equal(t, sha, got.SHA)
 	assert.Equal(t, "user", got.Author.Username)
 
 	// fully qualified branch name returns the HEAD of that branch
-	got, err = client.GetCommit(ctx, vcs.NewMustRepo("acme", "test"), "refs/heads/main")
+	got, err = client.GetCommit(t.Context(), vcs.NewMustRepo("acme", "test"), "refs/heads/main")
 	require.NoError(t, err)
 
 	assert.Equal(t, sha, got.SHA)
 	assert.Equal(t, "user", got.Author.Username)
 
 	// tag name returns the tag it points to
-	got, err = client.GetCommit(ctx, vcs.NewMustRepo("acme", "test"), "v0.0.1")
+	got, err = client.GetCommit(t.Context(), vcs.NewMustRepo("acme", "test"), "v0.0.1")
 	require.NoError(t, err)
 
 	assert.Equal(t, sha, got.SHA)
 	assert.Equal(t, "user", got.Author.Username)
 
-	got, err = client.GetCommit(ctx, vcs.NewMustRepo("acme", "nonexistent-repo"), "")
+	got, err = client.GetCommit(t.Context(), vcs.NewMustRepo("acme", "nonexistent-repo"), "")
 	require.Error(t, err)
 	require.Zero(t, got)
 
-	got, err = client.GetCommit(ctx, vcs.NewMustRepo("nonexistent-org", "test"), "")
+	got, err = client.GetCommit(t.Context(), vcs.NewMustRepo("nonexistent-org", "test"), "")
 	require.Error(t, err)
 	require.Zero(t, got)
 }
 
 func TestCreateWebhook(t *testing.T) {
-	ctx := context.Background()
-
 	client := newTestServerClient(t,
 		WithRepo(vcs.NewMustRepo("acme", "test")),
 	)
 
-	hookid, err := client.CreateWebhook(ctx, vcs.CreateWebhookOptions{
+	hookid, err := client.CreateWebhook(t.Context(), vcs.CreateWebhookOptions{
 		Repo:   vcs.NewMustRepo("acme", "test"),
 		Secret: "so-sneaky",
 	})
@@ -203,8 +195,6 @@ func TestCreateWebhook(t *testing.T) {
 }
 
 func TestGetWebhook(t *testing.T) {
-	ctx := context.Background()
-
 	client := newTestServerClient(t,
 		WithRepo(vcs.NewMustRepo("acme", "test")),
 		WithHook(hook{
@@ -220,7 +210,7 @@ func TestGetWebhook(t *testing.T) {
 		}),
 	)
 
-	hook, err := client.GetWebhook(ctx, vcs.GetWebhookOptions{
+	hook, err := client.GetWebhook(t.Context(), vcs.GetWebhookOptions{
 		Repo: vcs.NewMustRepo("acme", "test"),
 		ID:   fmt.Sprintf("%x", 123),
 	})
@@ -230,8 +220,6 @@ func TestGetWebhook(t *testing.T) {
 }
 
 func TestUpdateWebhook(t *testing.T) {
-	ctx := context.Background()
-
 	client := newTestServerClient(t,
 		WithRepo(vcs.NewMustRepo("acme", "test")),
 		WithHook(hook{
@@ -248,14 +236,14 @@ func TestUpdateWebhook(t *testing.T) {
 	)
 	hookid := fmt.Sprintf("%x", 123)
 
-	err := client.UpdateWebhook(ctx, hookid, vcs.UpdateWebhookOptions{
+	err := client.UpdateWebhook(t.Context(), hookid, vcs.UpdateWebhookOptions{
 		Repo:   vcs.NewMustRepo("acme", "test"),
 		Secret: "so-sneaky",
 		Events: []vcs.EventType{vcs.EventTypePush},
 	})
 	require.NoError(t, err)
 
-	hook, err := client.GetWebhook(ctx, vcs.GetWebhookOptions{
+	hook, err := client.GetWebhook(t.Context(), vcs.GetWebhookOptions{
 		Repo: vcs.NewMustRepo("acme", "test"),
 		ID:   fmt.Sprintf("%x", 123),
 	})
@@ -265,8 +253,6 @@ func TestUpdateWebhook(t *testing.T) {
 }
 
 func TestDeleteWebhook(t *testing.T) {
-	ctx := context.Background()
-
 	client := newTestServerClient(t,
 		WithRepo(vcs.NewMustRepo("acme", "test")),
 		WithHook(hook{
@@ -279,27 +265,26 @@ func TestDeleteWebhook(t *testing.T) {
 	)
 	hookid := fmt.Sprintf("%x", 123)
 
-	_, err := client.GetWebhook(ctx, vcs.GetWebhookOptions{
+	_, err := client.GetWebhook(t.Context(), vcs.GetWebhookOptions{
 		Repo: vcs.NewMustRepo("acme", "test"),
 		ID:   hookid,
 	})
 	require.NoError(t, err)
-	err = client.DeleteWebhook(ctx, vcs.DeleteWebhookOptions{
+	err = client.DeleteWebhook(t.Context(), vcs.DeleteWebhookOptions{
 		Repo: vcs.NewMustRepo("acme", "test"),
 		ID:   hookid,
 	})
 	require.NoError(t, err)
-	_, err = client.GetWebhook(ctx, vcs.GetWebhookOptions{
+	_, err = client.GetWebhook(t.Context(), vcs.GetWebhookOptions{
 		Repo: vcs.NewMustRepo("acme", "test"),
 		ID:   hookid,
 	})
 	require.Error(t, err)
 }
 
-// func (c *Client) ListTags(ctx context.Context, opts vcs.ListTagsOptions) ([]string, error)
+// func (c *Client) ListTags(t.Context() context.Context, opts vcs.ListTagsOptions) ([]string, error)
 
 func TestListTags(t *testing.T) {
-	ctx := context.Background()
 	sha := "000111222333444555666777888999aaabbbcccd"
 	client := newTestServerClient(t,
 		WithRepo(vcs.NewMustRepo("acme", "test")),
@@ -318,14 +303,14 @@ func TestListTags(t *testing.T) {
 	)
 
 	// no prefix, return all tags
-	tags, err := client.ListTags(ctx, vcs.ListTagsOptions{
+	tags, err := client.ListTags(t.Context(), vcs.ListTagsOptions{
 		Repo: vcs.NewMustRepo("acme", "test"),
 	})
 	require.NoError(t, err)
 	assert.Equal(t, []string{"tags/v0.0.1"}, tags)
 
 	// matching prefix, still return the tag
-	tags, err = client.ListTags(ctx, vcs.ListTagsOptions{
+	tags, err = client.ListTags(t.Context(), vcs.ListTagsOptions{
 		Repo:   vcs.NewMustRepo("acme", "test"),
 		Prefix: "v",
 	})
@@ -333,7 +318,7 @@ func TestListTags(t *testing.T) {
 	assert.Equal(t, []string{"tags/v0.0.1"}, tags)
 
 	// non-matching prefix, don't return the tag
-	tags, err = client.ListTags(ctx, vcs.ListTagsOptions{
+	tags, err = client.ListTags(t.Context(), vcs.ListTagsOptions{
 		Repo:   vcs.NewMustRepo("acme", "test"),
 		Prefix: "q",
 	})
@@ -342,7 +327,6 @@ func TestListTags(t *testing.T) {
 }
 
 func TestSetStatus(t *testing.T) {
-	ctx := context.Background()
 	sha := "000111222333444555666777888999aaabbbcccd"
 	url := "https://foo.bar.com/1234"
 	testuser, err := user.NewUsername("user")
@@ -354,7 +338,7 @@ func TestSetStatus(t *testing.T) {
 		WithCommit(sha),
 	)
 
-	err = client.SetStatus(ctx, vcs.SetStatusOptions{
+	err = client.SetStatus(t.Context(), vcs.SetStatusOptions{
 		Repo:        vcs.NewMustRepo("acme", "test"),
 		Ref:         sha,
 		Status:      vcs.PendingStatus,
@@ -363,7 +347,7 @@ func TestSetStatus(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	status := server.GetStatus(t, ctx)
+	status := server.GetStatus(t, t.Context())
 	assert.NotNil(t, status)
 	assert.Equal(t, forgejo.StatusPending, status.State)
 }

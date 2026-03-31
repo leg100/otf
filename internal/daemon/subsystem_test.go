@@ -10,8 +10,6 @@ import (
 )
 
 func TestSubsystem(t *testing.T) {
-	ctx := context.Background()
-
 	tests := []struct {
 		name      string
 		exclusive bool
@@ -30,7 +28,7 @@ func TestSubsystem(t *testing.T) {
 				sub.DB = &fakeWaitAndLock{}
 				sub.LockID = new(int64(123))
 			}
-			err := sub.Start(ctx, &errgroup.Group{})
+			err := sub.Start(t.Context(), &errgroup.Group{})
 			require.NoError(t, err)
 		})
 	}

@@ -1,7 +1,6 @@
 package engine
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -44,7 +43,7 @@ func Test_check(t *testing.T) {
 			s := &Service{
 				db: &testDB{currentLatest: tt.currentLatest, lastCheck: tt.lastCheck},
 			}
-			got, err := s.check(context.Background(), &testEngine{latestVersion: tt.newLatest}, now)
+			got, err := s.check(t.Context(), &testEngine{latestVersion: tt.newLatest}, now)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.want, got)
 		})

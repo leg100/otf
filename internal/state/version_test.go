@@ -1,7 +1,6 @@
 package state
 
 import (
-	"context"
 	"encoding/json"
 	"testing"
 
@@ -11,13 +10,12 @@ import (
 )
 
 func TestFactory(t *testing.T) {
-	ctx := context.Background()
 	state := testutils.ReadFile(t, "testdata/terraform.tfstate")
 
 	t.Run("first state version with state", func(t *testing.T) {
 		f := factory{&fakeDB{}}
 
-		got, err := f.new(ctx, CreateStateVersionOptions{
+		got, err := f.new(t.Context(), CreateStateVersionOptions{
 			Serial:      new(int64(1)),
 			State:       state,
 			WorkspaceID: testutils.ParseID(t, "ws-123"),
@@ -66,7 +64,7 @@ func TestFactory(t *testing.T) {
 	t.Run("first state version without state", func(t *testing.T) {
 		f := factory{&fakeDB{}}
 
-		got, err := f.new(ctx, CreateStateVersionOptions{
+		got, err := f.new(t.Context(), CreateStateVersionOptions{
 			Serial:      new(int64(1)),
 			WorkspaceID: testutils.ParseID(t, "ws-123"),
 		})
@@ -83,7 +81,7 @@ func TestFactory(t *testing.T) {
 		// seed db with first state version with serial 0
 		f := factory{&fakeDB{current: &Version{Serial: 0}}}
 
-		got, err := f.new(ctx, CreateStateVersionOptions{
+		got, err := f.new(t.Context(), CreateStateVersionOptions{
 			Serial:      new(int64(1)),
 			State:       state,
 			WorkspaceID: testutils.ParseID(t, "ws-123"),
@@ -101,7 +99,7 @@ func TestFactory(t *testing.T) {
 	t.Run("allow creating another state version with same serial as long as state is identical", func(t *testing.T) {
 		f := factory{&fakeDB{current: &Version{Serial: 1, State: state}}}
 
-		_, err := f.new(ctx, CreateStateVersionOptions{
+		_, err := f.new(t.Context(), CreateStateVersionOptions{
 			Serial:      new(int64(1)),
 			State:       state,
 			WorkspaceID: testutils.ParseID(t, "ws-123"),
@@ -122,7 +120,7 @@ func TestFactory(t *testing.T) {
 		f := factory{&fakeDB{current: &Version{Serial: 1, State: state}}}
 
 		// try to create another state version, same serial but different state
-		_, err = f.new(ctx, CreateStateVersionOptions{
+		_, err = f.new(t.Context(), CreateStateVersionOptions{
 			Serial:      new(int64(1)),
 			State:       state2,
 			WorkspaceID: testutils.ParseID(t, "ws-123"),
@@ -133,7 +131,7 @@ func TestFactory(t *testing.T) {
 	t.Run("disallow creating state version with serial lower than the current state version", func(t *testing.T) {
 		f := factory{&fakeDB{current: &Version{Serial: 99}}}
 
-		_, err := f.new(ctx, CreateStateVersionOptions{
+		_, err := f.new(t.Context(), CreateStateVersionOptions{
 			Serial:      new(int64(1)),
 			State:       state,
 			WorkspaceID: testutils.ParseID(t, "ws-123"),
@@ -151,7 +149,7 @@ func TestFactory(t *testing.T) {
 			WorkspaceID: testutils.ParseID(t, "ws-123"),
 		}}}
 
-		got, err := f.rollback(ctx, testutils.ParseID(t, "sv-123"))
+		got, err := f.rollback(t.Context(), testutils.ParseID(t, "sv-123"))
 		require.NoError(t, err)
 
 		// should create an identical state version to the one used to seed the

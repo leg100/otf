@@ -2,7 +2,6 @@ package cli
 
 import (
 	"bytes"
-	"context"
 	"path/filepath"
 	"testing"
 
@@ -40,8 +39,6 @@ func TestCLI_getToken_CredentialStore(t *testing.T) {
 
 // TestCommandTree checks the command tree is as it should be
 func TestCommandTree(t *testing.T) {
-	ctx := context.Background()
-
 	tests := []struct {
 		name string
 		args []string
@@ -84,7 +81,7 @@ func TestCommandTree(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := new(bytes.Buffer)
-			err := NewCLI().Run(ctx, tt.args, got)
+			err := NewCLI().Run(t.Context(), tt.args, got)
 			if tt.err != "" {
 				require.EqualError(t, err, tt.err)
 				return

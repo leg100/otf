@@ -1,7 +1,6 @@
 package authenticator
 
 import (
-	"context"
 	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
@@ -18,8 +17,7 @@ import (
 )
 
 func Test_newIDTokenHandler(t *testing.T) {
-	ctx := context.Background()
-	_, err := newIDTokenHandler(ctx, OIDCConfig{})
+	_, err := newIDTokenHandler(t.Context(), OIDCConfig{})
 	assert.Equal(t, ErrMissingOIDCIssuerURL, err)
 }
 
@@ -82,7 +80,7 @@ func Test_idtokenHandler_parseUserInfo(t *testing.T) {
 				verifier:      fakeVerifier(key),
 				usernameClaim: tt.claim,
 			}
-			got, err := handler.parseUserInfo(context.Background(), (&oauth2.Token{}).WithExtra(
+			got, err := handler.parseUserInfo(t.Context(), (&oauth2.Token{}).WithExtra(
 				map[string]any{"id_token": string(signed)},
 			))
 			require.NoError(t, err)

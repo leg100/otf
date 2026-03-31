@@ -2,7 +2,6 @@ package engine
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -39,7 +38,7 @@ func TestDownloader(t *testing.T) {
 
 	// Download bin from fake server
 	buf := new(bytes.Buffer)
-	tfpath, err := dl.Download(context.Background(), "1.2.3", buf)
+	tfpath, err := dl.Download(t.Context(), "1.2.3", buf)
 	require.NoError(t, err)
 	require.FileExists(t, tfpath)
 	tfbin, err := os.ReadFile(tfpath)
@@ -49,7 +48,7 @@ func TestDownloader(t *testing.T) {
 
 	// Request bin again. This time it should skip download.
 	buf = new(bytes.Buffer)
-	tfpath, err = dl.Download(context.Background(), "1.2.3", buf)
+	tfpath, err = dl.Download(t.Context(), "1.2.3", buf)
 	require.NoError(t, err)
 	require.FileExists(t, tfpath)
 	tfbin, err = os.ReadFile(tfpath)
