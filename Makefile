@@ -1,4 +1,5 @@
 LD_FLAGS = '-s -w -X github.com/leg100/otf/internal.Version=edge'
+GOOS ?= linux
 GOARCH ?= $(shell go env GOARCH)
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
@@ -18,9 +19,9 @@ test:
 
 .PHONY: build
 build:
-	GOOS=linux GOARCH=$(GOARCH) go build \
+	GOOS=$(GOOS) GOARCH=$(GOARCH) go build \
 		-ldflags $(LD_FLAGS) \
-		-o ./_build/linux/$(GOARCH)/ \
+		-o ./_build/$(GOOS)/$(GOARCH)/ \
 		./cmd/otfd ./cmd/otf-job ./cmd/otf-agent
 
 .PHONY: install
