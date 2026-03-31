@@ -7,7 +7,7 @@
 
 # STAGE: base
 # This stage contains the files/packages that are used by the final images.
-FROM alpine:3.23.3 AS base
+FROM --platform=$BUILDPLATFORM alpine:3.23.3 AS base
 
 # Build cache optimization: use cache mounts
 # https://docs.docker.com/build/cache/optimize/#use-cache-mounts Mounting
