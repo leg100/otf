@@ -11,6 +11,7 @@ import (
 	"github.com/leg100/otf/internal/configversion/source"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/logr"
+	"github.com/leg100/otf/internal/policy"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
 	runpkg "github.com/leg100/otf/internal/run"
@@ -27,6 +28,7 @@ type Handlers struct {
 	logger     logr.Logger
 	templates  *templates
 	client     Client
+	policies   PolicyClient
 }
 
 type Client interface {
@@ -51,14 +53,20 @@ type sourceIconGetter interface {
 	GetSourceIcon(source source.Source) templ.Component
 }
 
+type PolicyClient interface {
+	ListPolicyChecks(ctx context.Context, runID resource.TfeID) ([]*policy.PolicyCheck, error)
+}
+
 func NewHandlers(
 	logger logr.Logger,
 	client Client,
+	policies PolicyClient,
 	authorizer authz.Interface,
 ) *Handlers {
 	return &Handlers{
 		logger:     logger,
 		client:     client,
+		policies:   policies,
 		authorizer: authorizer,
 		templates: &templates{
 			workspaces:  client,
@@ -220,8 +228,8 @@ func (h *Handlers) getRun(w http.ResponseWriter, r *http.Request) {
 		sentinelLogs: runpkg.Chunk{Data: sentinelLogs.Data},
 		applyLogs:    runpkg.Chunk{Data: applyLogs.Data},
 	}
-	if h.Policies != nil {
-		props.policyChecks, _ = h.Policies.ListPolicyChecks(r.Context(), run.ID)
+	if h.policies != nil {
+		props.policyChecks, _ = h.policies.ListPolicyChecks(r.Context(), run.ID)
 	}
 	helpers.RenderPage(
 		h.templates.getRun(props),

@@ -681,12 +681,13 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 			*user.UserService
 			*workspace.WorkspaceService
 			*configversion.ConfigService
-		}{
-			RunService:       runService,
-			UserService:      userService,
-			WorkspaceService: workspaceService,
-			ConfigService:    configService,
-		},
+			}{
+				RunService:       runService,
+				UserService:      userService,
+				WorkspaceService: workspaceService,
+				ConfigService:    configService,
+			},
+		policyService,
 		authorizer,
 	)
 	uiHandlers := &ui.Handlers{
