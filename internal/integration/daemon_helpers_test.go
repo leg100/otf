@@ -106,7 +106,7 @@ func setup(t *testing.T, opts ...configOption) (*testDaemon, *organization.Organ
 	}
 
 	// Confer superuser privileges on all calls to service endpoints
-	ctx := authz.AddSubjectToContext(t.Context(), &authz.Superuser{Username: "app-user"})
+	ctx := authz.AddSubjectToContext(context.Background(), &authz.Superuser{Username: "app-user"})
 
 	d, err := daemon.New(ctx, logger, cfg.Config)
 	require.NoError(t, err)
