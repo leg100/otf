@@ -37,7 +37,7 @@ INSERT INTO ssh_keys (
 	return err
 }
 
-func (db *pgdb) update(ctx context.Context, id resource.TfeID, updateFunc func(context.Context, *SSHKey) error) (*SSHKey, error) {
+func (db *pgdb) update(ctx context.Context, id resource.ID, updateFunc func(context.Context, *SSHKey) error) (*SSHKey, error) {
 	return sql.Updater(
 		ctx,
 		db.DB,
@@ -67,7 +67,7 @@ WHERE ssh_key_id = @id
 	)
 }
 
-func (db *pgdb) get(ctx context.Context, id resource.TfeID) (*SSHKey, error) {
+func (db *pgdb) get(ctx context.Context, id resource.ID) (*SSHKey, error) {
 	row := db.Query(ctx, `
 SELECT ssh_key_id, name, organization_name
 FROM ssh_keys
@@ -76,7 +76,7 @@ WHERE ssh_key_id = $1
 	return sql.CollectOneRow(row, pgx.RowToAddrOfStructByName[SSHKey])
 }
 
-func (db *pgdb) getPrivateKey(ctx context.Context, id resource.TfeID) ([]byte, error) {
+func (db *pgdb) getPrivateKey(ctx context.Context, id resource.ID) ([]byte, error) {
 	row := db.Query(ctx, `
 SELECT private_key
 FROM ssh_keys
@@ -95,7 +95,7 @@ ORDER BY name
 	return sql.CollectRows(rows, pgx.RowToAddrOfStructByName[SSHKey])
 }
 
-func (db *pgdb) delete(ctx context.Context, id resource.TfeID) (*SSHKey, error) {
+func (db *pgdb) delete(ctx context.Context, id resource.ID) (*SSHKey, error) {
 	row := db.Query(ctx, `
 DELETE FROM ssh_keys
 WHERE ssh_key_id = $1

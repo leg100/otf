@@ -50,7 +50,7 @@ func (s *Service) WatchNotificationConfigs(ctx context.Context) (<-chan pubsub.E
 	return s.broker.Subscribe(ctx)
 }
 
-func (s *Service) CreateNotificationConfig(ctx context.Context, workspaceID resource.TfeID, opts CreateConfigOptions) (*Config, error) {
+func (s *Service) CreateNotificationConfig(ctx context.Context, workspaceID resource.ID, opts CreateConfigOptions) (*Config, error) {
 	subject, err := s.Authorize(ctx, authz.CreateNotificationConfigurationAction, workspaceID)
 	if err != nil {
 		return nil, err
@@ -68,7 +68,7 @@ func (s *Service) CreateNotificationConfig(ctx context.Context, workspaceID reso
 	return nc, nil
 }
 
-func (s *Service) UpdateNotificationConfig(ctx context.Context, id resource.TfeID, opts UpdateConfigOptions) (*Config, error) {
+func (s *Service) UpdateNotificationConfig(ctx context.Context, id resource.ID, opts UpdateConfigOptions) (*Config, error) {
 	var subject authz.Subject
 	updated, err := s.db.update(ctx, id, func(ctx context.Context, nc *Config) (err error) {
 		subject, err = s.Authorize(ctx, authz.UpdateNotificationConfigurationAction, nc.WorkspaceID)
@@ -85,7 +85,7 @@ func (s *Service) UpdateNotificationConfig(ctx context.Context, id resource.TfeI
 	return updated, nil
 }
 
-func (s *Service) GetNotificationConfig(ctx context.Context, id resource.TfeID) (*Config, error) {
+func (s *Service) GetNotificationConfig(ctx context.Context, id resource.ID) (*Config, error) {
 	nc, err := s.db.get(ctx, id)
 	if err != nil {
 		s.Error(err, "retrieving notification config", "id", id)
@@ -99,7 +99,7 @@ func (s *Service) GetNotificationConfig(ctx context.Context, id resource.TfeID) 
 	return nc, nil
 }
 
-func (s *Service) ListNotificationConfigs(ctx context.Context, workspaceID resource.TfeID) ([]*Config, error) {
+func (s *Service) ListNotificationConfigs(ctx context.Context, workspaceID resource.ID) ([]*Config, error) {
 	subject, err := s.Authorize(ctx, authz.ListNotificationConfigurationsAction, workspaceID)
 	if err != nil {
 		return nil, err
@@ -113,7 +113,7 @@ func (s *Service) ListNotificationConfigs(ctx context.Context, workspaceID resou
 	return configs, nil
 }
 
-func (s *Service) DeleteNotificationConfig(ctx context.Context, id resource.TfeID) error {
+func (s *Service) DeleteNotificationConfig(ctx context.Context, id resource.ID) error {
 	nc, err := s.db.get(ctx, id)
 	if err != nil {
 		s.Error(err, "retrieving notification config", "id", id)

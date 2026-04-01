@@ -50,7 +50,7 @@ func (f *tokenFactory) createJobToken(jobID resource.TfeID) ([]byte, error) {
 
 // NewAgentToken constructs a token for an agent, returning both the
 // representation of the token, and the cryptographic token itself.
-func (f *tokenFactory) NewAgentToken(poolID resource.TfeID, opts CreateAgentTokenOptions) (*AgentToken, []byte, error) {
+func (f *tokenFactory) NewAgentToken(poolID resource.ID, opts CreateAgentTokenOptions) (*AgentToken, []byte, error) {
 	if opts.Description == "" {
 		return nil, nil, fmt.Errorf("description cannot be an empty string")
 	}
@@ -58,7 +58,7 @@ func (f *tokenFactory) NewAgentToken(poolID resource.TfeID, opts CreateAgentToke
 		ID:          resource.NewTfeID(resource.AgentTokenKind),
 		CreatedAt:   internal.CurrentTimestamp(nil),
 		Description: opts.Description,
-		AgentPoolID: poolID,
+		AgentPoolID: poolID.(resource.TfeID),
 	}
 	// Agent tokens don't expire.
 	token, err := f.tokens.NewToken(at.ID, nil)

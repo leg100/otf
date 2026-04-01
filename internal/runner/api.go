@@ -20,18 +20,18 @@ type (
 	}
 
 	apiClient interface {
-		CreateAgentToken(ctx context.Context, poolID resource.TfeID, opts CreateAgentTokenOptions) (*AgentToken, []byte, error)
+		CreateAgentToken(ctx context.Context, poolID resource.ID, opts CreateAgentTokenOptions) (*AgentToken, []byte, error)
 
 		Register(ctx context.Context, opts RegisterRunnerOptions) (*RunnerMeta, error)
-		awaitAllocatedJobs(ctx context.Context, agentID resource.TfeID) ([]*Job, error)
-		updateStatus(ctx context.Context, agentID resource.TfeID, status RunnerStatus) error
+		awaitAllocatedJobs(ctx context.Context, agentID resource.ID) ([]*Job, error)
+		updateStatus(ctx context.Context, agentID resource.ID, status RunnerStatus) error
 
-		GetJob(ctx context.Context, jobID resource.TfeID) (*Job, error)
-		startJob(ctx context.Context, jobID resource.TfeID) ([]byte, error)
-		awaitJobSignal(ctx context.Context, jobID resource.TfeID) func() (jobSignal, error)
-		finishJob(ctx context.Context, jobID resource.TfeID, opts finishJobOptions) error
+		GetJob(ctx context.Context, jobID resource.ID) (*Job, error)
+		startJob(ctx context.Context, jobID resource.ID) ([]byte, error)
+		awaitJobSignal(ctx context.Context, jobID resource.ID) func() (jobSignal, error)
+		finishJob(ctx context.Context, jobID resource.ID, opts finishJobOptions) error
 
-		GenerateDynamicCredentialsToken(ctx context.Context, jobID resource.TfeID, audience string) ([]byte, error)
+		GenerateDynamicCredentialsToken(ctx context.Context, jobID resource.ID, audience string) ([]byte, error)
 	}
 
 	updateAgentStatusParams struct {

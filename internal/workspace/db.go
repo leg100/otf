@@ -124,7 +124,7 @@ INSERT INTO workspaces (
 	return err
 }
 
-func (db *pgdb) update(ctx context.Context, workspaceID resource.TfeID, fn func(context.Context, *Workspace) error) (*Workspace, error) {
+func (db *pgdb) update(ctx context.Context, workspaceID resource.ID, fn func(context.Context, *Workspace) error) (*Workspace, error) {
 	return sql.Updater(
 		ctx,
 		db.DB,
@@ -195,7 +195,7 @@ func (db *pgdb) update(ctx context.Context, workspaceID resource.TfeID, fn func(
 	)
 }
 
-func (db *pgdb) forUpdate(ctx context.Context, workspaceID resource.TfeID) (*Workspace, error) {
+func (db *pgdb) forUpdate(ctx context.Context, workspaceID resource.ID) (*Workspace, error) {
 	row := db.Query(ctx, `
 SELECT
 	w.*,
@@ -218,7 +218,7 @@ FOR UPDATE OF w
 }
 
 // setLatestRun sets the ID of the current run for the specified workspace.
-func (db *pgdb) setLatestRun(ctx context.Context, workspaceID, runID resource.TfeID) (*Workspace, error) {
+func (db *pgdb) setLatestRun(ctx context.Context, workspaceID, runID resource.ID) (*Workspace, error) {
 	_, err := db.Exec(ctx, `
 UPDATE workspaces
 SET latest_run_id = $1
@@ -316,7 +316,7 @@ FROM workspaces
 	return resource.NewPage(items, opts.PageOptions, &count), nil
 }
 
-func (db *pgdb) listByConnection(ctx context.Context, vcsProviderID resource.TfeID, repoPath vcs.Repo) ([]*Workspace, error) {
+func (db *pgdb) listByConnection(ctx context.Context, vcsProviderID resource.ID, repoPath vcs.Repo) ([]*Workspace, error) {
 	rows := db.Query(ctx, `
 SELECT
 	w.*,
@@ -446,7 +446,7 @@ AND   w.organization_name = $2
 	return sql.CollectOneRow(row, scan)
 }
 
-func (db *pgdb) delete(ctx context.Context, workspaceID resource.TfeID) error {
+func (db *pgdb) delete(ctx context.Context, workspaceID resource.ID) error {
 	_, err := db.Exec(ctx, `
 DELETE
 FROM workspaces
@@ -459,7 +459,7 @@ WHERE workspace_id = $1
 	return nil
 }
 
-func (db *pgdb) SetWorkspacePermission(ctx context.Context, workspaceID, teamID resource.TfeID, role authz.Role) error {
+func (db *pgdb) SetWorkspacePermission(ctx context.Context, workspaceID, teamID resource.ID, role authz.Role) error {
 	_, err := db.Exec(ctx, `
 INSERT INTO workspace_permissions (
     workspace_id,
@@ -481,7 +481,7 @@ INSERT INTO workspace_permissions (
 	return nil
 }
 
-func (db *pgdb) UnsetWorkspacePermission(ctx context.Context, workspaceID, teamID resource.TfeID) error {
+func (db *pgdb) UnsetWorkspacePermission(ctx context.Context, workspaceID, teamID resource.ID) error {
 	_, err := db.Exec(ctx, `
 DELETE
 FROM workspace_permissions

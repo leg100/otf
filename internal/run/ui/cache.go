@@ -25,15 +25,16 @@ func newWorkspaceCache(getter workspaceCacheService) *workspaceCache {
 	}
 }
 
-func (c *workspaceCache) Get(ctx context.Context, workspaceID resource.TfeID) (*workspace.Workspace, error) {
-	if ws, ok := c.cache[workspaceID]; ok {
+func (c *workspaceCache) Get(ctx context.Context, workspaceID resource.ID) (*workspace.Workspace, error) {
+	tfeID := workspaceID.(resource.TfeID)
+	if ws, ok := c.cache[tfeID]; ok {
 		return ws, nil
 	}
 	ws, err := c.getter.GetWorkspace(ctx, workspaceID)
 	if err != nil {
 		return nil, err
 	}
-	c.cache[workspaceID] = ws
+	c.cache[tfeID] = ws
 	return ws, nil
 }
 

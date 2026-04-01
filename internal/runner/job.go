@@ -118,19 +118,21 @@ func (j *Job) CanAccess(action authz.Action, req authz.Request) bool {
 	return false
 }
 
-func (j *Job) allocate(runnerID resource.TfeID) error {
+func (j *Job) allocate(runnerID resource.ID) error {
 	if err := j.updateStatus(JobAllocated); err != nil {
 		return err
 	}
-	j.RunnerID = &runnerID
+	tfeID := runnerID.(resource.TfeID)
+	j.RunnerID = &tfeID
 	return nil
 }
 
-func (j *Job) reallocate(runnerID resource.TfeID) error {
+func (j *Job) reallocate(runnerID resource.ID) error {
 	if j.Status != JobAllocated {
 		return errors.New("job can only be re-allocated when it is in the allocated state")
 	}
-	j.RunnerID = &runnerID
+	tfeID := runnerID.(resource.TfeID)
+	j.RunnerID = &tfeID
 	return nil
 }
 

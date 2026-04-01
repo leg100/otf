@@ -19,7 +19,7 @@ type teamCLI struct {
 type cliClient interface {
 	CreateTeam(ctx context.Context, organization organization.Name, opts CreateTeamOptions) (*Team, error)
 	GetTeam(ctx context.Context, organization organization.Name, team string) (*Team, error)
-	DeleteTeam(ctx context.Context, teamID resource.TfeID) error
+	DeleteTeam(ctx context.Context, teamID resource.ID) error
 }
 
 func NewTeamCommand(apiClient *otfhttp.Client) *cobra.Command {

@@ -63,8 +63,8 @@ func (f *fakeWorkspaceService) GetWorkspace(context.Context, resource.ID) (*work
 	return nil, nil
 }
 
-func (f *fakeRunService) GetRun(ctx context.Context, id resource.TfeID) (*run.Run, error) {
-	return &run.Run{ID: id}, nil
+func (f *fakeRunService) GetRun(ctx context.Context, id resource.ID) (*run.Run, error) {
+	return &run.Run{ID: id.(resource.TfeID)}, nil
 }
 
 func (f *fakeRunService) WatchRuns(ctx context.Context) (<-chan pubsub.Event[*run.Event], func()) {

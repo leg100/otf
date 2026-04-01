@@ -10,7 +10,7 @@ import (
 // UploadConfig saves a configuration tarball to the db
 //
 // NOTE: unauthenticated - access granted only via signed URL
-func (s *Service) UploadConfig(ctx context.Context, cvID resource.TfeID, config []byte) error {
+func (s *Service) UploadConfig(ctx context.Context, cvID resource.ID, config []byte) error {
 	err := s.db.UploadConfigurationVersion(ctx, cvID, config)
 	if err != nil {
 		s.Error(err, "uploading configuration")
@@ -21,7 +21,7 @@ func (s *Service) UploadConfig(ctx context.Context, cvID resource.TfeID, config 
 }
 
 // DownloadConfig retrieves a tarball from the db
-func (s *Service) DownloadConfig(ctx context.Context, cvID resource.TfeID) ([]byte, error) {
+func (s *Service) DownloadConfig(ctx context.Context, cvID resource.ID) ([]byte, error) {
 	subject, err := s.Authorize(ctx, authz.DownloadConfigurationVersionAction, cvID)
 	if err != nil {
 		return nil, err

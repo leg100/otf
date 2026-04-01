@@ -162,7 +162,7 @@ func (f *fakeRunClient) ListRuns(_ context.Context, opts run.ListOptions) (*reso
 	return resource.NewPage([]*run.Run{f.run}, opts.PageOptions, nil), nil
 }
 
-func (f *fakeRunClient) GetRun(ctx context.Context, id resource.TfeID) (*run.Run, error) {
+func (f *fakeRunClient) GetRun(ctx context.Context, id resource.ID) (*run.Run, error) {
 	return f.run, nil
 }
 
@@ -170,19 +170,19 @@ func (f *fakeRunClient) GetChunk(ctx context.Context, opts run.GetChunkOptions) 
 	return run.Chunk{}, nil
 }
 
-func (f *fakeRunClient) CancelRun(ctx context.Context, id resource.TfeID) error {
+func (f *fakeRunClient) CancelRun(ctx context.Context, id resource.ID) error {
 	return nil
 }
 
-func (f *fakeRunClient) ForceCancelRun(ctx context.Context, id resource.TfeID) error {
+func (f *fakeRunClient) ForceCancelRun(ctx context.Context, id resource.ID) error {
 	return nil
 }
 
-func (f *fakeRunClient) DiscardRun(ctx context.Context, id resource.TfeID) error {
+func (f *fakeRunClient) DiscardRun(ctx context.Context, id resource.ID) error {
 	return nil
 }
 
-func (f *fakeRunClient) CreateRun(ctx context.Context, workspaceID resource.TfeID, opts run.CreateOptions) (*run.Run, error) {
+func (f *fakeRunClient) CreateRun(ctx context.Context, workspaceID resource.ID, opts run.CreateOptions) (*run.Run, error) {
 	return f.run, nil
 }
 

@@ -59,22 +59,22 @@ type WorkspaceService interface {
 	ListTags(ctx context.Context, organization organization.Name, opts workspace.ListTagsOptions) (*resource.Page[*workspace.Tag], error)
 	CreateWorkspace(ctx context.Context, opts workspace.CreateOptions) (*workspace.Workspace, error)
 	GetWorkspaceByName(ctx context.Context, organization resource.ID, name string) (*workspace.Workspace, error)
-	GetWorkspacePolicy(ctx context.Context, workspaceID resource.TfeID) (workspace.Policy, error)
-	UpdateWorkspace(ctx context.Context, workspaceID resource.TfeID, opts workspace.UpdateOptions) (*workspace.Workspace, error)
-	DeleteWorkspace(ctx context.Context, workspaceID resource.TfeID) (*workspace.Workspace, error)
-	Lock(ctx context.Context, workspaceID resource.TfeID, runID *resource.TfeID) (*workspace.Workspace, error)
-	Unlock(ctx context.Context, workspaceID resource.TfeID, runID *resource.TfeID, force bool) (*workspace.Workspace, error)
-	SetWorkspacePermission(ctx context.Context, workspaceID, teamID resource.TfeID, role authz.Role) error
-	UnsetWorkspacePermission(ctx context.Context, workspaceID, teamID resource.TfeID) error
+	GetWorkspacePolicy(ctx context.Context, workspaceID resource.ID) (workspace.Policy, error)
+	UpdateWorkspace(ctx context.Context, workspaceID resource.ID, opts workspace.UpdateOptions) (*workspace.Workspace, error)
+	DeleteWorkspace(ctx context.Context, workspaceID resource.ID) (*workspace.Workspace, error)
+	Lock(ctx context.Context, workspaceID resource.ID, runID *resource.TfeID) (*workspace.Workspace, error)
+	Unlock(ctx context.Context, workspaceID resource.ID, runID *resource.TfeID, force bool) (*workspace.Workspace, error)
+	SetWorkspacePermission(ctx context.Context, workspaceID, teamID resource.ID, role authz.Role) error
+	UnsetWorkspacePermission(ctx context.Context, workspaceID, teamID resource.ID) error
 	DeleteTags(ctx context.Context, organization organization.Name, tagIDs []resource.TfeID) error
-	AddTags(ctx context.Context, workspaceID resource.TfeID, tags []workspace.TagSpec) error
-	RemoveTags(ctx context.Context, workspaceID resource.TfeID, tags []workspace.TagSpec) error
+	AddTags(ctx context.Context, workspaceID resource.ID, tags []workspace.TagSpec) error
+	RemoveTags(ctx context.Context, workspaceID resource.ID, tags []workspace.TagSpec) error
 	ListTeams(ctx context.Context, organization organization.Name) ([]*team.Team, error)
-	GetVCSProvider(ctx context.Context, id resource.TfeID) (*vcs.Provider, error)
+	GetVCSProvider(ctx context.Context, id resource.ID) (*vcs.Provider, error)
 	ListVCSProviders(ctx context.Context, organization organization.Name) ([]*vcs.Provider, error)
 	GetLatest(ctx context.Context, e *engine.Engine) (string, time.Time, error)
 	ListSSHKeys(ctx context.Context, org organization.Name) ([]*sshkey.SSHKey, error)
-	GetRun(ctx context.Context, id resource.TfeID) (*runpkg.Run, error)
+	GetRun(ctx context.Context, id resource.ID) (*runpkg.Run, error)
 }
 
 func (h *Handlers) AddHandlers(r *mux.Router) {

@@ -19,7 +19,7 @@ type (
 )
 
 // NewRun constructs a new run using the provided options.
-func (f *factory) NewRun(ctx context.Context, workspaceID resource.TfeID, opts CreateOptions) (*Run, error) {
+func (f *factory) NewRun(ctx context.Context, workspaceID resource.ID, opts CreateOptions) (*Run, error) {
 	ws, err := f.client.GetWorkspace(ctx, workspaceID)
 	if err != nil {
 		return nil, err

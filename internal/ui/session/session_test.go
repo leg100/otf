@@ -39,6 +39,6 @@ func TestService_StartSession(t *testing.T) {
 
 type fakeSessionClient struct{}
 
-func (f *fakeSessionClient) NewToken(subjectID resource.TfeID, expiry *time.Time) ([]byte, error) {
+func (f *fakeSessionClient) NewToken(subjectID resource.ID, expiry *time.Time) ([]byte, error) {
 	return []byte("fake token"), nil
 }

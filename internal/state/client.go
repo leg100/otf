@@ -38,7 +38,7 @@ func (c *Client) CreateStateVersion(ctx context.Context, opts CreateStateVersion
 	return &sv, nil
 }
 
-func (c *Client) ListStateVersions(ctx context.Context, workspaceID resource.TfeID, opts resource.PageOptions) (*resource.Page[*Version], error) {
+func (c *Client) ListStateVersions(ctx context.Context, workspaceID resource.ID, opts resource.PageOptions) (*resource.Page[*Version], error) {
 	u := fmt.Sprintf("workspaces/%s/state-versions", url.QueryEscape(workspaceID.String()))
 	req, err := c.NewRequest("GET", u, &opts)
 	if err != nil {
@@ -51,7 +51,7 @@ func (c *Client) ListStateVersions(ctx context.Context, workspaceID resource.Tfe
 	return &page, nil
 }
 
-func (c *Client) DownloadCurrentState(ctx context.Context, workspaceID resource.TfeID) ([]byte, error) {
+func (c *Client) DownloadCurrentState(ctx context.Context, workspaceID resource.ID) ([]byte, error) {
 	sv, err := c.GetCurrentStateVersion(ctx, workspaceID)
 	if err != nil {
 		return nil, err
@@ -59,7 +59,7 @@ func (c *Client) DownloadCurrentState(ctx context.Context, workspaceID resource.
 	return c.DownloadState(ctx, sv.ID)
 }
 
-func (c *Client) GetCurrentStateVersion(ctx context.Context, workspaceID resource.TfeID) (*Version, error) {
+func (c *Client) GetCurrentStateVersion(ctx context.Context, workspaceID resource.ID) (*Version, error) {
 	u := fmt.Sprintf("workspaces/%s/current-state-version", url.QueryEscape(workspaceID.String()))
 	req, err := c.NewRequest("GET", u, nil)
 	if err != nil {
@@ -72,7 +72,7 @@ func (c *Client) GetCurrentStateVersion(ctx context.Context, workspaceID resourc
 	return &sv, nil
 }
 
-func (c *Client) DeleteStateVersion(ctx context.Context, svID resource.TfeID) error {
+func (c *Client) DeleteStateVersion(ctx context.Context, svID resource.ID) error {
 	u := fmt.Sprintf("state-versions/%s", url.QueryEscape(svID.String()))
 	req, err := c.NewRequest("DELETE", u, nil)
 	if err != nil {
@@ -86,7 +86,7 @@ func (c *Client) DeleteStateVersion(ctx context.Context, svID resource.TfeID) er
 	return nil
 }
 
-func (c *Client) DownloadState(ctx context.Context, svID resource.TfeID) ([]byte, error) {
+func (c *Client) DownloadState(ctx context.Context, svID resource.ID) ([]byte, error) {
 	u := fmt.Sprintf("state-versions/%s/download", url.QueryEscape(svID.String()))
 	req, err := c.NewRequest("GET", u, nil)
 	if err != nil {
@@ -102,7 +102,7 @@ func (c *Client) DownloadState(ctx context.Context, svID resource.TfeID) ([]byte
 	return buf.Bytes(), nil
 }
 
-func (c *Client) RollbackStateVersion(ctx context.Context, svID resource.TfeID) (*Version, error) {
+func (c *Client) RollbackStateVersion(ctx context.Context, svID resource.ID) (*Version, error) {
 	// The OTF JSON:API rollback endpoint matches the TFC endpoint for
 	// compatibilty purposes, and takes both a workspace ID and a state version
 	// ID, but OTF does nothing with the workspace ID and thus anything can be

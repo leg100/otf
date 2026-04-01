@@ -22,7 +22,7 @@ type Registry struct {
 
 type registryClient interface {
 	GetModule(ctx context.Context, opts GetModuleOptions) (*Module, error)
-	downloadVersion(ctx context.Context, versionID resource.TfeID) ([]byte, error)
+	downloadVersion(ctx context.Context, versionID resource.ID) ([]byte, error)
 }
 
 // AddHandlers registers handlers for the module registry. It implements

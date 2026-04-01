@@ -17,7 +17,7 @@ type pgdb struct {
 	*sql.DB // provides access to generated SQL queries
 }
 
-func (pdb *pgdb) createWorkspaceVariable(ctx context.Context, workspaceID resource.TfeID, v *Variable) error {
+func (pdb *pgdb) createWorkspaceVariable(ctx context.Context, workspaceID resource.ID, v *Variable) error {
 	return pdb.Tx(ctx, func(ctx context.Context) error {
 		if err := pdb.createVariable(ctx, v); err != nil {
 			return err
@@ -38,7 +38,7 @@ INSERT INTO workspace_variables (
 	})
 }
 
-func (pdb *pgdb) listWorkspaceVariables(ctx context.Context, workspaceID resource.TfeID) ([]*Variable, error) {
+func (pdb *pgdb) listWorkspaceVariables(ctx context.Context, workspaceID resource.ID) ([]*Variable, error) {
 	rows := pdb.Query(ctx, `
 SELECT v.variable_id, v.key, v.value, v.description, v.category, v.sensitive, v.hcl, v.version_id
 FROM workspace_variables
@@ -48,7 +48,7 @@ WHERE workspace_id = $1
 	return sql.CollectRows(rows, pgx.RowToAddrOfStructByName[Variable])
 }
 
-func (pdb *pgdb) getWorkspaceVariable(ctx context.Context, variableID resource.TfeID) (*WorkspaceVariable, error) {
+func (pdb *pgdb) getWorkspaceVariable(ctx context.Context, variableID resource.ID) (*WorkspaceVariable, error) {
 	row := pdb.Query(ctx, `
 SELECT
     workspace_id,
@@ -60,7 +60,7 @@ WHERE v.variable_id = $1
 	return sql.CollectOneRow(row, scanWorkspaceVariable)
 }
 
-func (pdb *pgdb) deleteWorkspaceVariable(ctx context.Context, variableID resource.TfeID) (*WorkspaceVariable, error) {
+func (pdb *pgdb) deleteWorkspaceVariable(ctx context.Context, variableID resource.ID) (*WorkspaceVariable, error) {
 	row := pdb.Query(ctx, `
 DELETE
 FROM workspace_variables wv USING variables v
@@ -146,7 +146,7 @@ WHERE variable_set_id = $4
 	})
 }
 
-func (pdb *pgdb) getVariableSet(ctx context.Context, setID resource.TfeID) (*VariableSet, error) {
+func (pdb *pgdb) getVariableSet(ctx context.Context, setID resource.ID) (*VariableSet, error) {
 	row := pdb.Query(ctx, `
 SELECT
     vs.variable_set_id, vs.global, vs.name, vs.description, vs.organization_name,
@@ -168,7 +168,7 @@ WHERE vs.variable_set_id = $1
 	return sql.CollectOneRow(row, scanVariableSet)
 }
 
-func (pdb *pgdb) getVariableSetByVariableID(ctx context.Context, variableID resource.TfeID) (*VariableSet, error) {
+func (pdb *pgdb) getVariableSetByVariableID(ctx context.Context, variableID resource.ID) (*VariableSet, error) {
 	row := pdb.Query(ctx, `
 SELECT
     vs.variable_set_id, vs.global, vs.name, vs.description, vs.organization_name,
@@ -211,7 +211,7 @@ WHERE organization_name = $1
 	return sql.CollectRows(rows, scanVariableSet)
 }
 
-func (pdb *pgdb) listVariableSetsByWorkspace(ctx context.Context, workspaceID resource.TfeID) ([]*VariableSet, error) {
+func (pdb *pgdb) listVariableSetsByWorkspace(ctx context.Context, workspaceID resource.ID) ([]*VariableSet, error) {
 	rows := pdb.Query(ctx, `
 SELECT
     vs.variable_set_id, vs.global, vs.name, vs.description, vs.organization_name,
@@ -251,7 +251,7 @@ AND w.workspace_id = $1
 	return sql.CollectRows(rows, scanVariableSet)
 }
 
-func (pdb *pgdb) deleteVariableSet(ctx context.Context, setID resource.TfeID) error {
+func (pdb *pgdb) deleteVariableSet(ctx context.Context, setID resource.ID) error {
 	_, err := pdb.Exec(ctx, `
 DELETE
 FROM variable_sets
@@ -288,7 +288,7 @@ func scanVariableSet(row pgx.CollectableRow) (*VariableSet, error) {
 	return vs, nil
 }
 
-func (pdb *pgdb) addVariableToSet(ctx context.Context, setID resource.TfeID, v *Variable) error {
+func (pdb *pgdb) addVariableToSet(ctx context.Context, setID resource.ID, v *Variable) error {
 	return pdb.Tx(ctx, func(ctx context.Context) error {
 		if err := pdb.createVariable(ctx, v); err != nil {
 			return err
@@ -308,7 +308,7 @@ INSERT INTO variable_set_variables (
 	})
 }
 
-func (pdb *pgdb) createVariableSetWorkspaces(ctx context.Context, setID resource.TfeID, workspaceIDs []resource.TfeID) error {
+func (pdb *pgdb) createVariableSetWorkspaces(ctx context.Context, setID resource.ID, workspaceIDs []resource.TfeID) error {
 	err := pdb.Tx(ctx, func(ctx context.Context) error {
 		for _, wid := range workspaceIDs {
 			_, err := pdb.Exec(ctx, `
@@ -329,7 +329,7 @@ INSERT INTO variable_set_workspaces (
 	return err
 }
 
-func (pdb *pgdb) deleteAllVariableSetWorkspaces(ctx context.Context, setID resource.TfeID) error {
+func (pdb *pgdb) deleteAllVariableSetWorkspaces(ctx context.Context, setID resource.ID) error {
 	_, err := pdb.Exec(ctx, `
 DELETE
 FROM variable_set_workspaces
@@ -338,7 +338,7 @@ WHERE variable_set_id = $1
 	return err
 }
 
-func (pdb *pgdb) deleteVariableSetWorkspaces(ctx context.Context, setID resource.TfeID, workspaceIDs []resource.TfeID) error {
+func (pdb *pgdb) deleteVariableSetWorkspaces(ctx context.Context, setID resource.ID, workspaceIDs []resource.TfeID) error {
 	err := pdb.Tx(ctx, func(ctx context.Context) error {
 		for _, wid := range workspaceIDs {
 			_, err := pdb.Exec(ctx, `
@@ -415,7 +415,7 @@ WHERE variable_id = $8
 	return err
 }
 
-func (pdb *pgdb) deleteVariable(ctx context.Context, variableID resource.TfeID) error {
+func (pdb *pgdb) deleteVariable(ctx context.Context, variableID resource.ID) error {
 	_, err := pdb.Exec(ctx, ` DELETE FROM variables WHERE variable_id = $1 `, variableID)
 	return err
 }

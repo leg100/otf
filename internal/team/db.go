@@ -134,7 +134,7 @@ WHERE team_id = $1
 	return sql.CollectOneRow(rows, scan)
 }
 
-func (db *pgdb) getTeamByTokenID(ctx context.Context, tokenID resource.TfeID) (*Team, error) {
+func (db *pgdb) getTeamByTokenID(ctx context.Context, tokenID resource.ID) (*Team, error) {
 	rows := db.Query(ctx, `
 SELECT t.team_id, t.name, t.created_at, t.permission_manage_workspaces, t.permission_manage_vcs, t.permission_manage_modules, t.organization_name, t.sso_team_id, t.visibility, t.permission_manage_policies, t.permission_manage_policy_overrides, t.permission_manage_providers
 FROM teams t
@@ -153,7 +153,7 @@ WHERE organization_name = $1
 	return sql.CollectRows(rows, scan)
 }
 
-func (db *pgdb) deleteTeam(ctx context.Context, teamID resource.TfeID) error {
+func (db *pgdb) deleteTeam(ctx context.Context, teamID resource.ID) error {
 	_, err := db.Exec(ctx, `
 DELETE
 FROM teams
@@ -193,7 +193,7 @@ INSERT INTO team_tokens (
 	return err
 }
 
-func (db *pgdb) getTeamTokenByTeamID(ctx context.Context, teamID resource.TfeID) (*Token, error) {
+func (db *pgdb) getTeamTokenByTeamID(ctx context.Context, teamID resource.ID) (*Token, error) {
 	// query only returns 0 or 1 tokens
 	rows := db.Query(ctx, `
 SELECT *
@@ -209,7 +209,7 @@ WHERE team_id = $1
 	return token, nil
 }
 
-func (db *pgdb) deleteTeamToken(ctx context.Context, teamID resource.TfeID) error {
+func (db *pgdb) deleteTeamToken(ctx context.Context, teamID resource.ID) error {
 	_, err := db.Exec(ctx, `
 DELETE
 FROM team_tokens

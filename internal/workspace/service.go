@@ -210,7 +210,7 @@ func (s *Service) ListWorkspaces(ctx context.Context, opts ListOptions) (*resour
 	return s.db.list(ctx, opts)
 }
 
-func (s *Service) ListConnectedWorkspaces(ctx context.Context, vcsProviderID resource.TfeID, repoPath vcs.Repo) ([]*Workspace, error) {
+func (s *Service) ListConnectedWorkspaces(ctx context.Context, vcsProviderID resource.ID, repoPath vcs.Repo) ([]*Workspace, error) {
 	return s.db.listByConnection(ctx, vcsProviderID, repoPath)
 }
 
@@ -218,7 +218,7 @@ func (s *Service) BeforeUpdateWorkspace(hook func(context.Context, *Workspace) e
 	s.beforeUpdateHooks = append(s.beforeUpdateHooks, hook)
 }
 
-func (s *Service) UpdateWorkspace(ctx context.Context, workspaceID resource.TfeID, opts UpdateOptions) (*Workspace, error) {
+func (s *Service) UpdateWorkspace(ctx context.Context, workspaceID resource.ID, opts UpdateOptions) (*Workspace, error) {
 	subject, err := s.Authorize(ctx, authz.UpdateWorkspaceAction, workspaceID)
 	if err != nil {
 		return nil, err
@@ -263,7 +263,7 @@ func (s *Service) UpdateWorkspace(ctx context.Context, workspaceID resource.TfeI
 	return updated, nil
 }
 
-func (s *Service) DeleteWorkspace(ctx context.Context, workspaceID resource.TfeID) (*Workspace, error) {
+func (s *Service) DeleteWorkspace(ctx context.Context, workspaceID resource.ID) (*Workspace, error) {
 	subject, err := s.Authorize(ctx, authz.DeleteWorkspaceAction, workspaceID)
 	if err != nil {
 		return nil, err
@@ -291,7 +291,7 @@ func (s *Service) DeleteWorkspace(ctx context.Context, workspaceID resource.TfeI
 	return ws, nil
 }
 
-func (s *Service) SetWorkspacePermission(ctx context.Context, workspaceID, teamID resource.TfeID, role authz.Role) error {
+func (s *Service) SetWorkspacePermission(ctx context.Context, workspaceID, teamID resource.ID, role authz.Role) error {
 	subject, err := s.Authorize(ctx, authz.SetWorkspacePermissionAction, workspaceID)
 	if err != nil {
 		return err
@@ -309,7 +309,7 @@ func (s *Service) SetWorkspacePermission(ctx context.Context, workspaceID, teamI
 	return nil
 }
 
-func (s *Service) UnsetWorkspacePermission(ctx context.Context, workspaceID, teamID resource.TfeID) error {
+func (s *Service) UnsetWorkspacePermission(ctx context.Context, workspaceID, teamID resource.ID) error {
 	subject, err := s.Authorize(ctx, authz.UnsetWorkspacePermissionAction, workspaceID)
 	if err != nil {
 		s.Error(err, "unsetting workspace permission", "team_id", teamID, "subject", subject, "workspace", workspaceID)
@@ -325,19 +325,19 @@ func (s *Service) UnsetWorkspacePermission(ctx context.Context, workspaceID, tea
 //
 // NOTE: there is no auth because it is used in the process of making an auth
 // decision.
-func (s *Service) GetWorkspacePolicy(ctx context.Context, workspaceID resource.TfeID) (Policy, error) {
+func (s *Service) GetWorkspacePolicy(ctx context.Context, workspaceID resource.ID) (Policy, error) {
 	return s.db.GetWorkspacePolicy(ctx, workspaceID)
 }
 
 // connect connects the workspace to a repo.
-func (s *Service) connect(ctx context.Context, workspaceID resource.TfeID, connection *Connection) error {
+func (s *Service) connect(ctx context.Context, workspaceID resource.ID, connection *Connection) error {
 	subject, err := authz.SubjectFromContext(ctx)
 	if err != nil {
 		return err
 	}
 
 	_, err = s.connections.Connect(ctx, connections.ConnectOptions{
-		ResourceID:    workspaceID,
+		ResourceID:    workspaceID.(resource.TfeID),
 		VCSProviderID: connection.VCSProviderID,
 		RepoPath:      connection.Repo,
 	})
@@ -350,14 +350,14 @@ func (s *Service) connect(ctx context.Context, workspaceID resource.TfeID, conne
 	return nil
 }
 
-func (s *Service) disconnect(ctx context.Context, workspaceID resource.TfeID) error {
+func (s *Service) disconnect(ctx context.Context, workspaceID resource.ID) error {
 	subject, err := authz.SubjectFromContext(ctx)
 	if err != nil {
 		return err
 	}
 
 	err = s.connections.Disconnect(ctx, connections.DisconnectOptions{
-		ResourceID: workspaceID,
+		ResourceID: workspaceID.(resource.TfeID),
 	})
 	if err != nil {
 		s.Error(err, "disconnecting workspace", "workspace", workspaceID, "subject", subject)
@@ -370,6 +370,6 @@ func (s *Service) disconnect(ctx context.Context, workspaceID resource.TfeID) er
 }
 
 // SetWorkspaceLatestRun sets the latest run for the workspace
-func (s *Service) SetWorkspaceLatestRun(ctx context.Context, workspaceID, runID resource.TfeID) (*Workspace, error) {
+func (s *Service) SetWorkspaceLatestRun(ctx context.Context, workspaceID, runID resource.ID) (*Workspace, error) {
 	return s.db.setLatestRun(ctx, workspaceID, runID)
 }

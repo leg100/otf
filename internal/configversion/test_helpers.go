@@ -10,18 +10,18 @@ type FakeService struct {
 	cv *ConfigurationVersion
 }
 
-func (f *FakeService) GetConfigVersion(context.Context, resource.TfeID) (*ConfigurationVersion, error) {
+func (f *FakeService) GetConfigVersion(context.Context, resource.ID) (*ConfigurationVersion, error) {
 	return f.cv, nil
 }
 
-func (f *FakeService) GetLatestConfigVersion(context.Context, resource.TfeID) (*ConfigurationVersion, error) {
+func (f *FakeService) GetLatestConfigVersion(context.Context, resource.ID) (*ConfigurationVersion, error) {
 	return f.cv, nil
 }
 
-func (f *FakeService) CreateConfigVersion(context.Context, resource.TfeID, CreateOptions) (*ConfigurationVersion, error) {
+func (f *FakeService) CreateConfigVersion(context.Context, resource.ID, CreateOptions) (*ConfigurationVersion, error) {
 	return &ConfigurationVersion{}, nil
 }
 
-func (f *FakeService) UploadConfig(context.Context, resource.TfeID, []byte) error {
+func (f *FakeService) UploadConfig(context.Context, resource.ID, []byte) error {
 	return nil
 }

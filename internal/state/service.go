@@ -75,7 +75,7 @@ func (a *Service) CreateStateVersion(ctx context.Context, opts CreateStateVersio
 	return sv, nil
 }
 
-func (a *Service) DownloadCurrentState(ctx context.Context, workspaceID resource.TfeID) ([]byte, error) {
+func (a *Service) DownloadCurrentState(ctx context.Context, workspaceID resource.ID) ([]byte, error) {
 	v, err := a.GetCurrentStateVersion(ctx, workspaceID)
 	if err != nil {
 		return nil, err
@@ -83,7 +83,7 @@ func (a *Service) DownloadCurrentState(ctx context.Context, workspaceID resource
 	return a.DownloadState(ctx, v.ID)
 }
 
-func (a *Service) ListStateVersions(ctx context.Context, workspaceID resource.TfeID, opts resource.PageOptions) (*resource.Page[*Version], error) {
+func (a *Service) ListStateVersions(ctx context.Context, workspaceID resource.ID, opts resource.PageOptions) (*resource.Page[*Version], error) {
 	subject, err := a.Authorize(ctx, authz.ListStateVersionsAction, workspaceID)
 	if err != nil {
 		return nil, err
@@ -98,7 +98,7 @@ func (a *Service) ListStateVersions(ctx context.Context, workspaceID resource.Tf
 	return svl, nil
 }
 
-func (a *Service) GetCurrentStateVersion(ctx context.Context, workspaceID resource.TfeID) (*Version, error) {
+func (a *Service) GetCurrentStateVersion(ctx context.Context, workspaceID resource.ID) (*Version, error) {
 	subject, err := a.Authorize(ctx, authz.GetStateVersionAction, workspaceID)
 	if err != nil {
 		return nil, err
@@ -133,7 +133,7 @@ func (a *Service) GetPreviousStateVersion(ctx context.Context, sv *Version) (*Ve
 	return prev, nil
 }
 
-func (a *Service) GetStateVersion(ctx context.Context, versionID resource.TfeID) (*Version, error) {
+func (a *Service) GetStateVersion(ctx context.Context, versionID resource.ID) (*Version, error) {
 	subject, err := a.Authorize(ctx, authz.GetStateVersionAction, versionID)
 	if err != nil {
 		return nil, err
@@ -148,7 +148,7 @@ func (a *Service) GetStateVersion(ctx context.Context, versionID resource.TfeID)
 	return sv, nil
 }
 
-func (a *Service) DeleteStateVersion(ctx context.Context, versionID resource.TfeID) error {
+func (a *Service) DeleteStateVersion(ctx context.Context, versionID resource.ID) error {
 	subject, err := a.Authorize(ctx, authz.DeleteStateVersionAction, versionID)
 	if err != nil {
 		return err
@@ -162,13 +162,13 @@ func (a *Service) DeleteStateVersion(ctx context.Context, versionID resource.Tfe
 	return nil
 }
 
-func (a *Service) RollbackStateVersion(ctx context.Context, versionID resource.TfeID) (*Version, error) {
+func (a *Service) RollbackStateVersion(ctx context.Context, versionID resource.ID) (*Version, error) {
 	subject, err := a.Authorize(ctx, authz.RollbackStateVersionAction, versionID)
 	if err != nil {
 		return nil, err
 	}
 
-	sv, err := a.rollback(ctx, versionID)
+	sv, err := a.rollback(ctx, versionID.(resource.TfeID))
 	if err != nil {
 		a.Error(err, "rolling back state version", "id", versionID, "subject", subject)
 		return nil, err
@@ -177,7 +177,7 @@ func (a *Service) RollbackStateVersion(ctx context.Context, versionID resource.T
 	return sv, nil
 }
 
-func (a *Service) UploadState(ctx context.Context, svID resource.TfeID, state []byte) error {
+func (a *Service) UploadState(ctx context.Context, svID resource.ID, state []byte) error {
 	var sv *Version
 	err := a.db.Tx(ctx, func(ctx context.Context) error {
 		var err error
@@ -199,7 +199,7 @@ func (a *Service) UploadState(ctx context.Context, svID resource.TfeID, state []
 	return nil
 }
 
-func (a *Service) DownloadState(ctx context.Context, svID resource.TfeID) ([]byte, error) {
+func (a *Service) DownloadState(ctx context.Context, svID resource.ID) ([]byte, error) {
 	subject, err := a.Authorize(ctx, authz.DownloadStateAction, svID)
 	if err != nil {
 		return nil, err
@@ -213,8 +213,8 @@ func (a *Service) DownloadState(ctx context.Context, svID resource.TfeID) ([]byt
 	return state, nil
 }
 
-func (a *Service) GetStateOutput(ctx context.Context, outputID resource.TfeID) (*Output, error) {
-	out, err := a.db.getOutput(ctx, outputID)
+func (a *Service) GetStateOutput(ctx context.Context, outputID resource.ID) (*Output, error) {
+	out, err := a.db.getOutput(ctx, outputID.(resource.TfeID))
 	if err != nil {
 		a.Error(err, "retrieving state version output", "id", outputID)
 		return nil, err

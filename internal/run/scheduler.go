@@ -34,13 +34,13 @@ type (
 
 	schedulerWorkspaceClient interface {
 		WatchWorkspaces(context.Context) (<-chan pubsub.Event[*workspace.Event], func())
-		Unlock(ctx context.Context, workspaceID resource.TfeID, runID *resource.TfeID, force bool) (*workspace.Workspace, error)
+		Unlock(ctx context.Context, workspaceID resource.ID, runID *resource.TfeID, force bool) (*workspace.Workspace, error)
 	}
 
 	schedulerRunClient interface {
 		ListRuns(ctx context.Context, opts ListOptions) (*resource.Page[*Run], error)
 		WatchRuns(context.Context) (<-chan pubsub.Event[*Event], func())
-		EnqueuePlan(ctx context.Context, runID resource.TfeID) (*Run, error)
+		EnqueuePlan(ctx context.Context, runID resource.ID) (*Run, error)
 	}
 
 	SchedulerOptions struct {
@@ -146,7 +146,7 @@ func (s *scheduler) Start(ctx context.Context) error {
 	}
 }
 
-func (s *scheduler) schedule(ctx context.Context, workspaceID resource.TfeID, runEvent *schedulerRun) error {
+func (s *scheduler) schedule(ctx context.Context, workspaceID resource.ID, runEvent *schedulerRun) error {
 	if runEvent != nil && runEvent.planOnly {
 		if runEvent.status == runstatus.Pending {
 			// Enqueue plan immediately for pending plan-only runs
@@ -157,7 +157,8 @@ func (s *scheduler) schedule(ctx context.Context, workspaceID resource.TfeID, ru
 		// Plan-only runs are not added to workspace queues.
 		return nil
 	}
-	q := s.queues[workspaceID]
+	wsID := workspaceID.(resource.TfeID)
+	q := s.queues[wsID]
 	q, enqueue, unlock := q.process(runEvent)
 	if enqueue {
 		_, err := s.runs.EnqueuePlan(ctx, *q.current)
@@ -191,7 +192,7 @@ func (s *scheduler) schedule(ctx context.Context, workspaceID resource.TfeID, ru
 			return err
 		}
 	}
-	s.queues[workspaceID] = q
+	s.queues[wsID] = q
 	return nil
 }
 

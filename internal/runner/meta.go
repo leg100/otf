@@ -161,12 +161,12 @@ func runnerFromContext(ctx context.Context) (*RunnerMeta, error) {
 	return meta, nil
 }
 
-func authorizeRunner(ctx context.Context, id resource.TfeID) error {
+func authorizeRunner(ctx context.Context, id resource.ID) error {
 	runner, err := runnerFromContext(ctx)
 	if err != nil {
 		return err
 	}
-	if id != runner.ID {
+	if id != resource.ID(runner.ID) {
 		return internal.ErrAccessNotPermitted
 	}
 	return nil

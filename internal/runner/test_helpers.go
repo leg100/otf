@@ -22,7 +22,7 @@ func (f *fakeService) CreateAgentPool(ctx context.Context, opts CreateAgentPoolO
 	return f.pool, nil
 }
 
-func (f *fakeService) UpdateAgentPool(ctx context.Context, poolID resource.TfeID, opts UpdatePoolOptions) (*Pool, error) {
+func (f *fakeService) UpdateAgentPool(ctx context.Context, poolID resource.ID, opts UpdatePoolOptions) (*Pool, error) {
 	return nil, nil
 }
 
@@ -30,27 +30,27 @@ func (f *fakeService) ListAgentPoolsByOrganization(context.Context, organization
 	return []*Pool{f.pool}, nil
 }
 
-func (f *fakeService) GetAgentPool(context.Context, resource.TfeID) (*Pool, error) {
+func (f *fakeService) GetAgentPool(context.Context, resource.ID) (*Pool, error) {
 	return f.pool, nil
 }
 
-func (f *fakeService) DeleteAgentPool(ctx context.Context, poolID resource.TfeID) (*Pool, error) {
+func (f *fakeService) DeleteAgentPool(ctx context.Context, poolID resource.ID) (*Pool, error) {
 	return nil, nil
 }
 
-func (f *fakeService) CreateAgentToken(context.Context, resource.TfeID, CreateAgentTokenOptions) (*AgentToken, []byte, error) {
+func (f *fakeService) CreateAgentToken(context.Context, resource.ID, CreateAgentTokenOptions) (*AgentToken, []byte, error) {
 	return f.at, f.token, nil
 }
 
-func (f *fakeService) ListAgentTokens(context.Context, resource.TfeID) ([]*AgentToken, error) {
+func (f *fakeService) ListAgentTokens(context.Context, resource.ID) ([]*AgentToken, error) {
 	return []*AgentToken{f.at}, nil
 }
 
-func (f *fakeService) GetAgentToken(context.Context, resource.TfeID) (*AgentToken, error) {
+func (f *fakeService) GetAgentToken(context.Context, resource.ID) (*AgentToken, error) {
 	return f.at, nil
 }
 
-func (f *fakeService) DeleteAgentToken(context.Context, resource.TfeID) (*AgentToken, error) {
+func (f *fakeService) DeleteAgentToken(context.Context, resource.ID) (*AgentToken, error) {
 	return f.at, nil
 }
 
@@ -58,21 +58,21 @@ func (f *fakeService) listJobs(ctx context.Context) ([]*Job, error) {
 	return nil, nil
 }
 
-func (f *fakeService) allocateJob(ctx context.Context, jobID resource.TfeID, agentID resource.TfeID) (*Job, error) {
-	if err := f.job.allocate(agentID); err != nil {
+func (f *fakeService) allocateJob(ctx context.Context, jobID resource.ID, agentID resource.ID) (*Job, error) {
+	if err := f.job.allocate(agentID.(resource.TfeID)); err != nil {
 		return nil, err
 	}
 	return f.job, nil
 }
 
-func (f *fakeService) reallocateJob(ctx context.Context, jobID resource.TfeID, agentID resource.TfeID) (*Job, error) {
-	if err := f.job.reallocate(agentID); err != nil {
+func (f *fakeService) reallocateJob(ctx context.Context, jobID resource.ID, agentID resource.ID) (*Job, error) {
+	if err := f.job.reallocate(agentID.(resource.TfeID)); err != nil {
 		return nil, err
 	}
 	return f.job, nil
 }
 
-func (f *fakeService) GetJob(ctx context.Context, jobID resource.TfeID) (*Job, error) {
+func (f *fakeService) GetJob(ctx context.Context, jobID resource.ID) (*Job, error) {
 	return f.job, nil
 }
 
@@ -84,11 +84,11 @@ func (f *fakeService) WatchRunners(context.Context) (<-chan pubsub.Event[*Runner
 	return nil, nil
 }
 
-func (f *fakeService) getRunner(ctx context.Context, runnerID resource.TfeID) (*RunnerMeta, error) {
+func (f *fakeService) getRunner(ctx context.Context, runnerID resource.ID) (*RunnerMeta, error) {
 	return nil, nil
 }
 
-func (f *fakeService) updateStatus(ctx context.Context, runnerID resource.TfeID, status RunnerStatus) error {
+func (f *fakeService) updateStatus(ctx context.Context, runnerID resource.ID, status RunnerStatus) error {
 	f.status = status
 	return nil
 }
@@ -97,6 +97,6 @@ func (f *fakeService) ListRunners(ctx context.Context, opts ListOptions) ([]*Run
 	return nil, nil
 }
 
-func (f *fakeService) DeleteRunner(ctx context.Context, runnerID resource.TfeID) error {
+func (f *fakeService) DeleteRunner(ctx context.Context, runnerID resource.ID) error {
 	return nil
 }

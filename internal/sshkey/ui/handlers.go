@@ -21,7 +21,7 @@ type Handlers struct {
 type SSHKeyService interface {
 	CreateSSHKey(ctx context.Context, opts sshkey.CreateOptions) (*sshkey.SSHKey, error)
 	ListSSHKeys(ctx context.Context, org organization.Name) ([]*sshkey.SSHKey, error)
-	DeleteSSHKey(ctx context.Context, id resource.TfeID) (*sshkey.SSHKey, error)
+	DeleteSSHKey(ctx context.Context, id resource.ID) (*sshkey.SSHKey, error)
 }
 
 func (h *Handlers) AddHandlers(r *mux.Router) {

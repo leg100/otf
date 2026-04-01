@@ -32,14 +32,14 @@ type tfe struct {
 
 // tfeConfigsClient gives the tfe handlers access to config version services
 type tfeClient interface {
-	CreateConfigVersion(ctx context.Context, workspaceid resource.TfeID, opts CreateOptions) (*ConfigurationVersion, error)
-	GetConfigVersion(ctx context.Context, id resource.TfeID) (*ConfigurationVersion, error)
-	GetLatestConfigVersion(ctx context.Context, workspaceID resource.TfeID) (*ConfigurationVersion, error)
-	ListConfigVersions(ctx context.Context, workspaceID resource.TfeID, opts ListOptions) (*resource.Page[*ConfigurationVersion], error)
-	DeleteConfigVersion(ctx context.Context, cvID resource.TfeID) error
+	CreateConfigVersion(ctx context.Context, workspaceid resource.ID, opts CreateOptions) (*ConfigurationVersion, error)
+	GetConfigVersion(ctx context.Context, id resource.ID) (*ConfigurationVersion, error)
+	GetLatestConfigVersion(ctx context.Context, workspaceID resource.ID) (*ConfigurationVersion, error)
+	ListConfigVersions(ctx context.Context, workspaceID resource.ID, opts ListOptions) (*resource.Page[*ConfigurationVersion], error)
+	DeleteConfigVersion(ctx context.Context, cvID resource.ID) error
 
-	UploadConfig(ctx context.Context, id resource.TfeID, config []byte) error
-	DownloadConfig(ctx context.Context, id resource.TfeID) ([]byte, error)
+	UploadConfig(ctx context.Context, id resource.ID, config []byte) error
+	DownloadConfig(ctx context.Context, id resource.ID) ([]byte, error)
 }
 
 func NewTFEAPI(

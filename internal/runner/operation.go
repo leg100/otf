@@ -75,23 +75,23 @@ type (
 	// OperationClient is a client for an operation to interact with services on
 	// behalf of its job.
 	OperationClient interface {
-		GetJob(ctx context.Context, jobID resource.TfeID) (*Job, error)
-		GenerateDynamicCredentialsToken(ctx context.Context, jobID resource.TfeID, audience string) ([]byte, error)
-		GetRun(ctx context.Context, runID resource.TfeID) (*runpkg.Run, error)
-		GetRunPlanFile(ctx context.Context, id resource.TfeID, format runpkg.PlanFormat) ([]byte, error)
-		UploadRunPlanFile(ctx context.Context, id resource.TfeID, plan []byte, format runpkg.PlanFormat) error
-		GetLockFile(ctx context.Context, id resource.TfeID) ([]byte, error)
-		UploadLockFile(ctx context.Context, id resource.TfeID, lockFile []byte) error
+		GetJob(ctx context.Context, jobID resource.ID) (*Job, error)
+		GenerateDynamicCredentialsToken(ctx context.Context, jobID resource.ID, audience string) ([]byte, error)
+		GetRun(ctx context.Context, runID resource.ID) (*runpkg.Run, error)
+		GetRunPlanFile(ctx context.Context, id resource.ID, format runpkg.PlanFormat) ([]byte, error)
+		UploadRunPlanFile(ctx context.Context, id resource.ID, plan []byte, format runpkg.PlanFormat) error
+		GetLockFile(ctx context.Context, id resource.ID) ([]byte, error)
+		UploadLockFile(ctx context.Context, id resource.ID, lockFile []byte) error
 		PutChunk(ctx context.Context, opts runpkg.PutChunkOptions) error
 		GetWorkspace(context.Context, resource.ID) (*workspace.Workspace, error)
-		ListEffectiveVariables(ctx context.Context, runID resource.TfeID) ([]*variable.Variable, error)
-		DownloadConfig(ctx context.Context, id resource.TfeID) ([]byte, error)
+		ListEffectiveVariables(ctx context.Context, runID resource.ID) ([]*variable.Variable, error)
+		DownloadConfig(ctx context.Context, id resource.ID) ([]byte, error)
 		CreateStateVersion(ctx context.Context, opts state.CreateStateVersionOptions) (*state.Version, error)
-		DownloadCurrentState(ctx context.Context, workspaceID resource.TfeID) ([]byte, error)
+		DownloadCurrentState(ctx context.Context, workspaceID resource.ID) ([]byte, error)
 		Hostname() string
-		GetSSHKeyPrivateKey(ctx context.Context, id resource.TfeID) ([]byte, error)
-		awaitJobSignal(ctx context.Context, jobID resource.TfeID) func() (jobSignal, error)
-		finishJob(ctx context.Context, jobID resource.TfeID, opts finishJobOptions) error
+		GetSSHKeyPrivateKey(ctx context.Context, id resource.ID) ([]byte, error)
+		awaitJobSignal(ctx context.Context, jobID resource.ID) func() (jobSignal, error)
+		finishJob(ctx context.Context, jobID resource.ID, opts finishJobOptions) error
 	}
 
 	OperationConfig struct {

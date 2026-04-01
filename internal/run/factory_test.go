@@ -173,19 +173,19 @@ func (f *fakeFactoryClient) GetWorkspace(context.Context, resource.ID) (*workspa
 	return f.ws, nil
 }
 
-func (f *fakeFactoryClient) GetConfigVersion(context.Context, resource.TfeID) (*configversion.ConfigurationVersion, error) {
+func (f *fakeFactoryClient) GetConfigVersion(context.Context, resource.ID) (*configversion.ConfigurationVersion, error) {
 	return f.cv, nil
 }
 
-func (f *fakeFactoryClient) GetLatestConfigVersion(context.Context, resource.TfeID) (*configversion.ConfigurationVersion, error) {
+func (f *fakeFactoryClient) GetLatestConfigVersion(context.Context, resource.ID) (*configversion.ConfigurationVersion, error) {
 	return f.cv, nil
 }
 
-func (f *fakeFactoryClient) CreateConfigVersion(ctx context.Context, workspaceID resource.TfeID, opts configversion.CreateOptions) (*configversion.ConfigurationVersion, error) {
-	return &configversion.ConfigurationVersion{ID: workspaceID}, nil
+func (f *fakeFactoryClient) CreateConfigVersion(ctx context.Context, workspaceID resource.ID, opts configversion.CreateOptions) (*configversion.ConfigurationVersion, error) {
+	return &configversion.ConfigurationVersion{ID: workspaceID.(resource.TfeID)}, nil
 }
 
-func (f *fakeFactoryClient) UploadConfig(context.Context, resource.TfeID, []byte) error {
+func (f *fakeFactoryClient) UploadConfig(context.Context, resource.ID, []byte) error {
 	return nil
 }
 
@@ -197,7 +197,7 @@ func (f *fakeFactoryClient) GetLatest(context.Context, *engine.Engine) (string, 
 	return f.latestVersion, time.Time{}, nil
 }
 
-func (f *fakeFactoryClient) GetVCSProvider(context.Context, resource.TfeID) (*vcs.Provider, error) {
+func (f *fakeFactoryClient) GetVCSProvider(context.Context, resource.ID) (*vcs.Provider, error) {
 	return &vcs.Provider{
 		Client: &fakeFactoryCloudClient{},
 	}, nil

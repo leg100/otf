@@ -42,18 +42,18 @@ type (
 		ListWorkspaces(ctx context.Context, opts ListOptions) (*resource.Page[*Workspace], error)
 		CreateWorkspace(ctx context.Context, opts CreateOptions) (*Workspace, error)
 		GetWorkspaceByName(ctx context.Context, organization resource.ID, name string) (*Workspace, error)
-		GetWorkspacePolicy(ctx context.Context, workspaceID resource.TfeID) (Policy, error)
-		UpdateWorkspace(ctx context.Context, workspaceID resource.TfeID, opts UpdateOptions) (*Workspace, error)
-		DeleteWorkspace(ctx context.Context, workspaceID resource.TfeID) (*Workspace, error)
-		Lock(ctx context.Context, workspaceID resource.TfeID, runID *resource.TfeID) (*Workspace, error)
-		Unlock(ctx context.Context, workspaceID resource.TfeID, runID *resource.TfeID, force bool) (*Workspace, error)
+		GetWorkspacePolicy(ctx context.Context, workspaceID resource.ID) (Policy, error)
+		UpdateWorkspace(ctx context.Context, workspaceID resource.ID, opts UpdateOptions) (*Workspace, error)
+		DeleteWorkspace(ctx context.Context, workspaceID resource.ID) (*Workspace, error)
+		Lock(ctx context.Context, workspaceID resource.ID, runID *resource.TfeID) (*Workspace, error)
+		Unlock(ctx context.Context, workspaceID resource.ID, runID *resource.TfeID, force bool) (*Workspace, error)
 
-		DeleteTags(ctx context.Context, organization organization.Name, tagIDs []resource.TfeID) error
-		AddTags(ctx context.Context, workspaceID resource.TfeID, tags []TagSpec) error
+		DeleteTags(ctx context.Context, organization organization.Name, tagIDs []resource.ID) error
+		AddTags(ctx context.Context, workspaceID resource.ID, tags []TagSpec) error
 		ListTags(ctx context.Context, organization organization.Name, opts ListTagsOptions) (*resource.Page[*Tag], error)
-		ListWorkspaceTags(ctx context.Context, workspaceID resource.TfeID, opts ListWorkspaceTagsOptions) (*resource.Page[*Tag], error)
-		RemoveTags(ctx context.Context, workspaceID resource.TfeID, tags []TagSpec) error
-		TagWorkspaces(ctx context.Context, tagID resource.TfeID, workspaceIDs []resource.TfeID) error
+		ListWorkspaceTags(ctx context.Context, workspaceID resource.ID, opts ListWorkspaceTagsOptions) (*resource.Page[*Tag], error)
+		RemoveTags(ctx context.Context, workspaceID resource.ID, tags []TagSpec) error
+		TagWorkspaces(ctx context.Context, tagID resource.ID, workspaceIDs []resource.TfeID) error
 	}
 )
 
@@ -389,7 +389,7 @@ func (a *tfe) deleteWorkspaceByName(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (a *tfe) updateWorkspace(w http.ResponseWriter, r *http.Request, workspaceID resource.TfeID) {
+func (a *tfe) updateWorkspace(w http.ResponseWriter, r *http.Request, workspaceID resource.ID) {
 	params := TFEWorkspaceUpdateOptions{}
 	if err := tfeapi.Unmarshal(r.Body, &params); err != nil {
 		tfeapi.Error(w, err)

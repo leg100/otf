@@ -19,11 +19,11 @@ type TFEAPI struct {
 }
 
 type tfeClient interface {
-	CreateNotificationConfig(ctx context.Context, workspaceID resource.TfeID, opts CreateConfigOptions) (*Config, error)
-	UpdateNotificationConfig(ctx context.Context, id resource.TfeID, opts UpdateConfigOptions) (*Config, error)
-	GetNotificationConfig(ctx context.Context, id resource.TfeID) (*Config, error)
-	ListNotificationConfigs(ctx context.Context, workspaceID resource.TfeID) ([]*Config, error)
-	DeleteNotificationConfig(ctx context.Context, id resource.TfeID) error
+	CreateNotificationConfig(ctx context.Context, workspaceID resource.ID, opts CreateConfigOptions) (*Config, error)
+	UpdateNotificationConfig(ctx context.Context, id resource.ID, opts UpdateConfigOptions) (*Config, error)
+	GetNotificationConfig(ctx context.Context, id resource.ID) (*Config, error)
+	ListNotificationConfigs(ctx context.Context, workspaceID resource.ID) ([]*Config, error)
+	DeleteNotificationConfig(ctx context.Context, id resource.ID) error
 	WatchNotificationConfigs(ctx context.Context) (<-chan pubsub.Event[*Config], func())
 }
 

@@ -87,7 +87,7 @@ func (f *fakeLoginClient) Clients() []*authenticator.OAuthClient {
 	return f.clients
 }
 
-func (f *fakeLoginClient) StartSession(w http.ResponseWriter, r *http.Request, userID resource.TfeID) error {
+func (f *fakeLoginClient) StartSession(w http.ResponseWriter, r *http.Request, userID resource.ID) error {
 	http.Redirect(w, r, paths.Profile(), http.StatusFound)
 	return nil
 }

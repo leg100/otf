@@ -70,7 +70,7 @@ func (a *Service) CreateVCSProvider(ctx context.Context, opts CreateOptions) (*P
 	return provider, nil
 }
 
-func (a *Service) UpdateVCSProvider(ctx context.Context, id resource.TfeID, opts UpdateOptions) (*Provider, error) {
+func (a *Service) UpdateVCSProvider(ctx context.Context, id resource.ID, opts UpdateOptions) (*Provider, error) {
 	var (
 		subject authz.Subject
 		before  Provider
@@ -126,7 +126,7 @@ func (a *Service) ListVCSProvidersByInstall(ctx context.Context, installID int64
 	return providers, nil
 }
 
-func (a *Service) GetVCSProvider(ctx context.Context, id resource.TfeID) (*Provider, error) {
+func (a *Service) GetVCSProvider(ctx context.Context, id resource.ID) (*Provider, error) {
 	// Parameters only include VCS Provider ID, so we can only determine
 	// authorization _after_ retrieving the provider
 	provider, err := a.db.get(ctx, id)
@@ -144,7 +144,7 @@ func (a *Service) GetVCSProvider(ctx context.Context, id resource.TfeID) (*Provi
 	return provider, nil
 }
 
-func (a *Service) DeleteVCSProvider(ctx context.Context, id resource.TfeID) (*Provider, error) {
+func (a *Service) DeleteVCSProvider(ctx context.Context, id resource.ID) (*Provider, error) {
 	var (
 		provider *Provider
 		subject  authz.Subject

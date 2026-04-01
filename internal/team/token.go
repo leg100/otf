@@ -87,7 +87,7 @@ func (a *Service) CreateTeamToken(ctx context.Context, opts CreateTokenOptions) 
 	return tt, token, nil
 }
 
-func (a *Service) GetTeamToken(ctx context.Context, teamID resource.TfeID) (*Token, error) {
+func (a *Service) GetTeamToken(ctx context.Context, teamID resource.ID) (*Token, error) {
 	_, err := a.Authorize(ctx, authz.GetTeamTokenAction, teamID)
 	if err != nil {
 		return nil, err
@@ -100,7 +100,7 @@ func (a *Service) GetTeamToken(ctx context.Context, teamID resource.TfeID) (*Tok
 	return token, nil
 }
 
-func (a *Service) DeleteTeamToken(ctx context.Context, teamID resource.TfeID) error {
+func (a *Service) DeleteTeamToken(ctx context.Context, teamID resource.ID) error {
 	_, err := a.Authorize(ctx, authz.DeleteTeamTokenAction, teamID)
 	if err != nil {
 		return err

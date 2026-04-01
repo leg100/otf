@@ -49,7 +49,7 @@ AND   organization_name = $2
 	return err
 }
 
-func (db *pgdb) addTag(ctx context.Context, organization organization.Name, name string, tagID resource.TfeID) error {
+func (db *pgdb) addTag(ctx context.Context, organization organization.Name, name string, tagID resource.ID) error {
 	_, err := db.Exec(ctx, `
 INSERT INTO tags (
     tag_id,
@@ -87,7 +87,7 @@ AND   t.organization_name = $2
 	return tag, nil
 }
 
-func (db *pgdb) findTagByID(ctx context.Context, organization organization.Name, id resource.TfeID) (*Tag, error) {
+func (db *pgdb) findTagByID(ctx context.Context, organization organization.Name, id resource.ID) (*Tag, error) {
 	row := db.Query(ctx, `
 SELECT
     t.tag_id, t.name, t.organization_name,
@@ -110,7 +110,7 @@ AND   t.organization_name = $2
 	return tag, nil
 }
 
-func (db *pgdb) tagWorkspace(ctx context.Context, workspaceID, tagID resource.TfeID) error {
+func (db *pgdb) tagWorkspace(ctx context.Context, workspaceID, tagID resource.ID) error {
 	result, err := db.Exec(ctx, `
 INSERT INTO workspace_tags (
     workspace_id,
@@ -130,7 +130,7 @@ INSERT INTO workspace_tags (
 	return err
 }
 
-func (db *pgdb) deleteWorkspaceTag(ctx context.Context, workspaceID, tagID resource.TfeID) error {
+func (db *pgdb) deleteWorkspaceTag(ctx context.Context, workspaceID, tagID resource.ID) error {
 	_, err := db.Exec(ctx, `
 DELETE
 FROM workspace_tags
@@ -142,7 +142,7 @@ AND   tag_id        = $2
 	return err
 }
 
-func (db *pgdb) listWorkspaceTags(ctx context.Context, workspaceID resource.TfeID, opts ListWorkspaceTagsOptions) (*resource.Page[*Tag], error) {
+func (db *pgdb) listWorkspaceTags(ctx context.Context, workspaceID resource.ID, opts ListWorkspaceTagsOptions) (*resource.Page[*Tag], error) {
 	rows := db.Query(ctx, `
 SELECT
     t.tag_id, t.name, t.organization_name,

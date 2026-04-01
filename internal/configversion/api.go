@@ -16,7 +16,7 @@ type API struct {
 }
 
 type apiClient interface {
-	DownloadConfig(ctx context.Context, id resource.TfeID) ([]byte, error)
+	DownloadConfig(ctx context.Context, id resource.ID) ([]byte, error)
 }
 
 func (a *API) AddHandlers(r *mux.Router) {

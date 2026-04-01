@@ -391,7 +391,7 @@ func (s *kubeExecutor) SpawnOperation(ctx context.Context, _ *errgroup.Group, jo
 	return nil
 }
 
-func (s *kubeExecutor) currentJobs(ctx context.Context, runnerID resource.TfeID) int {
+func (s *kubeExecutor) currentJobs(ctx context.Context, runnerID resource.ID) int {
 	jobs, err := s.jobs.List(ctx, metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("otf.ninja/runner-id=%s", runnerID),
 	})

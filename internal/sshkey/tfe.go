@@ -19,10 +19,10 @@ type TFEAPI struct {
 
 type tfeClient interface {
 	CreateSSHKey(ctx context.Context, opts CreateOptions) (*SSHKey, error)
-	UpdateSSHKey(ctx context.Context, id resource.TfeID, opts UpdateOptions) (*SSHKey, error)
+	UpdateSSHKey(ctx context.Context, id resource.ID, opts UpdateOptions) (*SSHKey, error)
 	ListSSHKeys(ctx context.Context, org organization.Name) ([]*SSHKey, error)
-	GetSSHKey(ctx context.Context, id resource.TfeID) (*SSHKey, error)
-	DeleteSSHKey(ctx context.Context, id resource.TfeID) (*SSHKey, error)
+	GetSSHKey(ctx context.Context, id resource.ID) (*SSHKey, error)
+	DeleteSSHKey(ctx context.Context, id resource.ID) (*SSHKey, error)
 }
 
 // TFESSHKey represents an SSH key in the TFE API.

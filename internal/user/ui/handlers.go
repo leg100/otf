@@ -25,15 +25,15 @@ type Client interface {
 	Create(ctx context.Context, username string, opts ...user.NewUserOption) (*user.User, error)
 	List(ctx context.Context) ([]*user.User, error)
 	ListOrganizationUsers(ctx context.Context, organization organization.Name) ([]*user.User, error)
-	ListTeamUsers(ctx context.Context, teamID resource.TfeID) ([]*user.User, error)
+	ListTeamUsers(ctx context.Context, teamID resource.ID) ([]*user.User, error)
 	GetUser(ctx context.Context, spec user.UserSpec) (*user.User, error)
 	Delete(ctx context.Context, username user.Username) error
-	AddTeamMembership(ctx context.Context, teamID resource.TfeID, usernames []user.Username) error
-	RemoveTeamMembership(ctx context.Context, teamID resource.TfeID, usernames []user.Username) error
+	AddTeamMembership(ctx context.Context, teamID resource.ID, usernames []user.Username) error
+	RemoveTeamMembership(ctx context.Context, teamID resource.ID, usernames []user.Username) error
 
 	CreateToken(ctx context.Context, opts user.CreateUserTokenOptions) (*user.UserToken, []byte, error)
 	ListTokens(ctx context.Context) ([]*user.UserToken, error)
-	DeleteToken(ctx context.Context, tokenID resource.TfeID) error
+	DeleteToken(ctx context.Context, tokenID resource.ID) error
 }
 
 // AddHandlers registers user UI handlers with the router

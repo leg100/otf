@@ -21,14 +21,14 @@ type TFEAPI struct {
 type tfeClient interface {
 	CreateTeam(ctx context.Context, organization organization.Name, opts CreateTeamOptions) (*Team, error)
 	GetTeam(ctx context.Context, organization organization.Name, name string) (*Team, error)
-	GetTeamByID(ctx context.Context, teamID resource.TfeID) (*Team, error)
+	GetTeamByID(ctx context.Context, teamID resource.ID) (*Team, error)
 	ListTeams(ctx context.Context, organization organization.Name) ([]*Team, error)
-	UpdateTeam(ctx context.Context, teamID resource.TfeID, opts UpdateTeamOptions) (*Team, error)
-	DeleteTeam(ctx context.Context, teamID resource.TfeID) error
+	UpdateTeam(ctx context.Context, teamID resource.ID, opts UpdateTeamOptions) (*Team, error)
+	DeleteTeam(ctx context.Context, teamID resource.ID) error
 
 	CreateTeamToken(ctx context.Context, opts CreateTokenOptions) (*Token, []byte, error)
-	GetTeamToken(ctx context.Context, teamID resource.TfeID) (*Token, error)
-	DeleteTeamToken(ctx context.Context, teamID resource.TfeID) error
+	GetTeamToken(ctx context.Context, teamID resource.ID) (*Token, error)
+	DeleteTeamToken(ctx context.Context, teamID resource.ID) error
 }
 
 func (a *TFEAPI) AddHandlers(r *mux.Router) {

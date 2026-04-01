@@ -16,7 +16,7 @@ type API struct {
 }
 
 type apiClient interface {
-	ListEffectiveVariables(ctx context.Context, runID resource.TfeID) ([]*Variable, error)
+	ListEffectiveVariables(ctx context.Context, runID resource.ID) ([]*Variable, error)
 }
 
 func (a *API) AddHandlers(r *mux.Router) {

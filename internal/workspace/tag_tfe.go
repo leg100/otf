@@ -71,7 +71,7 @@ func (a *tfe) deleteTags(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	tagIDs := make([]resource.TfeID, len(params))
+	tagIDs := make([]resource.ID, len(params))
 	for i, p := range params {
 		tagIDs[i] = p.ID
 	}

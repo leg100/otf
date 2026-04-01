@@ -96,7 +96,7 @@ type (
 	}
 )
 
-func NewConfig(workspaceID resource.TfeID, opts CreateConfigOptions) (*Config, error) {
+func NewConfig(workspaceID resource.ID, opts CreateConfigOptions) (*Config, error) {
 	if opts.DestinationType != DestinationGeneric &&
 		opts.DestinationType != DestinationEmail &&
 		opts.DestinationType != DestinationSlack &&
@@ -136,7 +136,7 @@ func NewConfig(workspaceID resource.TfeID, opts CreateConfigOptions) (*Config, e
 		Triggers:        opts.Triggers,
 		DestinationType: opts.DestinationType,
 		URL:             opts.URL,
-		WorkspaceID:     workspaceID,
+		WorkspaceID:     workspaceID.(resource.TfeID),
 	}, nil
 }
 

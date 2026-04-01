@@ -24,26 +24,26 @@ type TFEAPI struct {
 }
 
 type tfeClient interface {
-	CreateWorkspaceVariable(ctx context.Context, workspaceID resource.TfeID, opts CreateVariableOptions) (*Variable, error)
-	ListWorkspaceVariables(ctx context.Context, workspaceID resource.TfeID) ([]*Variable, error)
-	GetWorkspaceVariable(ctx context.Context, variableID resource.TfeID) (*WorkspaceVariable, error)
-	UpdateWorkspaceVariable(ctx context.Context, variableID resource.TfeID, opts UpdateVariableOptions) (*WorkspaceVariable, error)
-	DeleteWorkspaceVariable(ctx context.Context, variableID resource.TfeID) (*WorkspaceVariable, error)
-	ListWorkspaceVariableSets(ctx context.Context, workspaceID resource.TfeID) ([]*VariableSet, error)
+	CreateWorkspaceVariable(ctx context.Context, workspaceID resource.ID, opts CreateVariableOptions) (*Variable, error)
+	ListWorkspaceVariables(ctx context.Context, workspaceID resource.ID) ([]*Variable, error)
+	GetWorkspaceVariable(ctx context.Context, variableID resource.ID) (*WorkspaceVariable, error)
+	UpdateWorkspaceVariable(ctx context.Context, variableID resource.ID, opts UpdateVariableOptions) (*WorkspaceVariable, error)
+	DeleteWorkspaceVariable(ctx context.Context, variableID resource.ID) (*WorkspaceVariable, error)
+	ListWorkspaceVariableSets(ctx context.Context, workspaceID resource.ID) ([]*VariableSet, error)
 	ListVariableSets(ctx context.Context, organization organization.Name) ([]*VariableSet, error)
-	GetVariableSet(ctx context.Context, setID resource.TfeID) (*VariableSet, error)
+	GetVariableSet(ctx context.Context, setID resource.ID) (*VariableSet, error)
 	CreateVariableSet(ctx context.Context, org organization.Name, opts CreateVariableSetOptions) (*VariableSet, error)
-	UpdateVariableSet(ctx context.Context, setID resource.TfeID, opts UpdateVariableSetOptions) (*VariableSet, error)
-	DeleteVariableSet(ctx context.Context, setID resource.TfeID) (*VariableSet, error)
-	GetVariableSetByVariableID(ctx context.Context, variableID resource.TfeID) (*VariableSet, error)
-	CreateVariableSetVariable(ctx context.Context, setID resource.TfeID, opts CreateVariableOptions) (*Variable, error)
-	UpdateVariableSetVariable(ctx context.Context, variableID resource.TfeID, opts UpdateVariableOptions) (*VariableSet, error)
-	DeleteVariableSetVariable(ctx context.Context, variableID resource.TfeID) (*VariableSet, error)
+	UpdateVariableSet(ctx context.Context, setID resource.ID, opts UpdateVariableSetOptions) (*VariableSet, error)
+	DeleteVariableSet(ctx context.Context, setID resource.ID) (*VariableSet, error)
+	GetVariableSetByVariableID(ctx context.Context, variableID resource.ID) (*VariableSet, error)
+	CreateVariableSetVariable(ctx context.Context, setID resource.ID, opts CreateVariableOptions) (*Variable, error)
+	UpdateVariableSetVariable(ctx context.Context, variableID resource.ID, opts UpdateVariableOptions) (*VariableSet, error)
+	DeleteVariableSetVariable(ctx context.Context, variableID resource.ID) (*VariableSet, error)
 	GetWorkspace(context.Context, resource.ID) (*workspace.Workspace, error)
 	ListWorkspaces(ctx context.Context, opts workspace.ListOptions) (*resource.Page[*workspace.Workspace], error)
 
-	ApplySetToWorkspaces(ctx context.Context, setID resource.TfeID, workspaceIDs []resource.TfeID) error
-	DeleteSetFromWorkspaces(ctx context.Context, setID resource.TfeID, workspaceIDs []resource.TfeID) error
+	ApplySetToWorkspaces(ctx context.Context, setID resource.ID, workspaceIDs []resource.TfeID) error
+	DeleteSetFromWorkspaces(ctx context.Context, setID resource.ID, workspaceIDs []resource.TfeID) error
 }
 
 func (a *TFEAPI) AddHandlers(r *mux.Router) {

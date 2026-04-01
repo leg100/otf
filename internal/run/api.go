@@ -18,19 +18,19 @@ type API struct {
 }
 
 type apiClient interface {
-	CreateRun(context.Context, resource.TfeID, CreateOptions) (*Run, error)
+	CreateRun(context.Context, resource.ID, CreateOptions) (*Run, error)
 	ListRuns(_ context.Context, opts ListOptions) (*resource.Page[*Run], error)
-	GetRun(ctx context.Context, id resource.TfeID) (*Run, error)
+	GetRun(ctx context.Context, id resource.ID) (*Run, error)
 	GetChunk(ctx context.Context, opts GetChunkOptions) (Chunk, error)
 	TailRun(context.Context, TailOptions) (<-chan Chunk, error)
-	DeleteRun(context.Context, resource.TfeID) error
-	ApplyRun(context.Context, resource.TfeID) error
+	DeleteRun(context.Context, resource.ID) error
+	ApplyRun(context.Context, resource.ID) error
 
-	GetRunPlanFile(ctx context.Context, id resource.TfeID, format PlanFormat) ([]byte, error)
-	UploadRunPlanFile(ctx context.Context, id resource.TfeID, plan []byte, format PlanFormat) error
+	GetRunPlanFile(ctx context.Context, id resource.ID, format PlanFormat) ([]byte, error)
+	UploadRunPlanFile(ctx context.Context, id resource.ID, plan []byte, format PlanFormat) error
 
-	GetLockFile(ctx context.Context, id resource.TfeID) ([]byte, error)
-	UploadLockFile(ctx context.Context, id resource.TfeID, lockFile []byte) error
+	GetLockFile(ctx context.Context, id resource.ID) ([]byte, error)
+	UploadLockFile(ctx context.Context, id resource.ID, lockFile []byte) error
 
 	PutChunk(ctx context.Context, opts PutChunkOptions) error
 }

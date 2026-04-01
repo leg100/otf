@@ -24,13 +24,13 @@ type (
 	}
 
 	spawnerClient interface {
-		ListConnectedWorkspaces(ctx context.Context, vcsProviderID resource.TfeID, repoPath vcs.Repo) ([]*workspace.Workspace, error)
-		CreateConfigVersion(ctx context.Context, workspaceID resource.TfeID, opts configversion.CreateOptions) (*configversion.ConfigurationVersion, error)
-		GetConfigVersion(ctx context.Context, id resource.TfeID) (*configversion.ConfigurationVersion, error)
-		GetLatestConfigVersion(ctx context.Context, workspaceID resource.TfeID) (*configversion.ConfigurationVersion, error)
-		UploadConfig(ctx context.Context, id resource.TfeID, config []byte) error
-		GetVCSProvider(ctx context.Context, providerID resource.TfeID) (*vcs.Provider, error)
-		CreateRun(ctx context.Context, workspaceID resource.TfeID, opts CreateOptions) (*Run, error)
+		ListConnectedWorkspaces(ctx context.Context, vcsProviderID resource.ID, repoPath vcs.Repo) ([]*workspace.Workspace, error)
+		CreateConfigVersion(ctx context.Context, workspaceID resource.ID, opts configversion.CreateOptions) (*configversion.ConfigurationVersion, error)
+		GetConfigVersion(ctx context.Context, id resource.ID) (*configversion.ConfigurationVersion, error)
+		GetLatestConfigVersion(ctx context.Context, workspaceID resource.ID) (*configversion.ConfigurationVersion, error)
+		UploadConfig(ctx context.Context, id resource.ID, config []byte) error
+		GetVCSProvider(ctx context.Context, providerID resource.ID) (*vcs.Provider, error)
+		CreateRun(ctx context.Context, workspaceID resource.ID, opts CreateOptions) (*Run, error)
 	}
 )
 

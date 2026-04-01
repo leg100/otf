@@ -53,7 +53,7 @@ func (s *Service) DeleteTags(ctx context.Context, organization organization.Name
 	return nil
 }
 
-func (s *Service) TagWorkspaces(ctx context.Context, tagID resource.TfeID, workspaceIDs []resource.TfeID) error {
+func (s *Service) TagWorkspaces(ctx context.Context, tagID resource.ID, workspaceIDs []resource.TfeID) error {
 	subject, err := authz.SubjectFromContext(ctx)
 	if err != nil {
 		return err
@@ -79,7 +79,7 @@ func (s *Service) TagWorkspaces(ctx context.Context, tagID resource.TfeID, works
 	return nil
 }
 
-func (s *Service) AddTags(ctx context.Context, workspaceID resource.TfeID, tags []TagSpec) error {
+func (s *Service) AddTags(ctx context.Context, workspaceID resource.ID, tags []TagSpec) error {
 	subject, err := s.Authorize(ctx, authz.AddTagsAction, workspaceID)
 	if err != nil {
 		return err
@@ -99,7 +99,7 @@ func (s *Service) AddTags(ctx context.Context, workspaceID resource.TfeID, tags 
 	return nil
 }
 
-func (s *Service) RemoveTags(ctx context.Context, workspaceID resource.TfeID, tags []TagSpec) error {
+func (s *Service) RemoveTags(ctx context.Context, workspaceID resource.ID, tags []TagSpec) error {
 	subject, err := s.Authorize(ctx, authz.RemoveTagsAction, workspaceID)
 	if err != nil {
 		return err
@@ -148,7 +148,7 @@ func (s *Service) RemoveTags(ctx context.Context, workspaceID resource.TfeID, ta
 	return nil
 }
 
-func (s *Service) ListWorkspaceTags(ctx context.Context, workspaceID resource.TfeID, opts ListWorkspaceTagsOptions) (*resource.Page[*Tag], error) {
+func (s *Service) ListWorkspaceTags(ctx context.Context, workspaceID resource.ID, opts ListWorkspaceTagsOptions) (*resource.Page[*Tag], error) {
 	subject, err := s.Authorize(ctx, authz.ListWorkspaceTags, workspaceID)
 	if err != nil {
 		return nil, err

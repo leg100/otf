@@ -31,5 +31,5 @@ type executor interface {
 	// SpawnOperation spawns an operation to carry out a job.
 	SpawnOperation(ctx context.Context, g *errgroup.Group, job *Job, jobToken []byte) error
 	// currentJobs returns the number of current jobs.
-	currentJobs(ctx context.Context, runnerID resource.TfeID) int
+	currentJobs(ctx context.Context, runnerID resource.ID) int
 }

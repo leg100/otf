@@ -18,12 +18,12 @@ type API struct {
 
 type apiClient interface {
 	CreateStateVersion(ctx context.Context, opts CreateStateVersionOptions) (*Version, error)
-	GetCurrentStateVersion(ctx context.Context, workspaceID resource.TfeID) (*Version, error)
-	ListStateVersions(ctx context.Context, workspaceID resource.TfeID, opts resource.PageOptions) (*resource.Page[*Version], error)
-	GetStateVersion(ctx context.Context, id resource.TfeID) (*Version, error)
-	RollbackStateVersion(ctx context.Context, id resource.TfeID) (*Version, error)
-	DeleteStateVersion(ctx context.Context, id resource.TfeID) error
-	DownloadState(ctx context.Context, svID resource.TfeID) ([]byte, error)
+	GetCurrentStateVersion(ctx context.Context, workspaceID resource.ID) (*Version, error)
+	ListStateVersions(ctx context.Context, workspaceID resource.ID, opts resource.PageOptions) (*resource.Page[*Version], error)
+	GetStateVersion(ctx context.Context, id resource.ID) (*Version, error)
+	RollbackStateVersion(ctx context.Context, id resource.ID) (*Version, error)
+	DeleteStateVersion(ctx context.Context, id resource.ID) error
+	DownloadState(ctx context.Context, svID resource.ID) ([]byte, error)
 }
 
 func (a *API) AddHandlers(r *mux.Router) {

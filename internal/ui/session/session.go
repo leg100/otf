@@ -16,7 +16,7 @@ type Service struct {
 }
 
 type SessionClient interface {
-	NewToken(subjectID resource.TfeID, expiry *time.Time) ([]byte, error)
+	NewToken(subjectID resource.ID, expiry *time.Time) ([]byte, error)
 }
 
 func NewService(logger logr.Logger, client SessionClient) *Service {
@@ -27,7 +27,7 @@ func NewService(logger logr.Logger, client SessionClient) *Service {
 	return svc
 }
 
-func (s *Service) StartSession(w http.ResponseWriter, r *http.Request, userID resource.TfeID) error {
+func (s *Service) StartSession(w http.ResponseWriter, r *http.Request, userID resource.ID) error {
 	expiry := internal.CurrentTimestamp(nil).Add(defaultSessionExpiry)
 	token, err := s.client.NewToken(userID, &expiry)
 	if err != nil {

@@ -25,10 +25,10 @@ type VCSService interface {
 	GetKind(id vcs.KindID) (vcs.Kind, error)
 	GetKinds() []vcs.Kind
 	CreateVCSProvider(ctx context.Context, opts vcs.CreateOptions) (*vcs.Provider, error)
-	GetVCSProvider(ctx context.Context, id resource.TfeID) (*vcs.Provider, error)
-	UpdateVCSProvider(ctx context.Context, id resource.TfeID, opts vcs.UpdateOptions) (*vcs.Provider, error)
+	GetVCSProvider(ctx context.Context, id resource.ID) (*vcs.Provider, error)
+	UpdateVCSProvider(ctx context.Context, id resource.ID, opts vcs.UpdateOptions) (*vcs.Provider, error)
 	ListVCSProviders(ctx context.Context, organization organization.Name) ([]*vcs.Provider, error)
-	DeleteVCSProvider(ctx context.Context, id resource.TfeID) (*vcs.Provider, error)
+	DeleteVCSProvider(ctx context.Context, id resource.ID) (*vcs.Provider, error)
 }
 
 func NewHandlers(vcsService VCSService) *Handlers {

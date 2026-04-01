@@ -33,18 +33,18 @@ type tfe struct {
 }
 
 type tfeClient interface {
-	CreateRun(context.Context, resource.TfeID, CreateOptions) (*Run, error)
+	CreateRun(context.Context, resource.ID, CreateOptions) (*Run, error)
 	ListRuns(_ context.Context, opts ListOptions) (*resource.Page[*Run], error)
-	GetRun(ctx context.Context, id resource.TfeID) (*Run, error)
+	GetRun(ctx context.Context, id resource.ID) (*Run, error)
 	GetChunk(ctx context.Context, opts GetChunkOptions) (Chunk, error)
-	CancelRun(ctx context.Context, id resource.TfeID) error
-	ForceCancelRun(ctx context.Context, id resource.TfeID) error
-	DiscardRun(ctx context.Context, id resource.TfeID) error
+	CancelRun(ctx context.Context, id resource.ID) error
+	ForceCancelRun(ctx context.Context, id resource.ID) error
+	DiscardRun(ctx context.Context, id resource.ID) error
 	TailRun(context.Context, TailOptions) (<-chan Chunk, error)
-	DeleteRun(context.Context, resource.TfeID) error
-	ApplyRun(context.Context, resource.TfeID) error
+	DeleteRun(context.Context, resource.ID) error
+	ApplyRun(context.Context, resource.ID) error
 	WatchRuns(ctx context.Context) (<-chan pubsub.Event[*Event], func())
-	GetRunPlanFile(ctx context.Context, id resource.TfeID, format PlanFormat) ([]byte, error)
+	GetRunPlanFile(ctx context.Context, id resource.ID, format PlanFormat) ([]byte, error)
 	GetWorkspace(context.Context, resource.ID) (*workspace.Workspace, error)
 }
 

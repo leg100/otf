@@ -23,14 +23,14 @@ type Handlers struct {
 }
 
 type Client interface {
-	GetModuleByID(context.Context, resource.TfeID) (*module.Module, error)
+	GetModuleByID(context.Context, resource.ID) (*module.Module, error)
 	ListModules(context.Context, module.ListOptions) ([]*module.Module, error)
 	ListProviders(context.Context, organization.Name) ([]string, error)
-	GetModuleInfo(context.Context, resource.TfeID) (*module.TerraformModule, error)
+	GetModuleInfo(context.Context, resource.ID) (*module.TerraformModule, error)
 	PublishModule(context.Context, module.PublishOptions) (*module.Module, error)
-	DeleteModule(context.Context, resource.TfeID) (*module.Module, error)
+	DeleteModule(context.Context, resource.ID) (*module.Module, error)
 	ListVCSProviders(ctx context.Context, organization organization.Name) ([]*vcs.Provider, error)
-	GetVCSProvider(ctx context.Context, id resource.TfeID) (*vcs.Provider, error)
+	GetVCSProvider(ctx context.Context, id resource.ID) (*vcs.Provider, error)
 	Hostname() string
 }
 

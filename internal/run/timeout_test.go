@@ -99,7 +99,7 @@ func (f *fakeTimeoutRunClient) ListRuns(ctx context.Context, opts ListOptions) (
 	return resource.NewPage([]*Run{f.run}, resource.PageOptions{}, nil), nil
 }
 
-func (f *fakeTimeoutRunClient) CancelRun(ctx context.Context, runID resource.TfeID) error {
+func (f *fakeTimeoutRunClient) CancelRun(ctx context.Context, runID resource.ID) error {
 	f.canceled = true
 	return nil
 }

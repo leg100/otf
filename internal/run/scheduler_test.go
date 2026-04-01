@@ -197,8 +197,9 @@ type fakeSchedulerRunClient struct {
 	enqueuePlanError error
 }
 
-func (f *fakeSchedulerRunClient) EnqueuePlan(ctx context.Context, runID resource.TfeID) (*Run, error) {
-	f.enqueuedRunID = &runID
+func (f *fakeSchedulerRunClient) EnqueuePlan(ctx context.Context, runID resource.ID) (*Run, error) {
+	id := runID.(resource.TfeID)
+	f.enqueuedRunID = &id
 	return nil, f.enqueuePlanError
 }
 
@@ -208,7 +209,7 @@ type fakeSchedulerWorkspaceClient struct {
 	unlocked bool
 }
 
-func (f *fakeSchedulerWorkspaceClient) Unlock(ctx context.Context, workspaceID resource.TfeID, runID *resource.TfeID, force bool) (*workspace.Workspace, error) {
+func (f *fakeSchedulerWorkspaceClient) Unlock(ctx context.Context, workspaceID resource.ID, runID *resource.TfeID, force bool) (*workspace.Workspace, error) {
 	f.unlocked = true
 	return nil, nil
 }

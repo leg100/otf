@@ -56,7 +56,7 @@ func (c *Client) ListWorkspaces(ctx context.Context, opts ListOptions) (*resourc
 	return &page, nil
 }
 
-func (c *Client) UpdateWorkspace(ctx context.Context, workspaceID resource.TfeID, opts UpdateOptions) (*Workspace, error) {
+func (c *Client) UpdateWorkspace(ctx context.Context, workspaceID resource.ID, opts UpdateOptions) (*Workspace, error) {
 	// Pre-emptively validate options
 	if _, err := (&Workspace{}).Update(opts); err != nil {
 		return nil, err
@@ -76,7 +76,7 @@ func (c *Client) UpdateWorkspace(ctx context.Context, workspaceID resource.TfeID
 	return &ws, nil
 }
 
-func (c *Client) Lock(ctx context.Context, workspaceID resource.TfeID, runID *resource.TfeID) (*Workspace, error) {
+func (c *Client) Lock(ctx context.Context, workspaceID resource.ID, runID *resource.TfeID) (*Workspace, error) {
 	path := fmt.Sprintf("workspaces/%s/actions/lock", workspaceID)
 	req, err := c.NewRequest("POST", path, nil)
 	if err != nil {
@@ -91,7 +91,7 @@ func (c *Client) Lock(ctx context.Context, workspaceID resource.TfeID, runID *re
 	return &ws, nil
 }
 
-func (c *Client) Unlock(ctx context.Context, workspaceID resource.TfeID, runID *resource.TfeID, force bool) (*Workspace, error) {
+func (c *Client) Unlock(ctx context.Context, workspaceID resource.ID, runID *resource.TfeID, force bool) (*Workspace, error) {
 	var u string
 	if force {
 		u = fmt.Sprintf("workspaces/%s/actions/unlock", workspaceID)

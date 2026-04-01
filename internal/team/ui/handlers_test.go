@@ -106,7 +106,7 @@ func (f *fakeClient) CreateTeam(context.Context, organization.Name, team.CreateT
 	return f.team, nil
 }
 
-func (f *fakeClient) UpdateTeam(context.Context, resource.TfeID, team.UpdateTeamOptions) (*team.Team, error) {
+func (f *fakeClient) UpdateTeam(context.Context, resource.ID, team.UpdateTeamOptions) (*team.Team, error) {
 	return f.team, nil
 }
 
@@ -114,7 +114,7 @@ func (f *fakeClient) GetTeam(context.Context, organization.Name, string) (*team.
 	return f.team, nil
 }
 
-func (f *fakeClient) GetTeamByID(context.Context, resource.TfeID) (*team.Team, error) {
+func (f *fakeClient) GetTeamByID(context.Context, resource.ID) (*team.Team, error) {
 	return f.team, nil
 }
 
@@ -122,7 +122,7 @@ func (f *fakeClient) ListTeams(context.Context, organization.Name) ([]*team.Team
 	return []*team.Team{f.team}, nil
 }
 
-func (f *fakeClient) DeleteTeam(context.Context, resource.TfeID) error {
+func (f *fakeClient) DeleteTeam(context.Context, resource.ID) error {
 	return nil
 }
 
@@ -133,7 +133,7 @@ func (f *fakeClient) List(context.Context) ([]*user.User, error) {
 	return nil, nil
 }
 
-func (f *fakeClient) ListTeamUsers(context.Context, resource.TfeID) ([]*user.User, error) {
+func (f *fakeClient) ListTeamUsers(context.Context, resource.ID) ([]*user.User, error) {
 	if f.user != nil {
 		return []*user.User{f.user}, nil
 	}

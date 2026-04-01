@@ -43,7 +43,7 @@ type FakeService struct {
 	Policy     Policy
 }
 
-func (f *FakeService) ListConnectedWorkspaces(ctx context.Context, vcsProviderID resource.TfeID, repoPath vcs.Repo) ([]*Workspace, error) {
+func (f *FakeService) ListConnectedWorkspaces(ctx context.Context, vcsProviderID resource.ID, repoPath vcs.Repo) ([]*Workspace, error) {
 	return f.Workspaces, nil
 }
 
@@ -51,7 +51,7 @@ func (f *FakeService) CreateWorkspace(context.Context, CreateOptions) (*Workspac
 	return f.Workspaces[0], nil
 }
 
-func (f *FakeService) UpdateWorkspace(_ context.Context, _ resource.TfeID, opts UpdateOptions) (*Workspace, error) {
+func (f *FakeService) UpdateWorkspace(_ context.Context, _ resource.ID, opts UpdateOptions) (*Workspace, error) {
 	f.Workspaces[0].Update(opts)
 	return f.Workspaces[0], nil
 }
@@ -72,15 +72,15 @@ func (f *FakeService) WatchWorkspaces(context.Context) (<-chan pubsub.Event[*Eve
 	return nil, nil
 }
 
-func (f *FakeService) DeleteWorkspace(context.Context, resource.TfeID) (*Workspace, error) {
+func (f *FakeService) DeleteWorkspace(context.Context, resource.ID) (*Workspace, error) {
 	return f.Workspaces[0], nil
 }
 
-func (f *FakeService) Lock(context.Context, resource.TfeID, *resource.TfeID) (*Workspace, error) {
+func (f *FakeService) Lock(context.Context, resource.ID, *resource.TfeID) (*Workspace, error) {
 	return f.Workspaces[0], nil
 }
 
-func (f *FakeService) Unlock(context.Context, resource.TfeID, *resource.TfeID, bool) (*Workspace, error) {
+func (f *FakeService) Unlock(context.Context, resource.ID, *resource.TfeID, bool) (*Workspace, error) {
 	return f.Workspaces[0], nil
 }
 
@@ -88,23 +88,23 @@ func (f *FakeService) ListTags(context.Context, organization.Name, ListTagsOptio
 	return nil, nil
 }
 
-func (f *FakeService) GetWorkspacePolicy(context.Context, resource.TfeID) (Policy, error) {
+func (f *FakeService) GetWorkspacePolicy(context.Context, resource.ID) (Policy, error) {
 	return f.Policy, nil
 }
 
-func (f *FakeService) AddTags(ctx context.Context, workspaceID resource.TfeID, tags []TagSpec) error {
+func (f *FakeService) AddTags(ctx context.Context, workspaceID resource.ID, tags []TagSpec) error {
 	return nil
 }
 
-func (f *FakeService) RemoveTags(ctx context.Context, workspaceID resource.TfeID, tags []TagSpec) error {
+func (f *FakeService) RemoveTags(ctx context.Context, workspaceID resource.ID, tags []TagSpec) error {
 	return nil
 }
 
-func (f *FakeService) SetWorkspacePermission(ctx context.Context, workspaceID, teamID resource.TfeID, role authz.Role) error {
+func (f *FakeService) SetWorkspacePermission(ctx context.Context, workspaceID, teamID resource.ID, role authz.Role) error {
 	return nil
 }
 
-func (f *FakeService) UnsetWorkspacePermission(ctx context.Context, workspaceID, teamID resource.TfeID) error {
+func (f *FakeService) UnsetWorkspacePermission(ctx context.Context, workspaceID, teamID resource.ID) error {
 	return nil
 }
 

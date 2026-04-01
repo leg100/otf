@@ -29,13 +29,13 @@ type allocatorClient interface {
 	WatchRunners(context.Context) (<-chan pubsub.Event[*RunnerEvent], func())
 	WatchJobs(context.Context) (<-chan pubsub.Event[*JobEvent], func())
 	ListRunners(ctx context.Context, opts ListOptions) ([]*RunnerMeta, error)
-	GetJob(ctx context.Context, jobID resource.TfeID) (*Job, error)
+	GetJob(ctx context.Context, jobID resource.ID) (*Job, error)
 
-	getRunner(ctx context.Context, runnerID resource.TfeID) (*RunnerMeta, error)
+	getRunner(ctx context.Context, runnerID resource.ID) (*RunnerMeta, error)
 	listJobs(ctx context.Context) ([]*Job, error)
 
-	allocateJob(ctx context.Context, jobID, runnerID resource.TfeID) (*Job, error)
-	reallocateJob(ctx context.Context, jobID, runnerID resource.TfeID) (*Job, error)
+	allocateJob(ctx context.Context, jobID, runnerID resource.ID) (*Job, error)
+	reallocateJob(ctx context.Context, jobID, runnerID resource.ID) (*Job, error)
 }
 
 // Start the allocator. Should be invoked in a go routine.

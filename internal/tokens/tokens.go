@@ -18,7 +18,7 @@ type factory struct {
 	key jwk.Key
 }
 
-func (f *factory) NewToken(subjectID resource.TfeID, expiry *time.Time) ([]byte, error) {
+func (f *factory) NewToken(subjectID resource.ID, expiry *time.Time) ([]byte, error) {
 	builder := jwt.NewBuilder().
 		Subject(subjectID.String()).
 		IssuedAt(time.Now())

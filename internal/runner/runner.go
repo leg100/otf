@@ -37,9 +37,9 @@ type Runner struct {
 
 type runnerClient interface {
 	Register(ctx context.Context, opts RegisterRunnerOptions) (*RunnerMeta, error)
-	awaitAllocatedJobs(ctx context.Context, agentID resource.TfeID) ([]*Job, error)
-	updateStatus(ctx context.Context, agentID resource.TfeID, status RunnerStatus) error
-	startJob(ctx context.Context, jobID resource.TfeID) ([]byte, error)
+	awaitAllocatedJobs(ctx context.Context, agentID resource.ID) ([]*Job, error)
+	updateStatus(ctx context.Context, agentID resource.ID, status RunnerStatus) error
+	startJob(ctx context.Context, jobID resource.ID) ([]byte, error)
 }
 
 // New constructs a runner.

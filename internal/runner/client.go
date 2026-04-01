@@ -50,7 +50,7 @@ func (c *Client) Register(ctx context.Context, opts RegisterRunnerOptions) (*Run
 	return &m, nil
 }
 
-func (c *Client) awaitAllocatedJobs(ctx context.Context, agentID resource.TfeID) ([]*Job, error) {
+func (c *Client) awaitAllocatedJobs(ctx context.Context, agentID resource.ID) ([]*Job, error) {
 	req, err := c.newRequest("GET", "agents/await-allocated-jobs", nil)
 	if err != nil {
 		return nil, err
@@ -70,7 +70,7 @@ func (c *Client) awaitAllocatedJobs(ctx context.Context, agentID resource.TfeID)
 	return jobs, nil
 }
 
-func (c *Client) GetJob(ctx context.Context, jobID resource.TfeID) (*Job, error) {
+func (c *Client) GetJob(ctx context.Context, jobID resource.ID) (*Job, error) {
 	u := fmt.Sprintf("jobs/%s", jobID)
 	req, err := c.newRequest("GET", u, nil)
 	if err != nil {
@@ -84,7 +84,7 @@ func (c *Client) GetJob(ctx context.Context, jobID resource.TfeID) (*Job, error)
 }
 
 //lint:ignore U1000 staticcheck wrongly picks this up as unused - perhaps because only the RunnerClient alias is used?
-func (c *Client) awaitJobSignal(ctx context.Context, jobID resource.TfeID) func() (jobSignal, error) {
+func (c *Client) awaitJobSignal(ctx context.Context, jobID resource.ID) func() (jobSignal, error) {
 	u := fmt.Sprintf("jobs/%s/await-signal", jobID)
 	req, err := c.newRequest("GET", u, nil)
 	if err != nil {
@@ -110,7 +110,7 @@ func (c *Client) awaitJobSignal(ctx context.Context, jobID resource.TfeID) func(
 	}
 }
 
-func (c *Client) updateStatus(ctx context.Context, agentID resource.TfeID, status RunnerStatus) error {
+func (c *Client) updateStatus(ctx context.Context, agentID resource.ID, status RunnerStatus) error {
 	req, err := c.newRequest("POST", "agents/status", &updateAgentStatusParams{
 		Status: status,
 	})
@@ -125,7 +125,7 @@ func (c *Client) updateStatus(ctx context.Context, agentID resource.TfeID, statu
 
 // agent tokens
 
-func (c *Client) CreateAgentToken(ctx context.Context, poolID resource.TfeID, opts CreateAgentTokenOptions) (*AgentToken, []byte, error) {
+func (c *Client) CreateAgentToken(ctx context.Context, poolID resource.ID, opts CreateAgentTokenOptions) (*AgentToken, []byte, error) {
 	u := fmt.Sprintf("agent-tokens/%s/create", poolID)
 	req, err := c.newRequest("POST", u, &opts)
 	if err != nil {
@@ -140,9 +140,9 @@ func (c *Client) CreateAgentToken(ctx context.Context, poolID resource.TfeID, op
 
 // jobs
 
-func (c *Client) startJob(ctx context.Context, jobID resource.TfeID) ([]byte, error) {
+func (c *Client) startJob(ctx context.Context, jobID resource.ID) ([]byte, error) {
 	req, err := c.newRequest("POST", "jobs/start", &startJobParams{
-		JobID: jobID,
+		JobID: jobID.(resource.TfeID),
 	})
 	if err != nil {
 		return nil, err
@@ -155,9 +155,9 @@ func (c *Client) startJob(ctx context.Context, jobID resource.TfeID) ([]byte, er
 }
 
 //lint:ignore U1000 staticcheck wrongly picks this up as unused - perhaps because only the RunnerClient alias is used?
-func (c *Client) finishJob(ctx context.Context, jobID resource.TfeID, opts finishJobOptions) error {
+func (c *Client) finishJob(ctx context.Context, jobID resource.ID, opts finishJobOptions) error {
 	req, err := c.newRequest("POST", "jobs/finish", &finishJobParams{
-		JobID:            jobID,
+		JobID:            jobID.(resource.TfeID),
 		finishJobOptions: opts,
 	})
 	if err != nil {
@@ -169,7 +169,7 @@ func (c *Client) finishJob(ctx context.Context, jobID resource.TfeID, opts finis
 	return nil
 }
 
-func (c *Client) GenerateDynamicCredentialsToken(ctx context.Context, jobID resource.TfeID, audience string) ([]byte, error) {
+func (c *Client) GenerateDynamicCredentialsToken(ctx context.Context, jobID resource.ID, audience string) ([]byte, error) {
 	u := fmt.Sprintf("jobs/%s/dynamic-credentials", jobID)
 	req, err := c.newRequest("POST", u, &generateDynamicCredentialsTokenParams{
 		Audience: audience,

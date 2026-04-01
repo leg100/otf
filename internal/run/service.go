@@ -59,16 +59,16 @@ type (
 		GetOrganization(ctx context.Context, name organization.Name) (*organization.Organization, error)
 		GetWorkspace(context.Context, resource.ID) (*workspace.Workspace, error)
 		GetWorkspaceByName(ctx context.Context, organization resource.ID, workspace string) (*workspace.Workspace, error)
-		SetWorkspaceLatestRun(ctx context.Context, workspaceID, runID resource.TfeID) (*workspace.Workspace, error)
-		Lock(ctx context.Context, workspaceID resource.TfeID, runID *resource.TfeID) (*workspace.Workspace, error)
-		ListConnectedWorkspaces(ctx context.Context, vcsProviderID resource.TfeID, repoPath vcs.Repo) ([]*workspace.Workspace, error)
+		SetWorkspaceLatestRun(ctx context.Context, workspaceID, runID resource.ID) (*workspace.Workspace, error)
+		Lock(ctx context.Context, workspaceID resource.ID, runID *resource.TfeID) (*workspace.Workspace, error)
+		ListConnectedWorkspaces(ctx context.Context, vcsProviderID resource.ID, repoPath vcs.Repo) ([]*workspace.Workspace, error)
 		AfterCreateWorkspace(hook func(context.Context, *workspace.Workspace) error)
-		CreateConfigVersion(ctx context.Context, workspaceID resource.TfeID, opts configversion.CreateOptions) (*configversion.ConfigurationVersion, error)
-		GetConfigVersion(ctx context.Context, id resource.TfeID) (*configversion.ConfigurationVersion, error)
-		GetLatestConfigVersion(ctx context.Context, workspaceID resource.TfeID) (*configversion.ConfigurationVersion, error)
-		UploadConfig(ctx context.Context, id resource.TfeID, config []byte) error
+		CreateConfigVersion(ctx context.Context, workspaceID resource.ID, opts configversion.CreateOptions) (*configversion.ConfigurationVersion, error)
+		GetConfigVersion(ctx context.Context, id resource.ID) (*configversion.ConfigurationVersion, error)
+		GetLatestConfigVersion(ctx context.Context, workspaceID resource.ID) (*configversion.ConfigurationVersion, error)
+		UploadConfig(ctx context.Context, id resource.ID, config []byte) error
 		GetSourceIcon(source source.Source) templ.Component
-		GetVCSProvider(ctx context.Context, providerID resource.TfeID) (*vcs.Provider, error)
+		GetVCSProvider(ctx context.Context, providerID resource.ID) (*vcs.Provider, error)
 		GetLatest(ctx context.Context, engine *engine.Engine) (string, time.Time, error)
 	}
 )
@@ -135,7 +135,7 @@ func NewService(opts Options) *Service {
 	return &svc
 }
 
-func (s *Service) CreateRun(ctx context.Context, workspaceID resource.TfeID, opts CreateOptions) (*Run, error) {
+func (s *Service) CreateRun(ctx context.Context, workspaceID resource.ID, opts CreateOptions) (*Run, error) {
 	subject, err := s.Authorize(ctx, authz.CreateRunAction, workspaceID)
 	if err != nil {
 		return nil, err
@@ -157,7 +157,7 @@ func (s *Service) CreateRun(ctx context.Context, workspaceID resource.TfeID, opt
 }
 
 // GetRun retrieves a run from the db.
-func (s *Service) GetRun(ctx context.Context, runID resource.TfeID) (*Run, error) {
+func (s *Service) GetRun(ctx context.Context, runID resource.ID) (*Run, error) {
 	subject, err := s.Authorize(ctx, authz.GetRunAction, runID)
 	if err != nil {
 		return nil, err
@@ -227,7 +227,7 @@ func (s *Service) listStatuses(ctx context.Context) ([]status, error) {
 }
 
 // EnqueuePlan enqueues a plan for the run.
-func (s *Service) EnqueuePlan(ctx context.Context, runID resource.TfeID) (run *Run, err error) {
+func (s *Service) EnqueuePlan(ctx context.Context, runID resource.ID) (run *Run, err error) {
 	err = s.db.Tx(ctx, func(ctx context.Context) error {
 		run, err = s.db.UpdateStatus(ctx, runID, func(ctx context.Context, run *Run) error {
 			return run.EnqueuePlan()
@@ -265,7 +265,7 @@ func (s *Service) AfterEnqueuePlan(hook func(context.Context, *Run) error) {
 	s.afterEnqueuePlanHooks = append(s.afterEnqueuePlanHooks, hook)
 }
 
-func (s *Service) DeleteRun(ctx context.Context, runID resource.TfeID) error {
+func (s *Service) DeleteRun(ctx context.Context, runID resource.ID) error {
 	subject, err := s.Authorize(ctx, authz.DeleteRunAction, runID)
 	if err != nil {
 		return err
@@ -280,7 +280,7 @@ func (s *Service) DeleteRun(ctx context.Context, runID resource.TfeID) error {
 }
 
 // StartPhase starts a run phase.
-func (s *Service) StartPhase(ctx context.Context, runID resource.TfeID, phase PhaseType, _ PhaseStartOptions) (*Run, error) {
+func (s *Service) StartPhase(ctx context.Context, runID resource.ID, phase PhaseType, _ PhaseStartOptions) (*Run, error) {
 	run, err := s.db.UpdateStatus(ctx, runID, func(ctx context.Context, run *Run) error {
 		return run.Start()
 	})
@@ -301,7 +301,7 @@ func (s *Service) StartPhase(ctx context.Context, runID resource.TfeID, phase Ph
 
 // FinishPhase finishes a phase. Creates a report of changes before updating the status of
 // the run.
-func (s *Service) FinishPhase(ctx context.Context, runID resource.TfeID, phase PhaseType, opts PhaseFinishOptions) (*Run, error) {
+func (s *Service) FinishPhase(ctx context.Context, runID resource.ID, phase PhaseType, opts PhaseFinishOptions) (*Run, error) {
 	var resourceReport, outputReport Report
 	if !opts.Errored {
 		var err error
@@ -339,7 +339,7 @@ func (s *Service) WatchRuns(ctx context.Context) (<-chan pubsub.Event[*Event], f
 }
 
 // ApplyRun enqueues an apply for the run.
-func (s *Service) ApplyRun(ctx context.Context, runID resource.TfeID) error {
+func (s *Service) ApplyRun(ctx context.Context, runID resource.ID) error {
 	subject, err := s.Authorize(ctx, authz.ApplyRunAction, runID)
 	if err != nil {
 		return err
@@ -370,7 +370,7 @@ func (s *Service) AfterEnqueueApply(hook func(context.Context, *Run) error) {
 }
 
 // DiscardRun discards the run.
-func (s *Service) DiscardRun(ctx context.Context, runID resource.TfeID) error {
+func (s *Service) DiscardRun(ctx context.Context, runID resource.ID) error {
 	subject, err := s.Authorize(ctx, authz.DiscardRunAction, runID)
 	if err != nil {
 		return err
@@ -389,7 +389,7 @@ func (s *Service) DiscardRun(ctx context.Context, runID resource.TfeID) error {
 	return err
 }
 
-func (s *Service) CancelRun(ctx context.Context, runID resource.TfeID) error {
+func (s *Service) CancelRun(ctx context.Context, runID resource.ID) error {
 	subject, err := s.Authorize(ctx, authz.CancelRunAction, runID)
 	if err != nil {
 		return err
@@ -443,7 +443,7 @@ func (s *Service) AfterCancelRun(hook func(context.Context, *Run) error) {
 }
 
 // ForceCancelRun forcefully cancels a run.
-func (s *Service) ForceCancelRun(ctx context.Context, runID resource.TfeID) error {
+func (s *Service) ForceCancelRun(ctx context.Context, runID resource.ID) error {
 	subject, err := s.Authorize(ctx, authz.ForceCancelRunAction, runID)
 	if err != nil {
 		return err
@@ -473,7 +473,7 @@ func (s *Service) AfterForceCancelRun(hook func(context.Context, *Run) error) {
 }
 
 // GetRunPlanFile returns the plan file for the run.
-func (s *Service) GetRunPlanFile(ctx context.Context, runID resource.TfeID, format PlanFormat) ([]byte, error) {
+func (s *Service) GetRunPlanFile(ctx context.Context, runID resource.ID, format PlanFormat) ([]byte, error) {
 	subject, err := s.Authorize(ctx, authz.GetPlanFileAction, runID)
 	if err != nil {
 		return nil, err
@@ -489,7 +489,7 @@ func (s *Service) GetRunPlanFile(ctx context.Context, runID resource.TfeID, form
 
 // UploadRunPlanFile persists a run's plan file. The plan format should be either
 // be binary or json.
-func (s *Service) UploadRunPlanFile(ctx context.Context, runID resource.TfeID, plan []byte, format PlanFormat) error {
+func (s *Service) UploadRunPlanFile(ctx context.Context, runID resource.ID, plan []byte, format PlanFormat) error {
 	subject, err := s.Authorize(ctx, authz.UploadPlanFileAction, runID)
 	if err != nil {
 		return err
@@ -506,7 +506,7 @@ func (s *Service) UploadRunPlanFile(ctx context.Context, runID resource.TfeID, p
 }
 
 // createReports creates reports of changes for the phase.
-func (s *Service) createReports(ctx context.Context, runID resource.TfeID, phase PhaseType) (resource Report, output Report, err error) {
+func (s *Service) createReports(ctx context.Context, runID resource.ID, phase PhaseType) (resource Report, output Report, err error) {
 	switch phase {
 	case PlanPhase:
 		resource, output, err = s.createPlanReports(ctx, runID)
@@ -518,7 +518,7 @@ func (s *Service) createReports(ctx context.Context, runID resource.TfeID, phase
 	return resource, output, err
 }
 
-func (s *Service) createPlanReports(ctx context.Context, runID resource.TfeID) (resources Report, outputs Report, err error) {
+func (s *Service) createPlanReports(ctx context.Context, runID resource.ID) (resources Report, outputs Report, err error) {
 	plan, err := s.GetRunPlanFile(ctx, runID, PlanFormatJSON)
 	if err != nil {
 		return Report{}, Report{}, err
@@ -533,9 +533,9 @@ func (s *Service) createPlanReports(ctx context.Context, runID resource.TfeID) (
 	return resourceReport, outputReport, nil
 }
 
-func (s *Service) createApplyReport(ctx context.Context, runID resource.TfeID) (Report, error) {
+func (s *Service) createApplyReport(ctx context.Context, runID resource.ID) (Report, error) {
 	logs, err := s.GetChunk(ctx, GetChunkOptions{
-		RunID: runID,
+		RunID: runID.(resource.TfeID),
 		Phase: ApplyPhase,
 	})
 	if err != nil {

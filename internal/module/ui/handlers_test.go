@@ -90,7 +90,7 @@ type fakeModuleService struct {
 	tarball []byte
 }
 
-func (f *fakeModuleService) GetModuleByID(context.Context, resource.TfeID) (*module.Module, error) {
+func (f *fakeModuleService) GetModuleByID(context.Context, resource.ID) (*module.Module, error) {
 	return f.mod, nil
 }
 
@@ -102,7 +102,7 @@ func (f *fakeModuleService) ListProviders(context.Context, organization.Name) ([
 	return nil, nil
 }
 
-func (f *fakeModuleService) GetModuleInfo(context.Context, resource.TfeID) (*module.TerraformModule, error) {
+func (f *fakeModuleService) GetModuleInfo(context.Context, resource.ID) (*module.TerraformModule, error) {
 	return module.UnmarshalTerraformModule(f.tarball)
 }
 

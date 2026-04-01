@@ -93,7 +93,7 @@ func (f *fakeUserService) List(ctx context.Context) ([]*user.User, error) {
 	return []*user.User{f.user}, nil
 }
 
-func (f *fakeUserService) ListTeamUsers(ctx context.Context, teamID resource.TfeID) ([]*user.User, error) {
+func (f *fakeUserService) ListTeamUsers(ctx context.Context, teamID resource.ID) ([]*user.User, error) {
 	return []*user.User{f.user}, nil
 }
 
@@ -101,11 +101,11 @@ func (f *fakeUserService) Delete(context.Context, user.Username) error {
 	return nil
 }
 
-func (f *fakeUserService) AddTeamMembership(context.Context, resource.TfeID, []user.Username) error {
+func (f *fakeUserService) AddTeamMembership(context.Context, resource.ID, []user.Username) error {
 	return nil
 }
 
-func (f *fakeUserService) RemoveTeamMembership(context.Context, resource.TfeID, []user.Username) error {
+func (f *fakeUserService) RemoveTeamMembership(context.Context, resource.ID, []user.Username) error {
 	return nil
 }
 
@@ -117,6 +117,6 @@ func (f *fakeUserService) ListTokens(context.Context) ([]*user.UserToken, error)
 	return []*user.UserToken{f.ut}, nil
 }
 
-func (f *fakeUserService) DeleteToken(context.Context, resource.TfeID) error {
+func (f *fakeUserService) DeleteToken(context.Context, resource.ID) error {
 	return nil
 }

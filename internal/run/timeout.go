@@ -31,7 +31,7 @@ type (
 
 	timeoutRunClient interface {
 		ListRuns(ctx context.Context, opts ListOptions) (*resource.Page[*Run], error)
-		CancelRun(ctx context.Context, runID resource.TfeID) error
+		CancelRun(ctx context.Context, runID resource.ID) error
 	}
 )
 

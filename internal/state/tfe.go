@@ -32,16 +32,16 @@ type tfe struct {
 
 type tfeClient interface {
 	CreateStateVersion(ctx context.Context, opts CreateStateVersionOptions) (*Version, error)
-	GetCurrentStateVersion(ctx context.Context, workspaceID resource.TfeID) (*Version, error)
-	ListStateVersions(ctx context.Context, workspaceID resource.TfeID, opts resource.PageOptions) (*resource.Page[*Version], error)
-	GetStateVersion(ctx context.Context, id resource.TfeID) (*Version, error)
-	RollbackStateVersion(ctx context.Context, id resource.TfeID) (*Version, error)
-	DeleteStateVersion(ctx context.Context, id resource.TfeID) error
+	GetCurrentStateVersion(ctx context.Context, workspaceID resource.ID) (*Version, error)
+	ListStateVersions(ctx context.Context, workspaceID resource.ID, opts resource.PageOptions) (*resource.Page[*Version], error)
+	GetStateVersion(ctx context.Context, id resource.ID) (*Version, error)
+	RollbackStateVersion(ctx context.Context, id resource.ID) (*Version, error)
+	DeleteStateVersion(ctx context.Context, id resource.ID) error
 	GetPreviousStateVersion(ctx context.Context, sv *Version) (*Version, error)
 	GetWorkspaceByName(ctx context.Context, organization resource.ID, workspace string) (*workspace.Workspace, error)
-	UploadState(ctx context.Context, svID resource.TfeID, state []byte) error
-	DownloadState(ctx context.Context, svID resource.TfeID) ([]byte, error)
-	GetStateOutput(ctx context.Context, outputID resource.TfeID) (*Output, error)
+	UploadState(ctx context.Context, svID resource.ID, state []byte) error
+	DownloadState(ctx context.Context, svID resource.ID) ([]byte, error)
+	GetStateOutput(ctx context.Context, outputID resource.ID) (*Output, error)
 }
 
 func NewTFEAPI(

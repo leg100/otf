@@ -10,6 +10,6 @@ type fakeConfigService struct {
 	*Service
 }
 
-func (f *fakeConfigService) UploadConfig(context.Context, resource.TfeID, []byte) error {
+func (f *fakeConfigService) UploadConfig(context.Context, resource.ID, []byte) error {
 	return nil
 }

@@ -22,11 +22,11 @@ type CLI struct {
 }
 
 type cliStateService interface {
-	ListStateVersions(ctx context.Context, workspaceID resource.TfeID, opts resource.PageOptions) (*resource.Page[*Version], error)
-	GetCurrentStateVersion(ctx context.Context, workspaceID resource.TfeID) (*Version, error)
-	DownloadState(ctx context.Context, versionID resource.TfeID) ([]byte, error)
-	RollbackStateVersion(ctx context.Context, versionID resource.TfeID) (*Version, error)
-	DeleteStateVersion(ctx context.Context, versionID resource.TfeID) error
+	ListStateVersions(ctx context.Context, workspaceID resource.ID, opts resource.PageOptions) (*resource.Page[*Version], error)
+	GetCurrentStateVersion(ctx context.Context, workspaceID resource.ID) (*Version, error)
+	DownloadState(ctx context.Context, versionID resource.ID) ([]byte, error)
+	RollbackStateVersion(ctx context.Context, versionID resource.ID) (*Version, error)
+	DeleteStateVersion(ctx context.Context, versionID resource.ID) error
 }
 
 type cliWorkspaceService interface {

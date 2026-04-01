@@ -21,8 +21,8 @@ type (
 	apiClient interface {
 		Create(ctx context.Context, username string, opts ...NewUserOption) (*User, error)
 		Delete(ctx context.Context, username Username) error
-		AddTeamMembership(ctx context.Context, teamID resource.TfeID, usernames []Username) error
-		RemoveTeamMembership(ctx context.Context, teamID resource.TfeID, usernames []Username) error
+		AddTeamMembership(ctx context.Context, teamID resource.ID, usernames []Username) error
+		RemoveTeamMembership(ctx context.Context, teamID resource.ID, usernames []Username) error
 	}
 
 	modifyTeamMembershipOptions struct {

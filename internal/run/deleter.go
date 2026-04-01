@@ -20,7 +20,7 @@ type (
 
 	deleterRunClient interface {
 		List(ctx context.Context, opts ListOptions) (*resource.Page[*Run], error)
-		Delete(ctx context.Context, runID resource.TfeID) error
+		Delete(ctx context.Context, runID resource.ID) error
 	}
 )
 

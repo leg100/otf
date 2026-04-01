@@ -53,13 +53,13 @@ func (f *fakeRunnerClient) Register(ctx context.Context, opts RegisterRunnerOpti
 	return &RunnerMeta{ID: f.registeredID}, nil
 }
 
-func (f *fakeRunnerClient) awaitAllocatedJobs(ctx context.Context, _ resource.TfeID) ([]*Job, error) {
+func (f *fakeRunnerClient) awaitAllocatedJobs(ctx context.Context, _ resource.ID) ([]*Job, error) {
 	// Block until context canceled
 	<-ctx.Done()
 	return nil, nil
 }
 
-func (f *fakeRunnerClient) updateStatus(ctx context.Context, agentID resource.TfeID, status RunnerStatus) error {
+func (f *fakeRunnerClient) updateStatus(ctx context.Context, agentID resource.ID, status RunnerStatus) error {
 	f.updates <- status
 	return nil
 }

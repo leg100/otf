@@ -120,7 +120,7 @@ func (a *Service) AfterCreateTeam(hook func(context.Context, *Team) error) {
 	a.afterCreateHooks = append(a.afterCreateHooks, hook)
 }
 
-func (a *Service) UpdateTeam(ctx context.Context, teamID resource.TfeID, opts UpdateTeamOptions) (*Team, error) {
+func (a *Service) UpdateTeam(ctx context.Context, teamID resource.ID, opts UpdateTeamOptions) (*Team, error) {
 	team, err := a.db.getTeamByID(ctx, teamID)
 	if err != nil {
 		a.Error(err, "retrieving team", "team_id", teamID)
@@ -178,7 +178,7 @@ func (a *Service) GetTeam(ctx context.Context, organization organization.Name, n
 	return team, nil
 }
 
-func (a *Service) GetTeamByID(ctx context.Context, teamID resource.TfeID) (*Team, error) {
+func (a *Service) GetTeamByID(ctx context.Context, teamID resource.ID) (*Team, error) {
 	team, err := a.db.getTeamByID(ctx, teamID)
 	if err != nil {
 		a.Error(err, "retrieving team", "team_id", teamID)
@@ -195,7 +195,7 @@ func (a *Service) GetTeamByID(ctx context.Context, teamID resource.TfeID) (*Team
 	return team, nil
 }
 
-func (a *Service) DeleteTeam(ctx context.Context, teamID resource.TfeID) error {
+func (a *Service) DeleteTeam(ctx context.Context, teamID resource.ID) error {
 	team, err := a.db.getTeamByID(ctx, teamID)
 	if err != nil {
 		a.Error(err, "retrieving team", "team_id", teamID)
@@ -222,7 +222,7 @@ func (a *Service) DeleteTeam(ctx context.Context, teamID resource.TfeID) error {
 	return nil
 }
 
-func (a *Service) GetTeamByTokenID(ctx context.Context, tokenID resource.TfeID) (*Team, error) {
+func (a *Service) GetTeamByTokenID(ctx context.Context, tokenID resource.ID) (*Team, error) {
 	team, err := a.db.getTeamByTokenID(ctx, tokenID)
 	if err != nil {
 		a.Error(err, "retrieving team by team token ID", "token_id", tokenID)

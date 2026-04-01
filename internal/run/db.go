@@ -130,7 +130,7 @@ INSERT INTO runs (
 }
 
 // UpdateStatus updates the run status as well as its plan and/or apply.
-func (db *pgdb) UpdateStatus(ctx context.Context, runID resource.TfeID, fn func(context.Context, *Run) error) (*Run, error) {
+func (db *pgdb) UpdateStatus(ctx context.Context, runID resource.ID, fn func(context.Context, *Run) error) (*Run, error) {
 	var (
 		runStatus        runstatus.Status
 		planStatus       PhaseStatus
@@ -288,7 +288,7 @@ WHERE run_id = $2
 
 // triggerEvent triggers a database event for a run, by executing an no-op
 // update.
-func (db *pgdb) triggerEvent(ctx context.Context, runID resource.TfeID) error {
+func (db *pgdb) triggerEvent(ctx context.Context, runID resource.ID) error {
 	return db.Tx(ctx, func(ctx context.Context) error {
 		_, err := db.Exec(ctx, `
 UPDATE runs
@@ -301,7 +301,7 @@ WHERE run_id = $1
 	})
 }
 
-func (db *pgdb) CreatePlanReport(ctx context.Context, runID resource.TfeID, resource, output Report) error {
+func (db *pgdb) CreatePlanReport(ctx context.Context, runID resource.ID, resource, output Report) error {
 	_, err := db.Exec(ctx, `
 UPDATE plans
 SET resource_report = (
@@ -327,7 +327,7 @@ WHERE run_id = $7
 	return err
 }
 
-func (db *pgdb) CreateApplyReport(ctx context.Context, runID resource.TfeID, report Report) error {
+func (db *pgdb) CreateApplyReport(ctx context.Context, runID resource.ID, report Report) error {
 	_, err := db.Exec(ctx, `
 UPDATE applies
 SET resource_report = (
@@ -565,7 +565,7 @@ WHERE runs.run_id = $1
 }
 
 // SetPlanFile writes a plan file to the db
-func (db *pgdb) SetPlanFile(ctx context.Context, runID resource.TfeID, file []byte, format PlanFormat) error {
+func (db *pgdb) SetPlanFile(ctx context.Context, runID resource.ID, file []byte, format PlanFormat) error {
 	switch format {
 	case PlanFormatBinary:
 		_, err := db.Exec(ctx, `UPDATE plans SET plan_bin = $1 WHERE run_id = $2`, file, runID)
@@ -579,7 +579,7 @@ func (db *pgdb) SetPlanFile(ctx context.Context, runID resource.TfeID, file []by
 }
 
 // GetPlanFile retrieves a plan file for the run
-func (db *pgdb) GetPlanFile(ctx context.Context, runID resource.TfeID, format PlanFormat) ([]byte, error) {
+func (db *pgdb) GetPlanFile(ctx context.Context, runID resource.ID, format PlanFormat) ([]byte, error) {
 	var row pgx.Rows
 	switch format {
 	case PlanFormatBinary:
@@ -593,19 +593,19 @@ func (db *pgdb) GetPlanFile(ctx context.Context, runID resource.TfeID, format Pl
 }
 
 // GetLockFile retrieves the lock file for the run
-func (db *pgdb) GetLockFile(ctx context.Context, runID resource.TfeID) ([]byte, error) {
+func (db *pgdb) GetLockFile(ctx context.Context, runID resource.ID) ([]byte, error) {
 	row := db.Query(ctx, `SELECT lock_file FROM runs WHERE run_id = $1`, runID)
 	return sql.CollectOneType[[]byte](row)
 }
 
 // SetLockFile sets the lock file for the run
-func (db *pgdb) SetLockFile(ctx context.Context, runID resource.TfeID, lockFile []byte) error {
+func (db *pgdb) SetLockFile(ctx context.Context, runID resource.ID, lockFile []byte) error {
 	_, err := db.Exec(ctx, `UPDATE runs SET lock_file = $1 WHERE run_id = $2`, lockFile, runID)
 	return err
 }
 
 // DeleteRun deletes a run from the DB
-func (db *pgdb) DeleteRun(ctx context.Context, id resource.TfeID) error {
+func (db *pgdb) DeleteRun(ctx context.Context, id resource.ID) error {
 	_, err := db.Exec(ctx, `DELETE FROM runs WHERE run_id = $1`, id)
 	return err
 }

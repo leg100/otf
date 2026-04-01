@@ -21,15 +21,15 @@ type TFEAPI struct {
 
 type tfeClient interface {
 	CreateAgentPool(ctx context.Context, opts CreateAgentPoolOptions) (*Pool, error)
-	UpdateAgentPool(ctx context.Context, poolID resource.TfeID, opts UpdatePoolOptions) (*Pool, error)
+	UpdateAgentPool(ctx context.Context, poolID resource.ID, opts UpdatePoolOptions) (*Pool, error)
 	ListAgentPoolsByOrganization(ctx context.Context, organization organization.Name, opts ListPoolOptions) ([]*Pool, error)
-	GetAgentPool(ctx context.Context, poolID resource.TfeID) (*Pool, error)
-	DeleteAgentPool(ctx context.Context, poolID resource.TfeID) (*Pool, error)
+	GetAgentPool(ctx context.Context, poolID resource.ID) (*Pool, error)
+	DeleteAgentPool(ctx context.Context, poolID resource.ID) (*Pool, error)
 
-	CreateAgentToken(ctx context.Context, poolID resource.TfeID, opts CreateAgentTokenOptions) (*AgentToken, []byte, error)
-	ListAgentTokens(ctx context.Context, poolID resource.TfeID) ([]*AgentToken, error)
-	GetAgentToken(context.Context, resource.TfeID) (*AgentToken, error)
-	DeleteAgentToken(ctx context.Context, tokenID resource.TfeID) (*AgentToken, error)
+	CreateAgentToken(ctx context.Context, poolID resource.ID, opts CreateAgentTokenOptions) (*AgentToken, []byte, error)
+	ListAgentTokens(ctx context.Context, poolID resource.ID) ([]*AgentToken, error)
+	GetAgentToken(context.Context, resource.ID) (*AgentToken, error)
+	DeleteAgentToken(ctx context.Context, tokenID resource.ID) (*AgentToken, error)
 }
 
 func (a *TFEAPI) AddHandlers(r *mux.Router) {

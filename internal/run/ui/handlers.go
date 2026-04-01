@@ -30,16 +30,16 @@ type Handlers struct {
 }
 
 type Client interface {
-	CreateRun(context.Context, resource.TfeID, runpkg.CreateOptions) (*runpkg.Run, error)
+	CreateRun(context.Context, resource.ID, runpkg.CreateOptions) (*runpkg.Run, error)
 	ListRuns(_ context.Context, opts runpkg.ListOptions) (*resource.Page[*runpkg.Run], error)
-	GetRun(ctx context.Context, id resource.TfeID) (*runpkg.Run, error)
+	GetRun(ctx context.Context, id resource.ID) (*runpkg.Run, error)
 	GetChunk(ctx context.Context, opts runpkg.GetChunkOptions) (runpkg.Chunk, error)
-	CancelRun(ctx context.Context, id resource.TfeID) error
-	ForceCancelRun(ctx context.Context, id resource.TfeID) error
-	DiscardRun(ctx context.Context, id resource.TfeID) error
+	CancelRun(ctx context.Context, id resource.ID) error
+	ForceCancelRun(ctx context.Context, id resource.ID) error
+	DiscardRun(ctx context.Context, id resource.ID) error
 	TailRun(context.Context, runpkg.TailOptions) (<-chan runpkg.Chunk, error)
-	DeleteRun(context.Context, resource.TfeID) error
-	ApplyRun(context.Context, resource.TfeID) error
+	DeleteRun(context.Context, resource.ID) error
+	ApplyRun(context.Context, resource.ID) error
 	WatchRuns(ctx context.Context) (<-chan pubsub.Event[*runpkg.Event], func())
 	GetWorkspace(context.Context, resource.ID) (*workspace.Workspace, error)
 	WatchWorkspaces(ctx context.Context) (<-chan pubsub.Event[*workspace.Event], func())

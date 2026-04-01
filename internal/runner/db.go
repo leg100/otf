@@ -61,7 +61,7 @@ INSERT INTO runners (
 	return err
 }
 
-func (db *db) update(ctx context.Context, runnerID resource.TfeID, fn func(context.Context, *RunnerMeta) error) error {
+func (db *db) update(ctx context.Context, runnerID resource.ID, fn func(context.Context, *RunnerMeta) error) error {
 	_, err := sql.Updater(
 		ctx,
 		db.DB,
@@ -104,7 +104,7 @@ WHERE runner_id = @runner_id
 	return err
 }
 
-func (db *db) get(ctx context.Context, runnerID resource.TfeID) (*RunnerMeta, error) {
+func (db *db) get(ctx context.Context, runnerID resource.ID) (*RunnerMeta, error) {
 	rows := db.Query(ctx, `
 SELECT
     a.runner_id, a.name, a.version, a.max_jobs, a.ip_address, a.last_ping_at, a.last_status_at, a.status,
@@ -149,7 +149,7 @@ ORDER BY a.last_ping_at DESC
 	return sql.CollectRows(rows, scanRunner)
 }
 
-func (db *db) deleteRunner(ctx context.Context, runnerID resource.TfeID) error {
+func (db *db) deleteRunner(ctx context.Context, runnerID resource.ID) error {
 	_, err := db.Exec(ctx, `
 DELETE
 FROM runners
@@ -217,7 +217,7 @@ INSERT INTO jobs (
 	return err
 }
 
-func (db *db) listAllocatedJobs(ctx context.Context, runnerID resource.TfeID) ([]*Job, error) {
+func (db *db) listAllocatedJobs(ctx context.Context, runnerID resource.ID) ([]*Job, error) {
 	rows := db.Query(ctx, `
 SELECT
     j.*,
@@ -233,7 +233,7 @@ AND   j.status = 'allocated'
 	return sql.CollectRows(rows, scanJob)
 }
 
-func (db *db) getJob(ctx context.Context, jobID resource.TfeID) (*Job, error) {
+func (db *db) getJob(ctx context.Context, jobID resource.ID) (*Job, error) {
 	rows := db.Query(ctx, `
 SELECT
     j.*,
@@ -264,7 +264,7 @@ JOIN workspaces w USING (workspace_id)
 
 // updateJob updates a job given either its job ID, or if its run ID. If the run
 // ID is given then it updates the last unfinished job belonging to the run.
-func (db *db) updateJob(ctx context.Context, runOrJobID resource.TfeID, fn func(context.Context, *Job) error) (*Job, error) {
+func (db *db) updateJob(ctx context.Context, runOrJobID resource.ID, fn func(context.Context, *Job) error) (*Job, error) {
 	return sql.Updater(
 		ctx,
 		db.DB,
@@ -355,7 +355,7 @@ INSERT INTO agent_tokens (
 	return err
 }
 
-func (db *db) getAgentTokenByID(ctx context.Context, id resource.TfeID) (*AgentToken, error) {
+func (db *db) getAgentTokenByID(ctx context.Context, id resource.ID) (*AgentToken, error) {
 	rows := db.Query(ctx, `
 SELECT agent_token_id, created_at, description, agent_pool_id
 FROM agent_tokens
@@ -364,7 +364,7 @@ WHERE agent_token_id = $1
 	return sql.CollectOneRow(rows, scanAgentToken)
 }
 
-func (db *db) listAgentTokens(ctx context.Context, poolID resource.TfeID) ([]*AgentToken, error) {
+func (db *db) listAgentTokens(ctx context.Context, poolID resource.ID) ([]*AgentToken, error) {
 	rows := db.Query(ctx, `
 SELECT agent_token_id, created_at, description, agent_pool_id
 FROM agent_tokens
@@ -374,7 +374,7 @@ ORDER BY created_at DESC
 	return sql.CollectRows(rows, scanAgentToken)
 }
 
-func (db *db) deleteAgentToken(ctx context.Context, id resource.TfeID) error {
+func (db *db) deleteAgentToken(ctx context.Context, id resource.ID) error {
 	_, err := db.Exec(ctx, `
 DELETE
 FROM agent_tokens
@@ -463,7 +463,7 @@ WHERE agent_pool_id = $3
 	return err
 }
 
-func (db *db) addAgentPoolAllowedWorkspace(ctx context.Context, poolID, workspaceID resource.TfeID) error {
+func (db *db) addAgentPoolAllowedWorkspace(ctx context.Context, poolID resource.ID, workspaceID resource.TfeID) error {
 	_, err := db.Exec(ctx, `
 INSERT INTO agent_pool_allowed_workspaces (
     agent_pool_id,
@@ -475,7 +475,7 @@ INSERT INTO agent_pool_allowed_workspaces (
 	return err
 }
 
-func (db *db) deleteAgentPoolAllowedWorkspace(ctx context.Context, poolID, workspaceID resource.TfeID) error {
+func (db *db) deleteAgentPoolAllowedWorkspace(ctx context.Context, poolID resource.ID, workspaceID resource.TfeID) error {
 	_, err := db.Exec(ctx, `
 DELETE
 FROM agent_pool_allowed_workspaces
@@ -485,7 +485,7 @@ AND workspace_id = $2
 	return err
 }
 
-func (db *db) getPool(ctx context.Context, poolID resource.TfeID) (*Pool, error) {
+func (db *db) getPool(ctx context.Context, poolID resource.ID) (*Pool, error) {
 	rows := db.Query(ctx, `
 SELECT ap.agent_pool_id, ap.name, ap.created_at, ap.organization_name, ap.organization_scoped,
     (
@@ -505,7 +505,7 @@ GROUP BY ap.agent_pool_id
 	return sql.CollectOneRow[*Pool](rows, pgx.RowToAddrOfStructByName)
 }
 
-func (db *db) getPoolByTokenID(ctx context.Context, tokenID resource.TfeID) (*Pool, error) {
+func (db *db) getPoolByTokenID(ctx context.Context, tokenID resource.ID) (*Pool, error) {
 	rows := db.Query(ctx, `
 SELECT ap.agent_pool_id, ap.name, ap.created_at, ap.organization_name, ap.organization_scoped,
     (
@@ -562,7 +562,7 @@ ORDER BY ap.created_at DESC
 	return sql.CollectRows[*Pool](rows, pgx.RowToAddrOfStructByName)
 }
 
-func (db *db) deleteAgentPool(ctx context.Context, poolID resource.TfeID) error {
+func (db *db) deleteAgentPool(ctx context.Context, poolID resource.ID) error {
 	_, err := db.Exec(ctx, `
 DELETE
 FROM agent_pools

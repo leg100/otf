@@ -43,7 +43,7 @@ type (
 
 	notifierRunClient interface {
 		WatchRuns(context.Context) (<-chan pubsub.Event[*run.Event], func())
-		GetRun(context.Context, resource.TfeID) (*run.Run, error)
+		GetRun(context.Context, resource.ID) (*run.Run, error)
 	}
 
 	notifierNotificationClient interface {

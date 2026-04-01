@@ -17,7 +17,7 @@ import (
 
 type fakeTokenGenerator struct{}
 
-func (f *fakeTokenGenerator) GenerateDynamicCredentialsToken(ctx context.Context, jobID resource.TfeID, audience string) ([]byte, error) {
+func (f *fakeTokenGenerator) GenerateDynamicCredentialsToken(ctx context.Context, jobID resource.ID, audience string) ([]byte, error) {
 	return []byte("fake_oidc_token"), nil
 }
 

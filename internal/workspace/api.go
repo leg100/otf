@@ -23,11 +23,11 @@ type apiClient interface {
 	ListWorkspaces(ctx context.Context, opts ListOptions) (*resource.Page[*Workspace], error)
 	CreateWorkspace(ctx context.Context, opts CreateOptions) (*Workspace, error)
 	GetWorkspaceByName(ctx context.Context, organization resource.ID, name string) (*Workspace, error)
-	GetWorkspacePolicy(ctx context.Context, workspaceID resource.TfeID) (Policy, error)
-	UpdateWorkspace(ctx context.Context, workspaceID resource.TfeID, opts UpdateOptions) (*Workspace, error)
-	DeleteWorkspace(ctx context.Context, workspaceID resource.TfeID) (*Workspace, error)
-	Lock(ctx context.Context, workspaceID resource.TfeID, runID *resource.TfeID) (*Workspace, error)
-	Unlock(ctx context.Context, workspaceID resource.TfeID, runID *resource.TfeID, force bool) (*Workspace, error)
+	GetWorkspacePolicy(ctx context.Context, workspaceID resource.ID) (Policy, error)
+	UpdateWorkspace(ctx context.Context, workspaceID resource.ID, opts UpdateOptions) (*Workspace, error)
+	DeleteWorkspace(ctx context.Context, workspaceID resource.ID) (*Workspace, error)
+	Lock(ctx context.Context, workspaceID resource.ID, runID *resource.TfeID) (*Workspace, error)
+	Unlock(ctx context.Context, workspaceID resource.ID, runID *resource.TfeID, force bool) (*Workspace, error)
 }
 
 func (a *API) AddHandlers(r *mux.Router) {

@@ -25,11 +25,11 @@ type Handlers struct {
 }
 
 type Client interface {
-	GetCurrentStateVersion(ctx context.Context, workspaceID resource.TfeID) (*state.Version, error)
-	ListStateVersions(ctx context.Context, workspaceID resource.TfeID, opts resource.PageOptions) (*resource.Page[*state.Version], error)
-	GetStateVersion(ctx context.Context, id resource.TfeID) (*state.Version, error)
-	RollbackStateVersion(ctx context.Context, id resource.TfeID) (*state.Version, error)
-	DeleteStateVersion(ctx context.Context, id resource.TfeID) error
+	GetCurrentStateVersion(ctx context.Context, workspaceID resource.ID) (*state.Version, error)
+	ListStateVersions(ctx context.Context, workspaceID resource.ID, opts resource.PageOptions) (*resource.Page[*state.Version], error)
+	GetStateVersion(ctx context.Context, id resource.ID) (*state.Version, error)
+	RollbackStateVersion(ctx context.Context, id resource.ID) (*state.Version, error)
+	DeleteStateVersion(ctx context.Context, id resource.ID) error
 	GetPreviousStateVersion(ctx context.Context, sv *state.Version) (*state.Version, error)
 	GetWorkspace(context.Context, resource.ID) (*workspace.Workspace, error)
 }

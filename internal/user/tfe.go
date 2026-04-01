@@ -29,11 +29,11 @@ type (
 	tfeClient interface {
 		Create(ctx context.Context, username string, opts ...NewUserOption) (*User, error)
 		ListOrganizationUsers(ctx context.Context, organization organization.Name) ([]*User, error)
-		ListTeamUsers(ctx context.Context, teamID resource.TfeID) ([]*User, error)
+		ListTeamUsers(ctx context.Context, teamID resource.ID) ([]*User, error)
 		GetUser(ctx context.Context, spec UserSpec) (*User, error)
 		Delete(ctx context.Context, username Username) error
-		AddTeamMembership(ctx context.Context, teamID resource.TfeID, usernames []Username) error
-		RemoveTeamMembership(ctx context.Context, teamID resource.TfeID, usernames []Username) error
+		AddTeamMembership(ctx context.Context, teamID resource.ID, usernames []Username) error
+		RemoveTeamMembership(ctx context.Context, teamID resource.ID, usernames []Username) error
 	}
 )
 

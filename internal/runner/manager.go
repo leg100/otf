@@ -26,8 +26,8 @@ type manager struct {
 
 type managerClient interface {
 	ListRunners(ctx context.Context, opts ListOptions) ([]*RunnerMeta, error)
-	updateStatus(ctx context.Context, runnerID resource.TfeID, status RunnerStatus) error
-	DeleteRunner(ctx context.Context, runnerID resource.TfeID) error
+	updateStatus(ctx context.Context, runnerID resource.ID, status RunnerStatus) error
+	DeleteRunner(ctx context.Context, runnerID resource.ID) error
 }
 
 func newManager(s *Service) *manager {

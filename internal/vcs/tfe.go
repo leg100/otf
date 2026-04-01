@@ -22,10 +22,10 @@ type TFEAPI struct {
 
 type tfeClient interface {
 	CreateVCSProvider(ctx context.Context, opts CreateOptions) (*Provider, error)
-	GetVCSProvider(ctx context.Context, id resource.TfeID) (*Provider, error)
-	UpdateVCSProvider(ctx context.Context, id resource.TfeID, opts UpdateOptions) (*Provider, error)
+	GetVCSProvider(ctx context.Context, id resource.ID) (*Provider, error)
+	UpdateVCSProvider(ctx context.Context, id resource.ID, opts UpdateOptions) (*Provider, error)
 	ListVCSProviders(ctx context.Context, organization organization.Name) ([]*Provider, error)
-	DeleteVCSProvider(ctx context.Context, id resource.TfeID) (*Provider, error)
+	DeleteVCSProvider(ctx context.Context, id resource.ID) (*Provider, error)
 
 	GetKind(id KindID) (Kind, error)
 	GetKinds() []Kind

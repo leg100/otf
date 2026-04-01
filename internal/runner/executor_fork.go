@@ -31,6 +31,6 @@ func (s *forkExecutor) SpawnOperation(ctx context.Context, g *errgroup.Group, jo
 	return nil
 }
 
-func (s *forkExecutor) currentJobs(_ context.Context, _ resource.TfeID) int {
+func (s *forkExecutor) currentJobs(_ context.Context, _ resource.ID) int {
 	return s.n
 }

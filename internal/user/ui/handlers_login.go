@@ -18,7 +18,7 @@ type LoginHandlers struct {
 
 type loginClient interface {
 	Clients() []*authenticator.OAuthClient
-	StartSession(w http.ResponseWriter, r *http.Request, userID resource.TfeID) error
+	StartSession(w http.ResponseWriter, r *http.Request, userID resource.ID) error
 }
 
 func (h *LoginHandlers) AddHandlers(r *mux.Router) {

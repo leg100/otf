@@ -112,7 +112,7 @@ GROUP BY u.user_id
 	return sql.CollectRows(rows, scan)
 }
 
-func (db *pgdb) listTeamUsers(ctx context.Context, teamID resource.TfeID) ([]*User, error) {
+func (db *pgdb) listTeamUsers(ctx context.Context, teamID resource.ID) ([]*User, error) {
 	rows := db.Query(ctx, `
 SELECT
     u.*,
@@ -188,7 +188,7 @@ WHERE t.token_id = $1
 	return user, nil
 }
 
-func (db *pgdb) addTeamMembership(ctx context.Context, teamID resource.TfeID, usernames ...Username) error {
+func (db *pgdb) addTeamMembership(ctx context.Context, teamID resource.ID, usernames ...Username) error {
 	_, err := db.Exec(ctx, `
 WITH
     users AS (
@@ -202,7 +202,7 @@ FROM users
 	return err
 }
 
-func (db *pgdb) removeTeamMembership(ctx context.Context, teamID resource.TfeID, usernames ...Username) error {
+func (db *pgdb) removeTeamMembership(ctx context.Context, teamID resource.ID, usernames ...Username) error {
 	_, err := db.Exec(ctx, `
 WITH
     users AS (
@@ -346,7 +346,7 @@ WHERE username = $1
 	return sql.CollectRows(rows, scanToken)
 }
 
-func (db *pgdb) getUserToken(ctx context.Context, id resource.TfeID) (*UserToken, error) {
+func (db *pgdb) getUserToken(ctx context.Context, id resource.ID) (*UserToken, error) {
 	rows := db.Query(ctx, `
 SELECT token_id, created_at, description, username
 FROM tokens
@@ -355,7 +355,7 @@ WHERE token_id = $1
 	return sql.CollectOneRow(rows, scanToken)
 }
 
-func (db *pgdb) deleteUserToken(ctx context.Context, id resource.TfeID) error {
+func (db *pgdb) deleteUserToken(ctx context.Context, id resource.ID) error {
 	_, err := db.Exec(ctx, `
 DELETE
 FROM tokens

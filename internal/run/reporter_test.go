@@ -137,7 +137,7 @@ type fakeReporterConfigurationVersionService struct {
 	cv *configversion.ConfigurationVersion
 }
 
-func (f *fakeReporterConfigurationVersionService) GetConfigVersion(context.Context, resource.TfeID) (*configversion.ConfigurationVersion, error) {
+func (f *fakeReporterConfigurationVersionService) GetConfigVersion(context.Context, resource.ID) (*configversion.ConfigurationVersion, error) {
 	return f.cv, nil
 }
 
@@ -155,7 +155,7 @@ type fakeReporterRunClient struct {
 	event *Event
 }
 
-func (f *fakeReporterRunClient) GetRun(context.Context, resource.TfeID) (*Run, error) {
+func (f *fakeReporterRunClient) GetRun(context.Context, resource.ID) (*Run, error) {
 	return &Run{ID: f.event.ID, Status: f.event.Status}, nil
 }
 
@@ -163,7 +163,7 @@ type fakeReporterVCSProviderService struct {
 	got chan vcs.SetStatusOptions
 }
 
-func (f *fakeReporterVCSProviderService) GetVCSProvider(context.Context, resource.TfeID) (*vcs.Provider, error) {
+func (f *fakeReporterVCSProviderService) GetVCSProvider(context.Context, resource.ID) (*vcs.Provider, error) {
 	return &vcs.Provider{
 		Client: &fakeReporterCloudClient{got: f.got},
 	}, nil

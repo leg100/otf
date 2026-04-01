@@ -241,26 +241,26 @@ type fakeSpawnerClient struct {
 	ws        *workspace.Workspace
 }
 
-func (f *fakeSpawnerClient) CreateRun(context.Context, resource.TfeID, CreateOptions) (*Run, error) {
+func (f *fakeSpawnerClient) CreateRun(context.Context, resource.ID, CreateOptions) (*Run, error) {
 	*f.spawned = true
 	return nil, nil
 }
 
-func (f *fakeSpawnerClient) GetVCSProvider(context.Context, resource.TfeID) (*vcs.Provider, error) {
+func (f *fakeSpawnerClient) GetVCSProvider(context.Context, resource.ID) (*vcs.Provider, error) {
 	return &vcs.Provider{
 		Client: &fakeSpawnerCloudClient{pullFiles: f.pullFiles},
 	}, nil
 }
 
-func (f *fakeSpawnerClient) ListConnectedWorkspaces(ctx context.Context, vcsProviderID resource.TfeID, repoPath vcs.Repo) ([]*workspace.Workspace, error) {
+func (f *fakeSpawnerClient) ListConnectedWorkspaces(ctx context.Context, vcsProviderID resource.ID, repoPath vcs.Repo) ([]*workspace.Workspace, error) {
 	return []*workspace.Workspace{f.ws}, nil
 }
 
-func (f *fakeSpawnerClient) CreateConfigVersion(ctx context.Context, workspaceID resource.TfeID, opts configversion.CreateOptions) (*configversion.ConfigurationVersion, error) {
+func (f *fakeSpawnerClient) CreateConfigVersion(ctx context.Context, workspaceID resource.ID, opts configversion.CreateOptions) (*configversion.ConfigurationVersion, error) {
 	return &configversion.ConfigurationVersion{}, nil
 }
 
-func (f *fakeSpawnerClient) UploadConfig(ctx context.Context, id resource.TfeID, config []byte) error {
+func (f *fakeSpawnerClient) UploadConfig(ctx context.Context, id resource.ID, config []byte) error {
 	return nil
 }
 

@@ -70,7 +70,7 @@ INSERT INTO vcs_providers (
 	return err
 }
 
-func (db *pgdb) update(ctx context.Context, id resource.TfeID, fn func(context.Context, *Provider) error) error {
+func (db *pgdb) update(ctx context.Context, id resource.ID, fn func(context.Context, *Provider) error) error {
 	_, err := sql.Updater(
 		ctx,
 		db.DB,
@@ -115,7 +115,7 @@ WHERE vcs_provider_id = @id
 	return err
 }
 
-func (db *pgdb) get(ctx context.Context, id resource.TfeID) (*Provider, error) {
+func (db *pgdb) get(ctx context.Context, id resource.ID) (*Provider, error) {
 	rows := db.Query(ctx, `
 SELECT *
 FROM vcs_providers v
@@ -145,7 +145,7 @@ ORDER BY v.name
 	return db.scanMany(ctx, rows)
 }
 
-func (db *pgdb) delete(ctx context.Context, id resource.TfeID) error {
+func (db *pgdb) delete(ctx context.Context, id resource.ID) error {
 	_, err := db.Exec(ctx, `
 DELETE
 FROM vcs_providers

@@ -24,12 +24,12 @@ type Handlers struct {
 
 type Client interface {
 	CreateTeam(ctx context.Context, organization organization.Name, opts team.CreateTeamOptions) (*team.Team, error)
-	GetTeamByID(ctx context.Context, teamID resource.TfeID) (*team.Team, error)
+	GetTeamByID(ctx context.Context, teamID resource.ID) (*team.Team, error)
 	ListTeams(ctx context.Context, organization organization.Name) ([]*team.Team, error)
-	UpdateTeam(ctx context.Context, teamID resource.TfeID, opts team.UpdateTeamOptions) (*team.Team, error)
-	DeleteTeam(ctx context.Context, teamID resource.TfeID) error
+	UpdateTeam(ctx context.Context, teamID resource.ID, opts team.UpdateTeamOptions) (*team.Team, error)
+	DeleteTeam(ctx context.Context, teamID resource.ID) error
 	List(ctx context.Context) ([]*user.User, error)
-	ListTeamUsers(ctx context.Context, teamID resource.TfeID) ([]*user.User, error)
+	ListTeamUsers(ctx context.Context, teamID resource.ID) ([]*user.User, error)
 }
 
 func (h *Handlers) AddHandlers(r *mux.Router) {

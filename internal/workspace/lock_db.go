@@ -8,7 +8,7 @@ import (
 )
 
 // toggleLock toggles the workspace lock state in the DB.
-func (db *pgdb) toggleLock(ctx context.Context, workspaceID resource.TfeID, togglefn func(*Workspace) error) (*Workspace, error) {
+func (db *pgdb) toggleLock(ctx context.Context, workspaceID resource.ID, togglefn func(*Workspace) error) (*Workspace, error) {
 	return sql.Updater(
 		ctx,
 		db.DB,

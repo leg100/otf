@@ -38,7 +38,7 @@ func NewService(opts Options) *Service {
 	// Register parent resolver so the authorizer can resolve ssh key -> org
 	opts.Authorizer.RegisterParentResolver(resource.SSHKeyKind,
 		func(ctx context.Context, id resource.ID) (resource.ID, error) {
-			key, err := svc.db.get(ctx, id.(resource.TfeID))
+			key, err := svc.db.get(ctx, id)
 			if err != nil {
 				return nil, err
 			}
@@ -68,7 +68,7 @@ func (s *Service) CreateSSHKey(ctx context.Context, opts CreateOptions) (*SSHKey
 	return key, nil
 }
 
-func (s *Service) GetSSHKeyPrivateKey(ctx context.Context, id resource.TfeID) ([]byte, error) {
+func (s *Service) GetSSHKeyPrivateKey(ctx context.Context, id resource.ID) ([]byte, error) {
 	subject, err := s.Authorize(ctx, authz.GetPrivateKeySSHKeyAction, id)
 	if err != nil {
 		return nil, err
@@ -82,7 +82,7 @@ func (s *Service) GetSSHKeyPrivateKey(ctx context.Context, id resource.TfeID) ([
 	return key, nil
 }
 
-func (s *Service) GetSSHKey(ctx context.Context, id resource.TfeID) (*SSHKey, error) {
+func (s *Service) GetSSHKey(ctx context.Context, id resource.ID) (*SSHKey, error) {
 	subject, err := s.Authorize(ctx, authz.GetSSHKeyAction, id)
 	if err != nil {
 		return nil, err
@@ -110,7 +110,7 @@ func (s *Service) ListSSHKeys(ctx context.Context, org organization.Name) ([]*SS
 	return keys, nil
 }
 
-func (s *Service) UpdateSSHKey(ctx context.Context, id resource.TfeID, opts UpdateOptions) (*SSHKey, error) {
+func (s *Service) UpdateSSHKey(ctx context.Context, id resource.ID, opts UpdateOptions) (*SSHKey, error) {
 	var subject authz.Subject
 	updated, err := s.db.update(ctx, id, func(ctx context.Context, key *SSHKey) (err error) {
 		subject, err = s.Authorize(ctx, authz.UpdateSSHKeyAction, id)
@@ -130,7 +130,7 @@ func (s *Service) UpdateSSHKey(ctx context.Context, id resource.TfeID, opts Upda
 	return updated, nil
 }
 
-func (s *Service) DeleteSSHKey(ctx context.Context, id resource.TfeID) (*SSHKey, error) {
+func (s *Service) DeleteSSHKey(ctx context.Context, id resource.ID) (*SSHKey, error) {
 	subject, err := s.Authorize(ctx, authz.DeleteSSHKeyAction, id)
 	if err != nil {
 		return nil, err

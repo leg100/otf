@@ -96,7 +96,7 @@ func (f *fakeClient) CreateAgentPool(ctx context.Context, opts runner.CreateAgen
 	return f.pool, nil
 }
 
-func (f *fakeClient) UpdateAgentPool(ctx context.Context, poolID resource.TfeID, opts runner.UpdatePoolOptions) (*runner.Pool, error) {
+func (f *fakeClient) UpdateAgentPool(ctx context.Context, poolID resource.ID, opts runner.UpdatePoolOptions) (*runner.Pool, error) {
 	return nil, nil
 }
 
@@ -104,27 +104,27 @@ func (f *fakeClient) ListAgentPoolsByOrganization(context.Context, organization.
 	return []*runner.Pool{f.pool}, nil
 }
 
-func (f *fakeClient) GetAgentPool(context.Context, resource.TfeID) (*runner.Pool, error) {
+func (f *fakeClient) GetAgentPool(context.Context, resource.ID) (*runner.Pool, error) {
 	return f.pool, nil
 }
 
-func (f *fakeClient) DeleteAgentPool(ctx context.Context, poolID resource.TfeID) (*runner.Pool, error) {
+func (f *fakeClient) DeleteAgentPool(ctx context.Context, poolID resource.ID) (*runner.Pool, error) {
 	return nil, nil
 }
 
-func (f *fakeClient) CreateAgentToken(context.Context, resource.TfeID, runner.CreateAgentTokenOptions) (*runner.AgentToken, []byte, error) {
+func (f *fakeClient) CreateAgentToken(context.Context, resource.ID, runner.CreateAgentTokenOptions) (*runner.AgentToken, []byte, error) {
 	return f.at, f.token, nil
 }
 
-func (f *fakeClient) ListAgentTokens(context.Context, resource.TfeID) ([]*runner.AgentToken, error) {
+func (f *fakeClient) ListAgentTokens(context.Context, resource.ID) ([]*runner.AgentToken, error) {
 	return []*runner.AgentToken{f.at}, nil
 }
 
-func (f *fakeClient) GetAgentToken(context.Context, resource.TfeID) (*runner.AgentToken, error) {
+func (f *fakeClient) GetAgentToken(context.Context, resource.ID) (*runner.AgentToken, error) {
 	return f.at, nil
 }
 
-func (f *fakeClient) DeleteAgentToken(context.Context, resource.TfeID) (*runner.AgentToken, error) {
+func (f *fakeClient) DeleteAgentToken(context.Context, resource.ID) (*runner.AgentToken, error) {
 	return f.at, nil
 }
 
@@ -132,7 +132,7 @@ func (f *fakeClient) ListRunners(ctx context.Context, opts runner.ListOptions) (
 	return nil, nil
 }
 
-func (f *fakeClient) DeleteRunner(ctx context.Context, runnerID resource.TfeID) error {
+func (f *fakeClient) DeleteRunner(ctx context.Context, runnerID resource.ID) error {
 	return nil
 }
 

@@ -21,7 +21,7 @@ type (
 	apiClient interface {
 		CreateTeam(ctx context.Context, organization organization.Name, opts CreateTeamOptions) (*Team, error)
 		GetTeam(ctx context.Context, organization organization.Name, name string) (*Team, error)
-		DeleteTeam(ctx context.Context, teamID resource.TfeID) error
+		DeleteTeam(ctx context.Context, teamID resource.ID) error
 	}
 )
 

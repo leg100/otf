@@ -17,7 +17,7 @@ import (
 type provider string
 
 type TokenGenerator interface {
-	GenerateDynamicCredentialsToken(ctx context.Context, jobID resource.TfeID, audience string) ([]byte, error)
+	GenerateDynamicCredentialsToken(ctx context.Context, jobID resource.ID, audience string) ([]byte, error)
 }
 
 type providerConfig[T any] struct {
@@ -42,7 +42,7 @@ func Setup(
 	ctx context.Context,
 	tokenGenerator TokenGenerator,
 	workdir string,
-	jobID resource.TfeID,
+	jobID resource.ID,
 	phase run.PhaseType,
 	environmentVariables []string,
 ) ([]string, error) {
@@ -114,7 +114,7 @@ func configure[T any](
 	envs map[string]string,
 	provider provider,
 	workdir string,
-	jobID resource.TfeID,
+	jobID resource.ID,
 	phase run.PhaseType,
 	tokenGenerator TokenGenerator,
 	configFunc func(ctx context.Context, h helper, audience string) (T, []string, error),
@@ -216,7 +216,7 @@ type helper struct {
 	envs     map[string]string
 	provider provider
 	workdir  string
-	jobID    resource.TfeID
+	jobID    resource.ID
 	phase    run.PhaseType
 	tag      string
 

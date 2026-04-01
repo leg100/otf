@@ -38,7 +38,7 @@ type (
 	serviceClient interface {
 		BeforeDeleteVCSProvider(hook func(context.Context, *vcs.Provider) error)
 		BeforeDeleteOrganization(hook func(context.Context, *organization.Organization) error)
-		GetVCSProvider(ctx context.Context, id resource.TfeID) (*vcs.Provider, error)
+		GetVCSProvider(ctx context.Context, id resource.ID) (*vcs.Provider, error)
 		ListVCSProviders(ctx context.Context, organization organization.Name) ([]*vcs.Provider, error)
 		GetKind(id vcs.KindID) (vcs.Kind, error)
 	}

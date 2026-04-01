@@ -43,16 +43,16 @@ type (
 	}
 
 	reporterConfigClient interface {
-		GetConfigVersion(ctx context.Context, id resource.TfeID) (*configversion.ConfigurationVersion, error)
+		GetConfigVersion(ctx context.Context, id resource.ID) (*configversion.ConfigurationVersion, error)
 	}
 
 	reporterVCSClient interface {
-		GetVCSProvider(ctx context.Context, providerID resource.TfeID) (*vcs.Provider, error)
+		GetVCSProvider(ctx context.Context, providerID resource.ID) (*vcs.Provider, error)
 	}
 
 	reporterRunClient interface {
 		WatchRuns(context.Context) (<-chan pubsub.Event[*Event], func())
-		GetRun(context.Context, resource.TfeID) (*Run, error)
+		GetRun(context.Context, resource.ID) (*Run, error)
 	}
 
 	reporterURLClient interface {
