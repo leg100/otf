@@ -10,11 +10,10 @@ import (
 )
 
 func TestSiteAdminCanAccessOrganization(t *testing.T) {
-	org := organization.NewTestName(t)
 	u := User{
 		ID: SiteAdminID,
 	}
-	assert.True(t, u.CanAccess(authz.ListRunsAction, authz.Request{ID: org}))
+	assert.True(t, u.CanAccess(authz.ListRunsAction, authz.Request{}))
 }
 
 func TestOwnerCanAccessOrganization(t *testing.T) {
@@ -22,7 +21,7 @@ func TestOwnerCanAccessOrganization(t *testing.T) {
 	u := User{
 		Teams: []*team.Team{
 			{
-				Name:         "owners",
+				Name:         team.Owners,
 				Organization: org,
 			},
 		},
@@ -38,15 +37,15 @@ func TestUser_Organizations(t *testing.T) {
 	u := User{
 		Teams: []*team.Team{
 			{
-				Name:         "owners",
+				Name:         team.Owners,
 				Organization: org1,
 			},
 			{
-				Name:         "owners",
+				Name:         team.Owners,
 				Organization: org2,
 			},
 			{
-				Name:         "owners",
+				Name:         team.Owners,
 				Organization: org3,
 			},
 			{

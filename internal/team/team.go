@@ -10,6 +10,8 @@ import (
 	"github.com/leg100/otf/internal/resource"
 )
 
+const Owners = "owners"
+
 type (
 	// Team is a group of users sharing a level of authorization.
 	Team struct {

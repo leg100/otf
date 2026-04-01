@@ -56,7 +56,7 @@ func NewService(opts Options) *Service {
 
 	// Whenever an owners team is created, add the creator as a member.
 	opts.TeamService.AfterCreateTeam(func(ctx context.Context, team *team.Team) error {
-		if team.Name != "owners" {
+		if team.Name != teampkg.Owners {
 			return nil
 		}
 		user, err := UserFromContext(ctx)
