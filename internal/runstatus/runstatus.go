@@ -55,6 +55,47 @@ func All() []Status {
 	}
 }
 
+// PlannedCompatible determines whether status represents a completed plan that
+// is still compatible with planned-era callers and filters.
+func PlannedCompatible(status Status) bool {
+	switch status {
+	case Planned, CostEstimated, PolicyChecked, PolicySoftFailed:
+		return true
+	default:
+		return false
+	}
+}
+
+// ExpandPlannedCompatible expands planned to the set of statuses that should
+// be treated as planned-compatible. All other statuses are returned unchanged.
+func ExpandPlannedCompatible(statuses []Status) []Status {
+	if len(statuses) == 0 {
+		return nil
+	}
+
+	seen := make(map[Status]struct{}, len(statuses))
+	expanded := make([]Status, 0, len(statuses)+3)
+	appendStatus := func(status Status) {
+		if _, ok := seen[status]; ok {
+			return
+		}
+		seen[status] = struct{}{}
+		expanded = append(expanded, status)
+	}
+
+	for _, status := range statuses {
+		if status == Planned {
+			for _, compatible := range []Status{Planned, CostEstimated, PolicyChecked, PolicySoftFailed} {
+				appendStatus(compatible)
+			}
+			continue
+		}
+		appendStatus(status)
+	}
+
+	return expanded
+}
+
 // Done determines whether status is an end state, e.g. applied, discarded, etc.
 func Done(status Status) bool {
 	switch status {

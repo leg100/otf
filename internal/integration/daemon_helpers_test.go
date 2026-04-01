@@ -209,6 +209,9 @@ func (s *testDaemon) waitRunStatus(t *testing.T, ctx context.Context, runID reso
 
 	for event := range s.runEvents {
 		if event.Payload.ID == runID {
+			if status == runstatus.Planned && runstatus.PlannedCompatible(event.Payload.Status) {
+				return s.getRun(t, ctx, runID)
+			}
 			if event.Payload.Status == status {
 				return s.getRun(t, ctx, runID)
 			}

@@ -244,7 +244,7 @@ func (db *pgdb) list(ctx context.Context, opts ListOptions) (*resource.Page[*Wor
 	// Status is optional.
 	var status []string
 	if len(opts.Status) > 0 {
-		status = internal.ToStringSlice(opts.Status)
+		status = internal.ToStringSlice(runstatus.ExpandPlannedCompatible(opts.Status))
 	}
 
 	rows := db.Query(ctx, `
