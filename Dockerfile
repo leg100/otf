@@ -32,19 +32,6 @@ ARG TARGETPLATFORM
 # STAGE: otfd
 # Final stage that takes the `base` stage and the `otfd` binary
 FROM base AS otfd
-ARG TARGETARCH
-ARG SENTINEL_VERSION=0.40.0
-RUN --mount=type=cache,target=/etc/apk/cache \
-  apk add --no-cache curl unzip && \
-  case "$TARGETARCH" in \
-    amd64) arch=amd64 ;; \
-    arm64) arch=arm64 ;; \
-    *) echo "unsupported TARGETARCH: $TARGETARCH" >&2; exit 1 ;; \
-  esac && \
-  curl -fsSLo /tmp/sentinel.zip "https://releases.hashicorp.com/sentinel/${SENTINEL_VERSION}/sentinel_${SENTINEL_VERSION}_linux_${arch}.zip" && \
-  unzip -d /usr/local/bin /tmp/sentinel.zip && \
-  chmod +x /usr/local/bin/sentinel && \
-  rm /tmp/sentinel.zip
 COPY $TARGETPLATFORM/otfd /usr/local/bin/
 USER otf
 ENTRYPOINT ["/usr/local/bin/otfd"]

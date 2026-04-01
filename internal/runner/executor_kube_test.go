@@ -123,6 +123,15 @@ func TestKubeExecutor_SpawnOperation(t *testing.T) {
 	assert.Equal(t, wantLabels, jobsClient.job.Labels)
 	assert.Equal(t, wantLabels, secretsClient.secret.Labels)
 	assert.Equal(t, map[string]string{"jobToken": "token"}, secretsClient.secret.StringData)
+
+	container := jobsClient.job.Spec.Template.Spec.Containers[0]
+	assert.Contains(t, container.Env, corev1.EnvVar{Name: "OTF_POLICY_ENGINE_BINS_DIR", Value: executor.OperationConfig.PolicyEngineBinDir})
+	assert.Contains(t, container.Env, corev1.EnvVar{Name: "OTF_POLICY_ENGINE_WORK_DIR", Value: executor.OperationConfig.PolicyEngineWorkDir})
+	assert.Contains(t, container.VolumeMounts, corev1.VolumeMount{
+		Name:      "cache",
+		MountPath: executor.OperationConfig.PolicyEngineBinDir,
+		SubPath:   "otf-policy-engine-bins",
+	})
 }
 
 type fakeSecretsClient struct {

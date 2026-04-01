@@ -20,6 +20,7 @@ import (
 
 type EnforcementLevel string
 type PolicySetSource string
+type Kind string
 
 const (
 	AdvisoryEnforcement  EnforcementLevel = "advisory"
@@ -27,6 +28,9 @@ const (
 
 	ManualPolicySetSource PolicySetSource = "manual"
 	VCSPolicySetSource    PolicySetSource = "vcs"
+
+	SentinelKind Kind = "sentinel"
+	OPAKind      Kind = "opa"
 )
 
 type PolicySet struct {
@@ -36,6 +40,8 @@ type PolicySet struct {
 	Organization   organization.Name `db:"organization_name"`
 	Name           string            `db:"name"`
 	Description    string            `db:"description"`
+	Kind           Kind              `db:"kind" json:"kind"`
+	EngineVersion  Version           `db:"engine_version" json:"engine_version"`
 	Source         PolicySetSource   `db:"source"`
 	VCSProviderID  *resource.TfeID   `db:"vcs_provider_id"`
 	VCSRepo        *vcs.Repo         `db:"vcs_repo"`
@@ -157,6 +163,8 @@ type EvaluationResult struct {
 type CreatePolicySetOptions struct {
 	Name           *string
 	Description    *string
+	Kind           *Kind    `json:"kind,omitempty"`
+	EngineVersion  *Version `json:"engine_version,omitempty"`
 	Source         PolicySetSource
 	VCSProviderID  *resource.TfeID
 	VCSRepo        *vcs.Repo
@@ -167,8 +175,10 @@ type CreatePolicySetOptions struct {
 }
 
 type UpdatePolicySetOptions struct {
-	Name        *string
-	Description *string
+	Name          *string
+	Description   *string
+	Kind          *Kind    `json:"kind,omitempty"`
+	EngineVersion *Version `json:"engine_version,omitempty"`
 }
 
 type CreatePolicyOptions struct {
@@ -241,6 +251,8 @@ type SyncResult struct {
 type CreateVCSPolicySetOptions struct {
 	Name                *string
 	Description         *string
+	Kind                *Kind
+	EngineVersion       *Version
 	VCSProviderID       *resource.TfeID
 	VCSRepo             *vcs.Repo
 	VCSRef              *string
@@ -249,13 +261,29 @@ type CreateVCSPolicySetOptions struct {
 }
 
 type Evaluator interface {
-	Evaluate(context.Context, *MockBundle, []*Policy, []*PolicyModule) ([]*PolicyCheck, error)
+	Evaluate(context.Context, *PolicySet, *MockBundle, []*Policy, []*PolicyModule) ([]*PolicyCheck, error)
 }
 
 func newPolicySet(org organization.Name, opts CreatePolicySetOptions) (*PolicySet, error) {
 	if err := resource.ValidateName(opts.Name); err != nil {
 		return nil, err
 	}
+	kind := SentinelKind
+	if opts.Kind != nil {
+		kind = *opts.Kind
+	}
+	if !kind.Valid() {
+		return nil, fmt.Errorf("invalid policy engine kind: %s", kind)
+	}
+	if opts.Source == VCSPolicySetSource && kind != SentinelKind {
+		return nil, fmt.Errorf("policy engine %q does not support VCS imports yet", kind)
+	}
+
+	engineVersion := LatestVersion()
+	if opts.EngineVersion != nil {
+		engineVersion = *opts.EngineVersion
+	}
+
 	now := internal.CurrentTimestamp(nil)
 	set := &PolicySet{
 		ID:             resource.NewTfeID(resource.PolicySetKind),
@@ -263,6 +291,8 @@ func newPolicySet(org organization.Name, opts CreatePolicySetOptions) (*PolicySe
 		UpdatedAt:      now,
 		Organization:   org,
 		Name:           *opts.Name,
+		Kind:           kind,
+		EngineVersion:  engineVersion,
 		Source:         ManualPolicySetSource,
 		VCSPolicyPaths: []string{},
 	}

@@ -40,27 +40,37 @@ type Service struct {
 	states     stateClient
 	variables  variableClient
 	plans      planClient
-	evaluator  Evaluator
+	orgs       organizationClient
+	evaluators map[Kind]Evaluator
 }
 
 type Options struct {
-	Logger          logr.Logger
-	Authorizer      *authz.Authorizer
-	DB              *sql.DB
-	Runs            runClient
-	Workspaces      workspaceClient
-	Configs         configClient
-	VCSProviders    vcsProviderClient
-	RepoHooks       repoHookClient
-	States          stateClient
-	Variables       variableClient
-	Plans           planClient
-	VCSEventSub     vcs.Subscriber
-	SentinelPath    string
-	SentinelWorkDir string
+	Logger              logr.Logger
+	Authorizer          *authz.Authorizer
+	DB                  *sql.DB
+	Runs                runClient
+	Organizations       organizationClient
+	Workspaces          workspaceClient
+	Configs             configClient
+	VCSProviders        vcsProviderClient
+	RepoHooks           repoHookClient
+	States              stateClient
+	Variables           variableClient
+	Plans               planClient
+	VCSEventSub         vcs.Subscriber
+	PolicyEngineBinDir  string
+	PolicyEngineWorkDir string
+}
+
+type organizationClient interface {
+	GetOrganization(context.Context, organization.Name) (*organization.Organization, error)
 }
 
 func NewService(opts Options) *Service {
+	resolver, err := newCLIResolver(opts.Logger, opts.PolicyEngineBinDir)
+	if err != nil {
+		panic(err)
+	}
 	svc := &Service{
 		Logger:     opts.Logger,
 		Authorizer: opts.Authorizer,
@@ -73,10 +83,14 @@ func NewService(opts Options) *Service {
 		states:     opts.States,
 		variables:  opts.Variables,
 		plans:      opts.Plans,
-		evaluator: &cliEvaluator{
-			logger:  opts.Logger,
-			binPath: opts.SentinelPath,
-			workDir: opts.SentinelWorkDir,
+		orgs:       opts.Organizations,
+		evaluators: map[Kind]Evaluator{
+			SentinelKind: &sentinelEvaluator{
+				logger:   opts.Logger,
+				resolver: resolver,
+				workDir:  opts.PolicyEngineWorkDir,
+			},
+			OPAKind: &opaEvaluator{},
 		},
 	}
 	svc.api = &api{Service: svc}
@@ -143,6 +157,18 @@ func (s *Service) UpdatePolicySet(ctx context.Context, id resource.TfeID, opts U
 		if opts.Description != nil {
 			set.Description = *opts.Description
 		}
+		if opts.Kind != nil {
+			if !opts.Kind.Valid() {
+				return fmt.Errorf("invalid policy engine kind: %s", *opts.Kind)
+			}
+			if set.Source == VCSPolicySetSource && *opts.Kind != SentinelKind {
+				return fmt.Errorf("policy engine %q does not support VCS imports yet", *opts.Kind)
+			}
+			set.Kind = *opts.Kind
+		}
+		if opts.EngineVersion != nil {
+			set.EngineVersion = *opts.EngineVersion
+		}
 		set.UpdatedAt = internal.CurrentTimestamp(nil)
 		return nil
 	})
@@ -171,7 +197,7 @@ type repoPolicyBundle struct {
 }
 
 func (s *Service) ListImportablePolicies(ctx context.Context, providerID resource.TfeID, repo vcs.Repo, ref, subpath string) ([]ImportablePolicy, error) {
-	bundle, err := s.loadRepoPolicyBundle(ctx, providerID, repo, ref, subpath)
+	bundle, err := s.loadRepoPolicyBundle(ctx, SentinelKind, providerID, repo, ref, subpath)
 	if err != nil {
 		return nil, err
 	}
@@ -186,7 +212,14 @@ func (s *Service) CreateVCSPolicySet(ctx context.Context, org organization.Name,
 	if opts.VCSProviderID == nil || opts.VCSRepo == nil {
 		return nil, nil, fmt.Errorf("missing VCS provider or repository")
 	}
-	bundle, err := s.loadRepoPolicyBundle(ctx, *opts.VCSProviderID, *opts.VCSRepo, derefString(opts.VCSRef), derefString(opts.VCSPath))
+	kind := SentinelKind
+	if opts.Kind != nil {
+		kind = *opts.Kind
+	}
+	if !kind.Valid() {
+		return nil, nil, fmt.Errorf("invalid policy engine kind: %s", kind)
+	}
+	bundle, err := s.loadRepoPolicyBundle(ctx, kind, *opts.VCSProviderID, *opts.VCSRepo, derefString(opts.VCSRef), derefString(opts.VCSPath))
 	if err != nil {
 		return nil, nil, err
 	}
@@ -201,6 +234,8 @@ func (s *Service) CreateVCSPolicySet(ctx context.Context, org organization.Name,
 	set, err := newPolicySet(org, CreatePolicySetOptions{
 		Name:           opts.Name,
 		Description:    opts.Description,
+		Kind:           opts.Kind,
+		EngineVersion:  opts.EngineVersion,
 		Source:         VCSPolicySetSource,
 		VCSProviderID:  opts.VCSProviderID,
 		VCSRepo:        opts.VCSRepo,
@@ -289,7 +324,7 @@ func (s *Service) SyncPolicySetFromVCS(ctx context.Context, setID resource.TfeID
 	if set.Source != VCSPolicySetSource || set.VCSProviderID == nil || set.VCSRepo == nil {
 		return nil, fmt.Errorf("policy set is not backed by VCS")
 	}
-	bundle, err := s.loadRepoPolicyBundle(ctx, *set.VCSProviderID, *set.VCSRepo, set.VCSRef, set.VCSPath)
+	bundle, err := s.loadRepoPolicyBundle(ctx, set.Kind, *set.VCSProviderID, *set.VCSRepo, set.VCSRef, set.VCSPath)
 	if err != nil {
 		return nil, err
 	}
@@ -426,7 +461,10 @@ func (s *Service) SyncPolicySetFromVCS(ctx context.Context, setID resource.TfeID
 	return &SyncResult{Set: updatedSet, Imported: imported}, nil
 }
 
-func (s *Service) loadRepoPolicyBundle(ctx context.Context, providerID resource.TfeID, repo vcs.Repo, ref, subpath string) (*repoPolicyBundle, error) {
+func (s *Service) loadRepoPolicyBundle(ctx context.Context, kind Kind, providerID resource.TfeID, repo vcs.Repo, ref, subpath string) (*repoPolicyBundle, error) {
+	if kind != SentinelKind {
+		return nil, fmt.Errorf("policy engine %q does not support VCS imports yet", kind)
+	}
 	provider, err := s.vcs.GetVCSProvider(ctx, providerID)
 	if err != nil {
 		return nil, err
@@ -930,17 +968,60 @@ func (s *Service) EvaluateRun(ctx context.Context, runID, workspaceID resource.T
 	if len(policies) == 0 {
 		return EvaluationResult{}, nil
 	}
+	orgConfig, err := s.orgs.GetOrganization(ctx, org)
+	if err != nil {
+		return EvaluationResult{}, fmt.Errorf("retrieving organization policy settings: %w", err)
+	}
+	sets, err := s.db.listPolicySets(ctx, org)
+	if err != nil {
+		return EvaluationResult{}, fmt.Errorf("listing organization policy sets: %w", err)
+	}
+	setsByID := make(map[resource.TfeID]*PolicySet, len(sets))
+	for _, set := range sets {
+		setsByID[set.ID] = set
+	}
 	modules, err := s.db.listPolicyModulesByOrganization(ctx, org)
 	if err != nil {
 		return EvaluationResult{}, fmt.Errorf("listing organization policy modules: %w", err)
 	}
-	bundle, err := s.BuildMockBundle(ctx, workspaceID, &runID)
-	if err != nil {
-		return EvaluationResult{}, fmt.Errorf("building sentinel mock bundle: %w", err)
+
+	policiesBySet := make(map[resource.TfeID][]*Policy)
+	for _, policy := range policies {
+		policiesBySet[policy.PolicySetID] = append(policiesBySet[policy.PolicySetID], policy)
 	}
-	checks, err := s.evaluator.Evaluate(ctx, bundle, policies, modules)
-	if err != nil {
-		return EvaluationResult{}, fmt.Errorf("executing sentinel policies: %w", err)
+	modulesBySet := make(map[resource.TfeID][]*PolicyModule)
+	for _, module := range modules {
+		modulesBySet[module.PolicySetID] = append(modulesBySet[module.PolicySetID], module)
+	}
+
+	var (
+		bundle *MockBundle
+		checks []*PolicyCheck
+	)
+	for setID, setPolicies := range policiesBySet {
+		set, ok := setsByID[setID]
+		if !ok {
+			return EvaluationResult{}, fmt.Errorf("policy set %s not found", setID)
+		}
+		evaluator, ok := s.evaluators[set.Kind]
+		if !ok {
+			return EvaluationResult{}, fmt.Errorf("policy engine %q is not implemented", set.Kind)
+		}
+		if bundle == nil {
+			bundle, err = s.BuildMockBundle(ctx, workspaceID, &runID)
+			if err != nil {
+				return EvaluationResult{}, fmt.Errorf("building sentinel mock bundle: %w", err)
+			}
+		}
+		evalSet, err := applyOrganizationPolicySettings(set, orgConfig)
+		if err != nil {
+			return EvaluationResult{}, err
+		}
+		got, err := evaluator.Evaluate(ctx, evalSet, bundle, setPolicies, modulesBySet[setID])
+		if err != nil {
+			return EvaluationResult{}, fmt.Errorf("executing %s policies: %w", set.Kind, err)
+		}
+		checks = append(checks, got...)
 	}
 	now := internal.CurrentTimestamp(nil)
 	result := EvaluationResult{
@@ -964,6 +1045,17 @@ func (s *Service) EvaluateRun(ctx context.Context, runID, workspaceID resource.T
 		return EvaluationResult{}, fmt.Errorf("persisting policy checks: %w", err)
 	}
 	return result, nil
+}
+
+func applyOrganizationPolicySettings(set *PolicySet, org *organization.Organization) (*PolicySet, error) {
+	evalSet := *set
+	if evalSet.Kind != SentinelKind {
+		return &evalSet, nil
+	}
+	if err := evalSet.EngineVersion.UnmarshalText([]byte(org.SentinelVersion)); err != nil {
+		return nil, fmt.Errorf("parsing organization sentinel version: %w", err)
+	}
+	return &evalSet, nil
 }
 
 func (s *Service) handleVCSEvent(event vcs.Event) {

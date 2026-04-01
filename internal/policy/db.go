@@ -26,6 +26,8 @@ INSERT INTO policy_sets (
 	organization_name,
 	name,
 	description,
+	kind,
+	engine_version,
 	source,
 	vcs_provider_id,
 	vcs_repo,
@@ -33,7 +35,7 @@ INSERT INTO policy_sets (
 	vcs_path,
 	vcs_policy_paths,
 	last_synced_at
-) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
 `,
 		set.ID,
 		set.CreatedAt,
@@ -41,6 +43,8 @@ INSERT INTO policy_sets (
 		set.Organization,
 		set.Name,
 		set.Description,
+		set.Kind,
+		set.EngineVersion,
 		set.Source,
 		set.VCSProviderID,
 		set.VCSRepo,
@@ -54,7 +58,7 @@ INSERT INTO policy_sets (
 
 func (db *pgdb) listPolicySets(ctx context.Context, org organization.Name) ([]*PolicySet, error) {
 	rows := db.Query(ctx, `
-SELECT policy_set_id, created_at, updated_at, organization_name, name, description, source, vcs_provider_id, vcs_repo, vcs_ref, vcs_path, vcs_policy_paths, last_synced_at
+SELECT policy_set_id, created_at, updated_at, organization_name, name, description, kind, engine_version, source, vcs_provider_id, vcs_repo, vcs_ref, vcs_path, vcs_policy_paths, last_synced_at
 FROM policy_sets
 WHERE organization_name = $1
 ORDER BY name ASC
@@ -64,7 +68,7 @@ ORDER BY name ASC
 
 func (db *pgdb) listVCSPolicySetsByRepo(ctx context.Context, providerID resource.TfeID, repo vcs.Repo) ([]*PolicySet, error) {
 	rows := db.Query(ctx, `
-SELECT policy_set_id, created_at, updated_at, organization_name, name, description, source, vcs_provider_id, vcs_repo, vcs_ref, vcs_path, vcs_policy_paths, last_synced_at
+SELECT policy_set_id, created_at, updated_at, organization_name, name, description, kind, engine_version, source, vcs_provider_id, vcs_repo, vcs_ref, vcs_path, vcs_policy_paths, last_synced_at
 FROM policy_sets
 WHERE source = $1
 AND vcs_provider_id = $2
@@ -76,7 +80,7 @@ ORDER BY name ASC
 
 func (db *pgdb) getPolicySet(ctx context.Context, id resource.TfeID) (*PolicySet, error) {
 	rows := db.Query(ctx, `
-SELECT policy_set_id, created_at, updated_at, organization_name, name, description, source, vcs_provider_id, vcs_repo, vcs_ref, vcs_path, vcs_policy_paths, last_synced_at
+SELECT policy_set_id, created_at, updated_at, organization_name, name, description, kind, engine_version, source, vcs_provider_id, vcs_repo, vcs_ref, vcs_path, vcs_policy_paths, last_synced_at
 FROM policy_sets
 WHERE policy_set_id = $1
 `, id)
@@ -94,7 +98,7 @@ func (db *pgdb) updatePolicySet(ctx context.Context, id resource.TfeID, fn func(
 		db.DB,
 		func(ctx context.Context) (*PolicySet, error) {
 			rows := db.Query(ctx, `
-SELECT policy_set_id, created_at, updated_at, organization_name, name, description, source, vcs_provider_id, vcs_repo, vcs_ref, vcs_path, vcs_policy_paths, last_synced_at
+SELECT policy_set_id, created_at, updated_at, organization_name, name, description, kind, engine_version, source, vcs_provider_id, vcs_repo, vcs_ref, vcs_path, vcs_policy_paths, last_synced_at
 FROM policy_sets
 WHERE policy_set_id = $1
 FOR UPDATE
@@ -107,16 +111,18 @@ FOR UPDATE
 UPDATE policy_sets
 SET name = $1,
 	description = $2,
-	source = $3,
-	vcs_provider_id = $4,
-	vcs_repo = $5,
-	vcs_ref = $6,
-	vcs_path = $7,
-	vcs_policy_paths = $8,
-	last_synced_at = $9,
-	updated_at = $10
-WHERE policy_set_id = $11
-`, set.Name, set.Description, set.Source, set.VCSProviderID, set.VCSRepo, set.VCSRef, set.VCSPath, set.VCSPolicyPaths, set.LastSyncedAt, set.UpdatedAt, set.ID)
+	kind = $3,
+	engine_version = $4,
+	source = $5,
+	vcs_provider_id = $6,
+	vcs_repo = $7,
+	vcs_ref = $8,
+	vcs_path = $9,
+	vcs_policy_paths = $10,
+	last_synced_at = $11,
+	updated_at = $12
+WHERE policy_set_id = $13
+`, set.Name, set.Description, set.Kind, set.EngineVersion, set.Source, set.VCSProviderID, set.VCSRepo, set.VCSRef, set.VCSPath, set.VCSPolicyPaths, set.LastSyncedAt, set.UpdatedAt, set.ID)
 			return err
 		},
 	)
@@ -424,6 +430,8 @@ func (db *pgdb) scanPolicySet(row pgx.CollectableRow) (*PolicySet, error) {
 		&set.Organization,
 		&set.Name,
 		&set.Description,
+		&set.Kind,
+		&set.EngineVersion,
 		&set.Source,
 		&vcsProvider,
 		&vcsRepo,

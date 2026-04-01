@@ -412,20 +412,21 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		RunClient:        runService,
 	})
 	policyService := policy.NewService(policy.Options{
-		Logger:          logger,
-		Authorizer:      authorizer,
-		DB:              db,
-		Runs:            policyRunAdapter{runs: runService, workspaces: workspaceService},
-		Workspaces:      workspaceService,
-		Configs:         configService,
-		VCSProviders:    vcsService,
-		RepoHooks:       repoService,
-		States:          stateService,
-		Variables:       policyVariableAdapter{variables: variableService},
-		Plans:           policyPlanAdapter{runs: runService},
-		VCSEventSub:     vcsEventBroker,
-		SentinelPath:    cfg.RunnerConfig.SentinelPath,
-		SentinelWorkDir: cfg.RunnerConfig.SentinelWorkDir,
+		Logger:              logger,
+		Authorizer:          authorizer,
+		DB:                  db,
+		Runs:                policyRunAdapter{runs: runService, workspaces: workspaceService},
+		Organizations:       orgService,
+		Workspaces:          workspaceService,
+		Configs:             configService,
+		VCSProviders:        vcsService,
+		RepoHooks:           repoService,
+		States:              stateService,
+		Variables:           policyVariableAdapter{variables: variableService},
+		Plans:               policyPlanAdapter{runs: runService},
+		VCSEventSub:         vcsEventBroker,
+		PolicyEngineBinDir:  cfg.RunnerConfig.PolicyEngineBinDir,
+		PolicyEngineWorkDir: cfg.RunnerConfig.PolicyEngineWorkDir,
 	})
 	runService.SetPolicyService(policyService)
 	dynamiccredsService, err := dynamiccreds.NewService(dynamiccreds.Options{
@@ -681,12 +682,12 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 			*user.UserService
 			*workspace.WorkspaceService
 			*configversion.ConfigService
-			}{
-				RunService:       runService,
-				UserService:      userService,
-				WorkspaceService: workspaceService,
-				ConfigService:    configService,
-			},
+		}{
+			RunService:       runService,
+			UserService:      userService,
+			WorkspaceService: workspaceService,
+			ConfigService:    configService,
+		},
 		policyService,
 		authorizer,
 	)

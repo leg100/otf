@@ -159,8 +159,9 @@ func (h *Handlers) editOrganization(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handlers) updateOrganization(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		Name        organization.Name `schema:"name,required"`
-		UpdatedName string            `schema:"new_name,required"`
+		Name            organization.Name `schema:"name,required"`
+		UpdatedName     string            `schema:"new_name,required"`
+		SentinelVersion string            `schema:"sentinel_version"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
@@ -168,7 +169,8 @@ func (h *Handlers) updateOrganization(w http.ResponseWriter, r *http.Request) {
 	}
 
 	org, err := h.Organizations.UpdateOrganization(r.Context(), params.Name, organization.UpdateOptions{
-		Name: &params.UpdatedName,
+		Name:            &params.UpdatedName,
+		SentinelVersion: &params.SentinelVersion,
 	})
 	if err != nil {
 		helpers.Error(r, w, err.Error())

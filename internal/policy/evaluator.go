@@ -23,7 +23,7 @@ type cliEvaluator struct {
 	workDir string
 }
 
-func (e *cliEvaluator) Evaluate(ctx context.Context, bundle *MockBundle, policies []*Policy, modules []*PolicyModule) ([]*PolicyCheck, error) {
+func (e *cliEvaluator) Evaluate(ctx context.Context, _ *PolicySet, bundle *MockBundle, policies []*Policy, modules []*PolicyModule) ([]*PolicyCheck, error) {
 	root, err := os.MkdirTemp(e.workDir, "otf-sentinel-*")
 	if err != nil {
 		return nil, err
@@ -106,6 +106,31 @@ import "module" %q {
 		})
 	}
 	return checks, nil
+}
+
+type sentinelEvaluator struct {
+	logger   logr.Logger
+	resolver binaryResolver
+	workDir  string
+}
+
+func (e *sentinelEvaluator) Evaluate(ctx context.Context, set *PolicySet, bundle *MockBundle, policies []*Policy, modules []*PolicyModule) ([]*PolicyCheck, error) {
+	binPath, err := e.resolver.Resolve(ctx, set, nil)
+	if err != nil {
+		return nil, err
+	}
+	cli := &cliEvaluator{
+		logger:  e.logger,
+		binPath: binPath,
+		workDir: e.workDir,
+	}
+	return cli.Evaluate(ctx, set, bundle, policies, modules)
+}
+
+type opaEvaluator struct{}
+
+func (*opaEvaluator) Evaluate(context.Context, *PolicySet, *MockBundle, []*Policy, []*PolicyModule) ([]*PolicyCheck, error) {
+	return nil, fmt.Errorf("policy engine %q is not implemented", OPAKind)
 }
 
 func generatedModuleFilename(mod *PolicyModule) string {

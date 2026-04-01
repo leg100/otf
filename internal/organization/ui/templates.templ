@@ -74,7 +74,12 @@ templ organizationEdit(org *organization.Organization) {
 			<input class="input w-80" type="text" name="new_name" id="name" value={ org.Name.String() } required/>
 		</div>
 		<div class="field">
-			<button class="btn w-72">Update organization name</button>
+			<label for="sentinel-version">Sentinel version</label>
+			<input class="input w-80" type="text" name="sentinel_version" id="sentinel-version" value={ org.SentinelVersion } required/>
+			<span class="description">Use <span class="font-mono">latest</span> or an explicit semantic version such as <span class="font-mono">0.40.0</span>.</span>
+		</div>
+		<div class="field">
+			<button class="btn w-72">Update organization settings</button>
 		</div>
 	</form>
 	<hr class="my-4"/>

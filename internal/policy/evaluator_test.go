@@ -15,7 +15,7 @@ func TestCLIEvaluatorMissingBinaryProducesFailedCheck(t *testing.T) {
 		workDir: t.TempDir(),
 	}
 
-	checks, err := evaluator.Evaluate(t.Context(), &MockBundle{
+	checks, err := evaluator.Evaluate(t.Context(), &PolicySet{Kind: SentinelKind, EngineVersion: LatestVersion()}, &MockBundle{
 		Files: map[string][]byte{
 			"sentinel.hcl":              []byte(sentinelConfig()),
 			"mock-tfrun.sentinel":       []byte(`workspace = {"name": "nexus"}`),
