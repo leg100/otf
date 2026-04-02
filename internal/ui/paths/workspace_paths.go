@@ -44,6 +44,10 @@ func ForceUnlockWorkspace(workspace any) string {
 	return fmt.Sprintf("/app/workspaces/%v/force-unlock", workspace)
 }
 
+func EditPermissionsWorkspace(workspace any) string {
+	return fmt.Sprintf("/app/workspaces/%v/edit-permissions", workspace)
+}
+
 func SetPermissionWorkspace(workspace any) string {
 	return fmt.Sprintf("/app/workspaces/%v/set-permission", workspace)
 }
@@ -94,4 +98,20 @@ func EditSSHKeyWorkspace(workspace any) string {
 
 func UpdateSSHKeyWorkspace(workspace any) string {
 	return fmt.Sprintf("/app/workspaces/%v/update-ssh-key", workspace)
+}
+
+func EditEngineWorkspace(workspace any) string {
+	return fmt.Sprintf("/app/workspaces/%v/edit-engine", workspace)
+}
+
+func UpdateEngineWorkspace(workspace any) string {
+	return fmt.Sprintf("/app/workspaces/%v/update-engine", workspace)
+}
+
+func EditVcsWorkspace(workspace any) string {
+	return fmt.Sprintf("/app/workspaces/%v/edit-vcs", workspace)
+}
+
+func UpdateVcsWorkspace(workspace any) string {
+	return fmt.Sprintf("/app/workspaces/%v/update-vcs", workspace)
 }

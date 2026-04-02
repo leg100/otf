@@ -3,7 +3,6 @@ package ui
 import (
 	"context"
 	"fmt"
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
@@ -73,34 +72,6 @@ templ workspaceList(props workspaceListProps) {
 		</div>
 		@helpers.PollingTable(workspacesTable{}, props.page)
 	</form>
-}
-
-type workspacesTable struct{}
-
-templ (t workspacesTable) Header() {
-	<th>Name</th>
-	<th>Status</th>
-	<th>Tags</th>
-}
-
-templ (t workspacesTable) Row(ws *workspace.Workspace) {
-	<tr id={ "item-workspace-" + ws.Name }>
-		<td>
-			<a class="link" href={ paths.Workspace(ws.ID) }>{ ws.Name }</a>
-		</td>
-		<td>
-			if ws.LatestRun != nil {
-				@helpers.RunStatusBadge(ws.LatestRun.ID, ws.LatestRun.Status)
-			}
-		</td>
-		<td>
-			<div class="flex flex-wrap gap-2 items-center">
-				for _, name := range ws.Tags {
-					@tag(name)
-				}
-			</div>
-		</td>
-	</tr>
 }
 
 templ tag(name string) {
@@ -187,7 +158,7 @@ templ workspaceGet(props workspaceGetProps) {
 				<div class="flex gap-2">
 					<a
 						class=""
-						href={ paths.EditWorkspace(props.ws.ID) + "#engine-version-field" }
+						href={ paths.EditEngineWorkspace(props.ws.ID) }
 						title="Change engine version"
 					>
 						<div id="current-engine" class="badge badge-md badge-ghost">
@@ -196,7 +167,7 @@ templ workspaceGet(props workspaceGetProps) {
 					</a>
 					<a
 						class=""
-						href={ paths.EditWorkspace(props.ws.ID) + "#engine-version-field" }
+						href={ paths.EditEngineWorkspace(props.ws.ID) }
 						title="Change engine version"
 					>
 						<div id="current-engine-version" class="badge badge-md badge-ghost">
@@ -344,7 +315,6 @@ type workspaceEditProps struct {
 	unassigned         []*team.Team
 	roles              []authz.Role
 	vcsProvider        *vcs.Provider
-	engines            engineSelectorProps
 	unassignedTags     []string
 	canUpdateWorkspace bool
 	canDeleteWorkspace bool
@@ -429,7 +399,6 @@ templ workspaceEdit(props workspaceEditProps) {
 				<span class="description">Require an operator to confirm the result of the Terraform plan before applying. If this workspace is linked to version control, a push to the default branch of the linked repository will only trigger a plan and then wait for confirmation.</span>
 			</div>
 		</fieldset>
-		@engineSelector(props.engines)
 		<div class="field">
 			<label for="working_directory">Working directory</label>
 			<input class="input w-96" type="text" name="working_directory" id="working_directory" value={ props.ws.WorkingDirectory }/>
@@ -450,11 +419,6 @@ templ workspaceEdit(props workspaceEditProps) {
 		</div>
 	</form>
 	<hr class="my-4"/>
-	<h3 class="font-semibold text-lg">Permissions</h3>
-	<div id="permissions-container">
-		@editPermissions(props)
-	</div>
-	<hr class="my-4"/>
 	<h3 class="font-semibold text-lg">Advanced</h3>
 	<div class="flex flex-col gap-4 mt-2 mb-6">
 		<form action={ paths.StartRunWorkspace(props.ws.ID) } method="POST">
@@ -472,73 +436,6 @@ templ workspaceEdit(props workspaceEditProps) {
 			</form>
 		}
 	</div>
-}
-
-type engineSelectorProps struct {
-	engines []engineSelectorEngine
-	current string
-}
-
-type engineSelectorEngine struct {
-	name    string
-	latest  bool
-	version string
-}
-
-templ engineSelector(props engineSelectorProps) {
-	<div class="flex flex-col gap-5" x-data={ "{current: '" + props.current + "', isCurrent(engine){ return engine == this.current }}" }>
-		<fieldset id="engine-selector" class="border border-base-content/60 px-3 py-3 flex flex-col gap-2">
-			<legend>Engine</legend>
-			for _, engine := range props.engines {
-				<div class="form-checkbox">
-					<input type="radio" name="engine" id={ engine.name } value={ engine.name } x-model="current" :checked={ "isCurrent('" + engine.name + "')" }/>
-					<label for={ engine.name }>{ internal.Title(engine.name) }</label>
-					<span class="description">
-						if engine.name == "tofu" {
-							Runs use the <a href="https://opentofu.org/">OpenTofu</a> engine.
-						}
-						if engine.name == "terraform" {
-							Runs use the <a href="https://developer.hashicorp.com/terraform">Hashicorp Terraform</a> engine.
-						}
-					</span>
-				</div>
-			}
-		</fieldset>
-		for _, engine := range props.engines {
-			<!-- show engine version selector relevant to the currently selected engine -->
-			<template x-if={ "isCurrent('" + engine.name + "')" }>
-				@engineVersionSelector(engine)
-			</template>
-		}
-	</div>
-}
-
-templ engineVersionSelector(props engineSelectorEngine) {
-	<fieldset id="engine-version-selector" class={ "border border-base-content/60 px-3 py-3 flex flex-col gap-2" }>
-		<legend>Engine Version</legend>
-		<div class="form-checkbox">
-			<input type="radio" name="latest_engine_version" id="engine-version-latest-false" value="false" checked?={ !props.latest }/>
-			<input
-				class="input w-48"
-				type="text"
-				name="specific_engine_version"
-				id="engine-specific-version"
-				required
-				title="Must provide version in the format <major>.<minor>.<patch>"
-				value={ props.version }
-			/>
-			<span class="description">
-				Runs use a user-specified engine version.
-			</span>
-		</div>
-		<div class="form-checkbox">
-			<input type="radio" name="latest_engine_version" id="engine-version-latest-true" value="true" checked?={ props.latest }/>
-			<label for="engine-version-latest-true">Latest</label>
-			<span class="description">
-				Runs use the latest available engine version at the time the run is created. (OTF checks daily for new versions).
-			</span>
-		</div>
-	</fieldset>
 }
 
 templ editConnection(props workspaceEditProps) {
@@ -616,76 +513,6 @@ templ editConnection(props workspaceEditProps) {
 		<input type="checkbox" name="allow_cli_apply" id="allow-cli-apply" checked?={ props.ws.Connection.AllowCLIApply }/>
 		<label for="allow-cli-apply">Allow apply from the CLI</label>
 		<span class="description">Allow running <span class="font-bold">terraform apply</span> from the command line. By default once a workspace is connected to a VCS repository it is only possible to trigger applies from VCS changes. Note: this only works with the <a class="underline" href="https://developer.hashicorp.com/terraform/cli/cloud/settings#the-cloud-block">cloud block</a>; it does not work with the <a class="underline" href="https://developer.hashicorp.com/terraform/language/settings/backends/remote">remote backend</a>.</span>
-	</div>
-}
-
-templ editPermissions(props workspaceEditProps) {
-	<div>
-		<table class="table">
-			<thead class="">
-				<tr>
-					<th class="">Team</th>
-					<th class="">Role</th>
-					<th class=""></th>
-				</tr>
-			</thead>
-			<tbody>
-				<!-- always render implicit admin role permission for owners team -->
-				<tr class="text-base-content/60" id="permissions-owners">
-					<td class="">owners</td>
-					<td class="">admin</td>
-				</tr>
-				<!-- iterate through existing role assignments -->
-				for _, workspacePerm := range props.assigned {
-					if workspacePerm.team.Name == "owners" {
-						continue
-					}
-					<tr id={ "permissions-" + workspacePerm.team.Name }>
-						<form class="" id="update-permissions" action={ paths.SetPermissionWorkspace(props.ws.ID) } method="POST"></form>
-						<td class=""><a href={ paths.Team(workspacePerm.team.ID) }>{ workspacePerm.team.Name }</a></td>
-						<td class="">
-							<input name="team_id" value={ workspacePerm.team.ID.String() } type="hidden" form="update-permissions"/>
-							<select class="select" name="role" id="role-select" form="update-permissions">
-								for _, role := range props.roles {
-									<option value={ role.String() } selected?={ workspacePerm.role.String() == role.String() }>{ role.String() }</option>
-								}
-							</select>
-						</td>
-						<td class="flex items-center gap-2">
-							<button class="btn" form="update-permissions">Update</button>
-							<form class="" action={ paths.UnsetPermissionWorkspace(props.ws.ID) } method="POST">
-								<input name="team_id" value={ workspacePerm.team.ID.String() } type="hidden"/>
-								@helpers.DeleteButton()
-							</form>
-						</td>
-					</tr>
-				}
-				<tr class="">
-					<form id="permissions-add-form" action={ paths.SetPermissionWorkspace(props.ws.ID) } method="POST"></form>
-					<td>
-						<select class="select" form="permissions-add-form" name="team_id" id="permissions-add-select-team">
-							<option disabled selected>--team--</option>
-							for _, workspacePerm := range props.unassigned {
-								<option value={ workspacePerm.ID.String() }>{ workspacePerm.Name }</option>
-							}
-						</select>
-					</td>
-					<td id="permissions-add-role-container">
-						<select class="select" form="permissions-add-form" name="role" id="permissions-add-select-role">
-							<option disabled selected>--role--</option>
-							for _, role := range props.roles {
-								<option value={ role.String() }>{ role.String() }</option>
-							}
-						</select>
-					</td>
-					<td>
-						<button class="btn" id="permissions-add-button" form="permissions-add-form">
-							Add
-						</button>
-					</td>
-				</tr>
-			</tbody>
-		</table>
 	</div>
 }
 

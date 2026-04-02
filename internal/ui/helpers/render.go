@@ -67,6 +67,12 @@ func WithWorkspace(ws *workspace.Workspace, authorizer authz.Interface) RenderPa
 	}
 }
 
+func WithSideMenu(comp templ.Component) RenderPageOption {
+	return func(opts *LayoutProps) {
+		opts.SideMenu = comp
+	}
+}
+
 func WithBreadcrumbs(crumbs ...Breadcrumb) RenderPageOption {
 	return func(opts *LayoutProps) {
 		opts.Breadcrumbs = append(opts.Breadcrumbs, crumbs...)

@@ -10,7 +10,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
-	"github.com/leg100/otf/internal/engine"
+	enginepkg "github.com/leg100/otf/internal/engine"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/pubsub"
@@ -72,7 +72,7 @@ type WorkspaceService interface {
 	ListTeams(ctx context.Context, organization organization.Name) ([]*team.Team, error)
 	GetVCSProvider(ctx context.Context, id resource.TfeID) (*vcs.Provider, error)
 	ListVCSProviders(ctx context.Context, organization organization.Name) ([]*vcs.Provider, error)
-	GetLatest(ctx context.Context, e *engine.Engine) (string, time.Time, error)
+	GetLatest(ctx context.Context, e *enginepkg.Engine) (string, time.Time, error)
 	ListSSHKeys(ctx context.Context, org organization.Name) ([]*sshkey.SSHKey, error)
 	GetRun(ctx context.Context, id resource.TfeID) (*runpkg.Run, error)
 }
@@ -94,8 +94,12 @@ func (h *Handlers) AddHandlers(r *mux.Router) {
 	r.HandleFunc("/workspaces/{workspace_id}/connect", h.connect).Methods("POST")
 	r.HandleFunc("/workspaces/{workspace_id}/disconnect", h.disconnect).Methods("POST")
 
+	r.HandleFunc("/workspaces/{workspace_id}/edit-permissions", h.editPermissions).Methods("GET")
 	r.HandleFunc("/workspaces/{workspace_id}/set-permission", h.setWorkspacePermission).Methods("POST")
 	r.HandleFunc("/workspaces/{workspace_id}/unset-permission", h.unsetWorkspacePermission).Methods("POST")
+
+	r.HandleFunc("/workspaces/{workspace_id}/edit-engine", h.editEngine).Methods("GET")
+	r.HandleFunc("/workspaces/{workspace_id}/update-engine", h.updateEngine).Methods("POST")
 
 	r.HandleFunc("/workspaces/{workspace_id}/create-tag", h.createTag).Methods("POST")
 	r.HandleFunc("/workspaces/{workspace_id}/delete-tag", h.deleteTag).Methods("POST")
@@ -391,36 +395,10 @@ func (h *Handlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 		poolsURL += "?agent_pool_id=" + ws.AgentPoolID.String()
 	}
 
-	// Construct list of engines for template
-	engineSelectorProps := engineSelectorProps{
-		engines: make([]engineSelectorEngine, 2),
-	}
-	for i, engine := range engine.Engines() {
-		engineSelectorProps.engines[i].name = engine.String()
-		if engine.String() == ws.Engine.String() {
-			engineSelectorProps.current = engine.String()
-			engineSelectorProps.engines[i].latest = ws.EngineVersion.Latest
-		}
-		// Offer the user the latest available version for an engine if:
-		// (a): it's not the current engine
-		// (b): it's currently set to track the latest version.
-		if engineSelectorProps.current != engine.String() || engineSelectorProps.engines[i].latest {
-			latest, _, err := h.Client.GetLatest(r.Context(), engine)
-			if err != nil {
-				helpers.Error(r, w, err.Error())
-				return
-			}
-			engineSelectorProps.engines[i].version = latest
-		} else {
-			engineSelectorProps.engines[i].version = ws.EngineVersion.String()
-		}
-	}
-
 	props := workspaceEditProps{
 		ws:         ws,
 		assigned:   perms,
 		unassigned: filterUnassigned(policy, teams),
-		engines:    engineSelectorProps,
 		roles: []authz.Role{
 			authz.WorkspaceReadRole,
 			authz.WorkspacePlanRole,
@@ -459,7 +437,7 @@ func (h *Handlers) updateWorkspace(w http.ResponseWriter, r *http.Request) {
 		Name                  string
 		Description           string
 		ExecutionMode         workspace.ExecutionMode `schema:"execution_mode"`
-		Engine                *engine.Engine          `schema:"engine"`
+		Engine                *enginepkg.Engine       `schema:"engine"`
 		LatestEngineVersion   bool                    `schema:"latest_engine_version"`
 		SpecificEngineVersion *workspace.Version      `schema:"specific_engine_version"`
 		WorkingDirectory      string                  `schema:"working_directory"`
@@ -570,6 +548,7 @@ func (h *Handlers) editWorkspaceSSHKey(w http.ResponseWriter, r *http.Request) {
 		w,
 		r,
 		helpers.WithWorkspace(ws, h.Authorizer),
+		helpers.WithSideMenu(helpers.WorkspaceSettingsMenu(ws.ID)),
 		helpers.WithBreadcrumbs(
 			helpers.Breadcrumb{Name: "SSH Key"},
 		),
@@ -784,6 +763,72 @@ func (h *Handlers) disconnect(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, paths.Workspace(workspaceID), http.StatusFound)
 }
 
+func (h *Handlers) editPermissions(w http.ResponseWriter, r *http.Request) {
+	workspaceID, err := decode.ID("workspace_id", r)
+	if err != nil {
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
+		return
+	}
+
+	ws, err := h.Client.GetWorkspace(r.Context(), workspaceID)
+	if err != nil {
+		helpers.Error(r, w, err.Error())
+		return
+	}
+
+	policy, err := h.Client.GetWorkspacePolicy(r.Context(), workspaceID)
+	if err != nil {
+		helpers.Error(r, w, err.Error())
+		return
+	}
+
+	// Get teams for populating team permissions
+	teams, err := h.Client.ListTeams(r.Context(), ws.Organization)
+	if err != nil {
+		helpers.Error(r, w, err.Error())
+		return
+	}
+
+	// want current policy permissions to include not only team ID but team name
+	// too for user's benefit
+	perms := make([]workspacePerm, len(policy.Permissions))
+	for i, pp := range policy.Permissions {
+		// get team name corresponding to team ID
+		for _, t := range teams {
+			if t.ID == pp.TeamID {
+				perms[i] = workspacePerm{
+					role: pp.Role,
+					team: t,
+				}
+				break
+			}
+		}
+	}
+
+	props := editPermissionsProps{
+		ws:         ws,
+		assigned:   perms,
+		unassigned: filterUnassigned(policy, teams),
+		roles: []authz.Role{
+			authz.WorkspaceReadRole,
+			authz.WorkspacePlanRole,
+			authz.WorkspaceWriteRole,
+			authz.WorkspaceAdminRole,
+		},
+	}
+	helpers.RenderPage(
+		editPermissions(props),
+		"edit permissions | "+ws.ID.String(),
+		w,
+		r,
+		helpers.WithWorkspace(ws, h.Authorizer),
+		helpers.WithSideMenu(helpers.WorkspaceSettingsMenu(ws.ID)),
+		helpers.WithBreadcrumbs(
+			helpers.Breadcrumb{Name: "Permissions"},
+		),
+	)
+}
+
 func (h *Handlers) setWorkspacePermission(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		WorkspaceID resource.TfeID `schema:"workspace_id,required"`
@@ -806,7 +851,7 @@ func (h *Handlers) setWorkspacePermission(w http.ResponseWriter, r *http.Request
 		return
 	}
 	helpers.FlashSuccess(w, "updated workspace permissions")
-	http.Redirect(w, r, paths.EditWorkspace(params.WorkspaceID), http.StatusFound)
+	http.Redirect(w, r, paths.EditPermissionsWorkspace(params.WorkspaceID), http.StatusFound)
 }
 
 func (h *Handlers) unsetWorkspacePermission(w http.ResponseWriter, r *http.Request) {
@@ -825,7 +870,98 @@ func (h *Handlers) unsetWorkspacePermission(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	helpers.FlashSuccess(w, "deleted workspace permission")
-	http.Redirect(w, r, paths.EditWorkspace(params.WorkspaceID), http.StatusFound)
+	http.Redirect(w, r, paths.EditPermissionsWorkspace(params.WorkspaceID), http.StatusFound)
+}
+
+type engine struct {
+	name    string
+	latest  bool
+	version string
+}
+
+func (h *Handlers) editEngine(w http.ResponseWriter, r *http.Request) {
+	workspaceID, err := decode.ID("workspace_id", r)
+	if err != nil {
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
+		return
+	}
+
+	ws, err := h.Client.GetWorkspace(r.Context(), workspaceID)
+	if err != nil {
+		helpers.Error(r, w, err.Error())
+		return
+	}
+
+	// Construct list of engines for template
+	engines := make([]engine, len(enginepkg.Engines()))
+	current := ""
+	for i, engine := range enginepkg.Engines() {
+		engines[i].name = engine.String()
+		if engine.String() == ws.Engine.String() {
+			current = engine.String()
+			engines[i].latest = ws.EngineVersion.Latest
+		}
+		// Offer the user the latest available version for an engine if:
+		// (a): it's not the current engine
+		// (b): it's currently set to track the latest version.
+		if current != engine.String() || engines[i].latest {
+			latest, _, err := h.Client.GetLatest(r.Context(), engine)
+			if err != nil {
+				helpers.Error(r, w, err.Error())
+				return
+			}
+			engines[i].version = latest
+		} else {
+			engines[i].version = ws.EngineVersion.String()
+		}
+	}
+
+	props := editEngineProps{
+		ws:      ws,
+		engines: engines,
+		current: current,
+	}
+	helpers.RenderPage(
+		editEngine(props),
+		"edit engine | "+ws.ID.String(),
+		w,
+		r,
+		helpers.WithWorkspace(ws, h.Authorizer),
+		helpers.WithSideMenu(helpers.WorkspaceSettingsMenu(ws.ID)),
+		helpers.WithBreadcrumbs(
+			helpers.Breadcrumb{Name: "Engines"},
+		),
+	)
+}
+
+func (h *Handlers) updateEngine(w http.ResponseWriter, r *http.Request) {
+	var params struct {
+		WorkspaceID           resource.TfeID     `schema:"workspace_id,required"`
+		Engine                *enginepkg.Engine  `schema:"engine"`
+		LatestEngineVersion   bool               `schema:"latest_engine_version"`
+		SpecificEngineVersion *workspace.Version `schema:"specific_engine_version"`
+	}
+	if err := decode.All(&params, r); err != nil {
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
+		return
+	}
+
+	opts := workspace.UpdateOptions{
+		Engine: params.Engine,
+	}
+	if params.LatestEngineVersion {
+		opts.EngineVersion = &workspace.Version{Latest: true}
+	} else {
+		opts.EngineVersion = params.SpecificEngineVersion
+	}
+	ws, err := h.Client.UpdateWorkspace(r.Context(), params.WorkspaceID, opts)
+	if err != nil {
+		helpers.Error(r, w, err.Error())
+		return
+	}
+
+	helpers.FlashSuccess(w, "updated engine")
+	http.Redirect(w, r, paths.EditEngineWorkspace(ws.ID), http.StatusFound)
 }
 
 func (h *Handlers) createTag(w http.ResponseWriter, r *http.Request) {
