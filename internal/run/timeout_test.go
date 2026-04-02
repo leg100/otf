@@ -8,6 +8,7 @@ import (
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestTimeout(t *testing.T) {
@@ -84,7 +85,8 @@ func TestTimeout(t *testing.T) {
 				PlanningTimeout: tt.planningTimeout,
 				ApplyingTimeout: tt.applyingTimeout,
 			}
-			timeout.check(t.Context())
+			err := timeout.check(t.Context())
+			require.NoError(t, err)
 			assert.Equal(t, tt.canceled, client.canceled)
 		})
 	}
