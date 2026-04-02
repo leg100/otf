@@ -50,12 +50,14 @@ func (e *Timeout) Start(ctx context.Context) error {
 		case <-ctx.Done():
 			return nil
 		case <-ticker.C:
-			e.check(ctx)
+			if err := e.check(ctx); err != nil {
+				return err
+			}
 		}
 	}
 }
 
-func (e *Timeout) check(ctx context.Context) {
+func (e *Timeout) check(ctx context.Context) error {
 	// Statuses that are checked for timeout
 	statuses := map[runstatus.Status]struct {
 		// phase corresponding to status
@@ -80,8 +82,7 @@ func (e *Timeout) check(ctx context.Context) {
 		})
 	})
 	if err != nil {
-		e.Error(err, "checking run status timeouts")
-		return
+		return fmt.Errorf("listing runs: %w", err)
 	}
 	for _, run := range runs {
 		s, ok := statuses[run.Status]
@@ -111,7 +112,10 @@ func (e *Timeout) check(ctx context.Context) {
 			// run into the canceled state.
 			//
 			// TODO: bubble up to the UI/API the reason for cancelling the run.
-			_ = e.Runs.CancelRun(ctx, run.ID)
+			if err := e.Runs.CancelRun(ctx, run.ID); err != nil {
+				return fmt.Errorf("canceling run: %w", err)
+			}
 		}
 	}
+	return nil
 }
