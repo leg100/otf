@@ -101,6 +101,9 @@ func (h *Handlers) AddHandlers(r *mux.Router) {
 	r.HandleFunc("/workspaces/{workspace_id}/edit-engine", h.editEngine).Methods("GET")
 	r.HandleFunc("/workspaces/{workspace_id}/update-engine", h.updateEngine).Methods("POST")
 
+	r.HandleFunc("/workspaces/{workspace_id}/edit-vcs", h.editVCS).Methods("GET")
+	r.HandleFunc("/workspaces/{workspace_id}/update-vcs", h.updateVCS).Methods("POST")
+
 	r.HandleFunc("/workspaces/{workspace_id}/create-tag", h.createTag).Methods("POST")
 	r.HandleFunc("/workspaces/{workspace_id}/delete-tag", h.deleteTag).Methods("POST")
 
@@ -935,6 +938,93 @@ func (h *Handlers) editEngine(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handlers) updateEngine(w http.ResponseWriter, r *http.Request) {
+	var params struct {
+		WorkspaceID           resource.TfeID     `schema:"workspace_id,required"`
+		Engine                *enginepkg.Engine  `schema:"engine"`
+		LatestEngineVersion   bool               `schema:"latest_engine_version"`
+		SpecificEngineVersion *workspace.Version `schema:"specific_engine_version"`
+	}
+	if err := decode.All(&params, r); err != nil {
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
+		return
+	}
+
+	opts := workspace.UpdateOptions{
+		Engine: params.Engine,
+	}
+	if params.LatestEngineVersion {
+		opts.EngineVersion = &workspace.Version{Latest: true}
+	} else {
+		opts.EngineVersion = params.SpecificEngineVersion
+	}
+	ws, err := h.Client.UpdateWorkspace(r.Context(), params.WorkspaceID, opts)
+	if err != nil {
+		helpers.Error(r, w, err.Error())
+		return
+	}
+
+	helpers.FlashSuccess(w, "updated engine")
+	http.Redirect(w, r, paths.EditEngineWorkspace(ws.ID), http.StatusFound)
+}
+
+func (h *Handlers) editVCS(w http.ResponseWriter, r *http.Request) {
+	workspaceID, err := decode.ID("workspace_id", r)
+	if err != nil {
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
+		return
+	}
+
+	ws, err := h.Client.GetWorkspace(r.Context(), workspaceID)
+	if err != nil {
+		helpers.Error(r, w, err.Error())
+		return
+	}
+
+	var provider *vcs.Provider
+	if ws.Connection != nil {
+		provider, err = h.Client.GetVCSProvider(r.Context(), ws.Connection.VCSProviderID)
+		if err != nil {
+			helpers.Error(r, w, err.Error())
+			return
+		}
+	}
+
+	props := workspaceEditProps{
+		ws:         ws,
+		assigned:   perms,
+		unassigned: filterUnassigned(policy, teams),
+		roles: []authz.Role{
+			authz.WorkspaceReadRole,
+			authz.WorkspacePlanRole,
+			authz.WorkspaceWriteRole,
+			authz.WorkspaceAdminRole,
+		},
+		vcsProvider:        provider,
+		unassignedTags:     internal.Diff(tagNames, ws.Tags),
+		vcsTagRegexDefault: vcsTagRegexDefault,
+		vcsTagRegexPrefix:  vcsTagRegexPrefix,
+		vcsTagRegexSuffix:  vcsTagRegexSuffix,
+		vcsTagRegexCustom:  vcsTagRegexCustom,
+		vcsTriggerAlways:   VCSTriggerAlways,
+		vcsTriggerPatterns: VCSTriggerPatterns,
+		vcsTriggerTags:     VCSTriggerTags,
+		canUpdateWorkspace: h.Authorizer.CanAccess(r.Context(), authz.UpdateWorkspaceAction, ws.ID),
+		canDeleteWorkspace: h.Authorizer.CanAccess(r.Context(), authz.DeleteWorkspaceAction, ws.ID),
+		poolsURL:           poolsURL,
+	}
+	helpers.RenderPage(
+		workspaceEdit(props),
+		"edit | "+ws.ID.String(),
+		w,
+		r,
+		helpers.WithWorkspace(ws, h.Authorizer),
+		helpers.WithBreadcrumbs(
+			helpers.Breadcrumb{Name: "Settings"},
+		),
+	)
+}
+
+func (h *Handlers) updateVCS(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		WorkspaceID           resource.TfeID     `schema:"workspace_id,required"`
 		Engine                *enginepkg.Engine  `schema:"engine"`
