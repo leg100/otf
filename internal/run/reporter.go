@@ -91,10 +91,7 @@ func (r *Reporter) Start(ctx context.Context) error {
 			continue
 		}
 		if err := r.handleRun(ctx, event.Payload); err != nil {
-			// any error is treated as non-fatal because reporting on runs is
-			// considered "best-effort" rather than an integral operation
-			r.Error(err, "reporting run vcs status", "run_id", event.Payload.ID)
-			return nil
+			return fmt.Errorf("handling run event: %w", err)
 		}
 	}
 	return pubsub.ErrSubscriptionTerminated

@@ -27,7 +27,7 @@ type (
 		*factory
 
 		db          *pgdb
-		broker      *pubsub.Broker[*Event]
+		broker      pubsub.SubscriptionService[*Event]
 		connections *connections.Service
 
 		beforeCreateHooks []func(context.Context, *Workspace) error
@@ -43,6 +43,7 @@ type (
 		ConnectionService *connections.Service
 		DefaultEngine     *engine.Engine
 		EngineService     *engine.Service
+		Broker            pubsub.SubscriptionService[*Event]
 	}
 )
 
@@ -57,12 +58,8 @@ func NewService(opts Options) *Service {
 			defaultEngine: opts.DefaultEngine,
 			engines:       opts.EngineService,
 		},
+		broker: opts.Broker,
 	}
-	svc.broker = pubsub.NewBroker[*Event](
-		opts.Logger,
-		opts.Listener,
-		"workspaces",
-	)
 
 	// Provide a way for other components to find the parent resource of a
 	// workspace given its ID.

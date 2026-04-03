@@ -31,6 +31,7 @@ import (
 	"github.com/leg100/otf/internal/notifications"
 	"github.com/leg100/otf/internal/organization"
 	orgui "github.com/leg100/otf/internal/organization/ui"
+	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/repohooks"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
@@ -138,6 +139,43 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	if err != nil {
 		return nil, fmt.Errorf("setting up authentication middleware: %w", err)
 	}
+
+	// Setup event message brokers
+	runBroker := pubsub.NewBroker[*run.Event](
+		logger,
+		sqlListener,
+		run.Table,
+	)
+	chunkBroker := pubsub.NewBroker[run.Chunk](
+		logger,
+		sqlListener,
+		run.ChunksTable,
+	)
+	notificationBroker := pubsub.NewBroker[*notifications.Config](
+		logger,
+		sqlListener,
+		notifications.Table,
+	)
+	agentPoolBroker := pubsub.NewBroker[*runner.Pool](
+		logger,
+		sqlListener,
+		runner.AgentPoolsTable,
+	)
+	runnerBroker := pubsub.NewBroker[*runner.RunnerEvent](
+		logger,
+		sqlListener,
+		runner.RunnersTable,
+	)
+	jobBroker := pubsub.NewBroker[*runner.JobEvent](
+		logger,
+		sqlListener,
+		runner.JobsTable,
+	)
+	workspaceBroker := pubsub.NewBroker[*workspace.Event](
+		logger,
+		sqlListener,
+		workspace.Table,
+	)
 
 	authorizer := authz.NewAuthorizer(logger)
 
@@ -262,6 +300,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		ConnectionService: connectionService,
 		DefaultEngine:     cfg.DefaultEngine,
 		EngineService:     engineService,
+		Broker:            workspaceBroker,
 	})
 
 	runService := run.NewService(run.Options{
@@ -286,6 +325,8 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		},
 		VCSEventSubscriber: vcsEventBroker,
 		DaemonCtx:          ctx,
+		Broker:             runBroker,
+		ChunkBroker:        chunkBroker,
 	})
 	moduleService := module.NewService(module.Options{
 		Logger:             logger,
@@ -327,6 +368,9 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Listener:                  sqlListener,
 		DynamicCredentialsService: dynamiccredsService,
 		HostnameService:           hostnameService,
+		PoolBroker:                agentPoolBroker,
+		RunnerBroker:              runnerBroker,
+		JobBroker:                 jobBroker,
 	})
 	authenticatorService, err := authenticator.NewAuthenticatorService(ctx, authenticator.Options{
 		Logger:               logger,
@@ -421,6 +465,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Authorizer: authorizer,
 		DB:         db,
 		Listener:   sqlListener,
+		Broker:     notificationBroker,
 	})
 
 	// Handlers for the TFE API
@@ -795,8 +840,42 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		{
 			Name:   "job-signaler",
 			Logger: logger,
-			DB:     db,
 			System: runnerService.Signaler,
+		},
+		{
+			Name:   "runs-broker",
+			Logger: logger,
+			System: runBroker,
+		},
+		{
+			Name:   "workspaces-broker",
+			Logger: logger,
+			System: workspaceBroker,
+		},
+		{
+			Name:   "chunks-broker",
+			Logger: logger,
+			System: chunkBroker,
+		},
+		{
+			Name:   "runners-broker",
+			Logger: logger,
+			System: runnerBroker,
+		},
+		{
+			Name:   "jobs-broker",
+			Logger: logger,
+			System: jobBroker,
+		},
+		{
+			Name:   "agent-pools-broker",
+			Logger: logger,
+			System: agentPoolBroker,
+		},
+		{
+			Name:   "notification-config-broker",
+			Logger: logger,
+			System: notificationBroker,
 		},
 	}
 	if !cfg.DisableRunner {
@@ -863,7 +942,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 
 // Start the otfd daemon and block until ctx is cancelled or an error is
 // returned. The started channel is closed once the daemon has started.
-func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
+func (d *Daemon) Start(ctx context.Context, logger logr.Logger, started chan struct{}) error {
 	// Cancel context the first time a func started with g.Go() fails
 	g, ctx := errgroup.WithContext(ctx)
 
@@ -895,6 +974,8 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 
 	// Inform the caller the daemon has started
 	close(started)
+
+	logger.Info("fully started up")
 
 	// Block until error or Ctrl-C received.
 	return g.Wait()

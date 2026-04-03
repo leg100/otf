@@ -37,26 +37,60 @@ var ErrSubscriptionTerminated = errors.New("broker terminated the subscription")
 
 // Broker allows clients to subscribe to OTF events.
 type Broker[T any] struct {
-	logr.Logger
-
-	subs  map[chan Event[T]]struct{} // subscriptions
-	mu    sync.Mutex                 // sync access to map
-	table string
+	logger      logr.Logger
+	subs        map[chan Event[T]]struct{} // subscriptions
+	mu          sync.Mutex                 // sync access to map
+	listener    databaseListener
+	table       sql.Table
+	islistening chan struct{} // semaphore that's populated once listener is listening.
 }
 
 // databaseListener is the upstream database events listener
 type databaseListener interface {
-	RegisterTable(table string, ff sql.ForwardFunc)
+	Subscribe(table sql.Table) <-chan sql.Event
 }
 
-func NewBroker[T any](logger logr.Logger, listener databaseListener, table string) *Broker[T] {
-	b := &Broker[T]{
-		Logger: logger.WithValues("component", "broker"),
-		subs:   make(map[chan Event[T]]struct{}),
-		table:  table,
+func NewBroker[T any](logger logr.Logger, listener databaseListener, table sql.Table) *Broker[T] {
+	return &Broker[T]{
+		logger:      logger.WithValues("component", "broker", "table", table),
+		subs:        make(map[chan Event[T]]struct{}),
+		islistening: make(chan struct{}, 1),
+		listener:    listener,
+		table:       table,
 	}
-	listener.RegisterTable(table, b.forward)
-	return b
+}
+
+// Start the database event listener.
+func (b *Broker[T]) Start(ctx context.Context) error {
+	listener := b.listener.Subscribe(b.table)
+
+	// Inform caller that we're now listening. This routine may be called
+	// more than once if the listener is restarted, e.g. there is a
+	// transient database failure. Therefore we don't block on this channel
+	// if a message has already been published by a previous start.
+	select {
+	case b.islistening <- struct{}{}:
+	default:
+	}
+
+	for event := range listener {
+		b.forward(event)
+	}
+
+	// Unsubscribe subscribers and reset subscription map before exiting (and
+	// possibly being restarted by upstream process).
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	for sub := range b.subs {
+		b.unsubscribe(sub)
+	}
+	b.subs = make(map[chan Event[T]]struct{})
+
+	return errors.New("database listener terminated the subscription")
+}
+
+func (b *Broker[T]) Started() <-chan struct{} {
+	return b.islistening
 }
 
 // Subscribe subscribes the caller to a stream of events. The caller can close
@@ -97,7 +131,7 @@ func (b *Broker[T]) forward(sqlEvent sql.Event) {
 		Time: sqlEvent.Time,
 	}
 	if err := json.Unmarshal(sqlEvent.Record, &event.Payload); err != nil {
-		b.Error(err, "unmarshaling event from database record", "table", b.table, "action", sqlEvent.Action, "record", string(sqlEvent.Record))
+		b.logger.Error(err, "unmarshaling event from database record", "action", sqlEvent.Action, "record", string(sqlEvent.Record))
 		return
 	}
 	switch sqlEvent.Action {
@@ -108,7 +142,7 @@ func (b *Broker[T]) forward(sqlEvent sql.Event) {
 	case sql.DeleteAction:
 		event.Type = DeletedEvent
 	default:
-		b.Error(nil, "unknown action", "action", sqlEvent.Action)
+		b.logger.Error(nil, "unknown action", "action", sqlEvent.Action)
 		return
 	}
 
@@ -129,7 +163,7 @@ func (b *Broker[T]) forward(sqlEvent sql.Event) {
 
 	// forceably unsubscribe full subscribers and leave it them to re-subscribe
 	for _, name := range fullSubscribers {
-		b.Error(nil, "unsubscribing full subscriber", "sub", name, "queue_length", subBufferSize)
+		b.logger.Error(nil, "unsubscribing full subscriber", "sub", name, "queue_length", subBufferSize)
 		b.unsubscribe(name)
 	}
 }

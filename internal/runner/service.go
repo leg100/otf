@@ -54,6 +54,9 @@ type (
 		Authorizer                *authz.Authorizer
 		DynamicCredentialsService *dynamiccreds.Service
 		HostnameService           *internal.HostnameService
+		PoolBroker                pubsub.SubscriptionService[*Pool]
+		RunnerBroker              pubsub.SubscriptionService[*RunnerEvent]
+		JobBroker                 pubsub.SubscriptionService[*JobEvent]
 	}
 
 	phaseClient interface {
@@ -73,25 +76,13 @@ func NewService(opts ServiceOptions) *Service {
 		workspaces:   opts.WorkspaceService,
 		dynamiccreds: opts.DynamicCredentialsService,
 		hostnames:    opts.HostnameService,
+		poolBroker:   opts.PoolBroker,
+		runnerBroker: opts.RunnerBroker,
+		jobBroker:    opts.JobBroker,
 	}
 	svc.tokenFactory = &tokenFactory{
 		tokens: opts.TokensService,
 	}
-	svc.poolBroker = pubsub.NewBroker[*Pool](
-		opts.Logger,
-		opts.Listener,
-		"agent_pools",
-	)
-	svc.runnerBroker = pubsub.NewBroker[*RunnerEvent](
-		opts.Logger,
-		opts.Listener,
-		"runners",
-	)
-	svc.jobBroker = pubsub.NewBroker[*JobEvent](
-		opts.Logger,
-		opts.Listener,
-		"jobs",
-	)
 	// Register with auth middleware the agent token kind and a means of
 	// retrieving the appropriate runner corresponding to the agent token ID
 	opts.TokensService.RegisterKind(resource.AgentTokenKind, func(ctx context.Context, tokenID resource.TfeID) (authz.Subject, error) {

@@ -33,10 +33,10 @@ type (
 		logr.Logger
 
 		conn        *DB           // pool from which to acquire a dedicated connection to postgres
-		islistening chan struct{} // semaphore that's closed once broker is listening
+		islistening chan struct{} // semaphore that's populated once listener is listening.
 
-		mu         sync.Mutex             // sync access to maps
-		forwarders map[string]ForwardFunc // maps table name to event forwarder
+		mu   sync.Mutex             // sync access to maps
+		subs map[Table]chan<- Event // table event subscriptions
 	}
 
 	// ForwardFunc forwards an event to a client
@@ -47,39 +47,45 @@ func NewListener(logger logr.Logger, conn *DB) *Listener {
 	return &Listener{
 		Logger:      logger.WithValues("component", "listener"),
 		conn:        conn,
-		islistening: make(chan struct{}),
-		forwarders:  make(map[string]ForwardFunc),
+		islistening: make(chan struct{}, 1),
+		subs:        make(map[Table]chan<- Event),
 	}
 }
 
-// RegisterTable maps a table to an event forwarding function: the function
-// henceforth is called with events triggered on the table.
-func (b *Listener) RegisterTable(table string, forwarder ForwardFunc) {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-
-	b.forwarders[table] = forwarder
-}
-
-// Start the pubsub daemon; listen to notifications from postgres and forward to
-// local pubsub broker. The listening channel is closed once the broker has
-// started listening; from this point onwards published messages will be
-// forwarded.
+// Start the database event listener.
 func (b *Listener) Start(ctx context.Context) error {
-	// Cancel listen connection when leaving func.
+	// Close listen connection when leaving func.
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
+
+	// Unsubscribe subscribers upon exit.
+	defer func() {
+		b.Logger.Info("unsubscribing subscribers")
+		b.mu.Lock()
+		for k, sub := range b.subs {
+			close(sub)
+			delete(b.subs, k)
+		}
+		b.mu.Unlock()
+		b.Logger.Info("finished unsubscribing subscribers")
+	}()
 
 	notifications, err := b.conn.Listen(ctx, "events")
 	if err != nil {
 		return fmt.Errorf("listening to postgres notification channel: %w", err)
 	}
 
+	// Inform caller that we're now listening. This routine may be called
+	// more than once if the listener is restarted, e.g. there is a
+	// transient database failure. Therefore we don't block on this channel
+	// if a message has already been published by a previous start.
+	select {
+	case b.islistening <- struct{}{}:
+	default:
+		b.Logger.Info("now listening")
+	}
+
 	b.V(2).Info("listening for events")
-	go func() {
-		// close semaphore to indicate broker is now listening
-		b.islistening <- struct{}{}
-	}()
 
 	g, ctx := errgroup.WithContext(ctx)
 
@@ -96,16 +102,21 @@ func (b *Listener) Start(ctx context.Context) error {
 			if err != nil {
 				return fmt.Errorf("retrieving events: %w", err)
 			}
+			// What is this doing??
 			if err := json.Unmarshal([]byte(event.Record), &event); err != nil {
 				b.Error(err, "unmarshaling postgres event")
 				continue
 			}
-			forwarder, ok := b.forwarders[string(event.Table)]
+			// 1. use table to lookup decoder in a mapping of table to decoder
+			// 2. decode message using decoder
+			b.mu.Lock()
+			forwarder, ok := b.subs[event.Table]
+			b.mu.Unlock()
 			if !ok {
 				b.Error(nil, "no event forwarder found", "table", event.Table)
 				continue
 			}
-			forwarder(event)
+			forwarder <- event
 		}
 		return nil
 	})
@@ -114,6 +125,16 @@ func (b *Listener) Start(ctx context.Context) error {
 
 func (b *Listener) Started() <-chan struct{} {
 	return b.islistening
+}
+
+// Subscribe to events for a database table.
+func (b *Listener) Subscribe(table Table) <-chan Event {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	sub := make(chan Event)
+	b.subs[table] = sub
+	return sub
 }
 
 func (b *Listener) cleanup(ctx context.Context) error {
@@ -136,7 +157,7 @@ func (b *Listener) cleanup(ctx context.Context) error {
 // Event is a postgres event triggered by a database change.
 type Event struct {
 	ID     int             `db:"id"`
-	Table  string          `db:"_table"` // pg table associated with change
+	Table  Table           `db:"_table"` // pg table associated with change
 	Action Action          // INSERT/UPDATE/DELETE
 	Record json.RawMessage // the changed row
 	Time   time.Time       // time at which event occured
@@ -145,7 +166,7 @@ type Event struct {
 func (v Event) LogValue() slog.Value {
 	attrs := []slog.Attr{
 		slog.String("action", string(v.Action)),
-		slog.String("table", v.Table),
+		slog.Any("table", v.Table),
 		slog.Time("time", v.Time),
 	}
 	return slog.GroupValue(attrs...)
