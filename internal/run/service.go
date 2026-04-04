@@ -328,7 +328,7 @@ func (s *Service) FinishPhase(ctx context.Context, runID resource.TfeID, phase P
 	return run, nil
 }
 
-func (s *Service) WatchRuns(ctx context.Context) (<-chan pubsub.Event[*Event], func()) {
+func (s *Service) WatchRuns(ctx context.Context) (<-chan pubsub.Event[*Event], func(), error) {
 	return s.broker.Subscribe(ctx)
 }
 

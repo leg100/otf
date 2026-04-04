@@ -37,68 +37,52 @@ var ErrSubscriptionTerminated = errors.New("broker terminated the subscription")
 
 // Broker allows clients to subscribe to OTF events.
 type Broker[T any] struct {
-	logger      logr.Logger
-	subs        map[chan Event[T]]struct{} // subscriptions
-	mu          sync.Mutex                 // sync access to map
-	listener    databaseListener
-	table       sql.Table
-	islistening chan struct{} // semaphore that's populated once listener is listening.
+	logger  logr.Logger
+	subs    map[chan Event[T]]struct{} // subscriptions
+	mu      sync.Mutex                 // sync access to map
+	table   sql.Table
+	enabled bool
 }
 
-// databaseListener is the upstream database events listener
-type databaseListener interface {
-	Subscribe(table sql.Table) <-chan sql.Event
+func NewBroker[T any](logger logr.Logger, table sql.Table) *Broker[T] {
+	b := &Broker[T]{
+		logger:  logger.WithValues("component", "broker"),
+		subs:    make(map[chan Event[T]]struct{}),
+		table:   table,
+		enabled: true,
+	}
+	return b
 }
 
-func NewBroker[T any](logger logr.Logger, listener databaseListener, table sql.Table) *Broker[T] {
-	return &Broker[T]{
-		logger:      logger.WithValues("component", "broker", "table", table),
-		subs:        make(map[chan Event[T]]struct{}),
-		islistening: make(chan struct{}, 1),
-		listener:    listener,
-		table:       table,
-	}
+func (b *Broker[T]) Table() sql.Table { return b.table }
+
+func (b *Broker[T]) Enable() {
+	b.mu.Lock()
+	b.enabled = true
+	b.mu.Unlock()
 }
 
-// Start the database event listener.
-func (b *Broker[T]) Start(ctx context.Context) error {
-	listener := b.listener.Subscribe(b.table)
-
-	// Inform caller that we're now listening. This routine may be called
-	// more than once if the listener is restarted, e.g. there is a
-	// transient database failure. Therefore we don't block on this channel
-	// if a message has already been published by a previous start.
-	select {
-	case b.islistening <- struct{}{}:
-	default:
-	}
-
-	for event := range listener {
-		b.forward(event)
-	}
-
-	// Unsubscribe subscribers and reset subscription map before exiting (and
-	// possibly being restarted by upstream process).
+// Disable the broker. All subscribers are forcily unsubscribed.
+func (b *Broker[T]) Disable() {
 	b.mu.Lock()
 	defer b.mu.Unlock()
+
+	b.enabled = false
 	for sub := range b.subs {
-		b.unsubscribe(sub)
+		b.unsubscribeWithoutLock(sub)
 	}
-	b.subs = make(map[chan Event[T]]struct{})
-
-	return errors.New("database listener terminated the subscription")
-}
-
-func (b *Broker[T]) Started() <-chan struct{} {
-	return b.islistening
 }
 
 // Subscribe subscribes the caller to a stream of events. The caller can close
 // the subscription by either canceling the context or calling the returned
 // unsubscribe function.
-func (b *Broker[T]) Subscribe(ctx context.Context) (<-chan Event[T], func()) {
+func (b *Broker[T]) Subscribe(ctx context.Context) (<-chan Event[T], func(), error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
+
+	if !b.enabled {
+		return nil, nil, fmt.Errorf("event broker is disabled")
+	}
 
 	sub := make(chan Event[T], subBufferSize)
 	b.subs[sub] = struct{}{}
@@ -109,13 +93,16 @@ func (b *Broker[T]) Subscribe(ctx context.Context) (<-chan Event[T], func()) {
 		b.unsubscribe(sub)
 	}()
 
-	return sub, func() { b.unsubscribe(sub) }
+	return sub, func() { b.unsubscribe(sub) }, nil
 }
 
 func (b *Broker[T]) unsubscribe(sub chan Event[T]) {
 	b.mu.Lock()
-	defer b.mu.Unlock()
+	b.unsubscribeWithoutLock(sub)
+	b.mu.Unlock()
+}
 
+func (b *Broker[T]) unsubscribeWithoutLock(sub chan Event[T]) {
 	if _, ok := b.subs[sub]; !ok {
 		// already unsubscribed
 		return
@@ -124,9 +111,9 @@ func (b *Broker[T]) unsubscribe(sub chan Event[T]) {
 	delete(b.subs, sub)
 }
 
-// forward retrieves the type T uniquely identified by id and forwards it onto
+// Forward retrieves the type T uniquely identified by id and forwards it onto
 // subscribers as an event together with the action.
-func (b *Broker[T]) forward(sqlEvent sql.Event) {
+func (b *Broker[T]) Forward(sqlEvent sql.Event) {
 	event := Event[T]{
 		Time: sqlEvent.Time,
 	}

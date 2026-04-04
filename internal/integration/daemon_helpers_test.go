@@ -130,7 +130,8 @@ func setup(t *testing.T, opts ...configOption) (*testDaemon, *organization.Organ
 	<-started
 
 	// Subscribe to run events
-	runEvents, unsub := d.Runs.WatchRuns(ctx)
+	runEvents, unsub, err := d.Runs.WatchRuns(ctx)
+	require.NoError(t, err)
 	t.Cleanup(unsub)
 
 	t.Cleanup(func() {

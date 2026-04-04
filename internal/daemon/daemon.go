@@ -110,9 +110,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		return nil, fmt.Errorf("creating database pool: %w", err)
 	}
 
-	// sqlListener listens to database events.
-	sqlListener := sql.NewListener(logger, db)
-
 	// netListener opens a TCP port for listening on.
 	netListener, err := net.Listen("tcp", cfg.Address)
 	if err != nil {
@@ -143,38 +140,44 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	// Setup event message brokers
 	runBroker := pubsub.NewBroker[*run.Event](
 		logger,
-		sqlListener,
 		run.Table,
 	)
 	chunkBroker := pubsub.NewBroker[run.Chunk](
 		logger,
-		sqlListener,
 		run.ChunksTable,
 	)
 	notificationBroker := pubsub.NewBroker[*notifications.Config](
 		logger,
-		sqlListener,
 		notifications.Table,
 	)
 	agentPoolBroker := pubsub.NewBroker[*runner.Pool](
 		logger,
-		sqlListener,
 		runner.AgentPoolsTable,
 	)
 	runnerBroker := pubsub.NewBroker[*runner.RunnerEvent](
 		logger,
-		sqlListener,
 		runner.RunnersTable,
 	)
 	jobBroker := pubsub.NewBroker[*runner.JobEvent](
 		logger,
-		sqlListener,
 		runner.JobsTable,
 	)
 	workspaceBroker := pubsub.NewBroker[*workspace.Event](
 		logger,
-		sqlListener,
 		workspace.Table,
+	)
+
+	// sqlListener listens to database events.
+	sqlListener := sql.NewListener(
+		logger,
+		db,
+		runBroker,
+		chunkBroker,
+		notificationBroker,
+		agentPoolBroker,
+		runnerBroker,
+		jobBroker,
+		workspaceBroker,
 	)
 
 	authorizer := authz.NewAuthorizer(logger)
@@ -368,9 +371,9 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Listener:                  sqlListener,
 		DynamicCredentialsService: dynamiccredsService,
 		HostnameService:           hostnameService,
-		PoolBroker:                agentPoolBroker,
 		RunnerBroker:              runnerBroker,
 		JobBroker:                 jobBroker,
+		PoolBroker:                agentPoolBroker,
 	})
 	authenticatorService, err := authenticator.NewAuthenticatorService(ctx, authenticator.Options{
 		Logger:               logger,
@@ -842,41 +845,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 			Logger: logger,
 			System: runnerService.Signaler,
 		},
-		{
-			Name:   "runs-broker",
-			Logger: logger,
-			System: runBroker,
-		},
-		{
-			Name:   "workspaces-broker",
-			Logger: logger,
-			System: workspaceBroker,
-		},
-		{
-			Name:   "chunks-broker",
-			Logger: logger,
-			System: chunkBroker,
-		},
-		{
-			Name:   "runners-broker",
-			Logger: logger,
-			System: runnerBroker,
-		},
-		{
-			Name:   "jobs-broker",
-			Logger: logger,
-			System: jobBroker,
-		},
-		{
-			Name:   "agent-pools-broker",
-			Logger: logger,
-			System: agentPoolBroker,
-		},
-		{
-			Name:   "notification-config-broker",
-			Logger: logger,
-			System: notificationBroker,
-		},
 	}
 	if !cfg.DisableRunner {
 		subsystems = append(subsystems, &Subsystem{
@@ -942,7 +910,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 
 // Start the otfd daemon and block until ctx is cancelled or an error is
 // returned. The started channel is closed once the daemon has started.
-func (d *Daemon) Start(ctx context.Context, logger logr.Logger, started chan struct{}) error {
+func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 	// Cancel context the first time a func started with g.Go() fails
 	g, ctx := errgroup.WithContext(ctx)
 
@@ -974,8 +942,6 @@ func (d *Daemon) Start(ctx context.Context, logger logr.Logger, started chan str
 
 	// Inform the caller the daemon has started
 	close(started)
-
-	logger.Info("fully started up")
 
 	// Block until error or Ctrl-C received.
 	return g.Wait()

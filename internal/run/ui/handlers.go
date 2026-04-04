@@ -40,9 +40,9 @@ type Client interface {
 	TailRun(context.Context, runpkg.TailOptions) (<-chan runpkg.Chunk, error)
 	DeleteRun(context.Context, resource.TfeID) error
 	ApplyRun(context.Context, resource.TfeID) error
-	WatchRuns(ctx context.Context) (<-chan pubsub.Event[*runpkg.Event], func())
+	WatchRuns(ctx context.Context) (<-chan pubsub.Event[*runpkg.Event], func(), error)
 	GetWorkspace(context.Context, resource.TfeID) (*workspace.Workspace, error)
-	WatchWorkspaces(ctx context.Context) (<-chan pubsub.Event[*workspace.Event], func())
+	WatchWorkspaces(ctx context.Context) (<-chan pubsub.Event[*workspace.Event], func(), error)
 	GetUser(ctx context.Context, spec user.UserSpec) (*user.User, error)
 	sourceIconGetter
 }
@@ -350,7 +350,11 @@ func (h *Handlers) watchRun(w http.ResponseWriter, r *http.Request) {
 	}
 	conn := newSSEConnection(w, false)
 
-	sub, _ := h.client.WatchRuns(r.Context())
+	sub, _, err := h.client.WatchRuns(r.Context())
+	if err != nil {
+		helpers.Error(r, w, err.Error())
+		return
+	}
 
 	send := func() {
 		run, err := h.client.GetRun(r.Context(), runID)
@@ -423,8 +427,16 @@ func (h *Handlers) watchLatestRun(w http.ResponseWriter, r *http.Request) {
 
 	// Setup event subscriptions first then retrieve workspace to ensure we
 	// don't miss anything.
-	workspacesSub, _ := h.client.WatchWorkspaces(r.Context())
-	runsSub, _ := h.client.WatchRuns(r.Context())
+	workspacesSub, _, err := h.client.WatchWorkspaces(r.Context())
+	if err != nil {
+		helpers.Error(r, w, err.Error())
+		return
+	}
+	runsSub, _, err := h.client.WatchRuns(r.Context())
+	if err != nil {
+		helpers.Error(r, w, err.Error())
+		return
+	}
 	ws, err := h.client.GetWorkspace(r.Context(), workspaceID)
 	if err != nil {
 		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))

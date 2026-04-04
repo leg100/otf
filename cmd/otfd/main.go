@@ -67,7 +67,7 @@ func parseFlags(ctx context.Context, args []string, out io.Writer) error {
 			defer d.Close()
 
 			// block until ^C received
-			return d.Start(ctx, logger, make(chan struct{}))
+			return d.Start(ctx, make(chan struct{}))
 		},
 	}
 	cmd.SetOut(out)

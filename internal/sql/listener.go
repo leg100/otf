@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log/slog"
-	"sync"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -30,47 +28,52 @@ type (
 
 	// Listener listens for postgres events
 	Listener struct {
-		logr.Logger
-
+		logger      logr.Logger
 		conn        *DB           // pool from which to acquire a dedicated connection to postgres
 		islistening chan struct{} // semaphore that's populated once listener is listening.
-
-		mu   sync.Mutex             // sync access to maps
-		subs map[Table]chan<- Event // table event subscriptions
+		brokers     map[Table]Broker
 	}
 
 	// ForwardFunc forwards an event to a client
 	ForwardFunc func(event Event)
+
+	// Broker is a broker handling events for a specific table.
+	Broker interface {
+		// Forward database event to broker
+		Forward(Event)
+		// Table retrieves the table the broker is handling events for.
+		Table() Table
+		// Enable the broker.
+		Enable()
+		// Disable the broker.
+		Disable()
+	}
 )
 
-func NewListener(logger logr.Logger, conn *DB) *Listener {
-	return &Listener{
-		Logger:      logger.WithValues("component", "listener"),
+func NewListener(logger logr.Logger, conn *DB, brokers ...Broker) *Listener {
+	listener := &Listener{
+		logger:      logger.WithValues("component", "listener"),
 		conn:        conn,
 		islistening: make(chan struct{}, 1),
-		subs:        make(map[Table]chan<- Event),
 	}
+	listener.brokers = make(map[Table]Broker, len(brokers))
+	for _, broker := range brokers {
+		listener.brokers[broker.Table()] = broker
+	}
+	return listener
+
 }
 
-// Start the database event listener.
-func (b *Listener) Start(ctx context.Context) error {
+// Start the pubsub daemon; listen to notifications from postgres and forward to
+// local pubsub broker. The listening channel is closed once the broker has
+// started listening; from this point onwards published messages will be
+// forwarded.
+func (l *Listener) Start(ctx context.Context) error {
 	// Close listen connection when leaving func.
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	// Unsubscribe subscribers upon exit.
-	defer func() {
-		b.Logger.Info("unsubscribing subscribers")
-		b.mu.Lock()
-		for k, sub := range b.subs {
-			close(sub)
-			delete(b.subs, k)
-		}
-		b.mu.Unlock()
-		b.Logger.Info("finished unsubscribing subscribers")
-	}()
-
-	notifications, err := b.conn.Listen(ctx, "events")
+	notifications, err := l.conn.Listen(ctx, "events")
 	if err != nil {
 		return fmt.Errorf("listening to postgres notification channel: %w", err)
 	}
@@ -80,68 +83,64 @@ func (b *Listener) Start(ctx context.Context) error {
 	// transient database failure. Therefore we don't block on this channel
 	// if a message has already been published by a previous start.
 	select {
-	case b.islistening <- struct{}{}:
+	case l.islistening <- struct{}{}:
 	default:
-		b.Logger.Info("now listening")
+		l.logger.Info("now listening")
 	}
 
-	b.V(2).Info("listening for events")
+	// Now that we're listening inform the brokers.
+	for _, broker := range l.brokers {
+		broker.Enable()
+	}
 
 	g, ctx := errgroup.WithContext(ctx)
 
 	// cleanup old events
 	g.Go(func() error {
-		return b.cleanup(ctx)
+		return l.cleanup(ctx)
 	})
 
 	// check for new events
 	g.Go(func() error {
 		for notification := range notifications {
-			row := b.conn.Query(ctx, `SELECT * FROM events WHERE id = $1 `, notification)
+			row := l.conn.Query(ctx, `SELECT * FROM events WHERE id = $1 `, notification)
 			event, err := pgx.CollectOneRow(row, pgx.RowToStructByName[Event])
 			if err != nil {
 				return fmt.Errorf("retrieving events: %w", err)
 			}
 			// What is this doing??
 			if err := json.Unmarshal([]byte(event.Record), &event); err != nil {
-				b.Error(err, "unmarshaling postgres event")
+				l.logger.Error(err, "unmarshaling postgres event")
 				continue
 			}
-			// 1. use table to lookup decoder in a mapping of table to decoder
-			// 2. decode message using decoder
-			b.mu.Lock()
-			forwarder, ok := b.subs[event.Table]
-			b.mu.Unlock()
+			broker, ok := l.brokers[event.Table]
 			if !ok {
-				b.Error(nil, "no event forwarder found", "table", event.Table)
+				l.logger.Error(nil, "no event broker found for table", "table", event.Table)
 				continue
 			}
-			forwarder <- event
+			broker.Forward(event)
 		}
-		return nil
+		// Connection to notification channel closed; inform the brokers so that
+		// they can inform their subscribers).
+		l.logger.Info("disabling brokers")
+		for _, broker := range l.brokers {
+			broker.Disable()
+		}
+		l.logger.Info("exiting listener")
+		return fmt.Errorf("connection to database notification channel terminated")
 	})
 	return g.Wait()
 }
 
-func (b *Listener) Started() <-chan struct{} {
-	return b.islistening
+func (l *Listener) Started() <-chan struct{} {
+	return l.islistening
 }
 
-// Subscribe to events for a database table.
-func (b *Listener) Subscribe(table Table) <-chan Event {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-
-	sub := make(chan Event)
-	b.subs[table] = sub
-	return sub
-}
-
-func (b *Listener) cleanup(ctx context.Context) error {
+func (l *Listener) cleanup(ctx context.Context) error {
 	ticker := time.NewTicker(time.Minute)
 	for {
 		// delete events older than one minute
-		_, err := b.conn.conn(ctx).Exec(ctx, `DELETE FROM events WHERE time < (current_timestamp - interval '1 minute')`)
+		_, err := l.conn.conn(ctx).Exec(ctx, `DELETE FROM events WHERE time < (current_timestamp - interval '1 minute')`)
 		if err != nil {
 			return fmt.Errorf("cleaning up old events: %w", err)
 		}
@@ -152,22 +151,4 @@ func (b *Listener) cleanup(ctx context.Context) error {
 		}
 	}
 
-}
-
-// Event is a postgres event triggered by a database change.
-type Event struct {
-	ID     int             `db:"id"`
-	Table  Table           `db:"_table"` // pg table associated with change
-	Action Action          // INSERT/UPDATE/DELETE
-	Record json.RawMessage // the changed row
-	Time   time.Time       // time at which event occured
-}
-
-func (v Event) LogValue() slog.Value {
-	attrs := []slog.Attr{
-		slog.String("action", string(v.Action)),
-		slog.Any("table", v.Table),
-		slog.Time("time", v.Time),
-	}
-	return slog.GroupValue(attrs...)
 }

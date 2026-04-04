@@ -82,7 +82,7 @@ func NewService(opts Options) *Service {
 	return &svc
 }
 
-func (s *Service) WatchWorkspaces(ctx context.Context) (<-chan pubsub.Event[*Event], func()) {
+func (s *Service) WatchWorkspaces(ctx context.Context) (<-chan pubsub.Event[*Event], func(), error) {
 	return s.broker.Subscribe(ctx)
 }
 

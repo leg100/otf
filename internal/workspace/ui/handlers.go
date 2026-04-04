@@ -13,7 +13,6 @@ import (
 	"github.com/leg100/otf/internal/engine"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/organization"
-	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
 	runpkg "github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/sshkey"
@@ -54,7 +53,6 @@ type Handlers struct {
 
 type WorkspaceService interface {
 	GetWorkspace(context.Context, resource.TfeID) (*workspace.Workspace, error)
-	WatchWorkspaces(ctx context.Context) (<-chan pubsub.Event[*workspace.Event], func())
 	ListWorkspaces(ctx context.Context, opts workspace.ListOptions) (*resource.Page[*workspace.Workspace], error)
 	ListTags(ctx context.Context, organization organization.Name, opts workspace.ListTagsOptions) (*resource.Page[*workspace.Tag], error)
 	CreateWorkspace(ctx context.Context, opts workspace.CreateOptions) (*workspace.Workspace, error)

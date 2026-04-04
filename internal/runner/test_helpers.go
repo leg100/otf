@@ -76,12 +76,12 @@ func (f *fakeService) GetJob(ctx context.Context, jobID resource.TfeID) (*Job, e
 	return f.job, nil
 }
 
-func (f *fakeService) WatchJobs(context.Context) (<-chan pubsub.Event[*JobEvent], func()) {
-	return nil, nil
+func (f *fakeService) WatchJobs(context.Context) (<-chan pubsub.Event[*JobEvent], func(), error) {
+	return nil, nil, nil
 }
 
-func (f *fakeService) WatchRunners(context.Context) (<-chan pubsub.Event[*RunnerEvent], func()) {
-	return nil, nil
+func (f *fakeService) WatchRunners(context.Context) (<-chan pubsub.Event[*RunnerEvent], func(), error) {
+	return nil, nil, nil
 }
 
 func (f *fakeService) getRunner(ctx context.Context, runnerID resource.TfeID) (*RunnerMeta, error) {

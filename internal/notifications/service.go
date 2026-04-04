@@ -42,7 +42,7 @@ func NewService(opts Options) *Service {
 	return &svc
 }
 
-func (s *Service) WatchNotificationConfigs(ctx context.Context) (<-chan pubsub.Event[*Config], func()) {
+func (s *Service) WatchNotificationConfigs(ctx context.Context) (<-chan pubsub.Event[*Config], func(), error) {
 	return s.broker.Subscribe(ctx)
 }
 

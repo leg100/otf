@@ -42,12 +42,12 @@ type (
 	}
 
 	notifierRunClient interface {
-		WatchRuns(context.Context) (<-chan pubsub.Event[*run.Event], func())
+		WatchRuns(context.Context) (<-chan pubsub.Event[*run.Event], func(), error)
 		GetRun(context.Context, resource.TfeID) (*run.Run, error)
 	}
 
 	notifierNotificationClient interface {
-		WatchNotificationConfigs(context.Context) (<-chan pubsub.Event[*Config], func())
+		WatchNotificationConfigs(context.Context) (<-chan pubsub.Event[*Config], func(), error)
 	}
 
 	notifierHostnameClient interface {
@@ -69,9 +69,15 @@ func NewNotifier(opts NotifierOptions) *Notifier {
 // Start the notifier daemon. Should be started in a go-routine.
 func (s *Notifier) Start(ctx context.Context) error {
 	// subscribe to notification config events
-	subRuns, unsubRuns := s.runs.WatchRuns(ctx)
+	subRuns, unsubRuns, err := s.runs.WatchRuns(ctx)
+	if err != nil {
+		return fmt.Errorf("watching runs: %w", err)
+	}
 	defer unsubRuns()
-	subConfigs, unsubConfigs := s.notifications.WatchNotificationConfigs(ctx)
+	subConfigs, unsubConfigs, err := s.notifications.WatchNotificationConfigs(ctx)
+	if err != nil {
+		return fmt.Errorf("watching notification configs: %w", err)
+	}
 	defer unsubConfigs()
 
 	// populate cache with existing notification configs

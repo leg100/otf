@@ -141,19 +141,19 @@ func (s *Service) NewAllocator(logger logr.Logger) *allocator {
 
 func (s *Service) NewManager() *manager { return newManager(s) }
 
-func (s *Service) WatchAgentPools(ctx context.Context) (<-chan pubsub.Event[*Pool], func()) {
+func (s *Service) WatchAgentPools(ctx context.Context) (<-chan pubsub.Event[*Pool], func(), error) {
 	return s.poolBroker.Subscribe(ctx)
 }
 
-func (s *Service) WatchRunners(ctx context.Context) (<-chan pubsub.Event[*RunnerEvent], func()) {
+func (s *Service) WatchRunners(ctx context.Context) (<-chan pubsub.Event[*RunnerEvent], func(), error) {
 	return s.runnerBroker.Subscribe(ctx)
 }
 
-func (s *Service) Watch(ctx context.Context) (<-chan pubsub.Event[*RunnerEvent], func()) {
+func (s *Service) Watch(ctx context.Context) (<-chan pubsub.Event[*RunnerEvent], func(), error) {
 	return s.WatchRunners(ctx)
 }
 
-func (s *Service) WatchJobs(ctx context.Context) (<-chan pubsub.Event[*JobEvent], func()) {
+func (s *Service) WatchJobs(ctx context.Context) (<-chan pubsub.Event[*JobEvent], func(), error) {
 	return s.jobBroker.Subscribe(ctx)
 }
 
@@ -327,7 +327,10 @@ func (s *Service) awaitAllocatedJobs(ctx context.Context, runnerID resource.TfeI
 		return nil, internal.ErrAccessNotPermitted
 	}
 
-	sub, unsub := s.WatchJobs(ctx)
+	sub, unsub, err := s.WatchJobs(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("watching jobs: %w", err)
+	}
 	defer unsub()
 
 	jobs, err := s.db.listAllocatedJobs(ctx, runnerID)

@@ -6,6 +6,7 @@ import (
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestBroker demonstrates publishing and subscribing of events via postgres,
@@ -19,9 +20,11 @@ func TestBroker(t *testing.T) {
 	remote, _, _ := setup(t, db)
 
 	// setup subscriptions
-	localSub, localUnsub := local.Workspaces.WatchWorkspaces(ctx)
+	localSub, localUnsub, err := local.Workspaces.WatchWorkspaces(ctx)
+	require.NoError(t, err)
 	defer localUnsub()
-	remoteSub, remoteUnsub := remote.Workspaces.WatchWorkspaces(ctx)
+	remoteSub, remoteUnsub, err := remote.Workspaces.WatchWorkspaces(ctx)
+	require.NoError(t, err)
 	defer remoteUnsub()
 
 	// create a workspace which should trigger an event
