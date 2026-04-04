@@ -13,11 +13,15 @@ import (
 	"github.com/leg100/otf/internal/sql"
 )
 
-type (
-	db struct {
-		*sql.DB
-	}
+const (
+	RunnersTable    sql.Table = "runners"
+	JobsTable       sql.Table = "jobs"
+	AgentPoolsTable sql.Table = "agent_pools"
 )
+
+type db struct {
+	*sql.DB
+}
 
 func (db *db) create(ctx context.Context, meta *RunnerMeta) error {
 	args := pgx.NamedArgs{

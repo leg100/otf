@@ -13,7 +13,6 @@ import (
 	"github.com/leg100/otf/internal/engine"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/organization"
-	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sshkey"
 	"github.com/leg100/otf/internal/tfeapi"
@@ -38,7 +37,6 @@ type (
 
 	tfeClient interface {
 		GetWorkspace(context.Context, resource.TfeID) (*Workspace, error)
-		WatchWorkspaces(ctx context.Context) (<-chan pubsub.Event[*Event], func())
 		ListWorkspaces(ctx context.Context, opts ListOptions) (*resource.Page[*Workspace], error)
 		CreateWorkspace(ctx context.Context, opts CreateOptions) (*Workspace, error)
 		GetWorkspaceByName(ctx context.Context, organization organization.Name, name string) (*Workspace, error)

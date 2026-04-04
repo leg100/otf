@@ -17,7 +17,8 @@ func TestIntegration_NotificationConfigurationService(t *testing.T) {
 	t.Run("create", func(t *testing.T) {
 		daemon, org, ctx := setup(t)
 		ws := daemon.createWorkspace(t, ctx, org)
-		sub, unsub := daemon.Notifications.WatchNotificationConfigs(ctx)
+		sub, unsub, err := daemon.Notifications.WatchNotificationConfigs(ctx)
+		require.NoError(t, err)
 		defer unsub()
 		nc, err := daemon.Notifications.CreateNotificationConfig(ctx, ws.ID, notifications.CreateConfigOptions{
 			DestinationType: notifications.DestinationGeneric,
@@ -89,14 +90,15 @@ func TestIntegration_NotificationConfigurationService(t *testing.T) {
 	t.Run("delete", func(t *testing.T) {
 		daemon, org, ctx := setup(t)
 		ws := daemon.createWorkspace(t, ctx, org)
-		sub, unsub := daemon.Notifications.WatchNotificationConfigs(ctx)
+		sub, unsub, err := daemon.Notifications.WatchNotificationConfigs(ctx)
+		require.NoError(t, err)
 		defer unsub()
 		nc := daemon.createNotificationConfig(t, ctx, ws)
 
 		// dismiss created event
 		<-sub
 
-		err := daemon.Notifications.DeleteNotificationConfig(ctx, nc.ID)
+		err = daemon.Notifications.DeleteNotificationConfig(ctx, nc.ID)
 		require.NoError(t, err)
 
 		// should receive deleted event
@@ -113,7 +115,8 @@ func TestIntegration_NotificationConfigurationService(t *testing.T) {
 	// configurations should be deleted too and events should be sent out.
 	t.Run("cascade delete", func(t *testing.T) {
 		daemon, org, ctx := setup(t)
-		sub, unsub := daemon.Notifications.WatchNotificationConfigs(ctx)
+		sub, unsub, err := daemon.Notifications.WatchNotificationConfigs(ctx)
+		require.NoError(t, err)
 		defer unsub()
 
 		ws := daemon.createWorkspace(t, ctx, org)
@@ -126,7 +129,7 @@ func TestIntegration_NotificationConfigurationService(t *testing.T) {
 		// dismiss created event
 		<-sub
 
-		_, err := daemon.Workspaces.DeleteWorkspace(ctx, ws.ID)
+		_, err = daemon.Workspaces.DeleteWorkspace(ctx, ws.ID)
 		require.NoError(t, err)
 
 		// should receive deleted events

@@ -20,7 +20,7 @@ type (
 		*authz.Authorizer
 
 		db     *pgdb
-		broker *pubsub.Broker[*Config]
+		broker pubsub.SubscriptionService[*Config]
 	}
 
 	Options struct {
@@ -28,6 +28,7 @@ type (
 		Listener   *sql.Listener
 		Logger     logr.Logger
 		Authorizer *authz.Authorizer
+		Broker     pubsub.SubscriptionService[*Config]
 	}
 )
 
@@ -36,17 +37,12 @@ func NewService(opts Options) *Service {
 		Logger:     opts.Logger,
 		Authorizer: opts.Authorizer,
 		db:         &pgdb{opts.DB},
+		broker:     opts.Broker,
 	}
-	// Register with broker so that it can relay run events
-	svc.broker = pubsub.NewBroker[*Config](
-		opts.Logger,
-		opts.Listener,
-		"notification_configurations",
-	)
 	return &svc
 }
 
-func (s *Service) WatchNotificationConfigs(ctx context.Context) (<-chan pubsub.Event[*Config], func()) {
+func (s *Service) WatchNotificationConfigs(ctx context.Context) (<-chan pubsub.Event[*Config], func(), error) {
 	return s.broker.Subscribe(ctx)
 }
 

@@ -26,7 +26,8 @@ func TestWorkspace(t *testing.T) {
 		daemon, org, ctx := setup(t)
 
 		// watch workspace events
-		sub, unsub := daemon.Workspaces.WatchWorkspaces(ctx)
+		sub, unsub, err := daemon.Workspaces.WatchWorkspaces(ctx)
+		require.NoError(t, err)
 		defer unsub()
 
 		ws, err := daemon.Workspaces.CreateWorkspace(ctx, workspace.CreateOptions{
@@ -132,7 +133,8 @@ func TestWorkspace(t *testing.T) {
 		daemon, org, ctx := setup(t)
 
 		// watch workspace events
-		sub, unsub := daemon.Workspaces.WatchWorkspaces(ctx)
+		sub, unsub, err := daemon.Workspaces.WatchWorkspaces(ctx)
+		require.NoError(t, err)
 		defer unsub()
 
 		ws := daemon.createWorkspace(t, ctx, org)
@@ -498,14 +500,15 @@ func TestWorkspace(t *testing.T) {
 		daemon, org, ctx := setup(t)
 
 		// watch workspace events
-		sub, unsub := daemon.Workspaces.WatchWorkspaces(ctx)
+		sub, unsub, err := daemon.Workspaces.WatchWorkspaces(ctx)
+		require.NoError(t, err)
 		defer unsub()
 
 		ws := daemon.createWorkspace(t, ctx, org)
 		event := <-sub
 		assert.Equal(t, pubsub.CreatedEvent, event.Type)
 
-		_, err := daemon.Workspaces.DeleteWorkspace(ctx, ws.ID)
+		_, err = daemon.Workspaces.DeleteWorkspace(ctx, ws.ID)
 		require.NoError(t, err)
 		event = <-sub
 		assert.Equal(t, pubsub.DeletedEvent, event.Type)

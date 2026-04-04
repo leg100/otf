@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal/logr"
+	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -17,7 +18,7 @@ func TestJobSignaler(t *testing.T) {
 	ch := make(chan string)
 	go func() {
 		err := signaler.relay(ch)
-		require.NoError(t, err)
+		require.Equal(t, pubsub.ErrSubscriptionTerminated, err)
 	}()
 	t.Cleanup(func() {
 		close(ch)

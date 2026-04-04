@@ -31,6 +31,7 @@ import (
 	"github.com/leg100/otf/internal/notifications"
 	"github.com/leg100/otf/internal/organization"
 	orgui "github.com/leg100/otf/internal/organization/ui"
+	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/repohooks"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
@@ -109,9 +110,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		return nil, fmt.Errorf("creating database pool: %w", err)
 	}
 
-	// sqlListener listens to database events.
-	sqlListener := sql.NewListener(logger, db)
-
 	// netListener opens a TCP port for listening on.
 	netListener, err := net.Listen("tcp", cfg.Address)
 	if err != nil {
@@ -138,6 +136,49 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	if err != nil {
 		return nil, fmt.Errorf("setting up authentication middleware: %w", err)
 	}
+
+	// Setup event message brokers
+	runBroker := pubsub.NewBroker[*run.Event](
+		logger,
+		run.Table,
+	)
+	chunkBroker := pubsub.NewBroker[run.Chunk](
+		logger,
+		run.ChunksTable,
+	)
+	notificationBroker := pubsub.NewBroker[*notifications.Config](
+		logger,
+		notifications.Table,
+	)
+	agentPoolBroker := pubsub.NewBroker[*runner.Pool](
+		logger,
+		runner.AgentPoolsTable,
+	)
+	runnerBroker := pubsub.NewBroker[*runner.RunnerEvent](
+		logger,
+		runner.RunnersTable,
+	)
+	jobBroker := pubsub.NewBroker[*runner.JobEvent](
+		logger,
+		runner.JobsTable,
+	)
+	workspaceBroker := pubsub.NewBroker[*workspace.Event](
+		logger,
+		workspace.Table,
+	)
+
+	// sqlListener listens to database events and relays them to brokers.
+	sqlListener := sql.NewListener(
+		logger,
+		db,
+		runBroker,
+		chunkBroker,
+		notificationBroker,
+		agentPoolBroker,
+		runnerBroker,
+		jobBroker,
+		workspaceBroker,
+	)
 
 	authorizer := authz.NewAuthorizer(logger)
 
@@ -262,6 +303,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		ConnectionService: connectionService,
 		DefaultEngine:     cfg.DefaultEngine,
 		EngineService:     engineService,
+		Broker:            workspaceBroker,
 	})
 
 	runService := run.NewService(run.Options{
@@ -286,6 +328,8 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		},
 		VCSEventSubscriber: vcsEventBroker,
 		DaemonCtx:          ctx,
+		Broker:             runBroker,
+		ChunkBroker:        chunkBroker,
 	})
 	moduleService := module.NewService(module.Options{
 		Logger:             logger,
@@ -327,6 +371,9 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Listener:                  sqlListener,
 		DynamicCredentialsService: dynamiccredsService,
 		HostnameService:           hostnameService,
+		RunnerBroker:              runnerBroker,
+		JobBroker:                 jobBroker,
+		PoolBroker:                agentPoolBroker,
 	})
 	authenticatorService, err := authenticator.NewAuthenticatorService(ctx, authenticator.Options{
 		Logger:               logger,
@@ -421,6 +468,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Authorizer: authorizer,
 		DB:         db,
 		Listener:   sqlListener,
+		Broker:     notificationBroker,
 	})
 
 	// Handlers for the TFE API
@@ -795,7 +843,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		{
 			Name:   "job-signaler",
 			Logger: logger,
-			DB:     db,
 			System: runnerService.Signaler,
 		},
 	}

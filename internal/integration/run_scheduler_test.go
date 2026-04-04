@@ -19,7 +19,8 @@ func TestRunScheduler(t *testing.T) {
 	user := userFromContext(t, ctx)
 
 	// watch workspace events
-	workspaceEvents, unsub := daemon.Workspaces.WatchWorkspaces(ctx)
+	workspaceEvents, unsub, err := daemon.Workspaces.WatchWorkspaces(ctx)
+	require.NoError(t, err)
 	defer unsub()
 
 	ws := daemon.createWorkspace(t, ctx, nil)
@@ -36,7 +37,7 @@ func TestRunScheduler(t *testing.T) {
 	assert.Equal(t, runstatus.Pending, daemon.getRun(t, ctx, run2.ID).Status)
 
 	// Apply Run#1
-	err := daemon.Runs.ApplyRun(ctx, run1.ID)
+	err = daemon.Runs.ApplyRun(ctx, run1.ID)
 	require.NoError(t, err)
 
 	// Wait for Run#1 to be applied

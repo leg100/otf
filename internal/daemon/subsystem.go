@@ -3,11 +3,12 @@ package daemon
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
-	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/authz"
+	"github.com/leg100/otf/internal/logr"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -64,7 +65,10 @@ func (s *Subsystem) Start(ctx context.Context, g *errgroup.Group) error {
 			s.V(1).Info("gracefully shutdown subsystem", "name", s.Name)
 			return nil
 		}
-		return err
+		if err != nil {
+			return fmt.Errorf("subsystem prematurely exited: %w", err)
+		}
+		return fmt.Errorf("subsystem prematurely exited without an error")
 	}
 	// Backoff and retry whenever operation returns an error. If context is
 	// cancelled then it'll stop retrying and return the context error.
