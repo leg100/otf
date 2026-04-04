@@ -2,7 +2,6 @@ package sql
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -85,7 +84,6 @@ func (l *Listener) Start(ctx context.Context) error {
 	select {
 	case l.islistening <- struct{}{}:
 	default:
-		l.logger.Info("now listening")
 	}
 
 	// Now that we're listening inform the brokers.
@@ -108,11 +106,6 @@ func (l *Listener) Start(ctx context.Context) error {
 			if err != nil {
 				return fmt.Errorf("retrieving events: %w", err)
 			}
-			// What is this doing??
-			if err := json.Unmarshal([]byte(event.Record), &event); err != nil {
-				l.logger.Error(err, "unmarshaling postgres event")
-				continue
-			}
 			broker, ok := l.brokers[event.Table]
 			if !ok {
 				l.logger.Error(nil, "no event broker found for table", "table", event.Table)
@@ -122,11 +115,9 @@ func (l *Listener) Start(ctx context.Context) error {
 		}
 		// Connection to notification channel closed; inform the brokers so that
 		// they can inform their subscribers).
-		l.logger.Info("disabling brokers")
 		for _, broker := range l.brokers {
 			broker.Disable()
 		}
-		l.logger.Info("exiting listener")
 		return fmt.Errorf("connection to database notification channel terminated")
 	})
 	return g.Wait()

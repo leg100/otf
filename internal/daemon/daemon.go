@@ -167,7 +167,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		workspace.Table,
 	)
 
-	// sqlListener listens to database events.
+	// sqlListener listens to database events and relays them to brokers.
 	sqlListener := sql.NewListener(
 		logger,
 		db,
