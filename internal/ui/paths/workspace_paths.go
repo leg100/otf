@@ -115,3 +115,7 @@ func EditVcsWorkspace(workspace any) string {
 func UpdateVcsWorkspace(workspace any) string {
 	return fmt.Sprintf("/app/workspaces/%v/update-vcs", workspace)
 }
+
+func EditAdvancedWorkspace(workspace any) string {
+	return fmt.Sprintf("/app/workspaces/%v/edit-advanced", workspace)
+}

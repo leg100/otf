@@ -222,7 +222,7 @@ func WorkspaceMenu(workspace resource.Info, organization resource.ID, authorizer
 			return templ_7745c5c3_Err
 		}
 		if authorizer.CanAccess(ctx, authz.UpdateWorkspaceAction, workspace.ID) {
-			templ_7745c5c3_Err = MenuItem("Settings", paths.EditEngineWorkspace(workspace.ID), paths.Workspace(workspace.ID)+"/setup-connection", paths.EditPermissionsWorkspace(workspace.ID), paths.EditSSHKeyWorkspace(workspace.ID), paths.EditEngineWorkspace(workspace.ID)).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = MenuItem("Settings", paths.EditWorkspace(workspace.ID), paths.Workspace(workspace.ID)+"/setup-connection", paths.EditPermissionsWorkspace(workspace.ID), paths.EditSSHKeyWorkspace(workspace.ID), paths.EditEngineWorkspace(workspace.ID), paths.EditVcsWorkspace(workspace.ID), paths.EditAdvancedWorkspace(workspace.ID)).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -293,7 +293,7 @@ func WorkspaceSettingsMenu(workspaceID resource.ID) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = MenuItem("Engines", paths.EditEngineWorkspace(workspaceID)).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = MenuItem("General", paths.EditWorkspace(workspaceID)).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -301,7 +301,19 @@ func WorkspaceSettingsMenu(workspaceID resource.ID) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
+		templ_7745c5c3_Err = MenuItem("VCS", paths.EditVcsWorkspace(workspaceID)).Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = MenuItem("Engines", paths.EditEngineWorkspace(workspaceID)).Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
 		templ_7745c5c3_Err = MenuItem("SSH Key", paths.EditSSHKeyWorkspace(workspaceID)).Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = MenuItem("Advanced", paths.EditAdvancedWorkspace(workspaceID)).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -341,7 +353,7 @@ func MenuItem(title string, path string, matchPrefixes ...string) templ.Componen
 		var templ_7745c5c3_Var7 string
 		templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs("menu-item-" + strings.ReplaceAll(strings.ToLower(title), " ", "-"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/helpers/menu.templ`, Line: 81, Col: 77}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/helpers/menu.templ`, Line: 84, Col: 77}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 		if templ_7745c5c3_Err != nil {
@@ -363,7 +375,7 @@ func MenuItem(title string, path string, matchPrefixes ...string) templ.Componen
 		var templ_7745c5c3_Var9 templ.SafeURL
 		templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinURLErrs(path)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/helpers/menu.templ`, Line: 83, Col: 14}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/helpers/menu.templ`, Line: 86, Col: 14}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 		if templ_7745c5c3_Err != nil {
@@ -389,7 +401,7 @@ func MenuItem(title string, path string, matchPrefixes ...string) templ.Componen
 		var templ_7745c5c3_Var11 string
 		templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(title)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/helpers/menu.templ`, Line: 86, Col: 10}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/helpers/menu.templ`, Line: 89, Col: 10}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 		if templ_7745c5c3_Err != nil {

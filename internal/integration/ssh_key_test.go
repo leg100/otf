@@ -120,6 +120,12 @@ func TestSSHKeyPrivateModule(t *testing.T) {
 				_, err := page.Goto(daemon.URL(paths.Workspace(ws.ID)))
 				require.NoError(t, err)
 
+				// navigate to workspace settings
+				err = page.Locator(`//li[@id='menu-item-settings']/a`).Click()
+				require.NoError(t, err)
+				screenshot(t, page, "workspace_settings")
+
+				// navigate to ssh settings
 				err = page.Locator(`//li[@id='menu-item-ssh-key']/a`).Click()
 				require.NoError(t, err)
 

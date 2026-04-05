@@ -197,9 +197,9 @@ func workspaceGet(props workspaceGetProps) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var9 templ.SafeURL
-			templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinURLErrs(RepoURL(props.vcsProvider, props.ws.Connection.Repo))
+			templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinURLErrs(vcs.RepoURL(props.vcsProvider, props.ws.Connection.Repo))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/ui/get.templ`, Line: 97, Col: 66}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/ui/get.templ`, Line: 97, Col: 70}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 			if templ_7745c5c3_Err != nil {

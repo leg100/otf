@@ -1,0 +1,50 @@
+package ui
+
+import (
+	"github.com/leg100/otf/internal/sshkey"
+	"github.com/leg100/otf/internal/ui/paths"
+	"github.com/leg100/otf/internal/workspace"
+)
+
+type workspaceEditSSHKeyProps struct {
+	ws   *workspace.Workspace
+	keys []*sshkey.SSHKey
+}
+
+templ workspaceEditSSHKey(props workspaceEditSSHKeyProps) {
+	<div class="mt-3">
+		<p>
+			Optionally choose a private SSH key for downloading Terraform modules from Git-based module sources.
+		</p>
+		<p>
+			<a class="link" href={ paths.SSHKeys(props.ws.Organization) }>
+				Manage SSH keys for the organization.
+			</a>
+		</p>
+		<br/>
+		<form action={ paths.UpdateSSHKeyWorkspace(props.ws.ID) } method="POST">
+			<select class="select select-sm" name="ssh_key_id" id="ssh-key-id-selector">
+				if len(props.keys) == 0 {
+					<option disabled selected>No SSH keys</option>
+				} else {
+					if props.ws.SSHKeyID == nil {
+						<option disabled selected>Select an SSH key</option>
+					} else {
+						<option value="">Unassign SSH key</option>
+					}
+					for _, key := range props.keys {
+						<option
+							value={ key.ID.String() }
+							selected?={ props.ws.SSHKeyID != nil && *props.ws.SSHKeyID == key.ID }
+						>
+							{ key.Name }
+						</option>
+					}
+				}
+			</select>
+			<button class="btn" id="update-ssh-key" disabled?={ len(props.keys) == 0 }>
+				Update SSH Key
+			</button>
+		</form>
+	</div>
+}

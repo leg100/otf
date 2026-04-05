@@ -72,6 +72,7 @@
         - name: update-engine
         - name: edit-vcs
         - name: update-vcs
+        - name: edit-advanced
     - name: organization_run
       path: /run
       actions:

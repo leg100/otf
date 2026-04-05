@@ -1,0 +1,208 @@
+package ui
+
+import (
+	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/team"
+	"github.com/leg100/otf/internal/ui"
+	"github.com/leg100/otf/internal/ui/helpers"
+	"github.com/leg100/otf/internal/ui/paths"
+	"github.com/leg100/otf/internal/vcs"
+	vcsui "github.com/leg100/otf/internal/vcs/ui"
+	"github.com/leg100/otf/internal/workspace"
+)
+
+const (
+	//
+	// VCS trigger strategies to present to the user.
+	//
+	// every vcs event trigger runs
+	vcsTriggerAlways string = "always"
+	// only vcs events with changed files matching a set of glob patterns
+	// triggers run
+	vcsTriggerPatterns string = "patterns"
+	// only push tag vcs events trigger runs
+	vcsTriggerTags string = "tags"
+
+	// give user choice of pre-defined regexes for matching vcs tags
+	vcsTagRegexDefault = `^\d+\.\d+\.\d+$`
+	vcsTagRegexPrefix  = `\d+\.\d+\.\d+$`
+	vcsTagRegexSuffix  = `^\d+\.\d+\.\d+`
+	// this is a 'magic string' that indicates a custom regex has been
+	// supplied in another variable
+	vcsTagRegexCustom = `custom`
+)
+
+type editVCSProps struct {
+	ws                 *workspace.Workspace
+	assigned           []workspacePerm
+	unassigned         []*team.Team
+	vcsProvider        *vcs.Provider
+	canUpdateWorkspace bool
+	canDeleteWorkspace bool
+}
+
+templ editVCS(props editVCSProps) {
+	<div class="mt-3">
+		if props.ws.Connection != nil {
+			<form action={ paths.DisconnectWorkspace(props.ws.ID) } method="POST">
+				<button class="btn" id="disconnect-workspace-repo-button">
+					Disconnect from { props.ws.Connection.Repo.String() } ({ props.vcsProvider.String() })
+				</button>
+			</form>
+		} else {
+			<form action={ paths.SetupConnectionProviderWorkspace(props.ws.ID) } method="GET">
+				<button class="btn" id="list-workspace-vcs-providers-button">
+					Connect to VCS
+				</button>
+			</form>
+		}
+	</div>
+	<hr class="my-4"/>
+	if props.ws.Connection != nil {
+		@editConnection(props)
+	}
+}
+
+templ editConnection(props editVCSProps) {
+	<form class="flex flex-col gap-5" action={ paths.UpdateVcsWorkspace(props.ws.ID) } method="POST">
+		<fieldset class="border border-base-content/60 px-3 py-3 flex flex-col gap-2">
+			<legend>VCS triggers</legend>
+			<div class="form-checkbox">
+				<input type="radio" id="vcs-triggers-always" name="vcs_trigger" value={ vcsTriggerAlways } checked?={ len(props.ws.TriggerPatterns) == 0 && len(props.ws.Connection.TagsRegex) == 0 }/>
+				<label for="vcs-triggers-always">Always trigger runs</label>
+				<span class="description">Automatically apply changes when a Terraform plan is successful. Plans that have no changes will not be applied. If this workspace is linked to version control, a push to the default branch of the linked repository will trigger a plan and apply.</span>
+			</div>
+			<div class="form-checkbox">
+				<input class="peer" type="radio" id="vcs-triggers-patterns" name="vcs_trigger" value={ vcsTriggerPatterns } checked?={ len(props.ws.TriggerPatterns) > 0 }/>
+				<label for="vcs-triggers-patterns">Only trigger runs when files in specified paths change</label>
+				<span class="description">Supports glob patterns.</span>
+				<script src={ helpers.AssetPath(ctx, "/js/workspace_trigger_patterns.js") }></script>
+				<div class="hidden bg-base-200 p-2 col-start-2 mt-2 w-full peer-checked:block" x-data={ "workspace_trigger_patterns(" + toJSON(props.ws.TriggerPatterns) + ")" }>
+					<input type="hidden" id="paths" name="trigger_patterns" :value="JSON.stringify(paths)"/>
+					<div class="flex flex-col gap-2">
+						<div class="flex gap-2 items-center">
+							<label for="new_path">Path</label>
+							<input @keydown.enter.prevent="addPattern" class="input grow" x-model="newPath" placeholder="e.g. /modules" type="text" id="new_path"/>
+							<button @click="addPattern" type="button" id="add-pattern" class="btn w-40">Add pattern</button>
+						</div>
+						<template x-for="path in paths">
+							<div class="flex gap-2 items-center justify-end">
+								<span class="justify-end bg-base-300 px-2" x-text="path" :id="$id('trigger-pattern')"></span>
+								<button @click="deletePattern(path)" type="button" class="btn btn-sm btn-error btn-outline w-40" :id="$id('delete-pattern')">Delete</button>
+							</div>
+						</template>
+					</div>
+				</div>
+			</div>
+			<div class="form-checkbox">
+				<input class="peer" type="radio" id="vcs-triggers-tag" name="vcs_trigger" value={ vcsTriggerTags } checked?={ props.ws.Connection.TagsRegex != "" }/>
+				<label for="vcs-triggers-tag">Trigger runs when a git tag is published</label>
+				<span class="col-start-2 description">Git tags allow you to manage releases.</span>
+				<div class="col-start-2 hidden bg-base-200 px-3 py-3 mt-2 w-full peer-checked:block">
+					<div class="flex flex-col gap-2" x-data={ "{regex: " + toJSON(props.ws.Connection.TagsRegex) + "}" }>
+						<div class="form-checkbox">
+							<input type="radio" id="tags-regex-default" name="tags_regex" value={ vcsTagRegexDefault } checked?={ props.ws.Connection.TagsRegex == vcsTagRegexDefault || props.ws.Connection.TagsRegex != "" }/>
+							<label for="tags-regex-default">Default</label>
+							<span class="description">e.g. <span class="font-bold">12.33.4456</span></span>
+						</div>
+						<div class="form-checkbox">
+							<input type="radio" id="tags-regex-prefix" name="tags_regex" value={ vcsTagRegexPrefix } checked?={ props.ws.Connection.TagsRegex == vcsTagRegexPrefix }/>
+							<label for="tags-regex-prefix">Version contains a prefix</label>
+							<span class="description">e.g. <span class="font-bold">v12.33.4456</span></span>
+						</div>
+						<div class="form-checkbox">
+							<input type="radio" id="tags-regex-suffix" name="tags_regex" value={ vcsTagRegexSuffix } checked?={ props.ws.Connection.TagsRegex == vcsTagRegexSuffix }/>
+							<label for="tags-regex-suffix">Version contains a suffix</label>
+							<span class="description">e.g. <span class="font-bold">12.33.4456-foo</span></span>
+						</div>
+						<div class="form-checkbox">
+							{{ isCustom := props.ws.Connection.TagsRegex != "" && props.ws.Connection.TagsRegex != vcsTagRegexDefault && props.ws.Connection.TagsRegex != vcsTagRegexPrefix && props.ws.Connection.TagsRegex != vcsTagRegexSuffix }}
+							<input class="peer" type="radio" id="tags-regex-custom" name="tags_regex" value={ vcsTagRegexCustom } checked?={ isCustom }/>
+							<label for="tags-regex-custom">Custom regular expression</label>
+							<input class="col-start-2 input w-96 mt-2 hidden peer-checked:block" type="text" name="custom_tags_regex" value={ props.ws.Connection.TagsRegex }/>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="field mt-2">
+				<label for="vcs-branch">VCS branch</label>
+				<input class="input w-96" type="text" name="vcs_branch" id="vcs-branch" value={ props.ws.Connection.Branch }/>
+				<span class="description">The branch from which to import new versions. This defaults to the value your version control provides as the default branch for this repository.</span>
+			</div>
+			<div class="form-checkbox">
+				<input type="checkbox" name="speculative_enabled" id="speculative-enabled" checked?={ props.ws.SpeculativeEnabled }/>
+				<label for="speculative-enabled">Automatic plans for pull requests</label>
+				<span class="description">Trigger a plan whenever a pull request is opened and commits are pushed to the pull request. Note: this only triggers a "plan-only" run without an apply.</span>
+			</div>
+		</fieldset>
+		<div class="form-checkbox">
+			<input type="checkbox" name="allow_cli_apply" id="allow-cli-apply" checked?={ props.ws.Connection.AllowCLIApply }/>
+			<label for="allow-cli-apply">Allow apply from the CLI</label>
+			<span class="description">Allow running <span class="font-bold">terraform apply</span> from the command line. By default once a workspace is connected to a VCS repository it is only possible to trigger applies from VCS changes. Note: this only works with the <a class="underline" href="https://developer.hashicorp.com/terraform/cli/cloud/settings#the-cloud-block">cloud block</a>; it does not work with the <a class="underline" href="https://developer.hashicorp.com/terraform/language/settings/backends/remote">remote backend</a>.</span>
+		</div>
+		<div class="field">
+			<button class="btn w-40">Save changes</button>
+		</div>
+	</form>
+}
+
+templ listVCSProviders(ws *workspace.Workspace, providers []*vcs.Provider) {
+	@ui.ConnectionSteps(ui.ConnectStep)
+	<div>Select a <a class="underline" href={ paths.VCSProviders(ws.Organization) }>VCS provider</a> to connect this workspace to a repository.</div>
+	@helpers.UnpaginatedTable(
+		&vcsui.Table{
+			Actions: vcsProviderSelector{workspaceID: ws.ID}.action,
+		},
+		providers,
+	)
+	if len(providers) == 0 {
+		<span>
+			No VCS providers are currently configured. Create a VCS provider <a class="underline" href={ paths.VCSProviders(ws.Organization) }>here</a>.
+		</span>
+	}
+}
+
+type vcsProviderSelector struct {
+	workspaceID resource.TfeID
+}
+
+templ (s vcsProviderSelector) action(vcsProviderID resource.TfeID) {
+	<form action={ paths.SetupConnectionRepoWorkspace(s.workspaceID) }>
+		<input type="hidden" name="vcs_provider_id" value={ vcsProviderID.String() }/>
+		<button class="btn">Select</button>
+	</form>
+}
+
+templ listVCSRepos(ws *workspace.Workspace, vcsProviderID resource.TfeID, repos []vcs.Repo) {
+	@ui.ConnectionSteps(ui.SelectRepoStep)
+	<div>
+		Select a VCS repository to connect this workspace to. Either select a repository from the list or enter the name of a repository below.
+	</div>
+	<form action={ paths.ConnectWorkspace(ws.ID) } method="POST">
+		<input type="hidden" name="vcs_provider_id" id="vcs_provider_id" value={ vcsProviderID.String() }/>
+		<input class="input" type="text" name="identifier" id="identifier" value="" placeholder="{owner}/{repository}" required/>
+		<button class="btn">Connect</button>
+	</form>
+	@helpers.UnpaginatedTable(
+		&ui.ReposTable{
+			Actions: workspaceRepoSelector{
+				workspaceID:   ws.ID,
+				vcsProviderID: vcsProviderID,
+			}.action,
+		},
+		repos,
+	)
+}
+
+type workspaceRepoSelector struct {
+	workspaceID   resource.TfeID
+	vcsProviderID resource.TfeID
+}
+
+templ (s workspaceRepoSelector) action(repo vcs.Repo) {
+	<form action={ paths.ConnectWorkspace(s.workspaceID) } method="POST">
+		<input type="hidden" name="vcs_provider_id" value={ s.vcsProviderID.String() }/>
+		<input type="hidden" name="identifier" id="identifier" value={ repo.String() }/>
+		<button class="btn">Connect</button>
+	</form>
+}

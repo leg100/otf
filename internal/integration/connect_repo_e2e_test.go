@@ -71,20 +71,12 @@ func TestConnectRepoE2E(t *testing.T) {
 		// Clean up after ourselves by disconnecting the workspace and deleting the
 		// workspace and vcs provider
 		//
-		// go to workspace
-		_, err = page.Goto(workspaceURL)
-		require.NoError(t, err)
+		disconnectWorkspaceTasks(t, page, workspaceURL)
 		// go to workspace settings
 		err = page.Locator(`//li[@id='menu-item-settings']/a`).Click()
 		require.NoError(t, err)
-		// click disconnect button
-		err = page.Locator(`//button[@id='disconnect-workspace-repo-button']`).Click()
-		require.NoError(t, err)
-		// confirm disconnected
-		err = expect.Locator(page.GetByRole("alert")).ToHaveText("disconnected workspace from repo")
-		require.NoError(t, err)
-		// go to workspace settings
-		err = page.Locator(`//li[@id='menu-item-settings']/a`).Click()
+		// go to advanced settings
+		err = page.Locator(`//li[@id='menu-item-advanced']/a`).Click()
 		require.NoError(t, err)
 		// delete workspace
 		err = page.Locator(`//button[@id='delete-workspace-button']`).Click()

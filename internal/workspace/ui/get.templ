@@ -94,7 +94,7 @@ templ workspaceGet(props workspaceGetProps) {
 						@props.vcsProvider.Kind.Icon
 						<a
 							class="text-sm"
-							href={ RepoURL(props.vcsProvider, props.ws.Connection.Repo) }
+							href={ vcs.RepoURL(props.vcsProvider, props.ws.Connection.Repo) }
 							title="Go to repo homepage"
 						>
 							{ props.ws.Connection.Repo.String() }

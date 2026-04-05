@@ -24,27 +24,6 @@ import (
 	"github.com/leg100/otf/internal/workspace"
 )
 
-const (
-	// give user choice of pre-defined regexes for matching vcs tags
-	vcsTagRegexDefault = `^\d+\.\d+\.\d+$`
-	vcsTagRegexPrefix  = `\d+\.\d+\.\d+$`
-	vcsTagRegexSuffix  = `^\d+\.\d+\.\d+`
-	// this is a 'magic string' that indicates a custom regex has been
-	// supplied in another variable
-	vcsTagRegexCustom = `custom`
-
-	//
-	// VCS trigger strategies to present to the user.
-	//
-	// every vcs event trigger runs
-	VCSTriggerAlways string = "always"
-	// only vcs events with changed files matching a set of glob patterns
-	// triggers run
-	VCSTriggerPatterns string = "patterns"
-	// only push tag vcs events trigger runs
-	VCSTriggerTags string = "tags"
-)
-
 type Handlers struct {
 	Client         WorkspaceService
 	Authorizer     authz.Interface
@@ -87,10 +66,6 @@ func (h *Handlers) AddHandlers(r *mux.Router) {
 	r.HandleFunc("/workspaces/{workspace_id}/lock", h.lockWorkspace).Methods("POST")
 	r.HandleFunc("/workspaces/{workspace_id}/unlock", h.unlockWorkspace).Methods("POST")
 	r.HandleFunc("/workspaces/{workspace_id}/force-unlock", h.forceUnlockWorkspace).Methods("POST")
-	r.HandleFunc("/workspaces/{workspace_id}/setup-connection-provider", h.listWorkspaceVCSProviders).Methods("GET")
-	r.HandleFunc("/workspaces/{workspace_id}/setup-connection-repo", h.listWorkspaceVCSRepos).Methods("GET")
-	r.HandleFunc("/workspaces/{workspace_id}/connect", h.connect).Methods("POST")
-	r.HandleFunc("/workspaces/{workspace_id}/disconnect", h.disconnect).Methods("POST")
 
 	r.HandleFunc("/workspaces/{workspace_id}/edit-permissions", h.editPermissions).Methods("GET")
 	r.HandleFunc("/workspaces/{workspace_id}/set-permission", h.setWorkspacePermission).Methods("POST")
@@ -101,12 +76,18 @@ func (h *Handlers) AddHandlers(r *mux.Router) {
 
 	r.HandleFunc("/workspaces/{workspace_id}/edit-vcs", h.editVCS).Methods("GET")
 	r.HandleFunc("/workspaces/{workspace_id}/update-vcs", h.updateVCS).Methods("POST")
+	r.HandleFunc("/workspaces/{workspace_id}/setup-connection-provider", h.listWorkspaceVCSProviders).Methods("GET")
+	r.HandleFunc("/workspaces/{workspace_id}/setup-connection-repo", h.listWorkspaceVCSRepos).Methods("GET")
+	r.HandleFunc("/workspaces/{workspace_id}/connect", h.connect).Methods("POST")
+	r.HandleFunc("/workspaces/{workspace_id}/disconnect", h.disconnect).Methods("POST")
 
 	r.HandleFunc("/workspaces/{workspace_id}/create-tag", h.createTag).Methods("POST")
 	r.HandleFunc("/workspaces/{workspace_id}/delete-tag", h.deleteTag).Methods("POST")
 
 	r.HandleFunc("/workspaces/{workspace_id}/edit-ssh-key", h.editWorkspaceSSHKey).Methods("GET")
 	r.HandleFunc("/workspaces/{workspace_id}/update-ssh-key", h.updateWorkspaceSSHKey).Methods("POST")
+
+	r.HandleFunc("/workspaces/{workspace_id}/edit-advanced", h.editAdvanced).Methods("GET")
 }
 
 func (h *Handlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
@@ -339,85 +320,14 @@ func (h *Handlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	policy, err := h.Client.GetWorkspacePolicy(r.Context(), workspaceID)
-	if err != nil {
-		helpers.Error(r, w, err.Error())
-		return
-	}
-
-	// Get teams for populating team permissions
-	teams, err := h.Client.ListTeams(r.Context(), ws.Organization)
-	if err != nil {
-		helpers.Error(r, w, err.Error())
-		return
-	}
-
-	// want current policy permissions to include not only team ID but team name
-	// too for user's benefit
-	perms := make([]workspacePerm, len(policy.Permissions))
-	for i, pp := range policy.Permissions {
-		// get team name corresponding to team ID
-		for _, t := range teams {
-			if t.ID == pp.TeamID {
-				perms[i] = workspacePerm{
-					role: pp.Role,
-					team: t,
-				}
-				break
-			}
-		}
-	}
-
-	var provider *vcs.Provider
-	if ws.Connection != nil {
-		provider, err = h.Client.GetVCSProvider(r.Context(), ws.Connection.VCSProviderID)
-		if err != nil {
-			helpers.Error(r, w, err.Error())
-			return
-		}
-	}
-
-	tags, err := resource.ListAll(func(opts resource.PageOptions) (*resource.Page[*workspace.Tag], error) {
-		return h.Client.ListTags(r.Context(), ws.Organization, workspace.ListTagsOptions{
-			PageOptions: opts,
-		})
-	})
-	if err != nil {
-		helpers.Error(r, w, err.Error())
-		return
-	}
-	tagNames := make([]string, len(tags))
-	for i, t := range tags {
-		tagNames[i] = t.Name
-	}
-
 	poolsURL := paths.PoolsWorkspace(workspaceID)
 	if ws.AgentPoolID != nil {
 		poolsURL += "?agent_pool_id=" + ws.AgentPoolID.String()
 	}
 
 	props := workspaceEditProps{
-		ws:         ws,
-		assigned:   perms,
-		unassigned: filterUnassigned(policy, teams),
-		roles: []authz.Role{
-			authz.WorkspaceReadRole,
-			authz.WorkspacePlanRole,
-			authz.WorkspaceWriteRole,
-			authz.WorkspaceAdminRole,
-		},
-		vcsProvider:        provider,
-		unassignedTags:     internal.Diff(tagNames, ws.Tags),
-		vcsTagRegexDefault: vcsTagRegexDefault,
-		vcsTagRegexPrefix:  vcsTagRegexPrefix,
-		vcsTagRegexSuffix:  vcsTagRegexSuffix,
-		vcsTagRegexCustom:  vcsTagRegexCustom,
-		vcsTriggerAlways:   VCSTriggerAlways,
-		vcsTriggerPatterns: VCSTriggerPatterns,
-		vcsTriggerTags:     VCSTriggerTags,
-		canUpdateWorkspace: h.Authorizer.CanAccess(r.Context(), authz.UpdateWorkspaceAction, ws.ID),
-		canDeleteWorkspace: h.Authorizer.CanAccess(r.Context(), authz.DeleteWorkspaceAction, ws.ID),
-		poolsURL:           poolsURL,
+		ws:       ws,
+		poolsURL: poolsURL,
 	}
 	helpers.RenderPage(
 		workspaceEdit(props),
@@ -425,8 +335,9 @@ func (h *Handlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 		w,
 		r,
 		helpers.WithWorkspace(ws, h.Authorizer),
+		helpers.WithSideMenu(helpers.WorkspaceSettingsMenu(ws.ID)),
 		helpers.WithBreadcrumbs(
-			helpers.Breadcrumb{Name: "Settings"},
+			helpers.Breadcrumb{Name: "General Settings"},
 		),
 	)
 }
@@ -444,25 +355,10 @@ func (h *Handlers) updateWorkspace(w http.ResponseWriter, r *http.Request) {
 		WorkingDirectory      string                  `schema:"working_directory"`
 		WorkspaceID           resource.TfeID          `schema:"workspace_id,required"`
 		GlobalRemoteState     bool                    `schema:"global_remote_state"`
-
-		// VCS connection
-		VCSTriggerStrategy  string `schema:"vcs_trigger"`
-		TriggerPatternsJSON string `schema:"trigger_patterns"`
-		VCSBranch           string `schema:"vcs_branch"`
-		PredefinedTagsRegex string `schema:"tags_regex"`
-		CustomTagsRegex     string `schema:"custom_tags_regex"`
-		AllowCLIApply       bool   `schema:"allow_cli_apply"`
-		SpeculativeEnabled  bool   `schema:"speculative_enabled"`
+		SpeculativeEnabled    bool                    `schema:"speculative_enabled"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
-		return
-	}
-
-	// get workspace before updating to determine if it is connected or not.
-	ws, err := h.Client.GetWorkspace(r.Context(), params.WorkspaceID)
-	if err != nil {
-		helpers.Error(r, w, err.Error())
 		return
 	}
 
@@ -481,35 +377,12 @@ func (h *Handlers) updateWorkspace(w http.ResponseWriter, r *http.Request) {
 	} else {
 		opts.EngineVersion = params.SpecificEngineVersion
 	}
-	if ws.Connection != nil {
-		// workspace is connected, so set connection fields
-		opts.ConnectOptions = &workspace.ConnectOptions{
-			AllowCLIApply: &params.AllowCLIApply,
-			Branch:        &params.VCSBranch,
-		}
-		switch params.VCSTriggerStrategy {
-		case VCSTriggerAlways:
-			opts.AlwaysTrigger = new(true)
-		case VCSTriggerPatterns:
-			err := json.Unmarshal([]byte(params.TriggerPatternsJSON), &opts.TriggerPatterns)
-			if err != nil {
-				helpers.Error(r, w, err.Error())
-				return
-			}
-		case VCSTriggerTags:
-			if params.PredefinedTagsRegex == vcsTagRegexCustom {
-				opts.ConnectOptions.TagsRegex = &params.CustomTagsRegex
-			} else {
-				opts.ConnectOptions.TagsRegex = &params.PredefinedTagsRegex
-			}
-		}
-	}
 	// only set agent pool ID if execution mode is set to agent
 	if params.ExecutionMode == workspace.AgentExecutionMode {
 		opts.AgentPoolID = params.AgentPoolID
 	}
 
-	ws, err = h.Client.UpdateWorkspace(r.Context(), params.WorkspaceID, opts)
+	ws, err := h.Client.UpdateWorkspace(r.Context(), params.WorkspaceID, opts)
 	if err != nil {
 		helpers.Error(r, w, err.Error())
 		return
@@ -987,69 +860,107 @@ func (h *Handlers) editVCS(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	props := workspaceEditProps{
-		ws:         ws,
-		assigned:   perms,
-		unassigned: filterUnassigned(policy, teams),
-		roles: []authz.Role{
-			authz.WorkspaceReadRole,
-			authz.WorkspacePlanRole,
-			authz.WorkspaceWriteRole,
-			authz.WorkspaceAdminRole,
-		},
+	props := editVCSProps{
+		ws:                 ws,
 		vcsProvider:        provider,
-		unassignedTags:     internal.Diff(tagNames, ws.Tags),
-		vcsTagRegexDefault: vcsTagRegexDefault,
-		vcsTagRegexPrefix:  vcsTagRegexPrefix,
-		vcsTagRegexSuffix:  vcsTagRegexSuffix,
-		vcsTagRegexCustom:  vcsTagRegexCustom,
-		vcsTriggerAlways:   VCSTriggerAlways,
-		vcsTriggerPatterns: VCSTriggerPatterns,
-		vcsTriggerTags:     VCSTriggerTags,
 		canUpdateWorkspace: h.Authorizer.CanAccess(r.Context(), authz.UpdateWorkspaceAction, ws.ID),
 		canDeleteWorkspace: h.Authorizer.CanAccess(r.Context(), authz.DeleteWorkspaceAction, ws.ID),
-		poolsURL:           poolsURL,
 	}
 	helpers.RenderPage(
-		workspaceEdit(props),
-		"edit | "+ws.ID.String(),
+		editVCS(props),
+		"edit vcs | "+ws.ID.String(),
 		w,
 		r,
 		helpers.WithWorkspace(ws, h.Authorizer),
+		helpers.WithSideMenu(helpers.WorkspaceSettingsMenu(ws.ID)),
 		helpers.WithBreadcrumbs(
-			helpers.Breadcrumb{Name: "Settings"},
+			helpers.Breadcrumb{Name: "VCS Settings"},
 		),
 	)
 }
 
 func (h *Handlers) updateVCS(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		WorkspaceID           resource.TfeID     `schema:"workspace_id,required"`
-		Engine                *enginepkg.Engine  `schema:"engine"`
-		LatestEngineVersion   bool               `schema:"latest_engine_version"`
-		SpecificEngineVersion *workspace.Version `schema:"specific_engine_version"`
+		WorkspaceID         resource.TfeID `schema:"workspace_id,required"`
+		VCSTriggerStrategy  string         `schema:"vcs_trigger"`
+		TriggerPatternsJSON string         `schema:"trigger_patterns"`
+		VCSBranch           string         `schema:"vcs_branch"`
+		PredefinedTagsRegex string         `schema:"tags_regex"`
+		CustomTagsRegex     string         `schema:"custom_tags_regex"`
+		AllowCLIApply       bool           `schema:"allow_cli_apply"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
-	opts := workspace.UpdateOptions{
-		Engine: params.Engine,
-	}
-	if params.LatestEngineVersion {
-		opts.EngineVersion = &workspace.Version{Latest: true}
-	} else {
-		opts.EngineVersion = params.SpecificEngineVersion
-	}
-	ws, err := h.Client.UpdateWorkspace(r.Context(), params.WorkspaceID, opts)
+	// get workspace before updating to determine if it is connected or not.
+	ws, err := h.Client.GetWorkspace(r.Context(), params.WorkspaceID)
 	if err != nil {
 		helpers.Error(r, w, err.Error())
 		return
 	}
 
-	helpers.FlashSuccess(w, "updated engine")
-	http.Redirect(w, r, paths.EditEngineWorkspace(ws.ID), http.StatusFound)
+	var opts workspace.UpdateOptions
+
+	if ws.Connection != nil {
+		// workspace is connected, so set connection fields
+		opts.ConnectOptions = &workspace.ConnectOptions{
+			AllowCLIApply: &params.AllowCLIApply,
+			Branch:        &params.VCSBranch,
+		}
+		switch params.VCSTriggerStrategy {
+		case vcsTriggerAlways:
+			opts.AlwaysTrigger = new(true)
+		case vcsTriggerPatterns:
+			err := json.Unmarshal([]byte(params.TriggerPatternsJSON), &opts.TriggerPatterns)
+			if err != nil {
+				helpers.Error(r, w, err.Error())
+				return
+			}
+		case vcsTriggerTags:
+			if params.PredefinedTagsRegex == vcsTagRegexCustom {
+				opts.ConnectOptions.TagsRegex = &params.CustomTagsRegex
+			} else {
+				opts.ConnectOptions.TagsRegex = &params.PredefinedTagsRegex
+			}
+		}
+	}
+
+	ws, err = h.Client.UpdateWorkspace(r.Context(), params.WorkspaceID, opts)
+	if err != nil {
+		helpers.Error(r, w, err.Error())
+		return
+	}
+
+	helpers.FlashSuccess(w, "updated vcs settings")
+	http.Redirect(w, r, paths.EditVcsWorkspace(ws.ID), http.StatusFound)
+}
+
+func (h *Handlers) editAdvanced(w http.ResponseWriter, r *http.Request) {
+	workspaceID, err := decode.ID("workspace_id", r)
+	if err != nil {
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
+		return
+	}
+
+	ws, err := h.Client.GetWorkspace(r.Context(), workspaceID)
+	if err != nil {
+		helpers.Error(r, w, err.Error())
+		return
+	}
+
+	helpers.RenderPage(
+		editAdvanced(workspaceID, h.Authorizer),
+		"edit advanced | "+workspaceID.String(),
+		w,
+		r,
+		helpers.WithWorkspace(ws, h.Authorizer),
+		helpers.WithSideMenu(helpers.WorkspaceSettingsMenu(ws.ID)),
+		helpers.WithBreadcrumbs(
+			helpers.Breadcrumb{Name: "Advanced"},
+		),
+	)
 }
 
 func (h *Handlers) createTag(w http.ResponseWriter, r *http.Request) {

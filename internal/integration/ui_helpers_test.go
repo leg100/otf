@@ -85,6 +85,10 @@ func addWorkspacePermission(t *testing.T, page playwright.Page, workspaceURL str
 	err = page.Locator(`//li[@id='menu-item-settings']/a`).Click()
 	require.NoError(t, err)
 
+	// go to permission settings
+	err = page.Locator(`//li[@id='menu-item-permissions']/a`).Click()
+	require.NoError(t, err)
+
 	// confirm builtin admin role for owners team
 	err = expect.Locator(page.Locator("#permissions-owners td:first-child")).ToHaveText("owners")
 	require.NoError(t, err)
@@ -230,6 +234,11 @@ func connectWorkspaceTasks(t *testing.T, page playwright.Page, workspaceURL stri
 	require.NoError(t, err)
 	screenshot(t, page, "workspace_settings")
 
+	// navigate to vcs settings
+	err = page.Locator(`//li[@id='menu-item-vcs']/a`).Click()
+	require.NoError(t, err)
+	screenshot(t, page, "workspace_settings")
+
 	// click connect button
 	err = page.Locator(`//button[@id='list-workspace-vcs-providers-button']`).Click()
 	require.NoError(t, err)
@@ -258,6 +267,10 @@ func disconnectWorkspaceTasks(t *testing.T, page playwright.Page, workspaceURL s
 
 	// navigate to workspace settings
 	err = page.Locator(`//li[@id='menu-item-settings']/a`).Click()
+	require.NoError(t, err)
+
+	// navigate to workspace vcs settings
+	err = page.Locator(`//li[@id='menu-item-vcs']/a`).Click()
 	require.NoError(t, err)
 
 	// click disconnect button

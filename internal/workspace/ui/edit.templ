@@ -1,0 +1,79 @@
+package ui
+
+import (
+	"github.com/leg100/otf/internal/ui/paths"
+	"github.com/leg100/otf/internal/workspace"
+)
+
+type workspaceEditProps struct {
+	ws       *workspace.Workspace
+	poolsURL string
+}
+
+templ workspaceEdit(props workspaceEditProps) {
+	<form class="flex flex-col gap-5" action={ paths.UpdateWorkspace(props.ws.ID) } method="POST">
+		<div class="field">
+			<label for="name">Name</label>
+			<input class="input w-80" type="text" name="name" id="name" value={ props.ws.Name } required/>
+		</div>
+		<div class="field">
+			<label for="description">Description</label>
+			<textarea class="textarea w-96" rows="3" name="description" id="description">{ props.ws.Description }</textarea>
+		</div>
+		<fieldset class="border border-base-content/60 p-3 flex flex-col gap-2">
+			<legend>Execution mode</legend>
+			<div class="form-checkbox">
+				<input type="radio" name="execution_mode" id="remote" value="remote" checked?={ props.ws.ExecutionMode == "remote" }/>
+				<label for="remote">Remote</label>
+				<span class="description">Your plans and applies occur on the OTF servers.</span>
+			</div>
+			<div class="form-checkbox">
+				<input type="radio" name="execution_mode" id="local" value="local" checked?={ props.ws.ExecutionMode == "local" }/>
+				<label for="local">Local</label>
+				<span class="description">
+					Your plans and applies occur on your local machines. OTF is only used to store and synchronize state.
+				</span>
+			</div>
+			<div class="form-checkbox">
+				<input class="peer" type="radio" name="execution_mode" id="agent" value="agent" checked?={ props.ws.ExecutionMode == "agent" }/>
+				<label for="agent">Agent</label>
+				<span class="description">Your plans and applies occur on OTF agents.</span>
+				<div class="col-start-2 hidden peer-checked:flex flex-col mt-2 bg-base-300 p-2 gap-2">
+					<div class="flex items-center gap-2">
+						<label class="text-md" for="agent-pool-id">Agent pool</label>
+						<div hx-get={ props.poolsURL } hx-trigger="load" hx-swap="innerHTML"></div>
+					</div>
+					<span class="description">Select an agent pool. If no pools are listed then you either need to create a pool or you need to configure at least one pool to grant access to your workspace. Manage agent pools <a id="agent-pools-link" class="underline" href={ paths.AgentPools(props.ws.Organization) }>here</a>.</span>
+				</div>
+			</div>
+		</fieldset>
+		<fieldset class="border border-base-content/60 px-3 py-3 flex flex-col gap-2">
+			<legend>Apply method</legend>
+			<div class="form-checkbox">
+				<input type="radio" name="auto_apply" id="auto-apply" value="true" checked?={ props.ws.AutoApply }/>
+				<label for="auto-apply">Auto apply</label>
+				<span class="description">Automatically apply changes when a Terraform plan is successful. Plans that have no changes will not be applied. If this workspace is linked to version control, a push to the default branch of the linked repository will trigger a plan and apply. Note: if you're using the <a class="underline" href="https://developer.hashicorp.com/terraform/cli/cloud/settings#the-cloud-block">cloud block</a> as opposed to the <a class="underline" href="https://developer.hashicorp.com/terraform/language/settings/backends/remote">remote backend</a> you still need to use the <span class="font-bold">-auto-approve</span> flag with <span class="font-bold">terraform apply</span>.</span>
+			</div>
+			<div class="form-checkbox">
+				<input type="radio" name="auto_apply" id="manual-apply" value="false" checked?={ !props.ws.AutoApply }/>
+				<label for="manual-apply">Manual apply</label>
+				<span class="description">Require an operator to confirm the result of the Terraform plan before applying. If this workspace is linked to version control, a push to the default branch of the linked repository will only trigger a plan and then wait for confirmation.</span>
+			</div>
+		</fieldset>
+		<div class="field">
+			<label for="working_directory">Working directory</label>
+			<input class="input w-96" type="text" name="working_directory" id="working_directory" value={ props.ws.WorkingDirectory }/>
+			<span class="description">
+				The directory that Terraform will execute within. This defaults to the root of your repository and is typically set to a subdirectory matching the environment when multiple environments exist within the same repository.
+			</span>
+		</div>
+		<div class="form-checkbox">
+			<input class="" type="checkbox" name="global_remote_state" id="global-remote-state" checked?={ props.ws.GlobalRemoteState }/>
+			<label class="font-semibold" for="global-remote-state">Remote state sharing</label>
+			<span class="description">Share this workspace's state with all workspaces in this organization. The <span class="font-bold font-mono">terraform_remote_state</span> data source relies on state sharing to access workspace outputs.</span>
+		</div>
+		<div class="field">
+			<button class="btn w-40">Save changes</button>
+		</div>
+	</form>
+}

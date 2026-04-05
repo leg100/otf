@@ -8,6 +8,11 @@ import (
 	"github.com/leg100/otf/internal/workspace"
 )
 
+type workspacePerm struct {
+	role authz.Role
+	team *team.Team
+}
+
 type editPermissionsProps struct {
 	ws         *workspace.Workspace
 	assigned   []workspacePerm
