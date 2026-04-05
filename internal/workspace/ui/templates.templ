@@ -13,6 +13,7 @@ import (
 	"github.com/leg100/otf/internal/ui/helpers"
 	"github.com/leg100/otf/internal/ui/paths"
 	"github.com/leg100/otf/internal/vcs"
+	vcsui "github.com/leg100/otf/internal/vcs/ui"
 	"github.com/leg100/otf/internal/workspace"
 )
 
@@ -310,7 +311,7 @@ templ listVCSProviders(ws *workspace.Workspace, providers []*vcs.Provider) {
 	@ui.ConnectionSteps(ui.ConnectStep)
 	<div>Select a <a class="underline" href={ paths.VCSProviders(ws.Organization) }>VCS provider</a> to connect this workspace to a repository.</div>
 	@helpers.UnpaginatedTable(
-		&vcsTable{
+		&vcsui.Table{
 			Actions: vcsProviderSelector{workspaceID: ws.ID}.action,
 		},
 		providers,

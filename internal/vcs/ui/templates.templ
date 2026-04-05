@@ -8,7 +8,6 @@ import (
 	"github.com/leg100/otf/internal/ui/helpers"
 	"github.com/leg100/otf/internal/ui/paths"
 	"github.com/leg100/otf/internal/vcs"
-	"time"
 )
 
 type listProps struct {
@@ -34,43 +33,10 @@ templ list(props listProps) {
 	</div>
 	<div id="content-list">
 		@helpers.Table(
-			&vcsTable{Actions: tableAction},
+			&Table{Actions: tableAction},
 			props.providers,
 		)
 	</div>
-}
-
-type vcsTable struct {
-	Actions func(vcsProviderID resource.TfeID) templ.Component
-}
-
-templ (t vcsTable) Header() {
-	<th>Name</th>
-	<th>ID</th>
-	<th>Created</th>
-	<th>Action</th>
-}
-
-templ (t vcsTable) Row(provider *vcs.Provider) {
-	<tr id={ "item-vcsprovider-" + provider.String() }>
-		<td>
-			<div class="flex gap-2">
-				@provider.Icon
-				<a class="link" href={ paths.EditVCSProvider(provider.ID) }>
-					{ provider.String() }
-				</a>
-			</div>
-		</td>
-		<td>
-			@helpers.Identifier(provider.ID)
-		</td>
-		<td>
-			{ internal.Ago(time.Now(), provider.CreatedAt) }
-		</td>
-		<td>
-			@t.Actions(provider.ID)
-		</td>
-	</tr>
 }
 
 templ tableAction(vcsProviderID resource.TfeID) {
