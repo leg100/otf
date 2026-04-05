@@ -188,7 +188,7 @@ templ periodReport(run *runpkg.Run) {
 
 templ resourceReport(report *runpkg.Report) {
 	<div class="font-mono text-md" id="resource-summary">
-		<span style="color: limegreen">+{ report.Additions }</span><span style="color: dodgerblue">~{ report.Changes }</span><span class="text-red-700">-{ report.Destructions }</span>
+		<span style="color: limegreen">+{ report.Additions }</span><span style="color: dodgerblue">~{ report.Changes }</span><span class="text-red-700">&mdash;{ report.Destructions }</span>
 	</div>
 }
 

@@ -33,10 +33,18 @@ templ OrganizationMenu(organization resource.ID) {
 		}
 		@MenuItem("Modules", paths.Modules(organization), "/app/modules")
 		if IsOwner(ctx, organization) || IsSiteAdmin(ctx) {
-			@MenuItem("Organization Token", paths.OrganizationToken(organization))
-			@MenuItem("Settings", paths.EditOrganization(organization))
-			@MenuItem("SSH Keys", paths.SSHKeys(organization))
+			@MenuItem("Settings", paths.EditOrganization(organization), paths.SSHKeys(organization), paths.OrganizationToken(organization), paths.EditAdvancedOrganization(organization))
 		}
+	</ul>
+}
+
+templ OrganizationSettingsMenu(organization resource.ID) {
+	<ul id="organization-settings-menu" class="menu">
+		<li class="menu-title">Settings</li>
+		@MenuItem("General", paths.EditOrganization(organization))
+		@MenuItem("SSH Keys", paths.SSHKeys(organization))
+		@MenuItem("Token", paths.OrganizationToken(organization))
+		@MenuItem("Advanced", paths.EditAdvancedOrganization(organization))
 	</ul>
 }
 

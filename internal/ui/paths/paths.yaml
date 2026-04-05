@@ -31,6 +31,8 @@
       collection: true
     - name: delete-install
 - name: organization
+  actions:
+    - name: edit-advanced
   nested:
     - name: workspace
       nested:

@@ -31,3 +31,7 @@ func UpdateOrganization(organization any) string {
 func DeleteOrganization(organization any) string {
 	return fmt.Sprintf("/app/organizations/%v/delete", organization)
 }
+
+func EditAdvancedOrganization(organization any) string {
+	return fmt.Sprintf("/app/organizations/%v/edit-advanced", organization)
+}
