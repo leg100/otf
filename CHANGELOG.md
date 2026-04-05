@@ -1,5 +1,30 @@
 # Changelog
 
+## [0.5.20](https://github.com/leg100/otf/compare/v0.5.19...v0.5.20) (2026-04-05)
+
+
+### Features
+
+* **gitlab:** implement SetStatus to update commit status in GitLab ([#929](https://github.com/leg100/otf/issues/929)) ([e86f20a](https://github.com/leg100/otf/commit/e86f20aa08e407a1828a5d481b32b1153d38c170))
+* **ui:** workspace settings submenu ([#933](https://github.com/leg100/otf/issues/933)) ([97d1fe9](https://github.com/leg100/otf/commit/97d1fe98c6279b055d51b438ac31effa8cc02a41))
+
+
+### Bug Fixes
+
+* **dev:** building docker images broken on non-linux devices ([#928](https://github.com/leg100/otf/issues/928)) ([5636d24](https://github.com/leg100/otf/commit/5636d2453ef2b9a6761dd28fd978c8085314e849))
+* ensure otfd is resilient to database outages ([#932](https://github.com/leg100/otf/issues/932)) ([0c87654](https://github.com/leg100/otf/commit/0c87654667982b0a7cc60f2616f8b1563e119e95))
+* ensure run timeout subsystem can handle db outage ([52a3fce](https://github.com/leg100/otf/commit/52a3fcec482cb1181a3edfe29a4adef0b2ceecc1))
+* **tests:** using test ctx breaks integration tests ([5cbffc3](https://github.com/leg100/otf/commit/5cbffc30c3f8ceb57bb38c72656598a239c95ad5))
+* **ui:** use brighter colors in logo ([e824e6f](https://github.com/leg100/otf/commit/e824e6f7674a8e7f1713687352a144a137f301e5))
+
+
+### Miscellaneous
+
+* bump helm charts with app version v0.5.19 ([edf49d7](https://github.com/leg100/otf/commit/edf49d7e13827639033455b46cca74ad669a47fd))
+* test timeout subsystem for errors ([fe354c1](https://github.com/leg100/otf/commit/fe354c191378a209100b2c8b0e2936f6bd64dcc7))
+* **ui:** replace multiple vcs tables with one ([36eece0](https://github.com/leg100/otf/commit/36eece0c29233128ba972214dbd6cb255b9a079c))
+* use modern go features ([7983154](https://github.com/leg100/otf/commit/79831540169796f9fd03793bede711dbb1b8afa0))
+
 ## [0.5.19](https://github.com/leg100/otf/compare/v0.5.18...v0.5.19) (2026-03-30)
 
 
