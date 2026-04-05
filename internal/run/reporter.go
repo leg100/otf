@@ -51,7 +51,7 @@ type (
 	}
 
 	reporterRunClient interface {
-		WatchRuns(context.Context) (<-chan pubsub.Event[*Event], func())
+		WatchRuns(context.Context) (<-chan pubsub.Event[*Event], func(), error)
 		GetRun(context.Context, resource.TfeID) (*Run, error)
 	}
 
@@ -82,7 +82,10 @@ func NewReporter(
 // Start starts the reporter daemon. Should be invoked in a go routine.
 func (r *Reporter) Start(ctx context.Context) error {
 	// subscribe to run events
-	sub, unsub := r.runs.WatchRuns(ctx)
+	sub, unsub, err := r.runs.WatchRuns(ctx)
+	if err != nil {
+		return fmt.Errorf("watching runs: %w", err)
+	}
 	defer unsub()
 
 	for event := range sub {
@@ -91,10 +94,7 @@ func (r *Reporter) Start(ctx context.Context) error {
 			continue
 		}
 		if err := r.handleRun(ctx, event.Payload); err != nil {
-			// any error is treated as non-fatal because reporting on runs is
-			// considered "best-effort" rather than an integral operation
-			r.Error(err, "reporting run vcs status", "run_id", event.Payload.ID)
-			return nil
+			return fmt.Errorf("handling run event: %w", err)
 		}
 	}
 	return pubsub.ErrSubscriptionTerminated

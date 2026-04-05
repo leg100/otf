@@ -8,6 +8,8 @@ import (
 	"github.com/leg100/otf/internal/sql"
 )
 
+const Table sql.Table = "notification_configurations"
+
 // pgdb is a notification configuration database on postgres
 type pgdb struct {
 	*sql.DB // provides access to generated SQL queries

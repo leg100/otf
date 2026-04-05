@@ -9,12 +9,15 @@ import (
 
 	term2html "github.com/buildkite/terminal-to-html"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/sql"
 )
 
 const (
 	STX = 0x02 // marks the beginning of logs for a phase
 	ETX = 0x03 // marks the end of logs for a phase
 )
+
+const ChunksTable sql.Table = "chunks"
 
 type (
 	// Chunk is a section of logs for a phase.

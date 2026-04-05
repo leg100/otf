@@ -53,7 +53,8 @@ func TestIntegration_Agents(t *testing.T) {
 	defer shutdown2()
 
 	// watch job events
-	jobsSub, unsub := daemon.Runners.WatchJobs(ctx)
+	jobsSub, unsub, err := daemon.Runners.WatchJobs(ctx)
+	require.NoError(t, err)
 	defer unsub()
 
 	// create a run on ws1

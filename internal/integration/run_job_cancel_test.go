@@ -17,7 +17,8 @@ func TestIntegration_RunJobCancel(t *testing.T) {
 	// Disable runner to prevent the run's plan job from running.
 	daemon, _, ctx := setup(t, disableRunner())
 	// Watch job events
-	jobs, unsub := daemon.Runners.WatchJobs(ctx)
+	jobs, unsub, err := daemon.Runners.WatchJobs(ctx)
+	require.NoError(t, err)
 	defer unsub()
 
 	// Create run, and wait til it reaches plan queued state
@@ -29,7 +30,7 @@ func TestIntegration_RunJobCancel(t *testing.T) {
 	})
 
 	// Cancel run
-	err := daemon.Runs.CancelRun(ctx, r.ID)
+	err = daemon.Runs.CancelRun(ctx, r.ID)
 	require.NoError(t, err)
 
 	// Run and job should now enter canceled state.

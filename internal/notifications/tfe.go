@@ -7,7 +7,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/decode"
-	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/workspace"
@@ -24,7 +23,6 @@ type tfeClient interface {
 	GetNotificationConfig(ctx context.Context, id resource.TfeID) (*Config, error)
 	ListNotificationConfigs(ctx context.Context, workspaceID resource.TfeID) ([]*Config, error)
 	DeleteNotificationConfig(ctx context.Context, id resource.TfeID) error
-	WatchNotificationConfigs(ctx context.Context) (<-chan pubsub.Event[*Config], func())
 }
 
 func (a *TFEAPI) AddHandlers(r *mux.Router) {

@@ -23,11 +23,13 @@ func TestAgentPoolsUI(t *testing.T) {
 	ws1 := daemon.createWorkspace(t, ctx, org)
 
 	// subscribe to agent pool events
-	poolsSub, unsub := daemon.Runners.WatchAgentPools(ctx)
+	poolsSub, unsub, err := daemon.Runners.WatchAgentPools(ctx)
+	require.NoError(t, err)
 	defer unsub()
 
 	// subscribe to agent events
-	runnersSub, runnersUnsub := daemon.Runners.WatchRunners(ctx)
+	runnersSub, runnersUnsub, err := daemon.Runners.WatchRunners(ctx)
+	require.NoError(t, err)
 	defer runnersUnsub()
 
 	// create agent pool via UI

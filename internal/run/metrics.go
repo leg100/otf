@@ -2,6 +2,7 @@ package run
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
@@ -31,13 +32,16 @@ type status struct {
 }
 
 type metricsService interface {
-	WatchRuns(ctx context.Context) (<-chan pubsub.Event[*Event], func())
+	WatchRuns(ctx context.Context) (<-chan pubsub.Event[*Event], func(), error)
 	listStatuses(ctx context.Context) ([]status, error)
 }
 
 func (mc *MetricsCollector) Start(ctx context.Context) error {
 	// subscribe to run events
-	sub, unsub := mc.service.WatchRuns(ctx)
+	sub, unsub, err := mc.service.WatchRuns(ctx)
+	if err != nil {
+		return fmt.Errorf("watching runs: %w", err)
+	}
 	defer unsub()
 
 	statuses, err := mc.service.listStatuses(ctx)
