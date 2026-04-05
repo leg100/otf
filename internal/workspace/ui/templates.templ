@@ -14,6 +14,7 @@ import (
 	"github.com/leg100/otf/internal/ui/helpers"
 	"github.com/leg100/otf/internal/ui/paths"
 	"github.com/leg100/otf/internal/vcs"
+	vcsui "github.com/leg100/otf/internal/vcs/ui"
 	"github.com/leg100/otf/internal/workspace"
 )
 
@@ -128,6 +129,10 @@ templ workspaceListActions(organization organization.Name, canCreate bool) {
 	}
 }
 
+// latestRunUpdate is the SSE event name used by workspace_view.templ to receive
+// updates for the latest run table. It must match the value used in run/ui.
+const latestRunUpdate = "LatestRunUpdate"
+
 type workspaceGetProps struct {
 	ws                 *workspace.Workspace
 	workspaceLockInfo  workspaceLockInfo
@@ -213,7 +218,7 @@ templ workspaceGet(props workspaceGetProps) {
 						@props.vcsProvider.Kind.Icon
 						<a
 							class="text-sm"
-							href={ RepoURL(props.vcsProvider, props.ws.Connection.Repo) }
+							href={ vcs.RepoURL(props.vcsProvider, props.ws.Connection.Repo) }
 							title="Go to repo homepage"
 						>
 							{ props.ws.Connection.Repo.String() }
@@ -693,7 +698,7 @@ templ listVCSProviders(ws *workspace.Workspace, providers []*vcs.Provider) {
 	@ui.ConnectionSteps(ui.ConnectStep)
 	<div>Select a <a class="underline" href={ paths.VCSProviders(ws.Organization) }>VCS provider</a> to connect this workspace to a repository.</div>
 	@helpers.UnpaginatedTable(
-		&vcsTable{
+		&vcsui.Table{
 			Actions: vcsProviderSelector{workspaceID: ws.ID}.action,
 		},
 		providers,
