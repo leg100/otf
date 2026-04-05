@@ -220,7 +220,43 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 		})
 	})
 
-	t.Run("workspace settings", func(t *testing.T) {
+	t.Run("general settings", func(t *testing.T) {
+		daemon, org, ctx := setup(t)
+		// create workspace on which edit settings
+		ws1 := daemon.createWorkspace(t, ctx, org)
+
+		browser.New(t, ctx, func(page playwright.Page) {
+			_, err := page.Goto(daemon.URL(paths.Workspace(ws1.ID)))
+			require.NoError(t, err)
+
+			// go to workspace settings
+			err = page.Locator(`//li[@id='menu-item-settings']/a`).Click()
+			require.NoError(t, err)
+
+			// confirm 'settings' submenu button is active
+			err = expect.Locator(page.Locator(`//li[@id='menu-item-settings']/a`)).ToHaveClass(`menu-active`)
+			require.NoError(t, err)
+
+			// enter a description
+			err = page.Locator(`textarea#description`).Fill(`my big fat workspace`)
+			require.NoError(t, err)
+
+			// submit
+			err = page.GetByRole("button").GetByText("Save changes").Click()
+			require.NoError(t, err)
+
+			// confirm updated
+			err = expect.Locator(page.GetByRole("alert")).ToHaveText("updated workspace")
+			require.NoError(t, err)
+
+			// confirm updated description shows up
+			err = expect.Locator(page.Locator(`//textarea[@id='description' and text()='my big fat workspace']`)).ToBeVisible()
+			require.NoError(t, err)
+
+		})
+	})
+
+	t.Run("vcs settings", func(t *testing.T) {
 		repo := vcs.NewRandomRepo()
 		daemon, org, ctx := setup(t, withGithubOptions(
 			testserver.WithRepo(repo),
@@ -244,8 +280,8 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 			err = page.Locator(`//li[@id='menu-item-settings']/a`).Click()
 			require.NoError(t, err)
 
-			// confirm 'settings' submenu button is active
-			err = expect.Locator(page.Locator(`//li[@id='menu-item-settings']/a`)).ToHaveClass(`menu-active`)
+			// go to vcs settings
+			err = page.Locator(`//li[@id='menu-item-vcs']/a`).Click()
 			require.NoError(t, err)
 
 			// default should be set to always trigger runs
@@ -303,7 +339,11 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 			require.NoError(t, err)
 
 			// confirm updated
-			err = expect.Locator(page.GetByRole("alert")).ToHaveText("updated workspace")
+			err = expect.Locator(page.GetByRole("alert")).ToHaveText("updated vcs settings")
+			require.NoError(t, err)
+
+			// trigger patterns strategy should be set
+			err = expect.Locator(page.Locator(`input#vcs-triggers-patterns:checked`)).ToBeVisible()
 			require.NoError(t, err)
 
 			// check UI has correctly updated the workspace resource
@@ -314,16 +354,6 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 			require.Contains(t, ws.TriggerPatterns, "/baz/*.tf")
 
 			// set vcs trigger to use tag regex
-			_, err = page.Goto(workspaceURL)
-			require.NoError(t, err)
-
-			// go to workspace settings
-			err = page.Locator(`//li[@id='menu-item-settings']/a`).Click()
-			require.NoError(t, err)
-
-			// trigger patterns strategy should be set
-			err = expect.Locator(page.Locator(`input#vcs-triggers-patterns:checked`)).ToBeVisible()
-			require.NoError(t, err)
 
 			// select tag trigger strategy
 			err = page.Locator(`input#vcs-triggers-tag`).Click()
@@ -338,7 +368,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 			require.NoError(t, err)
 
 			// confirm updated
-			err = expect.Locator(page.GetByRole("alert")).ToHaveText("updated workspace")
+			err = expect.Locator(page.GetByRole("alert")).ToHaveText("updated vcs settings")
 			require.NoError(t, err)
 
 			// tag prefix pattern should be set
@@ -356,19 +386,6 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 			require.Equal(t, `\d+\.\d+\.\d+$`, ws.Connection.TagsRegex)
 
 			// set vcs branch
-			//
-			_, err = page.Goto(workspaceURL)
-			require.NoError(t, err)
-
-			// go to workspace settings
-			err = page.Locator(`//li[@id='menu-item-settings']/a`).Click()
-			require.NoError(t, err)
-
-			// tag regex strategy should be set
-			err = expect.Locator(page.Locator(`input#vcs-triggers-tag:checked`)).ToBeVisible()
-			require.NoError(t, err)
-
-			// set vcs branch
 			err = page.Locator(`input#vcs-branch`).Fill(`dev`)
 			require.NoError(t, err)
 
@@ -377,21 +394,13 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 			require.NoError(t, err)
 
 			// confirm updated
-			err = expect.Locator(page.GetByRole("alert")).ToHaveText("updated workspace")
+			err = expect.Locator(page.GetByRole("alert")).ToHaveText("updated vcs settings")
 			require.NoError(t, err)
 
 			// check UI has correctly updated the workspace resource
 			ws, err = daemon.Workspaces.GetWorkspaceByName(ctx, org.Name, ws1.Name)
 			require.NoError(t, err)
 			require.Equal(t, "dev", ws.Connection.Branch)
-
-			// permit applies from the CLI
-			//
-			_, err = page.Goto(workspaceURL)
-			require.NoError(t, err)
-			// go to workspace settings
-			err = page.Locator(`//li[@id='menu-item-settings']/a`).Click()
-			require.NoError(t, err)
 
 			// allow applies from the CLI
 			err = page.Locator(`input#allow-cli-apply`).Click()
@@ -400,7 +409,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 			err = page.GetByRole("button").GetByText("Save changes").Click()
 			require.NoError(t, err)
 
-			err = expect.Locator(page.GetByRole("alert")).ToHaveText("updated workspace")
+			err = expect.Locator(page.GetByRole("alert")).ToHaveText("updated vcs settings")
 			require.NoError(t, err)
 
 			// checkbox should be checked
@@ -411,32 +420,6 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 			ws, err = daemon.Workspaces.GetWorkspaceByName(ctx, org.Name, ws1.Name)
 			require.NoError(t, err)
 			require.Equal(t, true, ws.Connection.AllowCLIApply)
-
-			// set description
-
-			_, err = page.Goto(workspaceURL)
-			require.NoError(t, err)
-
-			// go to workspace settings
-			err = page.Locator(`//li[@id='menu-item-settings']/a`).Click()
-			require.NoError(t, err)
-
-			// enter a description
-			err = page.Locator(`textarea#description`).Fill(`my big fat workspace`)
-			require.NoError(t, err)
-
-			// submit
-			err = page.GetByRole("button").GetByText("Save changes").Click()
-			require.NoError(t, err)
-
-			// confirm updated
-			err = expect.Locator(page.GetByRole("alert")).ToHaveText("updated workspace")
-			require.NoError(t, err)
-
-			// confirm updated description shows up
-			err = expect.Locator(page.Locator(`//textarea[@id='description' and text()='my big fat workspace']`)).ToBeVisible()
-			require.NoError(t, err)
-
 		})
 
 		t.Run("engine settings", func(t *testing.T) {
@@ -444,10 +427,12 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 			ws := daemon.createWorkspace(t, ctx, org)
 
 			browser.New(t, ctx, func(page playwright.Page) {
-				// go to workspace settings
+				// go to engine settings
 				_, err := page.Goto(daemon.URL(paths.Workspace(ws.ID)))
 				require.NoError(t, err)
 				err = page.Locator(`//li[@id='menu-item-settings']/a`).Click()
+				require.NoError(t, err)
+				err = page.Locator(`//li[@id='menu-item-engines']/a`).Click()
 				require.NoError(t, err)
 
 				// switch engine from terraform to tofu

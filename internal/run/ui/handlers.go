@@ -20,6 +20,8 @@ import (
 	"github.com/leg100/otf/internal/workspace"
 )
 
+const LatestRunUpdate sseEvent = "LatestRunUpdate"
+
 var _ = paths.Run // suppress unused import
 
 type Handlers struct {
@@ -416,8 +418,6 @@ func (h *Handlers) watchRun(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-const latestRunUpdate sseEvent = "LatestRunUpdate"
-
 func (h *Handlers) watchLatestRun(w http.ResponseWriter, r *http.Request) {
 	workspaceID, err := decode.ID("workspace_id", r)
 	if err != nil {
@@ -452,7 +452,7 @@ func (h *Handlers) watchLatestRun(w http.ResponseWriter, r *http.Request) {
 			// terminate conn on error
 			return
 		}
-		if err := conn.Render(r.Context(), h.templates.singleRunTable(run), latestRunUpdate); err != nil {
+		if err := conn.Render(r.Context(), h.templates.singleRunTable(run), LatestRunUpdate); err != nil {
 			// terminate conn on error
 			return
 		}

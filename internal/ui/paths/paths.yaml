@@ -54,6 +54,7 @@
         - name: lock
         - name: unlock
         - name: force-unlock
+        - name: edit-permissions
         - name: set-permission
         - name: unset-permission
         - name: connect
@@ -67,6 +68,11 @@
         - name: pools
         - name: edit-ssh-key
         - name: update-ssh-key
+        - name: edit-engine
+        - name: update-engine
+        - name: edit-vcs
+        - name: update-vcs
+        - name: edit-advanced
     - name: organization_run
       path: /run
       actions:

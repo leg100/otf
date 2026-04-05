@@ -1,0 +1,35 @@
+package ui
+
+import (
+	"github.com/leg100/otf/internal/ui/helpers"
+	"github.com/leg100/otf/internal/ui/paths"
+	"github.com/leg100/otf/internal/workspace"
+)
+
+type workspacesTable struct{}
+
+templ (t workspacesTable) Header() {
+	<th>Name</th>
+	<th>Status</th>
+	<th>Tags</th>
+}
+
+templ (t workspacesTable) Row(ws *workspace.Workspace) {
+	<tr id={ "item-workspace-" + ws.Name }>
+		<td>
+			<a class="link" href={ paths.Workspace(ws.ID) }>{ ws.Name }</a>
+		</td>
+		<td>
+			if ws.LatestRun != nil {
+				@helpers.RunStatusBadge(ws.LatestRun.ID, ws.LatestRun.Status)
+			}
+		</td>
+		<td>
+			<div class="flex flex-wrap gap-2 items-center">
+				for _, name := range ws.Tags {
+					@tag(name)
+				}
+			</div>
+		</td>
+	</tr>
+}

@@ -1,0 +1,53 @@
+package ui
+
+import (
+	"context"
+	"fmt"
+	"github.com/leg100/otf/internal/organization"
+	"github.com/leg100/otf/internal/ui/helpers"
+	"github.com/leg100/otf/internal/ui/paths"
+)
+
+templ workspaceNew(organization organization.Name) {
+	<form class="flex flex-col gap-2" action={ paths.CreateWorkspace(organization) } method="POST">
+		<div class="field">
+			<label for="name">Name</label>
+			<input class="input w-80" type="text" name="name" id="name" required/>
+		</div>
+		<div>
+			<button class="btn" id="create-workspace-button">Create workspace</button>
+		</div>
+	</form>
+}
+
+templ tag(name string) {
+	<span id={ "tag-" + name } class="badge badge-accent badge-soft badge-md">
+		<svg
+			xmlns="http://www.w3.org/2000/svg"
+			fill="none"
+			viewBox="0 0 24 24"
+			stroke-width="1.5"
+			stroke="currentColor"
+			class="size-4"
+		>
+			<path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 0 0 3 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 0 0 5.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 0 0 9.568 3Z"></path>
+			<path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6Z"></path>
+		</svg>
+		{ name }
+	</span>
+}
+
+func magnifyingGlassStyle(ctx context.Context) (string, error) {
+	path, err := helpers.AssetPath(ctx, "/images/magnifying_glass.svg")
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("background-image: url(%s)", path), nil
+}
+
+func workspaceBoolString(b bool) string {
+	if b {
+		return "true"
+	}
+	return "false"
+}

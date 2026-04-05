@@ -1,0 +1,91 @@
+package ui
+
+import (
+	"github.com/leg100/otf/internal/authz"
+	"github.com/leg100/otf/internal/team"
+	"github.com/leg100/otf/internal/ui/helpers"
+	"github.com/leg100/otf/internal/ui/paths"
+	"github.com/leg100/otf/internal/workspace"
+)
+
+type workspacePerm struct {
+	role authz.Role
+	team *team.Team
+}
+
+type editPermissionsProps struct {
+	ws         *workspace.Workspace
+	assigned   []workspacePerm
+	unassigned []*team.Team
+	roles      []authz.Role
+}
+
+templ editPermissions(props editPermissionsProps) {
+	<div>
+		<table class="table">
+			<thead class="">
+				<tr>
+					<th class="">Team</th>
+					<th class="">Role</th>
+					<th class=""></th>
+				</tr>
+			</thead>
+			<tbody>
+				<!-- always render implicit admin role permission for owners team -->
+				<tr class="text-base-content/60" id="permissions-owners">
+					<td class="">owners</td>
+					<td class="">admin</td>
+				</tr>
+				<!-- iterate through existing role assignments -->
+				for _, workspacePerm := range props.assigned {
+					if workspacePerm.team.Name == "owners" {
+						continue
+					}
+					<tr id={ "permissions-" + workspacePerm.team.Name }>
+						<form class="" id="update-permissions" action={ paths.SetPermissionWorkspace(props.ws.ID) } method="POST"></form>
+						<td class=""><a href={ paths.Team(workspacePerm.team.ID) }>{ workspacePerm.team.Name }</a></td>
+						<td class="">
+							<input name="team_id" value={ workspacePerm.team.ID.String() } type="hidden" form="update-permissions"/>
+							<select class="select" name="role" id="role-select" form="update-permissions">
+								for _, role := range props.roles {
+									<option value={ role.String() } selected?={ workspacePerm.role.String() == role.String() }>{ role.String() }</option>
+								}
+							</select>
+						</td>
+						<td class="flex items-center gap-2">
+							<button class="btn" form="update-permissions">Update</button>
+							<form class="" action={ paths.UnsetPermissionWorkspace(props.ws.ID) } method="POST">
+								<input name="team_id" value={ workspacePerm.team.ID.String() } type="hidden"/>
+								@helpers.DeleteButton()
+							</form>
+						</td>
+					</tr>
+				}
+				<tr class="">
+					<form id="permissions-add-form" action={ paths.SetPermissionWorkspace(props.ws.ID) } method="POST"></form>
+					<td>
+						<select class="select" form="permissions-add-form" name="team_id" id="permissions-add-select-team">
+							<option disabled selected>--team--</option>
+							for _, workspacePerm := range props.unassigned {
+								<option value={ workspacePerm.ID.String() }>{ workspacePerm.Name }</option>
+							}
+						</select>
+					</td>
+					<td id="permissions-add-role-container">
+						<select class="select" form="permissions-add-form" name="role" id="permissions-add-select-role">
+							<option disabled selected>--role--</option>
+							for _, role := range props.roles {
+								<option value={ role.String() }>{ role.String() }</option>
+							}
+						</select>
+					</td>
+					<td>
+						<button class="btn" id="permissions-add-button" form="permissions-add-form">
+							Add
+						</button>
+					</td>
+				</tr>
+			</tbody>
+		</table>
+	</div>
+}

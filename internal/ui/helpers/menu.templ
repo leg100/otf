@@ -8,33 +8,13 @@ import (
 	"strings"
 )
 
-templ WorkspaceMenu(workspace resource.Info, organization resource.ID, authorizer authz.Interface) {
-	<div class="flex flex-row items-center">
-		<ul id="workspace-menu" class="menu menu-horizontal">
-			@MenuItem("<", paths.Organization(organization))
-			@MenuItem("Overview", paths.Workspace(workspace.ID))
-			@MenuItem("Runs", paths.Runs(workspace.ID), "/app/runs")
-			@MenuItem("State", paths.StateVersions(workspace.ID), "/app/state-versions")
-			@MenuItem("Variables", paths.Variables(workspace.ID), "/app/variables", paths.Variables(workspace.ID))
-			if authorizer.CanAccess(ctx, authz.UpdateWorkspaceAction, workspace.ID) {
-				@MenuItem("Settings", paths.EditWorkspace(workspace.ID), paths.Workspace(workspace.ID)+"/setup-connection")
-				@MenuItem("SSH Key", paths.EditSSHKeyWorkspace(workspace.ID))
-			}
-		</ul>
-		<div class="">
-			<form id="workspace-start-run-form" action={ paths.StartRunWorkspace(workspace.ID) } method="POST">
-				if authorizer.CanAccess(ctx, authz.CreateRunAction, workspace.ID) {
-					<select class="select select-sm" name="operation" id="start-run-operation" onchange="this.form.submit()">
-						<option disabled selected>-- start run --</option>
-						<option value="plan-only">plan only</option>
-						if authorizer.CanAccess(ctx, authz.ApplyRunAction, workspace.ID) {
-							<option value="plan-and-apply">plan and apply</option>
-						}
-					</select>
-				}
-			</form>
-		</div>
-	</div>
+templ SiteMenu() {
+	<ul class="menu menu-horizontal w-full">
+		@MenuItem("Organizations", paths.Organizations())
+		@MenuItem("Profile", paths.Profile())
+		@MenuItem("User Tokens", paths.Tokens(), "/app/current-user/tokens")
+		@MenuItem("Github App", paths.GithubApps())
+	</ul>
 }
 
 templ OrganizationMenu(organization resource.ID) {
@@ -60,12 +40,43 @@ templ OrganizationMenu(organization resource.ID) {
 	</ul>
 }
 
-templ SiteMenu() {
-	<ul class="menu menu-horizontal w-full">
-		@MenuItem("Organizations", paths.Organizations())
-		@MenuItem("Profile", paths.Profile())
-		@MenuItem("User Tokens", paths.Tokens(), "/app/current-user/tokens")
-		@MenuItem("Github App", paths.GithubApps())
+templ WorkspaceMenu(workspace resource.Info, organization resource.ID, authorizer authz.Interface) {
+	<div class="flex flex-row items-center">
+		<ul id="workspace-menu" class="menu menu-horizontal">
+			@MenuItem("<", paths.Organization(organization))
+			@MenuItem("Overview", paths.Workspace(workspace.ID))
+			@MenuItem("Runs", paths.Runs(workspace.ID), "/app/runs")
+			@MenuItem("State", paths.StateVersions(workspace.ID), "/app/state-versions")
+			@MenuItem("Variables", paths.Variables(workspace.ID), "/app/variables", paths.Variables(workspace.ID))
+			if authorizer.CanAccess(ctx, authz.UpdateWorkspaceAction, workspace.ID) {
+				@MenuItem("Settings", paths.EditWorkspace(workspace.ID), paths.Workspace(workspace.ID)+"/setup-connection", paths.EditPermissionsWorkspace(workspace.ID), paths.EditSSHKeyWorkspace(workspace.ID), paths.EditEngineWorkspace(workspace.ID), paths.EditVcsWorkspace(workspace.ID), paths.EditAdvancedWorkspace(workspace.ID))
+			}
+		</ul>
+		<div class="">
+			<form id="workspace-start-run-form" action={ paths.StartRunWorkspace(workspace.ID) } method="POST">
+				if authorizer.CanAccess(ctx, authz.CreateRunAction, workspace.ID) {
+					<select class="select select-sm" name="operation" id="start-run-operation" onchange="this.form.submit()">
+						<option disabled selected>-- start run --</option>
+						<option value="plan-only">plan only</option>
+						if authorizer.CanAccess(ctx, authz.ApplyRunAction, workspace.ID) {
+							<option value="plan-and-apply">plan and apply</option>
+						}
+					</select>
+				}
+			</form>
+		</div>
+	</div>
+}
+
+templ WorkspaceSettingsMenu(workspaceID resource.ID) {
+	<ul id="workspace-settings-menu" class="menu">
+		<li class="menu-title">Settings</li>
+		@MenuItem("General", paths.EditWorkspace(workspaceID))
+		@MenuItem("Permissions", paths.EditPermissionsWorkspace(workspaceID))
+		@MenuItem("VCS", paths.EditVcsWorkspace(workspaceID))
+		@MenuItem("Engines", paths.EditEngineWorkspace(workspaceID))
+		@MenuItem("SSH Key", paths.EditSSHKeyWorkspace(workspaceID))
+		@MenuItem("Advanced", paths.EditAdvancedWorkspace(workspaceID))
 	</ul>
 }
 
