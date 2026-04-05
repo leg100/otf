@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.21](https://github.com/leg100/otf/compare/v0.5.20...v0.5.21) (2026-04-05)
+
+
+### Bug Fixes
+
+* **ui:** don't use symlink for logo ([30c3d37](https://github.com/leg100/otf/commit/30c3d37131e5b0b4511652a341fc5fe15446dbcd))
+
 ## [0.5.20](https://github.com/leg100/otf/compare/v0.5.19...v0.5.20) (2026-04-05)
 
 
