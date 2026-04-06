@@ -86,6 +86,7 @@ type (
 		netListener net.Listener
 		server      *http.Server
 		subsystems  []*Subsystem
+		disableLatestChecker
 	}
 )
 
@@ -292,9 +293,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Logger: logger,
 		DB:     db,
 	})
-	if cfg.DisableLatestChecker == nil || !*cfg.DisableLatestChecker {
-		engineService.StartLatestChecker(ctx)
-	}
 	workspaceService := workspace.NewService(workspace.Options{
 		Logger:            logger,
 		Authorizer:        authorizer,
@@ -930,6 +928,10 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 			case <-wait.Started():
 			}
 		}
+	}
+
+	if d.DisableLatestChecker == nil || !*cfg.DisableLatestChecker {
+		engineService.StartLatestChecker(ctx)
 	}
 
 	// Run HTTP/JSON-API server and web app

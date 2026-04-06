@@ -23,15 +23,17 @@ var (
 	// retrieved via the daemon config.
 	Default = Terraform
 	// Terraform is the terraform engine
-	Terraform = &Engine{engine: &terraform{}}
+	Terraform = &Engine{Kind: &terraform{}}
 	// Tofu is the opentofu engine
-	Tofu = &Engine{engine: &tofu{}}
+	Tofu = &Engine{Kind: &tofu{}}
 	// ErrInvalidVersion is returned when a engine version string is
 	// not a semantic version string (major.minor.patch).
 	ErrInvalidVersion = errors.New("invalid engine version")
 )
 
-type engine interface {
+// Kind of engine, e.g. terraform or tofu.
+type Kind interface {
+	// String provides the name of the engine
 	String() string
 	DefaultVersion() string
 
@@ -40,7 +42,7 @@ type engine interface {
 }
 
 type Engine struct {
-	engine
+	Kind
 }
 
 func (*Engine) Type() string { return "engine" }
@@ -77,9 +79,9 @@ func (e *Engine) Value() (driver.Value, error) {
 func (e *Engine) set(v string) error {
 	switch v {
 	case "terraform":
-		e.engine = &terraform{}
+		e.Kind = &terraform{}
 	case "tofu":
-		e.engine = &tofu{}
+		e.Kind = &tofu{}
 	default:
 		return fmt.Errorf("no engine found named %s: must be either 'terraform' or 'tofu'", v)
 	}
@@ -88,7 +90,7 @@ func (e *Engine) set(v string) error {
 
 func Engines() []*Engine {
 	return []*Engine{
-		{engine: &terraform{}},
-		{engine: &tofu{}},
+		{Kind: &terraform{}},
+		{Kind: &tofu{}},
 	}
 }
