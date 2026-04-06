@@ -1,6 +1,6 @@
 LD_FLAGS = '-s -w -X github.com/leg100/otf/internal.Version=edge'
 GOOS ?= linux
-GOARCH ?= amd64
+GOARCH ?= $(shell go env GOARCH)
 PLATFORM = $(GOOS)/$(GOARCH)
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
