@@ -49,7 +49,7 @@ type (
 	}
 )
 
-func NewService(ctx context.Context, opts Options) *Service {
+func NewService(opts Options) *Service {
 	db := &db{opts.DB, opts.URLs}
 	svc := &Service{
 		Logger: opts.Logger,

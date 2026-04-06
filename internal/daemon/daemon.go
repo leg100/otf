@@ -268,7 +268,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		VCSEventBroker:      vcsEventBroker,
 	})
 
-	repoService := repohooks.NewService(ctx, repohooks.Options{
+	repoService := repohooks.NewService(repohooks.Options{
 		Logger: logger,
 		DB:     db,
 		URLs:   hostnameService,
@@ -282,7 +282,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		VCSEventBroker: vcsEventBroker,
 	})
 
-	connectionService := connections.NewService(ctx, connections.Options{
+	connectionService := connections.NewService(connections.Options{
 		Logger:             logger,
 		DB:                 db,
 		VCSProviderService: vcsService,
