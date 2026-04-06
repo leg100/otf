@@ -211,14 +211,14 @@ templ navbar(organization resource.ID, workspace *resource.Info) {
 		<div class="flex items-center">
 			if Authenticated(ctx) {
 				<div class="">
-					<a class="btn btn-ghost btn-sm font-normal" href={ paths.Organizations() }>organizations</a>
+					<a class="btn btn-ghost font-normal" href={ paths.Organizations() }>Organizations</a>
 				</div>
 				<div class="">
-					<a class="btn btn-ghost btn-sm font-normal" href={ paths.Admin() }>site</a>
+					<a class="btn btn-ghost font-normal" href={ paths.Admin() }>Site</a>
 				</div>
 				<div class="">
-					<a class="btn btn-ghost btn-sm font-normal" href={ paths.Profile() }>
-						<div class="size-5">
+					<a class="btn btn-ghost font-normal" href={ paths.Profile() }>
+						<div class="size-6">
 							@CurrentUserAvatar()
 						</div>
 					</a>

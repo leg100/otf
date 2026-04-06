@@ -70,6 +70,9 @@ func TestSSHKeyPrivateModule(t *testing.T) {
 		_, err := page.Goto(daemon.URL(paths.Organization(org.Name)))
 		require.NoError(t, err)
 
+		err = page.Locator(`//li[@id='menu-item-settings']/a`).Click()
+		require.NoError(t, err)
+
 		err = page.Locator(`//li[@id='menu-item-ssh-keys']/a`).Click()
 		require.NoError(t, err)
 

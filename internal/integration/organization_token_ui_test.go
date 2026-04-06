@@ -20,8 +20,12 @@ func TestIntegration_OrganizationTokenUI(t *testing.T) {
 		_, err := page.Goto(daemon.URL(paths.Organization(org.Name)))
 		require.NoError(t, err)
 
+		// go to organization settings
+		err = page.Locator(`#menu-item-settings > a`).Click()
+		require.NoError(t, err)
+
 		// go to organization token page
-		err = page.Locator(`#menu-item-organization-token > a`).Click()
+		err = page.Locator(`#menu-item-token > a`).Click()
 		require.NoError(t, err)
 
 		screenshot(t, page, "org_token_new")
