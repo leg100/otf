@@ -125,58 +125,20 @@ func (r *Runner) Start(ctx context.Context) error {
 	}()
 
 	g, ctx := errgroup.WithContext(ctx)
+
+	// Send status updates
 	g.Go(func() (err error) {
-		defer func() {
-			// send final status update using a context that is still valid
-			// for a further 10 seconds unless daemon is forcefully shutdown.
-			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-			defer cancel()
-
-			r.logger.V(r.v).Info("sending final status update before shutting down")
-
-			if updateErr := r.runners.updateStatus(ctx, registrationMetadata.ID, RunnerExited); updateErr != nil {
-				err = fmt.Errorf("sending final status update: %w", updateErr)
-			}
-			r.logger.V(r.v).Info("sent final status update")
-		}()
-
-		// every 10 seconds update the runner status
-		ticker := time.NewTicker(10 * time.Second)
-		for {
-			select {
-			case <-ticker.C:
-				// send runner status update
-				status := RunnerIdle
-				if r.executor.currentJobs(ctx, r.ID) > 0 {
-					status = RunnerBusy
-				}
-				if err := r.runners.updateStatus(ctx, registrationMetadata.ID, status); err != nil {
-					if ctx.Err() != nil {
-						// context canceled
-						return nil
-					}
-					if errors.Is(err, internal.ErrConflict) {
-						// exit, compelling runner to re-register - this may
-						// happen when the server has de-registered the runner,
-						// which it may do when it hasn't heard from the runner
-						// in a while and the runner only belatedly succeeds in
-						// sending an update.
-						return errors.New("runner status update failed due to conflict; runner needs to re-register")
-					} else {
-						r.logger.Error(err, "sending runner status update", "status", status)
-					}
-				} else {
-					r.logger.V(9).Info("sent runner status update", "status", status)
-				}
-			case <-ctx.Done():
-				// context canceled
-				return nil
-			}
+		if err := r.sendStatusUpdates(ctx); err != nil {
+			return err
 		}
+		if err := r.sendFinalStatus(); err != nil {
+			return err
+		}
+		return nil
 	})
 
+	// Fetch jobs allocated to this runner and spawn operations to do jobs
 	g.Go(func() (err error) {
-		// fetch jobs allocated to this runner and spawn operations to do jobs
 		for {
 			processJobs := func() error {
 				r.logger.V(r.v).Info("waiting for next job")
@@ -222,4 +184,54 @@ func (r *Runner) Start(ctx context.Context) error {
 
 func (r *Runner) Started() <-chan struct{} {
 	return r.registered
+}
+
+func (r *Runner) sendStatusUpdates(ctx context.Context) error {
+	// every 10 seconds update the runner status
+	ticker := time.NewTicker(10 * time.Second)
+	for {
+		select {
+		case <-ticker.C:
+		case <-ctx.Done():
+			// context canceled
+			return nil
+		}
+		// send runner status update
+		status := RunnerIdle
+		if r.executor.currentJobs(ctx, r.ID) > 0 {
+			status = RunnerBusy
+		}
+		if err := r.runners.updateStatus(ctx, r.ID, status); err != nil {
+			if ctx.Err() != nil {
+				// context canceled
+				return nil
+			}
+			if errors.Is(err, internal.ErrConflict) {
+				// exit, compelling runner to re-register - this may
+				// happen when the server has de-registered the runner,
+				// which it may do when it hasn't heard from the runner
+				// in a while and the runner only belatedly succeeds in
+				// sending an update.
+				return errors.New("runner status update failed due to conflict; runner needs to re-register")
+			}
+			r.logger.Error(err, "sending runner status update", "status", status)
+		} else {
+			r.logger.V(9).Info("sent runner status update", "status", status)
+		}
+	}
+}
+
+func (r *Runner) sendFinalStatus() error {
+	// send final status update using a context that is still valid
+	// for a further 10 seconds unless daemon is forcefully shutdown.
+	ctx := authz.AddSubjectToContext(context.Background(), r.RunnerMeta)
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	r.logger.V(r.v).Info("sending final status update before shutting down")
+
+	if updateErr := r.runners.updateStatus(ctx, r.ID, RunnerExited); updateErr != nil {
+		return fmt.Errorf("sending final status update: %w", updateErr)
+	}
+	return nil
 }
