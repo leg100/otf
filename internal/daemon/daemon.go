@@ -62,27 +62,26 @@ import (
 
 type (
 	Daemon struct {
-		DB                   *sql.DB
-		Organizations        *organization.Service
-		Runs                 *run.Service
-		Workspaces           *workspace.Service
-		Variables            *variable.Service
-		Notifications        *notifications.Service
-		State                *state.Service
-		Configs              *configversion.Service
-		Modules              *module.Service
-		VCSProviders         *vcs.Service
-		Tokens               *tokens.Service
-		Sessions             *session.Service
-		Teams                *team.Service
-		Users                *user.Service
-		GithubApp            *github.Service
-		RepoHooks            *repohooks.Service
-		Runners              *runner.Service
-		Connections          *connections.Service
-		System               *internal.HostnameService
-		SSHKeys              *sshkey.Service
-		DisableLatestChecker bool
+		DB            *sql.DB
+		Organizations *organization.Service
+		Runs          *run.Service
+		Workspaces    *workspace.Service
+		Variables     *variable.Service
+		Notifications *notifications.Service
+		State         *state.Service
+		Configs       *configversion.Service
+		Modules       *module.Service
+		VCSProviders  *vcs.Service
+		Tokens        *tokens.Service
+		Sessions      *session.Service
+		Teams         *team.Service
+		Users         *user.Service
+		GithubApp     *github.Service
+		RepoHooks     *repohooks.Service
+		Runners       *runner.Service
+		Connections   *connections.Service
+		System        *internal.HostnameService
+		SSHKeys       *sshkey.Service
 
 		netListener net.Listener
 		server      *http.Server
