@@ -776,7 +776,7 @@ func (h *Handlers) editEngine(w http.ResponseWriter, r *http.Request) {
 			engines[i].latest = ws.EngineVersion.Latest
 		}
 		// Offer the user the latest available version for an engine if:
-		// (a): it's not the current engine
+		// (a): it's not the current engine, or
 		// (b): it's currently set to track the latest version.
 		if current != engine.String() || engines[i].latest {
 			latest, _, err := h.Client.GetLatest(r.Context(), engine)

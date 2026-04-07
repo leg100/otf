@@ -202,11 +202,11 @@ func doMain(m *testing.M) (int, error) {
 	// Download engines now rather than in individual tests because it would
 	// otherwise make the latter flaky.
 	{
-		downloader, err := engine.NewDownloader(logr.Discard(), engine.Default, "")
+		downloader, err := engine.NewDownloader(logr.Discard(), engine.Terraform, "")
 		if err != nil {
 			return 0, fmt.Errorf("creating downloader: %w", err)
 		}
-		terraformPath, err = downloader.Download(context.Background(), engine.Default.DefaultVersion(), os.Stdout)
+		terraformPath, err = downloader.Download(context.Background(), engine.Terraform.DefaultVersion, os.Stdout)
 		if err != nil {
 			return 0, fmt.Errorf("downloading terraform: %w", err)
 		}
@@ -216,7 +216,7 @@ func doMain(m *testing.M) (int, error) {
 		if err != nil {
 			return 0, fmt.Errorf("creating downloader: %w", err)
 		}
-		tofuPath, err = downloader.Download(context.Background(), engine.Tofu.DefaultVersion(), os.Stdout)
+		tofuPath, err = downloader.Download(context.Background(), engine.Tofu.DefaultVersion, os.Stdout)
 		if err != nil {
 			return 0, fmt.Errorf("downloading tofu: %w", err)
 		}

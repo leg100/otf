@@ -62,31 +62,31 @@ import (
 
 type (
 	Daemon struct {
-		DB            *sql.DB
-		Organizations *organization.Service
-		Runs          *run.Service
-		Workspaces    *workspace.Service
-		Variables     *variable.Service
-		Notifications *notifications.Service
-		State         *state.Service
-		Configs       *configversion.Service
-		Modules       *module.Service
-		VCSProviders  *vcs.Service
-		Tokens        *tokens.Service
-		Sessions      *session.Service
-		Teams         *team.Service
-		Users         *user.Service
-		GithubApp     *github.Service
-		RepoHooks     *repohooks.Service
-		Runners       *runner.Service
-		Connections   *connections.Service
-		System        *internal.HostnameService
-		SSHKeys       *sshkey.Service
+		DB                   *sql.DB
+		Organizations        *organization.Service
+		Runs                 *run.Service
+		Workspaces           *workspace.Service
+		Variables            *variable.Service
+		Notifications        *notifications.Service
+		State                *state.Service
+		Configs              *configversion.Service
+		Modules              *module.Service
+		VCSProviders         *vcs.Service
+		Tokens               *tokens.Service
+		Sessions             *session.Service
+		Teams                *team.Service
+		Users                *user.Service
+		GithubApp            *github.Service
+		RepoHooks            *repohooks.Service
+		Runners              *runner.Service
+		Connections          *connections.Service
+		System               *internal.HostnameService
+		SSHKeys              *sshkey.Service
+		DisableLatestChecker bool
 
 		netListener net.Listener
 		server      *http.Server
 		subsystems  []*Subsystem
-		disableLatestChecker
 	}
 )
 
@@ -865,6 +865,16 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 			}),
 		})
 	}
+	if !cfg.DisableLatestChecker {
+		subsystems = append(subsystems, &Subsystem{
+			Name:   "engine-version-checker",
+			Logger: logger,
+			System: &engine.VersionChecker{
+				Logger: logger,
+				Client: engineService,
+			},
+		})
+	}
 
 	// Construct web server and start listening on port
 	server, err := http.NewServer(logger, http.ServerConfig{
@@ -928,10 +938,6 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 			case <-wait.Started():
 			}
 		}
-	}
-
-	if d.DisableLatestChecker == nil || !*cfg.DisableLatestChecker {
-		engineService.StartLatestChecker(ctx)
 	}
 
 	// Run HTTP/JSON-API server and web app

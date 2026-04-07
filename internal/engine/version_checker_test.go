@@ -1,11 +1,34 @@
 package engine
 
 import (
+	"context"
 	"testing"
 	"time"
 
+	"github.com/leg100/otf/internal/logr"
 	"github.com/stretchr/testify/assert"
 )
+
+type fakeVersionCheckerClient struct {
+	currentLatest string
+	lastCheck     time.Time
+}
+
+func (c *fakeVersionCheckerClient) GetLatest(ctx context.Context, engine *Engine) (string, time.Time, error) {
+	return c.currentLatest, c.lastCheck, nil
+}
+
+func (c *fakeVersionCheckerClient) UpdateLatestVersion(ctx context.Context, engine *Engine, v string) error {
+	return nil
+}
+
+type fakeLatestVersionGetter struct {
+	v string
+}
+
+func (f *fakeLatestVersionGetter) Get(context.Context) (string, error) {
+	return f.v, nil
+}
 
 func Test_check(t *testing.T) {
 	now := time.Now()
@@ -40,10 +63,20 @@ func Test_check(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := &Service{
-				db: &testDB{currentLatest: tt.currentLatest, lastCheck: tt.lastCheck},
+			c := &VersionChecker{
+				Logger: logr.Discard(),
+				Client: &fakeVersionCheckerClient{
+					currentLatest: tt.currentLatest,
+					lastCheck:     tt.lastCheck,
+				},
 			}
-			got, err := s.check(t.Context(), &testEngine{latestVersion: tt.newLatest}, now)
+			engine := &Engine{
+				Name: "test",
+				LatestVersionGetter: &fakeLatestVersionGetter{
+					v: tt.newLatest,
+				},
+			}
+			got, err := c.check(t.Context(), engine, now)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.want, got)
 		})

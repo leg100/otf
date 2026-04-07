@@ -12,7 +12,7 @@ type db struct {
 	*sql.DB
 }
 
-func (db *db) updateLatestVersion(ctx context.Context, engine, v string) error {
+func (db *db) updateLatestVersion(ctx context.Context, engine *Engine, version string) error {
 	_, err := db.Exec(ctx, `
 INSERT INTO latest_engine_version (
     version,
@@ -26,13 +26,13 @@ INSERT INTO latest_engine_version (
 SET version		= @version,
 	checkpoint	= current_timestamp
 `, pgx.NamedArgs{
-		"version": v,
+		"version": version,
 		"engine":  engine,
 	})
 	return err
 }
 
-func (db *db) getLatest(ctx context.Context, engine string) (string, time.Time, error) {
+func (db *db) getLatest(ctx context.Context, engine *Engine) (string, time.Time, error) {
 	rows := db.QueryRow(ctx, `
 SELECT version, checkpoint
 FROM latest_engine_version

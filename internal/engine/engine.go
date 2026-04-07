@@ -22,36 +22,41 @@ var (
 	// NOTE: the actual default engine that has been set by the user should be
 	// retrieved via the daemon config.
 	Default = Terraform
-	// Terraform is the terraform engine
-	Terraform = &Engine{Kind: &terraform{}}
-	// Tofu is the opentofu engine
-	Tofu = &Engine{Kind: &tofu{}}
 	// ErrInvalidVersion is returned when a engine version string is
 	// not a semantic version string (major.minor.patch).
 	ErrInvalidVersion = errors.New("invalid engine version")
 )
 
-// Kind of engine, e.g. terraform or tofu.
-type Kind interface {
-	// String provides the name of the engine
-	String() string
-	DefaultVersion() string
-
-	sourceURL(version string) *url.URL
-	getLatestVersion(context.Context) (string, error)
+func Engines() []*Engine {
+	return []*Engine{
+		Terraform,
+		Tofu,
+	}
 }
 
+// Engine represents a CLI capable of carrying out infrastructure as code
+// operations, e.g. terraform.
 type Engine struct {
-	Kind
+	Name                string
+	DefaultVersion      string
+	GetSourceURL        func(version string) *url.URL
+	LatestVersionGetter LatestVersionGetter
 }
 
-func (*Engine) Type() string { return "engine" }
+type LatestVersionGetter interface {
+	Get(context.Context) (string, error)
+}
+
+func (e *Engine) String() string { return e.Name }
+
+func (e *Engine) Type() string { return "engine" }
+
 func (e *Engine) Set(v string) error {
 	return e.set(v)
 }
 
 func (e *Engine) MarshalText() ([]byte, error) {
-	return []byte(e.String()), nil
+	return []byte(e.Name), nil
 }
 
 func (e *Engine) UnmarshalText(text []byte) error {
@@ -73,24 +78,17 @@ func (e *Engine) Value() (driver.Value, error) {
 	if e == nil {
 		return nil, nil
 	}
-	return e.String(), nil
+	return e.Name, nil
 }
 
 func (e *Engine) set(v string) error {
 	switch v {
 	case "terraform":
-		e.Kind = &terraform{}
+		e = Terraform
 	case "tofu":
-		e.Kind = &tofu{}
+		e = Tofu
 	default:
 		return fmt.Errorf("no engine found named %s: must be either 'terraform' or 'tofu'", v)
 	}
 	return nil
-}
-
-func Engines() []*Engine {
-	return []*Engine{
-		{Kind: &terraform{}},
-		{Kind: &tofu{}},
-	}
 }

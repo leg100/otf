@@ -16,28 +16,25 @@ type VersionChecker struct {
 }
 
 type VersionCheckerClient interface {
-	GetLatest(ctx context.Context, kind Kind) (string, time.Time, error)
-	UpdateLatestVersion(ctx context.Context, engine, v string) error
+	GetLatest(ctx context.Context, engine *Engine) (string, time.Time, error)
+	UpdateLatestVersion(ctx context.Context, engine *Engine, v string) error
 }
 
 // Start the latest checker go routine, checking the latest version of each
 // engine on a regular interval.
-func (s *VersionChecker) Start(ctx context.Context) {
+func (s *VersionChecker) Start(ctx context.Context) error {
 	// check once at startup
 	s.checkAndUpdate(ctx)
 	// ...and check every 5 mins thereafter
-	go func() {
-		ticker := time.NewTicker(5 * time.Minute)
-		for {
-			select {
-			case <-ticker.C:
-				s.checkAndUpdate(ctx)
-			case <-ctx.Done():
-				ticker.Stop()
-				return
-			}
+	ticker := time.NewTicker(5 * time.Minute)
+	for {
+		select {
+		case <-ticker.C:
+			s.checkAndUpdate(ctx)
+		case <-ctx.Done():
+			return nil
 		}
-	}()
+	}
 }
 
 func (s *VersionChecker) checkAndUpdate(ctx context.Context) {
@@ -50,7 +47,7 @@ func (s *VersionChecker) checkAndUpdate(ctx context.Context) {
 		if !result.skipped {
 			// update db (even if version hasn't changed we need to update the
 			// checkpoint)
-			if err := s.Client.UpdateLatestVersion(ctx, engine.String(), result.after); err != nil {
+			if err := s.Client.UpdateLatestVersion(ctx, engine, result.after); err != nil {
 				s.Logger.Error(err, "persisting db with latest engine version", "engine", engine)
 				return
 			}
@@ -59,7 +56,7 @@ func (s *VersionChecker) checkAndUpdate(ctx context.Context) {
 	}
 }
 
-func (s *VersionChecker) check(ctx context.Context, engine Kind, now time.Time) (result checkResult, err error) {
+func (s *VersionChecker) check(ctx context.Context, engine *Engine, now time.Time) (result checkResult, err error) {
 	// get current latest version stored in db
 	before, checkpoint, err := s.Client.GetLatest(ctx, engine)
 	if err != nil {
@@ -75,7 +72,7 @@ func (s *VersionChecker) check(ctx context.Context, engine Kind, now time.Time) 
 		}, nil
 	}
 	// get latest version from engine's internet endpoint
-	after, err := engine.getLatestVersion(ctx)
+	after, err := engine.LatestVersionGetter.Get(ctx)
 	if err != nil {
 		return checkResult{}, err
 	}

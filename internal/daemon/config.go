@@ -40,13 +40,9 @@ type Config struct {
 	SSL                          bool
 	CertFile, KeyFile            string
 	EnableRequestLogging         bool
-	DisableScheduler             bool
-	DisableRunner                bool
 	RestrictOrganizationCreation bool
 	SiteAdmins                   []string
 	SkipTLSVerification          bool
-	// skip checks for latest terraform version
-	DisableLatestChecker         *bool
 	PlanningTimeout              time.Duration
 	ApplyingTimeout              time.Duration
 	OverrideTimeoutCheckInterval time.Duration
@@ -55,6 +51,11 @@ type Config struct {
 	DeleteConfigsAfter           time.Duration
 	OverrideDeleterInterval      time.Duration
 	GoogleIAPAudience            string
+
+	// Overrides for testing purposes.
+	DisableScheduler     bool
+	DisableRunner        bool
+	DisableLatestChecker bool
 }
 
 // NewConfig constructs an otfd configuration with defaults.

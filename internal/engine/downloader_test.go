@@ -28,8 +28,11 @@ func TestDownloader(t *testing.T) {
 	require.NoError(t, err)
 	u.Path = fmt.Sprintf("/terraform/1.2.3/terraform_1.2.3_%s_%s.zip", runtime.GOOS, runtime.GOARCH)
 
-	engine := &testEngine{
-		u: u,
+	engine := &Engine{
+		Name: "terraform",
+		GetSourceURL: func(version string) *url.URL {
+			return u
+		},
 	}
 
 	dl, err := NewDownloader(logr.Discard(), engine, t.TempDir())

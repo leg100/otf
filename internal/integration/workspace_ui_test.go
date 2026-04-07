@@ -456,7 +456,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 				// confirm tofu version is the default version (integration test
 				// disables the latest version checker, so the latest version
 				// defaults to the default version)
-				err = expect.Locator(page.Locator(`//*[@id='engine-version-selector']//input[@id='engine-specific-version']`)).ToHaveValue(engine.Tofu.DefaultVersion())
+				err = expect.Locator(page.Locator(`//*[@id='engine-version-selector']//input[@id='engine-specific-version']`)).ToHaveValue(engine.Tofu.DefaultVersion)
 				require.NoError(t, err)
 
 				// switch tofu version to v2.1.0
