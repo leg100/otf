@@ -58,7 +58,7 @@ func Test_check(t *testing.T) {
 			"",
 			"",
 			now.Add(-time.Hour),
-			checkResult{skipped: true, nextCheckpoint: now.Add(time.Hour * 23), message: "skipped latest engine version check"},
+			checkResult{skipped: true, nextCheckpoint: now.Add(-time.Hour), message: "skipped latest engine version check"},
 		},
 	}
 	for _, tt := range tests {

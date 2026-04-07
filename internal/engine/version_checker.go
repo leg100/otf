@@ -24,20 +24,20 @@ type VersionCheckerClient interface {
 // engine on a regular interval.
 func (s *VersionChecker) Start(ctx context.Context) error {
 	// check once at startup
-	s.checkAndUpdate(ctx)
+	s.checkAndUpdateAll(ctx)
 	// ...and check every 5 mins thereafter
 	ticker := time.NewTicker(5 * time.Minute)
 	for {
 		select {
 		case <-ticker.C:
-			s.checkAndUpdate(ctx)
+			s.checkAndUpdateAll(ctx)
 		case <-ctx.Done():
 			return nil
 		}
 	}
 }
 
-func (s *VersionChecker) checkAndUpdate(ctx context.Context) {
+func (s *VersionChecker) checkAndUpdateAll(ctx context.Context) {
 	for _, engine := range Engines() {
 		result, err := s.check(ctx, engine, time.Now())
 		if err != nil {
@@ -67,7 +67,7 @@ func (s *VersionChecker) check(ctx context.Context, engine *Engine, now time.Tim
 		return checkResult{
 			before:         before,
 			skipped:        true,
-			nextCheckpoint: checkpoint.Add(24 * time.Hour),
+			nextCheckpoint: checkpoint,
 			message:        "skipped latest engine version check",
 		}, nil
 	}
