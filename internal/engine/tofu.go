@@ -15,13 +15,16 @@ const defaultTofuVersion = "1.9.0"
 
 // Tofu is the opentofu engine.
 var Tofu = &Engine{
-	Name:                "tofu",
-	DefaultVersion:      defaultTofuVersion,
-	GetSourceURL:        tofuSourceURL,
-	LatestVersionGetter: &tofuLatestVersionGetter{},
+	Name:           "tofu",
+	DefaultVersion: defaultTofuVersion,
+	client:         &tofuClient{},
 }
 
-func tofuSourceURL(version string) *url.URL {
+type tofuClient struct {
+	endpoint *string
+}
+
+func (t *tofuClient) sourceURL(version string) *url.URL {
 	return &url.URL{
 		Scheme: "https",
 		Host:   "github.com",
@@ -35,11 +38,7 @@ func tofuSourceURL(version string) *url.URL {
 	}
 }
 
-type tofuLatestVersionGetter struct {
-	endpoint *string
-}
-
-func (t *tofuLatestVersionGetter) Get(ctx context.Context) (string, error) {
+func (t *tofuClient) getLatestVersion(ctx context.Context) (string, error) {
 	client := github.NewClient(nil)
 	if t.endpoint != nil {
 		var err error

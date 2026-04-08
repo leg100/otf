@@ -22,11 +22,12 @@ func (c *fakeVersionCheckerClient) UpdateLatestVersion(ctx context.Context, engi
 	return nil
 }
 
-type fakeLatestVersionGetter struct {
+type fakeVersionCheckerEngineClient struct {
+	Client
 	v string
 }
 
-func (f *fakeLatestVersionGetter) Get(context.Context) (string, error) {
+func (f *fakeVersionCheckerEngineClient) getLatestVersion(context.Context) (string, error) {
 	return f.v, nil
 }
 
@@ -72,7 +73,7 @@ func Test_check(t *testing.T) {
 			}
 			engine := &Engine{
 				Name: "test",
-				LatestVersionGetter: &fakeLatestVersionGetter{
+				client: &fakeVersionCheckerEngineClient{
 					v: tt.newLatest,
 				},
 			}

@@ -23,10 +23,10 @@ func Test_getLatestVersion(t *testing.T) {
 		}),
 		testserver.WithDisableTLS(),
 	)
-	getter := &tofuLatestVersionGetter{
+	getter := &tofuClient{
 		endpoint: new(u.String()),
 	}
-	got, err := getter.Get(t.Context())
+	got, err := getter.getLatestVersion(t.Context())
 	require.NoError(t, err)
 	assert.Equal(t, "1.9.0", got)
 }

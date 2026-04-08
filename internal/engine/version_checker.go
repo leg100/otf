@@ -72,7 +72,7 @@ func (s *VersionChecker) check(ctx context.Context, engine *Engine, now time.Tim
 		}, nil
 	}
 	// get latest version from engine's internet endpoint
-	after, err := engine.LatestVersionGetter.Get(ctx)
+	after, err := engine.client.getLatestVersion(ctx)
 	if err != nil {
 		return checkResult{}, err
 	}

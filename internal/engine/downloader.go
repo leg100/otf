@@ -76,7 +76,7 @@ func (d *downloader) Download(ctx context.Context, version string, w io.Writer) 
 	err = (&download{
 		Writer:  w,
 		version: version,
-		src:     d.engine.GetSourceURL(version).String(),
+		src:     d.engine.client.sourceURL(version).String(),
 		dest:    d.dest(version),
 		binary:  d.engine.String(),
 		client:  d.client,

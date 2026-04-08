@@ -37,14 +37,18 @@ func Engines() []*Engine {
 // Engine represents a CLI capable of carrying out infrastructure as code
 // operations, e.g. terraform.
 type Engine struct {
-	Name                string
-	DefaultVersion      string
-	GetSourceURL        func(version string) *url.URL
-	LatestVersionGetter LatestVersionGetter
+	Name           string
+	DefaultVersion string
+	client         Client
 }
 
-type LatestVersionGetter interface {
-	Get(context.Context) (string, error)
+// Client provides access to the engine's upstream services.
+type Client interface {
+	// getLatestVersion retrieves the latest available (semantic) version.
+	getLatestVersion(context.Context) (string, error)
+	// sourceURL returns the URL for retrieving a given version of the engine
+	// binary.
+	sourceURL(version string) *url.URL
 }
 
 func (e *Engine) String() string { return e.Name }
@@ -84,9 +88,9 @@ func (e *Engine) Value() (driver.Value, error) {
 func (e *Engine) set(v string) error {
 	switch v {
 	case "terraform":
-		e = Terraform
+		*e = *Terraform
 	case "tofu":
-		e = Tofu
+		*e = *Tofu
 	default:
 		return fmt.Errorf("no engine found named %s: must be either 'terraform' or 'tofu'", v)
 	}

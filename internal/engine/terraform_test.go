@@ -20,11 +20,11 @@ func Test_getLatestTerraformVersion(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(handler))
 	t.Cleanup(srv.Close)
 
-	getter := &terraformLatestVersionGetter{
+	getter := &terraformClient{
 		endpoint: srv.URL,
 	}
 
-	got, err := getter.Get(t.Context())
+	got, err := getter.getLatestVersion(t.Context())
 	require.NoError(t, err)
 	assert.Equal(t, "1.6.1", got)
 }

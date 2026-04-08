@@ -16,6 +16,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+type fakeEngineClient struct {
+	Client
+	u *url.URL
+}
+
+func (f *fakeEngineClient) sourceURL(version string) *url.URL {
+	return f.u
+}
+
 func TestDownloader(t *testing.T) {
 	// setup web server
 	mux := http.NewServeMux()
@@ -29,10 +38,8 @@ func TestDownloader(t *testing.T) {
 	u.Path = fmt.Sprintf("/terraform/1.2.3/terraform_1.2.3_%s_%s.zip", runtime.GOOS, runtime.GOARCH)
 
 	engine := &Engine{
-		Name: "terraform",
-		GetSourceURL: func(version string) *url.URL {
-			return u
-		},
+		Name:   "terraform",
+		client: &fakeEngineClient{u: u},
 	}
 
 	dl, err := NewDownloader(logr.Discard(), engine, t.TempDir())
