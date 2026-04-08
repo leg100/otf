@@ -3,7 +3,6 @@ package engine
 import (
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"testing"
 
 	"github.com/leg100/otf/internal/testutils"
@@ -14,20 +13,18 @@ import (
 func Test_getLatestTerraformVersion(t *testing.T) {
 	// endpoint is a stub endpoint that always returns 1.6.1 as latest
 	// version
-	endpoint := func() string {
-		mux := http.NewServeMux()
-		mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Add("Content-Type", "application/json")
-			w.Write(testutils.ReadFile(t, "./testdata/terraform/latest.json"))
-		})
-		srv := httptest.NewServer(mux)
-		t.Cleanup(srv.Close)
-		u, err := url.Parse(srv.URL)
-		require.NoError(t, err)
-		return u.String()
-	}()
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Add("Content-Type", "application/json")
+		w.Write(testutils.ReadFile(t, "./testdata/terraform/latest.json"))
+	}
+	srv := httptest.NewServer(http.HandlerFunc(handler))
+	t.Cleanup(srv.Close)
 
-	got, err := getLatestTerraformVersion(endpoint)
+	getter := &terraformClient{
+		endpoint: srv.URL,
+	}
+
+	got, err := getter.getLatestVersion(t.Context())
 	require.NoError(t, err)
 	assert.Equal(t, "1.6.1", got)
 }

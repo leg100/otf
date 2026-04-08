@@ -20,7 +20,7 @@ func TestDaemonShutdown(t *testing.T) {
 	config := daemon.NewConfig()
 	config.Database = sql.NewTestDB(t)
 	config.Secret = sharedSecret
-	config.DisableLatestChecker = new(true)
+	config.DisableLatestChecker = true
 
 	d, err := daemon.New(ctx, logr.Discard(), config)
 	require.NoError(t, err)

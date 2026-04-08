@@ -292,9 +292,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Logger: logger,
 		DB:     db,
 	})
-	if cfg.DisableLatestChecker == nil || !*cfg.DisableLatestChecker {
-		engineService.StartLatestChecker(ctx)
-	}
 	workspaceService := workspace.NewService(workspace.Options{
 		Logger:            logger,
 		Authorizer:        authorizer,
@@ -865,6 +862,16 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 				WorkspaceClient: workspaceService,
 				RunClient:       runService,
 			}),
+		})
+	}
+	if !cfg.DisableLatestChecker {
+		subsystems = append(subsystems, &Subsystem{
+			Name:   "engine-version-checker",
+			Logger: logger,
+			System: &engine.VersionChecker{
+				Logger: logger,
+				Client: engineService,
+			},
 		})
 	}
 

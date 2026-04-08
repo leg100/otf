@@ -16,12 +16,19 @@ const (
 	latestEndpoint          = "https://api.releases.hashicorp.com/v1/releases/terraform/latest"
 )
 
-type terraform struct{}
+var Terraform = &Engine{
+	Name:           "terraform",
+	DefaultVersion: defaultTerraformVersion,
+	client: &terraformClient{
+		endpoint: latestEndpoint,
+	},
+}
 
-func (e *terraform) String() string         { return "terraform" }
-func (e *terraform) DefaultVersion() string { return defaultTerraformVersion }
+type terraformClient struct {
+	endpoint string
+}
 
-func (e *terraform) sourceURL(version string) *url.URL {
+func (f *terraformClient) sourceURL(version string) *url.URL {
 	return &url.URL{
 		Scheme: "https",
 		Host:   hashicorpReleasesHost,
@@ -34,15 +41,13 @@ func (e *terraform) sourceURL(version string) *url.URL {
 
 // getLatestVersion retrieves the latest version string for terraform, following
 // semver syntax (e.g. 1.9.0)
-//
-// TODO: use ctx
-func (e *terraform) getLatestVersion(_ context.Context) (string, error) {
-	return getLatestTerraformVersion(latestEndpoint)
-}
-
-func getLatestTerraformVersion(endpoint string) (string, error) {
+func (f *terraformClient) getLatestVersion(ctx context.Context) (string, error) {
 	// check releases endpoint
-	resp, err := http.Get(endpoint)
+	req, err := http.NewRequestWithContext(ctx, "GET", f.endpoint, nil)
+	if err != nil {
+		return "", err
+	}
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return "", err
 	}

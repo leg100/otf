@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 	"os"
 	"path"
 	"path/filepath"
@@ -23,20 +22,14 @@ type downloader struct {
 	destdir string       // destination directory for binaries
 	client  *http.Client // client for downloading from server via http
 	lock    *flock.Flock // ensures only one download at a time
-	engine  engineSource
+	engine  *Engine
 	logger  logr.Logger
-}
-
-type engineSource interface {
-	String() string
-
-	sourceURL(version string) *url.URL
 }
 
 // NewDownloader constructs a terraform downloader, with destdir set as the
 // parent directory into which the binaries are downloaded. Pass an empty string
 // to use a default.
-func NewDownloader(logger logr.Logger, engine engineSource, destdir string) (*downloader, error) {
+func NewDownloader(logger logr.Logger, engine *Engine, destdir string) (*downloader, error) {
 	if destdir == "" {
 		destdir = DefaultBinDir
 	}
@@ -83,7 +76,7 @@ func (d *downloader) Download(ctx context.Context, version string, w io.Writer) 
 	err = (&download{
 		Writer:  w,
 		version: version,
-		src:     d.engine.sourceURL(version).String(),
+		src:     d.engine.client.sourceURL(version).String(),
 		dest:    d.dest(version),
 		binary:  d.engine.String(),
 		client:  d.client,

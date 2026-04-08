@@ -22,34 +22,45 @@ var (
 	// NOTE: the actual default engine that has been set by the user should be
 	// retrieved via the daemon config.
 	Default = Terraform
-	// Terraform is the terraform engine
-	Terraform = &Engine{engine: &terraform{}}
-	// Tofu is the opentofu engine
-	Tofu = &Engine{engine: &tofu{}}
 	// ErrInvalidVersion is returned when a engine version string is
 	// not a semantic version string (major.minor.patch).
 	ErrInvalidVersion = errors.New("invalid engine version")
 )
 
-type engine interface {
-	String() string
-	DefaultVersion() string
-
-	sourceURL(version string) *url.URL
-	getLatestVersion(context.Context) (string, error)
+func Engines() []*Engine {
+	return []*Engine{
+		Terraform,
+		Tofu,
+	}
 }
 
+// Engine represents a CLI capable of carrying out infrastructure as code
+// operations, e.g. terraform.
 type Engine struct {
-	engine
+	Name           string
+	DefaultVersion string
+	client         Client
 }
 
-func (*Engine) Type() string { return "engine" }
+// Client provides access to the engine's upstream services.
+type Client interface {
+	// getLatestVersion retrieves the latest available (semantic) version.
+	getLatestVersion(context.Context) (string, error)
+	// sourceURL returns the URL for retrieving a given version of the engine
+	// binary.
+	sourceURL(version string) *url.URL
+}
+
+func (e *Engine) String() string { return e.Name }
+
+func (e *Engine) Type() string { return "engine" }
+
 func (e *Engine) Set(v string) error {
 	return e.set(v)
 }
 
 func (e *Engine) MarshalText() ([]byte, error) {
-	return []byte(e.String()), nil
+	return []byte(e.Name), nil
 }
 
 func (e *Engine) UnmarshalText(text []byte) error {
@@ -71,24 +82,17 @@ func (e *Engine) Value() (driver.Value, error) {
 	if e == nil {
 		return nil, nil
 	}
-	return e.String(), nil
+	return e.Name, nil
 }
 
 func (e *Engine) set(v string) error {
 	switch v {
 	case "terraform":
-		e.engine = &terraform{}
+		*e = *Terraform
 	case "tofu":
-		e.engine = &tofu{}
+		*e = *Tofu
 	default:
 		return fmt.Errorf("no engine found named %s: must be either 'terraform' or 'tofu'", v)
 	}
 	return nil
-}
-
-func Engines() []*Engine {
-	return []*Engine{
-		{engine: &terraform{}},
-		{engine: &tofu{}},
-	}
 }
