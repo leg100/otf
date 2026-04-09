@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.5.22](https://github.com/leg100/otf/compare/v0.5.21...v0.5.22) (2026-04-08)
+
+
+### Features
+
+* **ui:** organization settings menu ([#935](https://github.com/leg100/otf/issues/935)) ([66d7999](https://github.com/leg100/otf/commit/66d79993f7a40f3b5ef98c4b81cec220b31910c2))
+
+
+### Bug Fixes
+
+* cross-platform build support ([#930](https://github.com/leg100/otf/issues/930)) ([d0d7a40](https://github.com/leg100/otf/commit/d0d7a40073e2d95e60902cbcb93dabb984b03b3d))
+* runner wasn't sending final status update ([83d768d](https://github.com/leg100/otf/commit/83d768d762ccbb20da0e1fc7a64c863c8875e7bf))
+* **tests:** exit dangling goroutine at end of test ([890ca50](https://github.com/leg100/otf/commit/890ca50b091d4751985e2810044e5c89218daa76))
+
+
+### Miscellaneous
+
+* bump helm charts with app version v0.5.21 ([34e1ba6](https://github.com/leg100/otf/commit/34e1ba62253f9f8f1072b0eb3b1c534ebb90b708))
+* **dev:** make templ watch mode less verbose ([d15c246](https://github.com/leg100/otf/commit/d15c24646be2a38e7eaa9add4cdf43b2d517ff3e))
+* remove unused func params ([93afe9b](https://github.com/leg100/otf/commit/93afe9b4afe23d23654026f5d774569c54a66523))
+
 ## [0.5.21](https://github.com/leg100/otf/compare/v0.5.20...v0.5.21) (2026-04-05)
 
 
