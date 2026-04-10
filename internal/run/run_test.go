@@ -26,6 +26,7 @@ func TestRun_States(t *testing.T) {
 
 		require.Equal(t, runstatus.Pending, run.Status)
 		require.Equal(t, PhasePending, run.Plan.Status)
+		require.Equal(t, PhasePending, run.Sentinel.Status)
 		require.Equal(t, PhasePending, run.Apply.Status)
 	})
 
@@ -36,6 +37,7 @@ func TestRun_States(t *testing.T) {
 
 		require.Equal(t, runstatus.PlanQueued, run.Status)
 		require.Equal(t, PhaseQueued, run.Plan.Status)
+		require.Equal(t, PhasePending, run.Sentinel.Status)
 		require.Equal(t, PhasePending, run.Apply.Status)
 	})
 
@@ -47,6 +49,7 @@ func TestRun_States(t *testing.T) {
 
 		require.Equal(t, runstatus.Planning, run.Status)
 		require.Equal(t, PhaseRunning, run.Plan.Status)
+		require.Equal(t, PhasePending, run.Sentinel.Status)
 		require.Equal(t, PhasePending, run.Apply.Status)
 	})
 
@@ -57,9 +60,10 @@ func TestRun_States(t *testing.T) {
 		_, err := run.Finish(PlanPhase, PhaseFinishOptions{})
 		require.NoError(t, err)
 
-		require.Equal(t, runstatus.PlannedAndFinished, run.Status)
+		require.Equal(t, runstatus.Planned, run.Status)
 		require.Equal(t, PhaseFinished, run.Plan.Status)
-		require.Equal(t, PhaseUnreachable, run.Apply.Status)
+		require.Equal(t, PhasePending, run.Sentinel.Status)
+		require.Equal(t, PhasePending, run.Apply.Status)
 	})
 
 	t.Run("finish plan with errors", func(t *testing.T) {
@@ -71,6 +75,7 @@ func TestRun_States(t *testing.T) {
 
 		require.Equal(t, runstatus.Errored, run.Status)
 		require.Equal(t, PhaseErrored, run.Plan.Status)
+		require.Equal(t, PhaseUnreachable, run.Sentinel.Status)
 		require.Equal(t, PhaseUnreachable, run.Apply.Status)
 	})
 
@@ -85,6 +90,7 @@ func TestRun_States(t *testing.T) {
 
 		require.Equal(t, runstatus.Planned, run.Status)
 		require.Equal(t, PhaseFinished, run.Plan.Status)
+		require.Equal(t, PhasePending, run.Sentinel.Status)
 		require.Equal(t, PhasePending, run.Apply.Status)
 	})
 
@@ -99,6 +105,7 @@ func TestRun_States(t *testing.T) {
 
 		require.Equal(t, runstatus.Planned, run.Status)
 		require.Equal(t, PhaseFinished, run.Plan.Status)
+		require.Equal(t, PhasePending, run.Sentinel.Status)
 		require.Equal(t, PhasePending, run.Apply.Status)
 	})
 
@@ -111,9 +118,10 @@ func TestRun_States(t *testing.T) {
 		autoapply, err := run.Finish(PlanPhase, PhaseFinishOptions{})
 		require.NoError(t, err)
 
-		assert.True(t, autoapply)
+		assert.False(t, autoapply)
 		assert.Equal(t, runstatus.Planned, run.Status)
 		assert.Equal(t, PhaseFinished, run.Plan.Status)
+		assert.Equal(t, PhasePending, run.Sentinel.Status)
 		assert.Equal(t, PhasePending, run.Apply.Status)
 	})
 
@@ -129,7 +137,32 @@ func TestRun_States(t *testing.T) {
 
 		require.Equal(t, runstatus.CostEstimated, run.Status)
 		require.Equal(t, PhaseFinished, run.Plan.Status)
+		require.Equal(t, PhasePending, run.Sentinel.Status)
 		require.Equal(t, PhasePending, run.Apply.Status)
+
+	})
+
+	t.Run("start sentinel", func(t *testing.T) {
+		run := newTestRun(t, t.Context(), CreateOptions{})
+		run.Status = runstatus.Planned
+
+		require.NoError(t, run.Start())
+
+		require.Equal(t, runstatus.PolicyChecking, run.Status)
+		require.Equal(t, PhaseRunning, run.Sentinel.Status)
+		require.Equal(t, PhasePending, run.Apply.Status)
+	})
+
+	t.Run("finish sentinel", func(t *testing.T) {
+		run := newTestRun(t, t.Context(), CreateOptions{})
+		run.Status = runstatus.PolicyChecking
+		run.Sentinel.Status = PhaseRunning
+
+		_, err := run.Finish(SentinelPhase, PhaseFinishOptions{})
+		require.NoError(t, err)
+
+		require.Equal(t, runstatus.PolicyChecking, run.Status)
+		require.Equal(t, PhaseFinished, run.Sentinel.Status)
 	})
 
 	t.Run("enqueue apply", func(t *testing.T) {

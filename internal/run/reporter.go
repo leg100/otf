@@ -140,7 +140,7 @@ func (r *Reporter) handleRun(ctx context.Context, event *Event) error {
 		description string
 	)
 	switch event.Status {
-	case runstatus.Pending, runstatus.PlanQueued, runstatus.ApplyQueued, runstatus.Planning, runstatus.Applying, runstatus.Planned, runstatus.Confirmed:
+	case runstatus.Pending, runstatus.PlanQueued, runstatus.ApplyQueued, runstatus.Planning, runstatus.PolicyChecking, runstatus.Applying, runstatus.Planned, runstatus.PolicyChecked, runstatus.PolicySoftFailed, runstatus.Confirmed:
 		status = vcs.PendingStatus
 	case runstatus.PlannedAndFinished:
 		status = vcs.SuccessStatus
@@ -152,7 +152,7 @@ func (r *Reporter) handleRun(ctx context.Context, event *Event) error {
 		if run.Apply.ResourceReport != nil {
 			description = fmt.Sprintf("applied: %s", run.Apply.ResourceReport)
 		}
-	case runstatus.Errored, runstatus.Canceled, runstatus.ForceCanceled, runstatus.Discarded:
+	case runstatus.Errored, runstatus.PolicyFailed, runstatus.Canceled, runstatus.ForceCanceled, runstatus.Discarded:
 		status = vcs.ErrorStatus
 		description = event.Status.String()
 	default:

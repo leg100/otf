@@ -84,11 +84,15 @@ func TestIntegration_OrganizationUI(t *testing.T) {
 			require.NoError(t, err)
 			err = page.Locator("input#name").Fill("super-duper-org")
 			require.NoError(t, err)
+			err = page.Locator("input#sentinel-version").Fill("0.40.0")
+			require.NoError(t, err)
 
-			err = page.Locator(`//button[text()='Update organization name']`).Click()
+			err = page.Locator(`//button[text()='Update organization settings']`).Click()
 			require.NoError(t, err)
 
 			err = expect.Locator(page.GetByRole("alert")).ToHaveText("updated organization")
+			require.NoError(t, err)
+			err = expect.Locator(page.Locator("input#sentinel-version")).ToHaveValue("0.40.0")
 			require.NoError(t, err)
 
 			// go to advanced settings

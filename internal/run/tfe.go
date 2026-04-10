@@ -445,8 +445,22 @@ func (a *tfe) toRun(from *Run, ctx context.Context) (*TFERun, error) {
 			timestamps.PlanQueuedAt = &rst.Timestamp
 		case runstatus.Planning:
 			timestamps.PlanningAt = &rst.Timestamp
+		case runstatus.PolicyChecking:
+			timestamps.PolicyCheckingAt = &rst.Timestamp
 		case runstatus.Planned:
 			timestamps.PlannedAt = &rst.Timestamp
+		case runstatus.CostEstimated:
+			timestamps.CostEstimatedAt = &rst.Timestamp
+		case runstatus.PolicyChecked:
+			timestamps.PolicyCheckedAt = &rst.Timestamp
+			if timestamps.CostEstimatedAt == nil {
+				timestamps.CostEstimatedAt = &rst.Timestamp
+			}
+		case runstatus.PolicySoftFailed:
+			timestamps.PolicySoftFailedAt = &rst.Timestamp
+			if timestamps.CostEstimatedAt == nil {
+				timestamps.CostEstimatedAt = &rst.Timestamp
+			}
 		case runstatus.PlannedAndFinished:
 			timestamps.PlannedAndFinishedAt = &rst.Timestamp
 		case runstatus.ApplyQueued:
@@ -488,13 +502,14 @@ func (a *tfe) toRun(from *Run, ctx context.Context) (*TFERun, error) {
 		RefreshOnly:      from.RefreshOnly,
 		ReplaceAddrs:     from.ReplaceAddrs,
 		Source:           string(from.Source),
-		Status:           string(from.Status),
+		Status:           a.tfeStatus(from.Status),
 		StatusTimestamps: &timestamps,
 		TargetAddrs:      from.TargetAddrs,
 		TerraformVersion: from.EngineVersion,
 		// Relations
-		Plan:  &TFEPlan{ID: resource.ConvertTfeID(from.ID, "plan")},
-		Apply: &TFEApply{ID: resource.ConvertTfeID(from.ID, "apply")},
+		Plan:     &TFEPlan{ID: resource.ConvertTfeID(from.ID, "plan")},
+		Sentinel: &TFESentinel{ID: resource.ConvertTfeID(from.ID, "sentinel")},
+		Apply:    &TFEApply{ID: resource.ConvertTfeID(from.ID, "apply")},
 		// TODO: populate with real user.
 		CreatedBy: &user.TFEUser{
 			ID:       tfeUser,
@@ -529,6 +544,18 @@ func (a *tfe) toRun(from *Run, ctx context.Context) (*TFERun, error) {
 		to.ForceCancelAvailableAt = &cooledOff
 	}
 	return to, nil
+}
+
+func (a *tfe) tfeStatus(status runstatus.Status) string {
+	switch status {
+	case runstatus.PolicyChecked, runstatus.PolicySoftFailed:
+		// Terraform Cloud clients still expect a completed pre-apply run to
+		// surface as cost_estimated/planned-compatible even though OTF tracks
+		// the internal Sentinel outcome separately.
+		return string(runstatus.CostEstimated)
+	default:
+		return string(status)
+	}
 }
 
 func (a *tfe) toPlan(plan Phase, r *http.Request) (*TFEPlan, error) {

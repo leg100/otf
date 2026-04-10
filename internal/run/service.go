@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"time"
 
 	"github.com/a-h/templ"
@@ -13,6 +14,7 @@ import (
 	"github.com/leg100/otf/internal/engine"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/organization"
+	"github.com/leg100/otf/internal/policy"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runstatus"
@@ -41,6 +43,7 @@ type (
 		broker                 pubsub.SubscriptionService[*Event]
 		tailer                 *tailer
 		daemonCtx              context.Context
+		policies               policyClient
 
 		*factory
 	}
@@ -72,6 +75,10 @@ type (
 		GetSourceIcon(source source.Source) templ.Component
 		GetVCSProvider(ctx context.Context, providerID resource.TfeID) (*vcs.Provider, error)
 		GetLatest(ctx context.Context, engine *engine.Engine) (string, time.Time, error)
+	}
+
+	policyClient interface {
+		EvaluateRun(ctx context.Context, runID, workspaceID resource.TfeID, org organization.Name) (policy.EvaluationResult, error)
 	}
 )
 
@@ -315,6 +322,15 @@ func (s *Service) FinishPhase(ctx context.Context, runID resource.TfeID, phase P
 		if err != nil {
 			return err
 		}
+		if phase == PlanPhase && !opts.Errored {
+			run, autoapply, err = s.runSentinelPhase(ctx, run)
+			if err != nil {
+				return err
+			}
+			if run.Status == runstatus.PolicyFailed || run.Status == runstatus.PlannedAndFinished {
+				return nil
+			}
+		}
 		if autoapply {
 			return s.ApplyRun(ctx, runID)
 		}
@@ -326,6 +342,120 @@ func (s *Service) FinishPhase(ctx context.Context, runID resource.TfeID, phase P
 	}
 	s.V(0).Info("finished "+string(phase), "id", runID, "resource_changes", resourceReport, "output_changes", outputReport, "run_status", run.Status)
 	return run, nil
+}
+
+func (s *Service) runSentinelPhase(ctx context.Context, run *Run) (*Run, bool, error) {
+	internalCtx := authz.AddSkipAuthz(authz.AddSubjectToContext(ctx, &authz.Superuser{Username: "sentinel-phase"}))
+	writer := NewPhaseWriter(internalCtx, PhaseWriterOptions{
+		RunID:  run.ID,
+		Phase:  SentinelPhase,
+		Writer: s,
+	})
+	defer writer.Close()
+
+	run, err := s.db.UpdateStatus(ctx, run.ID, func(ctx context.Context, run *Run) error {
+		return run.Start()
+	})
+	if err != nil {
+		return nil, false, err
+	}
+
+	logLine := func(format string, args ...any) {
+		_, _ = fmt.Fprintf(writer, format+"\n", args...)
+	}
+
+	logLine("Starting Sentinel policy evaluation")
+
+	if s.policies == nil {
+		logLine("Sentinel policy service is not configured")
+		return s.finishSentinelPhase(ctx, run.ID, policy.EvaluationResult{}, fmt.Errorf("sentinel policy service is not configured"), logLine)
+	}
+
+	eval, evalErr := s.policies.EvaluateRun(ctx, run.ID, run.WorkspaceID, run.Organization)
+	switch {
+	case evalErr != nil:
+		logLine("Sentinel evaluation error: %v", evalErr)
+	case !eval.Evaluated:
+		logLine("No Sentinel policies configured for organization %s", run.Organization)
+	default:
+		logLine("Evaluating %d Sentinel policies", len(eval.Checks))
+		for _, check := range eval.Checks {
+			result := "PASS"
+			if !check.Passed {
+				result = "FAIL"
+			}
+			logLine("[%s] %s/%s (%s)", result, check.PolicySetName, check.PolicyName, check.EnforcementLevel)
+			if check.Output != "" {
+				_, _ = io.WriteString(writer, check.Output+"\n")
+			}
+		}
+		logLine("Sentinel summary: %d checks, mandatory_failures=%t, advisory_failures=%t",
+			len(eval.Checks), eval.HasMandatoryFailure, eval.HasAdvisoryFailure)
+	}
+
+	return s.finishSentinelPhase(ctx, run.ID, eval, evalErr, logLine)
+}
+
+func (s *Service) finishSentinelPhase(ctx context.Context, runID resource.TfeID, eval policy.EvaluationResult, evalErr error, logLine func(string, ...any)) (*Run, bool, error) {
+	run, err := s.db.UpdateStatus(ctx, runID, func(ctx context.Context, run *Run) error {
+		finishErr := evalErr != nil
+		if _, err := run.Finish(SentinelPhase, PhaseFinishOptions{Errored: finishErr && !(run.PlanOnly || !run.HasChanges())}); err != nil {
+			return err
+		}
+
+		switch {
+		case finishErr:
+			if run.PlanOnly || !run.HasChanges() {
+				run.updateStatus(runstatus.PolicySoftFailed, nil)
+				run.updateStatus(runstatus.PlannedAndFinished, nil)
+				run.Apply.UpdateStatus(PhaseUnreachable)
+				return nil
+			}
+			run.Apply.UpdateStatus(PhaseUnreachable)
+			return nil
+		case run.PlanOnly || !run.HasChanges():
+			run.Apply.UpdateStatus(PhaseUnreachable)
+			if eval.HasMandatoryFailure || eval.HasAdvisoryFailure {
+				run.updateStatus(runstatus.PolicySoftFailed, nil)
+			} else {
+				run.updateStatus(runstatus.PolicyChecked, nil)
+			}
+			run.updateStatus(runstatus.PlannedAndFinished, nil)
+			return nil
+		case eval.HasMandatoryFailure:
+			run.updateStatus(runstatus.PolicyFailed, nil)
+			run.Apply.UpdateStatus(PhaseUnreachable)
+			return nil
+		case eval.HasAdvisoryFailure:
+			run.updateStatus(runstatus.PolicySoftFailed, nil)
+		default:
+			run.updateStatus(runstatus.PolicyChecked, nil)
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, false, err
+	}
+
+	if evalErr != nil {
+		if run.PlanOnly || !run.HasChanges() {
+			logLine("Sentinel phase finished with errors; run will remain plan-only/finished")
+			return run, false, nil
+		}
+		logLine("Sentinel phase failed and blocked the run")
+		return run, false, nil
+	}
+	if eval.HasMandatoryFailure {
+		logLine("Sentinel phase failed due to mandatory policy violations")
+		return run, false, nil
+	}
+	if eval.HasAdvisoryFailure {
+		logLine("Sentinel phase finished with advisory policy failures")
+	} else {
+		logLine("Sentinel phase finished successfully")
+	}
+
+	return run, run.AutoApply, nil
 }
 
 func (s *Service) WatchRuns(ctx context.Context) (<-chan pubsub.Event[*Event], func(), error) {
@@ -479,6 +609,14 @@ func (s *Service) GetRunPlanFile(ctx context.Context, runID resource.TfeID, form
 		return nil, err
 	}
 	return file, nil
+}
+
+func (s *Service) GetRunPlanJSON(ctx context.Context, runID resource.TfeID) ([]byte, error) {
+	return s.GetRunPlanFile(ctx, runID, PlanFormatJSON)
+}
+
+func (s *Service) SetPolicyService(client policyClient) {
+	s.policies = client
 }
 
 // UploadRunPlanFile persists a run's plan file. The plan format should be either

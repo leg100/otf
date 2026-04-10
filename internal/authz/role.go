@@ -131,6 +131,28 @@ var (
 			DeleteModuleAction:        true,
 		},
 	}
+
+	// PolicyManagerRole is scoped to an organization and permits management of
+	// Sentinel policy sets and policies.
+	PolicyManagerRole = Role{
+		name: "policy-manager",
+		permissions: map[Action]bool{
+			CreatePolicySetAction:        true,
+			UpdatePolicySetAction:        true,
+			GetPolicySetAction:           true,
+			ListPolicySetsAction:         true,
+			DeletePolicySetAction:        true,
+			CreatePolicyAction:           true,
+			UpdatePolicyAction:           true,
+			GetPolicyAction:              true,
+			DeletePolicyAction:           true,
+			AttachPolicySetAction:        true,
+			DetachPolicySetAction:        true,
+			ListPolicyChecksAction:       true,
+			GetPolicyCheckAction:         true,
+			DownloadWorkspaceMocksAction: true,
+		},
+	}
 )
 
 // Role is a set of permitted actions

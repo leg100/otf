@@ -11,6 +11,7 @@ import (
 	"github.com/leg100/otf/internal/configversion/source"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/logr"
+	"github.com/leg100/otf/internal/policy"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
 	runpkg "github.com/leg100/otf/internal/run"
@@ -29,6 +30,7 @@ type Handlers struct {
 	logger     logr.Logger
 	templates  *templates
 	client     Client
+	policies   PolicyClient
 }
 
 type Client interface {
@@ -53,14 +55,20 @@ type sourceIconGetter interface {
 	GetSourceIcon(source source.Source) templ.Component
 }
 
+type PolicyClient interface {
+	ListPolicyChecks(ctx context.Context, runID resource.TfeID) ([]*policy.PolicyCheck, error)
+}
+
 func NewHandlers(
 	logger logr.Logger,
 	client Client,
+	policies PolicyClient,
 	authorizer authz.Interface,
 ) *Handlers {
 	return &Handlers{
 		logger:     logger,
 		client:     client,
+		policies:   policies,
 		authorizer: authorizer,
 		templates: &templates{
 			workspaces:  client,
@@ -198,6 +206,14 @@ func (h *Handlers) getRun(w http.ResponseWriter, r *http.Request) {
 		helpers.Error(r, w, "retrieving plan logs: "+err.Error())
 		return
 	}
+	sentinelLogs, err := h.client.GetChunk(r.Context(), runpkg.GetChunkOptions{
+		RunID: run.ID,
+		Phase: runpkg.SentinelPhase,
+	})
+	if err != nil {
+		helpers.Error(r, w, "retrieving sentinel logs: "+err.Error())
+		return
+	}
 	applyLogs, err := h.client.GetChunk(r.Context(), runpkg.GetChunkOptions{
 		RunID: run.ID,
 		Phase: runpkg.ApplyPhase,
@@ -208,10 +224,14 @@ func (h *Handlers) getRun(w http.ResponseWriter, r *http.Request) {
 	}
 
 	props := getRunProps{
-		run:       run,
-		ws:        ws,
-		planLogs:  runpkg.Chunk{Data: planLogs.Data},
-		applyLogs: runpkg.Chunk{Data: applyLogs.Data},
+		run:          run,
+		ws:           ws,
+		planLogs:     runpkg.Chunk{Data: planLogs.Data},
+		sentinelLogs: runpkg.Chunk{Data: sentinelLogs.Data},
+		applyLogs:    runpkg.Chunk{Data: applyLogs.Data},
+	}
+	if h.policies != nil {
+		props.policyChecks, _ = h.policies.ListPolicyChecks(r.Context(), run.ID)
 	}
 	helpers.RenderPage(
 		h.templates.getRun(props),
@@ -335,13 +355,15 @@ func (h *Handlers) retryRun(w http.ResponseWriter, r *http.Request) {
 }
 
 const (
-	periodReportUpdate sseEvent = "PeriodReportUpdate"
-	runWidgetUpdate    sseEvent = "RunWidgetUpdate"
-	runTimeUpdate      sseEvent = "RunTimeUpdate"
-	planTimeUpdate     sseEvent = "PlanTimeUpdate"
-	applyTimeUpdate    sseEvent = "ApplyTimeUpdate"
-	planStatusUpdate   sseEvent = "PlanStatusUpdate"
-	applyStatusUpdate  sseEvent = "ApplyStatusUpdate"
+	periodReportUpdate   sseEvent = "PeriodReportUpdate"
+	runWidgetUpdate      sseEvent = "RunWidgetUpdate"
+	runTimeUpdate        sseEvent = "RunTimeUpdate"
+	planTimeUpdate       sseEvent = "PlanTimeUpdate"
+	sentinelTimeUpdate   sseEvent = "SentinelTimeUpdate"
+	applyTimeUpdate      sseEvent = "ApplyTimeUpdate"
+	planStatusUpdate     sseEvent = "PlanStatusUpdate"
+	sentinelStatusUpdate sseEvent = "SentinelStatusUpdate"
+	applyStatusUpdate    sseEvent = "ApplyStatusUpdate"
 )
 
 func (h *Handlers) watchRun(w http.ResponseWriter, r *http.Request) {
@@ -372,10 +394,16 @@ func (h *Handlers) watchRun(w http.ResponseWriter, r *http.Request) {
 		if err := conn.Render(r.Context(), runningTime(&run.Plan), planTimeUpdate); err != nil {
 			return
 		}
+		if err := conn.Render(r.Context(), runningTime(&run.Sentinel), sentinelTimeUpdate); err != nil {
+			return
+		}
 		if err := conn.Render(r.Context(), runningTime(&run.Apply), applyTimeUpdate); err != nil {
 			return
 		}
 		if err := conn.Render(r.Context(), phaseStatus(run.Plan), planStatusUpdate); err != nil {
+			return
+		}
+		if err := conn.Render(r.Context(), phaseStatus(run.Sentinel), sentinelStatusUpdate); err != nil {
 			return
 		}
 		if err := conn.Render(r.Context(), phaseStatus(run.Apply), applyStatusUpdate); err != nil {

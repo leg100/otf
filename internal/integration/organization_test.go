@@ -20,6 +20,7 @@ func TestIntegration_Organization(t *testing.T) {
 			Name: new(uuid.NewString()),
 		})
 		require.NoError(t, err)
+		assert.Equal(t, organization.DefaultSentinelVersion, org.SentinelVersion)
 
 		t.Run("duplicate error", func(t *testing.T) {
 			_, err := daemon.Organizations.CreateOrganization(ctx, organization.CreateOptions{
@@ -54,6 +55,18 @@ func TestIntegration_Organization(t *testing.T) {
 		require.NoError(t, err)
 
 		assert.Equal(t, want, updated.Name)
+	})
+
+	t.Run("update sentinel version", func(t *testing.T) {
+		daemon, _, ctx := setup(t, skipDefaultOrganization())
+		org := daemon.createOrganization(t, ctx)
+
+		updated, err := daemon.Organizations.UpdateOrganization(ctx, org.Name, organization.UpdateOptions{
+			SentinelVersion: new("0.40.0"),
+		})
+		require.NoError(t, err)
+
+		assert.Equal(t, "0.40.0", updated.SentinelVersion)
 	})
 
 	t.Run("list with pagination", func(t *testing.T) {

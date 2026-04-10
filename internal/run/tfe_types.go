@@ -45,6 +45,7 @@ type TFERun struct {
 	CostEstimate         *types.CostEstimate                    `jsonapi:"relationship" json:"cost-estimate"`
 	CreatedBy            *user.TFEUser                          `jsonapi:"relationship" json:"created-by"`
 	Plan                 *TFEPlan                               `jsonapi:"relationship" json:"plan"`
+	Sentinel             *TFESentinel                           `jsonapi:"relationship" json:"sentinel"`
 	Workspace            *TFEWorkspace                          `jsonapi:"relationship" json:"workspace"`
 }
 
@@ -70,6 +71,7 @@ type TFERunStatusTimestamps struct {
 	PlannedAndFinishedAt *time.Time `json:"planned-and-finished-at,omitempty"`
 	PlannedAt            *time.Time `json:"planned-at,omitempty"`
 	PlanningAt           *time.Time `json:"planning-at,omitempty"`
+	PolicyCheckingAt     *time.Time `json:"policy-checking-at,omitempty"`
 	PolicyCheckedAt      *time.Time `json:"policy-checked-at,omitempty"`
 	PolicySoftFailedAt   *time.Time `json:"policy-soft-failed-at,omitempty"`
 }
@@ -223,6 +225,13 @@ type TFEApply struct {
 	StatusTimestamps *TFEPhaseStatusTimestamps `jsonapi:"attribute" json:"status-timestamps"`
 
 	TFEResourceReport
+}
+
+type TFESentinel struct {
+	ID               resource.TfeID            `jsonapi:"primary,sentinels"`
+	LogReadURL       string                    `jsonapi:"attribute" json:"log-read-url"`
+	Status           string                    `jsonapi:"attribute" json:"status"`
+	StatusTimestamps *TFEPhaseStatusTimestamps `jsonapi:"attribute" json:"status-timestamps"`
 }
 
 // TFEPlan represents a Terraform Enterprise plan.

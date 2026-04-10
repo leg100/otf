@@ -12,6 +12,20 @@ const (
 	ListOrganizationsAction
 	GetEntitlementsAction
 	DeleteOrganizationAction
+	CreatePolicySetAction
+	UpdatePolicySetAction
+	GetPolicySetAction
+	ListPolicySetsAction
+	DeletePolicySetAction
+	CreatePolicyAction
+	UpdatePolicyAction
+	GetPolicyAction
+	DeletePolicyAction
+	AttachPolicySetAction
+	DetachPolicySetAction
+	ListPolicyChecksAction
+	GetPolicyCheckAction
+	DownloadWorkspaceMocksAction
 
 	CreateVCSProviderAction
 	UpdateVCSProviderAction

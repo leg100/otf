@@ -158,6 +158,11 @@ func (t *Team) CanAccess(action authz.Action, req authz.Request) bool {
 			return true
 		}
 	}
+	if t.ManagePolicies {
+		if authz.PolicyManagerRole.IsAllowed(action) {
+			return true
+		}
+	}
 	if req.ID != nil && req.ID.Kind() == resource.TeamKind {
 		// team can access self
 		return t.ID == req.ID

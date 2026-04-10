@@ -2,10 +2,12 @@
 package organization
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/semver"
 )
 
 const (
@@ -29,6 +31,7 @@ type (
 		SessionTimeout             *int    `db:"session_timeout"`
 		AllowForceDeleteWorkspaces bool    `db:"allow_force_delete_workspaces"`
 		CostEstimationEnabled      bool    `db:"cost_estimation_enabled"`
+		SentinelVersion            string  `db:"sentinel_version"`
 	}
 
 	// UpdateOptions represents the options for updating an organization.
@@ -43,6 +46,7 @@ type (
 		CollaboratorAuthPolicy     *string
 		CostEstimationEnabled      *bool
 		AllowForceDeleteWorkspaces *bool
+		SentinelVersion            *string
 	}
 
 	// CreateOptions represents the options for creating an organization. See
@@ -58,8 +62,11 @@ type (
 		SessionRemember            *int
 		SessionTimeout             *int
 		AllowForceDeleteWorkspaces *bool
+		SentinelVersion            *string
 	}
 )
+
+const DefaultSentinelVersion = "latest"
 
 func NewOrganization(opts CreateOptions) (*Organization, error) {
 	if opts.Name == nil {
@@ -76,6 +83,7 @@ func NewOrganization(opts CreateOptions) (*Organization, error) {
 		ID:                     resource.NewTfeID(resource.OrganizationKind),
 		Email:                  opts.Email,
 		CollaboratorAuthPolicy: opts.CollaboratorAuthPolicy,
+		SentinelVersion:        DefaultSentinelVersion,
 	}
 	if opts.SessionTimeout != nil {
 		org.SessionTimeout = opts.SessionTimeout
@@ -88,6 +96,12 @@ func NewOrganization(opts CreateOptions) (*Organization, error) {
 	}
 	if opts.CostEstimationEnabled != nil {
 		org.CostEstimationEnabled = *opts.CostEstimationEnabled
+	}
+	if opts.SentinelVersion != nil {
+		if err := ValidateSentinelVersion(*opts.SentinelVersion); err != nil {
+			return nil, err
+		}
+		org.SentinelVersion = *opts.SentinelVersion
 	}
 	return &org, nil
 }
@@ -118,6 +132,22 @@ func (org *Organization) Update(opts UpdateOptions) error {
 	if opts.AllowForceDeleteWorkspaces != nil {
 		org.AllowForceDeleteWorkspaces = *opts.AllowForceDeleteWorkspaces
 	}
+	if opts.SentinelVersion != nil {
+		if err := ValidateSentinelVersion(*opts.SentinelVersion); err != nil {
+			return err
+		}
+		org.SentinelVersion = *opts.SentinelVersion
+	}
 	org.UpdatedAt = internal.CurrentTimestamp(nil)
+	return nil
+}
+
+func ValidateSentinelVersion(v string) error {
+	if v == "latest" {
+		return nil
+	}
+	if !semver.IsValid(v) {
+		return fmt.Errorf("sentinel version must be a semantic version or 'latest'")
+	}
 	return nil
 }

@@ -72,7 +72,6 @@ var (
 	defaultKubeConfig kubeConfig
 )
 
-
 type kubeConfig struct {
 	Namespace      string
 	Image          string
@@ -308,6 +307,14 @@ func (s *kubeExecutor) SpawnOperation(ctx context.Context, _ *errgroup.Group, jo
 									Value: s.OperationConfig.EngineBinDir,
 								},
 								{
+									Name:  "OTF_POLICY_ENGINE_BINS_DIR",
+									Value: s.OperationConfig.PolicyEngineBinDir,
+								},
+								{
+									Name:  "OTF_POLICY_ENGINE_WORK_DIR",
+									Value: s.OperationConfig.PolicyEngineWorkDir,
+								},
+								{
 									Name:  "OTF_PLUGIN_CACHE",
 									Value: strconv.FormatBool(s.OperationConfig.PluginCache),
 								},
@@ -330,6 +337,11 @@ func (s *kubeExecutor) SpawnOperation(ctx context.Context, _ *errgroup.Group, jo
 									Name:      cacheVolumeName,
 									MountPath: s.OperationConfig.PluginCacheDir,
 									SubPath:   filepath.Base(s.OperationConfig.PluginCacheDir),
+								},
+								{
+									Name:      cacheVolumeName,
+									MountPath: s.OperationConfig.PolicyEngineBinDir,
+									SubPath:   filepath.Base(s.OperationConfig.PolicyEngineBinDir),
 								},
 							},
 						},

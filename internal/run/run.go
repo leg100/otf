@@ -66,6 +66,7 @@ type (
 		ExecutionMode          workspace.ExecutionMode `jsonapi:"attribute" json:"execution_mode"`
 		Variables              []Variable              `jsonapi:"attribute" json:"variables"`
 		Plan                   Phase                   `jsonapi:"attribute" json:"plan"`
+		Sentinel               Phase                   `jsonapi:"attribute" json:"sentinel"`
 		Apply                  Phase                   `jsonapi:"attribute" json:"apply"`
 
 		// Timestamps of when a state transition occured. Ordered earliest
@@ -192,6 +193,7 @@ func NewRun(
 	}
 
 	run.Plan = newPhase(run.ID, PlanPhase)
+	run.Sentinel = newPhase(run.ID, SentinelPhase)
 	run.Apply = newPhase(run.ID, ApplyPhase)
 	run.updateStatus(runstatus.Pending, opts.now)
 
@@ -298,6 +300,8 @@ func (r *Run) Phase() PhaseType {
 		return PendingPhase
 	case runstatus.PlanQueued, runstatus.Planning, runstatus.Planned:
 		return PlanPhase
+	case runstatus.PolicyChecking:
+		return SentinelPhase
 	case runstatus.ApplyQueued, runstatus.Applying, runstatus.Applied:
 		return ApplyPhase
 	default:
@@ -315,6 +319,7 @@ func (r *Run) Discard() error {
 	if r.Status == runstatus.Pending {
 		r.Plan.UpdateStatus(PhaseUnreachable)
 	}
+	r.Sentinel.UpdateStatus(PhaseUnreachable)
 	r.Apply.UpdateStatus(PhaseUnreachable)
 
 	return nil
@@ -322,7 +327,7 @@ func (r *Run) Discard() error {
 
 func (r *Run) InProgress() bool {
 	switch r.Status {
-	case runstatus.Planning, runstatus.Applying:
+	case runstatus.Planning, runstatus.PolicyChecking, runstatus.Applying:
 		return true
 	default:
 		return false
@@ -360,9 +365,14 @@ func (r *Run) Cancel(isUser, force bool) error {
 	switch r.Status {
 	case runstatus.Pending:
 		r.Plan.UpdateStatus(PhaseUnreachable)
+		r.Sentinel.UpdateStatus(PhaseUnreachable)
 		r.Apply.UpdateStatus(PhaseUnreachable)
 	case runstatus.PlanQueued:
 		r.Plan.UpdateStatus(PhaseCanceled)
+		r.Sentinel.UpdateStatus(PhaseUnreachable)
+		r.Apply.UpdateStatus(PhaseUnreachable)
+	case runstatus.PolicyChecking:
+		r.Sentinel.UpdateStatus(PhaseCanceled)
 		r.Apply.UpdateStatus(PhaseUnreachable)
 	case runstatus.ApplyQueued:
 		r.Apply.UpdateStatus(PhaseCanceled)
@@ -371,9 +381,13 @@ func (r *Run) Cancel(isUser, force bool) error {
 			signal = true
 		} else {
 			r.Plan.UpdateStatus(PhaseCanceled)
+			r.Sentinel.UpdateStatus(PhaseUnreachable)
 			r.Apply.UpdateStatus(PhaseUnreachable)
 		}
 	case runstatus.Planned:
+		r.Sentinel.UpdateStatus(PhaseUnreachable)
+		r.Apply.UpdateStatus(PhaseUnreachable)
+	case runstatus.PolicyChecked, runstatus.PolicySoftFailed, runstatus.CostEstimated:
 		r.Apply.UpdateStatus(PhaseUnreachable)
 	case runstatus.Applying:
 		if isUser && !force {
@@ -407,7 +421,7 @@ func (r *Run) Cancelable() bool {
 		return false
 	}
 	switch r.Status {
-	case runstatus.Pending, runstatus.PlanQueued, runstatus.Planning, runstatus.ApplyQueued, runstatus.Applying:
+	case runstatus.Pending, runstatus.PlanQueued, runstatus.Planning, runstatus.PolicyChecking, runstatus.ApplyQueued, runstatus.Applying:
 		return true
 	default:
 		return false
@@ -471,7 +485,7 @@ func (r *Run) EnqueuePlan() error {
 
 func (r *Run) EnqueueApply() error {
 	switch r.Status {
-	case runstatus.Planned, runstatus.CostEstimated:
+	case runstatus.Planned, runstatus.CostEstimated, runstatus.PolicyChecked, runstatus.PolicySoftFailed:
 		// applyable statuses
 	default:
 		return fmt.Errorf("cannot apply run with status %s", r.Status)
@@ -496,10 +510,13 @@ func (r *Run) Start() error {
 	case runstatus.PlanQueued:
 		r.updateStatus(runstatus.Planning, nil)
 		r.Plan.UpdateStatus(PhaseRunning)
+	case runstatus.Planned, runstatus.CostEstimated:
+		r.updateStatus(runstatus.PolicyChecking, nil)
+		r.Sentinel.UpdateStatus(PhaseRunning)
 	case runstatus.ApplyQueued:
 		r.updateStatus(runstatus.Applying, nil)
 		r.Apply.UpdateStatus(PhaseRunning)
-	case runstatus.Planning, runstatus.Applying:
+	case runstatus.Planning, runstatus.PolicyChecking, runstatus.Applying:
 		return ErrPhaseAlreadyStarted
 	default:
 		return ErrInvalidRunStateTransition
@@ -523,6 +540,7 @@ func (r *Run) Finish(phase PhaseType, opts PhaseFinishOptions) (autoapply bool, 
 		if opts.Errored {
 			r.updateStatus(runstatus.Errored, nil)
 			r.Plan.UpdateStatus(PhaseErrored)
+			r.Sentinel.UpdateStatus(PhaseUnreachable)
 			r.Apply.UpdateStatus(PhaseUnreachable)
 			return false, nil
 		}
@@ -535,13 +553,19 @@ func (r *Run) Finish(phase PhaseType, opts PhaseFinishOptions) (autoapply bool, 
 			r.updateStatus(runstatus.Planned, nil)
 		}
 		r.Plan.UpdateStatus(PhaseFinished)
-
-		if !r.HasChanges() || r.PlanOnly {
-			r.updateStatus(runstatus.PlannedAndFinished, nil)
+		return false, nil
+	case SentinelPhase:
+		if r.Status != runstatus.PolicyChecking {
+			return false, ErrInvalidRunStateTransition
+		}
+		if opts.Errored {
+			r.updateStatus(runstatus.PolicyFailed, nil)
+			r.Sentinel.UpdateStatus(PhaseErrored)
 			r.Apply.UpdateStatus(PhaseUnreachable)
 			return false, nil
 		}
-		return r.AutoApply, nil
+		r.Sentinel.UpdateStatus(PhaseFinished)
+		return false, nil
 	case ApplyPhase:
 		if r.Status != runstatus.Applying {
 			return false, ErrInvalidRunStateTransition
@@ -571,7 +595,7 @@ func (r *Run) updateStatus(status runstatus.Status, now *time.Time) *Run {
 // Discardable determines whether run can be discarded.
 func (r *Run) Discardable() bool {
 	switch r.Status {
-	case runstatus.Pending, runstatus.Planned, runstatus.CostEstimated:
+	case runstatus.Pending, runstatus.Planned, runstatus.CostEstimated, runstatus.PolicyChecked, runstatus.PolicySoftFailed:
 		return true
 	default:
 		return false
@@ -581,7 +605,7 @@ func (r *Run) Discardable() bool {
 // Confirmable determines whether run can be confirmed.
 func (r *Run) Confirmable() bool {
 	switch r.Status {
-	case runstatus.Planned:
+	case runstatus.Planned, runstatus.PolicyChecked, runstatus.PolicySoftFailed:
 		return true
 	default:
 		return false

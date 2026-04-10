@@ -3,7 +3,6 @@ package ui
 import (
 	"context"
 	runpkg "github.com/leg100/otf/internal/run"
-	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/ui/helpers"
 	"github.com/leg100/otf/internal/ui/paths"
 	"github.com/leg100/otf/internal/user"
@@ -118,7 +117,7 @@ templ (t *runsTable) Row(run *runpkg.Run) {
 		</td>
 		<td class="align-top">
 			<div class="flex gap-2">
-				if run.Status == runstatus.Planned {
+				if run.Confirmable() {
 					<form action={ paths.ApplyRun(run.ID) } method="POST">
 						<button id="apply-button" class="btn btn-sm">Apply</button>
 					</form>

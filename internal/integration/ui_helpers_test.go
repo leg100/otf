@@ -155,8 +155,8 @@ func planWithOptionalApply(t *testing.T, page playwright.Page, apply bool) {
 	err = expect.Locator(page.Locator(`//span[@id='plan-status']`)).ToHaveText("finished")
 	require.NoError(t, err)
 
-	// wait for run to enter planned or planned and finished state
-	err = expect.Locator(page.Locator(`//span[contains(concat(' ', normalize-space(@class), ' '), ' run-status ')]/a`)).ToHaveText(regexp.MustCompile(`planned|planned and finished`))
+	// wait for run to enter a planned-compatible or planned-and-finished state
+	err = expect.Locator(page.Locator(`//span[contains(concat(' ', normalize-space(@class), ' '), ' run-status ')]/a`)).ToHaveText(regexp.MustCompile(`planned|cost estimated|policy checked|policy soft failed|planned and finished`))
 	require.NoError(t, err)
 
 	// run widget should show plan summary
