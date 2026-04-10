@@ -238,7 +238,7 @@ func WorkspaceMenu(workspace resource.Info, organization resource.ID, authorizer
 		var templ_7745c5c3_Var4 templ.SafeURL
 		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinURLErrs(paths.StartRunWorkspace(workspace.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `menu.templ`, Line: 57, Col: 85}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/helpers/menu.templ`, Line: 57, Col: 85}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 		if templ_7745c5c3_Err != nil {
@@ -406,7 +406,7 @@ func MenuItem(title string, path string, matchPrefixes ...string) templ.Componen
 		var templ_7745c5c3_Var8 string
 		templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs("menu-item-" + strings.ReplaceAll(strings.ToLower(title), " ", "-"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `menu.templ`, Line: 95, Col: 77}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/helpers/menu.templ`, Line: 95, Col: 77}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 		if templ_7745c5c3_Err != nil {
@@ -428,7 +428,7 @@ func MenuItem(title string, path string, matchPrefixes ...string) templ.Componen
 		var templ_7745c5c3_Var10 templ.SafeURL
 		templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinURLErrs(path)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `menu.templ`, Line: 97, Col: 14}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/helpers/menu.templ`, Line: 97, Col: 14}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 		if templ_7745c5c3_Err != nil {
@@ -441,7 +441,7 @@ func MenuItem(title string, path string, matchPrefixes ...string) templ.Componen
 		var templ_7745c5c3_Var11 string
 		templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(templ.CSSClasses(templ_7745c5c3_Var9).String())
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `menu.templ`, Line: 1, Col: 0}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/helpers/menu.templ`, Line: 1, Col: 0}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 		if templ_7745c5c3_Err != nil {
@@ -454,7 +454,7 @@ func MenuItem(title string, path string, matchPrefixes ...string) templ.Componen
 		var templ_7745c5c3_Var12 string
 		templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(title)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `menu.templ`, Line: 100, Col: 10}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/helpers/menu.templ`, Line: 100, Col: 10}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 		if templ_7745c5c3_Err != nil {
