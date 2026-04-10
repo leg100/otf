@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/a-h/templ"
 	"github.com/google/uuid"
 	"github.com/leg100/otf/internal"
+	"github.com/templ-go/x/urlbuilder"
 )
 
 var ErrInvalidRepo = errors.New("repository path is invalid")
@@ -115,4 +117,14 @@ func (r *Repo) UnmarshalText(text []byte) error {
 	}
 	*r = repo
 	return nil
+}
+
+// RepoURL builds a URL to the repository homepage on the VCS provider.
+func RepoURL(provider *Provider, repo Repo) templ.SafeURL {
+	b := urlbuilder.New(provider.BaseURL.Scheme, provider.BaseURL.Host)
+	for segment := range strings.SplitSeq(repo.Owner(), "/") {
+		b.Path(segment)
+	}
+	b.Path(repo.Name())
+	return b.Build()
 }

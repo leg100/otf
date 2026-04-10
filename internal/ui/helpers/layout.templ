@@ -22,6 +22,7 @@ type LayoutProps struct {
 	ContentMenu    templ.Component
 	PreContent     templ.Component
 	PostContent    templ.Component
+	SideMenu       templ.Component
 }
 
 templ Layout(props LayoutProps) {
@@ -42,6 +43,7 @@ templ Layout(props LayoutProps) {
 		PreContent:   props.PreContent,
 		PostContent:  props.PostContent,
 		Menu:         menu,
+		SideMenu:     props.SideMenu,
 	}) {
 		<div class="my-2 mx-4">
 			<div class="flex flex-wrap items-center gap-4 pb-2 text-xl/9">
@@ -84,6 +86,7 @@ type BareLayoutProps struct {
 	Menu         templ.Component
 	PreContent   templ.Component
 	PostContent  templ.Component
+	SideMenu     templ.Component
 }
 
 templ BareLayout(props BareLayoutProps) {
@@ -113,8 +116,8 @@ templ BareLayout(props BareLayoutProps) {
 			<script defer src={ AssetPath(ctx, "/js/alpine.3.15.4.min.js") }></script>
 			<link rel="stylesheet" href={ AssetPath(ctx, "/css/output.css") }/>
 		</head>
-		<body hx-ext="morph" class="min-h-screen min-w-3xl grid grid-rows-[auto_1fr_auto]">
-			<header class="border-b-1 border-base-content/30">
+		<body hx-ext="morph" class="min-h-screen min-w-3xl grid grid-rows-[auto_1fr_auto] grid-cols-[200px_3fr]">
+			<header class="col-span-2 border-b-1 border-base-content/30">
 				@navbar(props.Organization, props.Workspace)
 				if props.Menu != nil {
 					<div>
@@ -122,11 +125,21 @@ templ BareLayout(props BareLayoutProps) {
 					</div>
 				}
 			</header>
-			<main class="">
+			if props.SideMenu != nil {
+				<div class="border-r-1 border-base-content/30">
+					@props.SideMenu
+				</div>
+			}
+			<main
+				class={
+					templ.KV("col-span-2", props.SideMenu == nil),
+					templ.KV("max-w-7xl", props.SideMenu != nil),
+				}
+			>
 				@Flashes()
 				{ children... }
 			</main>
-			<footer class="border-t-1 border-base-content/30">
+			<footer class="col-span-2 border-t-1 border-base-content/30">
 				@footer()
 			</footer>
 			if props.PostContent != nil {
@@ -198,14 +211,14 @@ templ navbar(organization resource.ID, workspace *resource.Info) {
 		<div class="flex items-center">
 			if Authenticated(ctx) {
 				<div class="">
-					<a class="btn btn-ghost btn-sm font-normal" href={ paths.Organizations() }>organizations</a>
+					<a class="btn btn-ghost font-normal" href={ paths.Organizations() }>Organizations</a>
 				</div>
 				<div class="">
-					<a class="btn btn-ghost btn-sm font-normal" href={ paths.Admin() }>site</a>
+					<a class="btn btn-ghost font-normal" href={ paths.Admin() }>Site</a>
 				</div>
 				<div class="">
-					<a class="btn btn-ghost btn-sm font-normal" href={ paths.Profile() }>
-						<div class="size-5">
+					<a class="btn btn-ghost font-normal" href={ paths.Profile() }>
+						<div class="size-6">
 							@CurrentUserAvatar()
 						</div>
 					</a>

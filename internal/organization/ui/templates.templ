@@ -82,8 +82,10 @@ templ organizationEdit(org *organization.Organization) {
 			<button class="btn w-72">Update organization settings</button>
 		</div>
 	</form>
-	<hr class="my-4"/>
-	<h3 class="font-semibold text-lg mb-2">Advanced</h3>
+}
+
+templ editAdvanced(org *organization.Organization) {
+	Delete the organization. Warning: this action is irreversible.
 	<form action={ paths.DeleteOrganization(org.Name) } method="POST">
 		<button id="delete-organization-button" class="btn btn-error btn-outline" onclick="return confirm('Are you sure you want to delete?')">
 			Delete organization

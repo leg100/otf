@@ -7,6 +7,7 @@ import (
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type foo struct {
@@ -14,9 +15,10 @@ type foo struct {
 }
 
 func TestBroker_Subscribe(t *testing.T) {
-	broker := NewBroker[*foo](logr.Discard(), &fakeListener{}, "foos")
+	broker := NewBroker[*foo](logr.Discard(), "foos")
 
-	sub, unsub := broker.Subscribe(t.Context())
+	sub, unsub, err := broker.Subscribe(t.Context())
+	require.NoError(t, err)
 	assert.Equal(t, 1, len(broker.subs))
 
 	unsub()
@@ -26,9 +28,10 @@ func TestBroker_Subscribe(t *testing.T) {
 
 func TestBroker_UnsubscribeViaContext(t *testing.T) {
 	ctx, cancel := context.WithCancel(t.Context())
-	broker := NewBroker[*foo](logr.Discard(), &fakeListener{}, "foos")
+	broker := NewBroker[*foo](logr.Discard(), "foos")
 
-	sub, _ := broker.Subscribe(ctx)
+	sub, _, err := broker.Subscribe(ctx)
+	require.NoError(t, err)
 	assert.Equal(t, 1, len(broker.subs))
 
 	cancel()
@@ -37,12 +40,13 @@ func TestBroker_UnsubscribeViaContext(t *testing.T) {
 }
 
 func TestBroker_forward(t *testing.T) {
-	broker := NewBroker[*foo](logr.Discard(), &fakeListener{}, "foos")
+	broker := NewBroker[*foo](logr.Discard(), "foos")
 
-	sub, unsub := broker.Subscribe(t.Context())
+	sub, unsub, err := broker.Subscribe(t.Context())
+	require.NoError(t, err)
 	defer unsub()
 
-	broker.forward(sql.Event{Action: sql.InsertAction, Record: []byte(`{"bar": "baz"}`)})
+	broker.Forward(sql.Event{Action: sql.InsertAction, Record: []byte(`{"bar": "baz"}`)})
 	want := Event[*foo]{
 		Type:    CreatedEvent,
 		Payload: &foo{Bar: "baz"},
@@ -51,7 +55,7 @@ func TestBroker_forward(t *testing.T) {
 }
 
 func TestBroker_UnsubscribeFullSubscriber(t *testing.T) {
-	broker := NewBroker[*foo](logr.Discard(), &fakeListener{}, "foos")
+	broker := NewBroker[*foo](logr.Discard(), "foos")
 
 	broker.Subscribe(t.Context())
 	assert.Equal(t, 1, len(broker.subs))
@@ -59,7 +63,7 @@ func TestBroker_UnsubscribeFullSubscriber(t *testing.T) {
 	// deliberating publish more than subBufferSize events to trigger broker to
 	// unsubscribe the sub
 	for range subBufferSize + 1 {
-		broker.forward(sql.Event{Action: sql.InsertAction, Record: []byte(`{"bar": "baz"}`)})
+		broker.Forward(sql.Event{Action: sql.InsertAction, Record: []byte(`{"bar": "baz"}`)})
 	}
 	assert.Equal(t, 0, len(broker.subs))
 }

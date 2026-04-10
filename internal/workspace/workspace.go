@@ -431,6 +431,7 @@ func (ws *Workspace) Update(opts UpdateOptions) (*bool, error) {
 	}
 	if opts.Engine != nil {
 		ws.Engine = opts.Engine
+		updated = true
 	}
 	if opts.EngineVersion != nil {
 		ws.EngineVersion = opts.EngineVersion

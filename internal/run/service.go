@@ -56,6 +56,8 @@ type (
 		Logger             logr.Logger
 		DB                 *sql.DB
 		Listener           *sql.Listener
+		Broker             pubsub.SubscriptionService[*Event]
+		ChunkBroker        pubsub.SubscriptionService[Chunk]
 	}
 
 	serviceClient interface {
@@ -88,6 +90,7 @@ func NewService(opts Options) *Service {
 		db:        db,
 		Interface: opts.Authorizer,
 		daemonCtx: opts.DaemonCtx,
+		broker:    opts.Broker,
 	}
 	svc.MetricsCollector = &MetricsCollector{
 		service: &svc,
@@ -96,11 +99,7 @@ func NewService(opts Options) *Service {
 		client: opts.Client,
 	}
 	svc.tailer = &tailer{
-		broker: pubsub.NewBroker[Chunk](
-			opts.Logger,
-			opts.Listener,
-			"chunks",
-		),
+		broker: opts.ChunkBroker,
 		client: &svc,
 	}
 	spawner := &Spawner{
@@ -113,11 +112,6 @@ func NewService(opts Options) *Service {
 			Service:       &svc,
 		},
 	}
-	svc.broker = pubsub.NewBroker[*Event](
-		opts.Logger,
-		opts.Listener,
-		"runs",
-	)
 
 	// Provide a means of looking up a run's parent workspace.
 	opts.Authorizer.RegisterParentResolver(resource.RunKind,
@@ -464,7 +458,7 @@ func (s *Service) finishSentinelPhase(ctx context.Context, runID resource.TfeID,
 	return run, run.AutoApply, nil
 }
 
-func (s *Service) WatchRuns(ctx context.Context) (<-chan pubsub.Event[*Event], func()) {
+func (s *Service) WatchRuns(ctx context.Context) (<-chan pubsub.Event[*Event], func(), error) {
 	return s.broker.Subscribe(ctx)
 }
 

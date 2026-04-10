@@ -18,6 +18,8 @@ import (
 	"github.com/leg100/otf/internal/vcs"
 )
 
+const Table sql.Table = "workspaces"
+
 // pgdb is a workspace database on postgres
 type pgdb struct {
 	*sql.DB // provides access to generated SQL queries

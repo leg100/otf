@@ -79,6 +79,7 @@ func (h *Handlers) listSSHKeys(w http.ResponseWriter, r *http.Request) {
 		helpers.WithBreadcrumbs(
 			helpers.Breadcrumb{Name: "SSH Keys"},
 		),
+		helpers.WithSideMenu(helpers.OrganizationSettingsMenu(params.Name)),
 	)
 }
 

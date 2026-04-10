@@ -14,7 +14,6 @@ import (
 	"github.com/leg100/otf/internal/configversion/source"
 	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/http/decode"
-	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/tfeapi"
@@ -43,7 +42,6 @@ type tfeClient interface {
 	TailRun(context.Context, TailOptions) (<-chan Chunk, error)
 	DeleteRun(context.Context, resource.TfeID) error
 	ApplyRun(context.Context, resource.TfeID) error
-	WatchRuns(ctx context.Context) (<-chan pubsub.Event[*Event], func())
 	GetRunPlanFile(ctx context.Context, id resource.TfeID, format PlanFormat) ([]byte, error)
 	GetWorkspace(ctx context.Context, workspaceID resource.TfeID) (*workspace.Workspace, error)
 }

@@ -25,13 +25,12 @@ func TestIntegration_TerraformCLICancel(t *testing.T) {
 
 	// Canceling a run is not straight-forward, because to do so reliably the
 	// terraform apply should be interrupted precisely when it is in mid-flow,
-	// i.e. while it is planning. To achieve this, the test uses the 'http'
-	// data source, which contacts a test handler that never returns a response
-	// and so should cause terraform plan to hang. At this point the interrupt
-	// can be sent.
+	// i.e. while it is planning. To achieve this, the test uses the 'http' data
+	// source, which contacts the following test handler that hangs until the
+	// test finishes and so should cause terraform plan to hang. At this point
+	// the interrupt can be sent.
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// never return
-		<-make(chan struct{})
+		<-t.Context().Done()
 	}))
 
 	// create some config and run terraform init

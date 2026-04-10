@@ -1,5 +1,58 @@
 # Changelog
 
+## [0.5.22](https://github.com/leg100/otf/compare/v0.5.21...v0.5.22) (2026-04-08)
+
+
+### Features
+
+* **ui:** organization settings menu ([#935](https://github.com/leg100/otf/issues/935)) ([66d7999](https://github.com/leg100/otf/commit/66d79993f7a40f3b5ef98c4b81cec220b31910c2))
+
+
+### Bug Fixes
+
+* cross-platform build support ([#930](https://github.com/leg100/otf/issues/930)) ([d0d7a40](https://github.com/leg100/otf/commit/d0d7a40073e2d95e60902cbcb93dabb984b03b3d))
+* runner wasn't sending final status update ([83d768d](https://github.com/leg100/otf/commit/83d768d762ccbb20da0e1fc7a64c863c8875e7bf))
+* **tests:** exit dangling goroutine at end of test ([890ca50](https://github.com/leg100/otf/commit/890ca50b091d4751985e2810044e5c89218daa76))
+
+
+### Miscellaneous
+
+* bump helm charts with app version v0.5.21 ([34e1ba6](https://github.com/leg100/otf/commit/34e1ba62253f9f8f1072b0eb3b1c534ebb90b708))
+* **dev:** make templ watch mode less verbose ([d15c246](https://github.com/leg100/otf/commit/d15c24646be2a38e7eaa9add4cdf43b2d517ff3e))
+* remove unused func params ([93afe9b](https://github.com/leg100/otf/commit/93afe9b4afe23d23654026f5d774569c54a66523))
+
+## [0.5.21](https://github.com/leg100/otf/compare/v0.5.20...v0.5.21) (2026-04-05)
+
+
+### Bug Fixes
+
+* **ui:** don't use symlink for logo ([30c3d37](https://github.com/leg100/otf/commit/30c3d37131e5b0b4511652a341fc5fe15446dbcd))
+
+## [0.5.20](https://github.com/leg100/otf/compare/v0.5.19...v0.5.20) (2026-04-05)
+
+
+### Features
+
+* **gitlab:** implement SetStatus to update commit status in GitLab ([#929](https://github.com/leg100/otf/issues/929)) ([e86f20a](https://github.com/leg100/otf/commit/e86f20aa08e407a1828a5d481b32b1153d38c170))
+* **ui:** workspace settings submenu ([#933](https://github.com/leg100/otf/issues/933)) ([97d1fe9](https://github.com/leg100/otf/commit/97d1fe98c6279b055d51b438ac31effa8cc02a41))
+
+
+### Bug Fixes
+
+* **dev:** building docker images broken on non-linux devices ([#928](https://github.com/leg100/otf/issues/928)) ([5636d24](https://github.com/leg100/otf/commit/5636d2453ef2b9a6761dd28fd978c8085314e849))
+* ensure otfd is resilient to database outages ([#932](https://github.com/leg100/otf/issues/932)) ([0c87654](https://github.com/leg100/otf/commit/0c87654667982b0a7cc60f2616f8b1563e119e95))
+* ensure run timeout subsystem can handle db outage ([52a3fce](https://github.com/leg100/otf/commit/52a3fcec482cb1181a3edfe29a4adef0b2ceecc1))
+* **tests:** using test ctx breaks integration tests ([5cbffc3](https://github.com/leg100/otf/commit/5cbffc30c3f8ceb57bb38c72656598a239c95ad5))
+* **ui:** use brighter colors in logo ([e824e6f](https://github.com/leg100/otf/commit/e824e6f7674a8e7f1713687352a144a137f301e5))
+
+
+### Miscellaneous
+
+* bump helm charts with app version v0.5.19 ([edf49d7](https://github.com/leg100/otf/commit/edf49d7e13827639033455b46cca74ad669a47fd))
+* test timeout subsystem for errors ([fe354c1](https://github.com/leg100/otf/commit/fe354c191378a209100b2c8b0e2936f6bd64dcc7))
+* **ui:** replace multiple vcs tables with one ([36eece0](https://github.com/leg100/otf/commit/36eece0c29233128ba972214dbd6cb255b9a079c))
+* use modern go features ([7983154](https://github.com/leg100/otf/commit/79831540169796f9fd03793bede711dbb1b8afa0))
+
 ## [0.5.19](https://github.com/leg100/otf/compare/v0.5.18...v0.5.19) (2026-03-30)
 
 

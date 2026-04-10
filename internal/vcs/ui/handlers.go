@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/a-h/templ"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/decode"
@@ -14,7 +13,6 @@ import (
 	"github.com/leg100/otf/internal/ui/helpers"
 	"github.com/leg100/otf/internal/ui/paths"
 	"github.com/leg100/otf/internal/vcs"
-	"github.com/templ-go/x/urlbuilder"
 )
 
 type Handlers struct {
@@ -199,13 +197,4 @@ func (h *Handlers) deleteVCSProvider(w http.ResponseWriter, r *http.Request) {
 	}
 	helpers.FlashSuccess(w, "deleted provider: "+provider.String())
 	http.Redirect(w, r, paths.VCSProviders(provider.Organization), http.StatusFound)
-}
-
-func RepoURL(provider *vcs.Provider, repo vcs.Repo) templ.SafeURL {
-	b := urlbuilder.New(provider.BaseURL.Scheme, provider.BaseURL.Host)
-	for segment := range strings.SplitSeq(repo.Owner(), "/") {
-		b.Path(segment)
-	}
-	b.Path(repo.Name())
-	return b.Build()
 }

@@ -70,6 +70,10 @@ func setup(t *testing.T, opts ...configOption) (*testDaemon, *organization.Organ
 	cfg.CertFile = "./fixtures/cert.pem"
 	cfg.KeyFile = "./fixtures/key.pem"
 
+	// Disable checking for latest engine version to avoid hitting upstream
+	// terraform/tofu internet servers.
+	cfg.DisableLatestChecker = true
+
 	for _, fn := range opts {
 		fn(cfg)
 	}
@@ -80,11 +84,6 @@ func setup(t *testing.T, opts ...configOption) (*testDaemon, *organization.Organ
 	// Use shared secret if one is not specified
 	if cfg.Secret == nil {
 		cfg.Secret = sharedSecret
-	}
-	// Unless test has specified otherwise, disable checking for latest
-	// engine version
-	if cfg.DisableLatestChecker == nil || !*cfg.DisableLatestChecker {
-		cfg.DisableLatestChecker = new(true)
 	}
 	// Start stub github server, unless test has set its own github stub
 	var githubServer *testserver.TestServer
@@ -130,7 +129,8 @@ func setup(t *testing.T, opts ...configOption) (*testDaemon, *organization.Organ
 	<-started
 
 	// Subscribe to run events
-	runEvents, unsub := d.Runs.WatchRuns(ctx)
+	runEvents, unsub, err := d.Runs.WatchRuns(ctx)
+	require.NoError(t, err)
 	t.Cleanup(unsub)
 
 	t.Cleanup(func() {

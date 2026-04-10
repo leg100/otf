@@ -26,8 +26,8 @@ type allocator struct {
 }
 
 type allocatorClient interface {
-	WatchRunners(context.Context) (<-chan pubsub.Event[*RunnerEvent], func())
-	WatchJobs(context.Context) (<-chan pubsub.Event[*JobEvent], func())
+	WatchRunners(context.Context) (<-chan pubsub.Event[*RunnerEvent], func(), error)
+	WatchJobs(context.Context) (<-chan pubsub.Event[*JobEvent], func(), error)
 	ListRunners(ctx context.Context, opts ListOptions) ([]*RunnerMeta, error)
 	GetJob(ctx context.Context, jobID resource.TfeID) (*Job, error)
 
@@ -41,9 +41,15 @@ type allocatorClient interface {
 // Start the allocator. Should be invoked in a go routine.
 func (a *allocator) Start(ctx context.Context) error {
 	// Subscribe to pool, job and runner events and unsubscribe before returning.
-	runnersSub, runnersUnsub := a.client.WatchRunners(ctx)
+	runnersSub, runnersUnsub, err := a.client.WatchRunners(ctx)
+	if err != nil {
+		return fmt.Errorf("watching runners: %w", err)
+	}
 	defer runnersUnsub()
-	jobsSub, jobsUnsub := a.client.WatchJobs(ctx)
+	jobsSub, jobsUnsub, err := a.client.WatchJobs(ctx)
+	if err != nil {
+		return fmt.Errorf("watching jobs: %w", err)
+	}
 	defer jobsUnsub()
 
 	runners, err := a.client.ListRunners(ctx, ListOptions{})

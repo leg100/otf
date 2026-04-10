@@ -44,6 +44,7 @@ func (h *Handlers) AddHandlers(r *mux.Router) {
 	r.HandleFunc("/organizations/{name}/edit", h.editOrganization).Methods("GET")
 	r.HandleFunc("/organizations/{name}/update", h.updateOrganization).Methods("POST")
 	r.HandleFunc("/organizations/{name}/delete", h.deleteOrganization).Methods("POST")
+	r.HandleFunc("/organizations/{name}/edit-advanced", h.editAdvancedOrganization).Methods("GET")
 
 	// organization tokens
 	r.HandleFunc("/organizations/{organization_name}/tokens/show", h.organizationToken).Methods("GET")
@@ -151,9 +152,10 @@ func (h *Handlers) editOrganization(w http.ResponseWriter, r *http.Request) {
 		w,
 		r,
 		helpers.WithBreadcrumbs(
-			helpers.Breadcrumb{Name: "Settings"},
+			helpers.Breadcrumb{Name: "General Settings"},
 		),
 		helpers.WithOrganization(org.Name),
+		helpers.WithSideMenu(helpers.OrganizationSettingsMenu(org.Name)),
 	)
 }
 
@@ -197,6 +199,34 @@ func (h *Handlers) deleteOrganization(w http.ResponseWriter, r *http.Request) {
 
 	helpers.FlashSuccess(w, "deleted organization: "+params.Name.String())
 	http.Redirect(w, r, paths.Organizations(), http.StatusFound)
+}
+
+func (h *Handlers) editAdvancedOrganization(w http.ResponseWriter, r *http.Request) {
+	var params struct {
+		Name organization.Name `schema:"name"`
+	}
+	if err := decode.All(&params, r); err != nil {
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
+		return
+	}
+
+	org, err := h.Organizations.GetOrganization(r.Context(), params.Name)
+	if err != nil {
+		helpers.Error(r, w, err.Error())
+		return
+	}
+
+	helpers.RenderPage(
+		editAdvanced(org),
+		org.Name.String(),
+		w,
+		r,
+		helpers.WithBreadcrumbs(
+			helpers.Breadcrumb{Name: "Advanced Settings"},
+		),
+		helpers.WithOrganization(org.Name),
+		helpers.WithSideMenu(helpers.OrganizationSettingsMenu(org.Name)),
+	)
 }
 
 //
@@ -249,6 +279,7 @@ func (h *Handlers) organizationToken(w http.ResponseWriter, r *http.Request) {
 			helpers.Breadcrumb{Name: "Organization Token"},
 		),
 		helpers.WithOrganization(params.Name),
+		helpers.WithSideMenu(helpers.OrganizationSettingsMenu(params.Name)),
 	)
 }
 

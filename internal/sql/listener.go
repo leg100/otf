@@ -2,11 +2,8 @@ package sql
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"log/slog"
-	"sync"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -30,97 +27,111 @@ type (
 
 	// Listener listens for postgres events
 	Listener struct {
-		logr.Logger
-
+		logger      logr.Logger
 		conn        *DB           // pool from which to acquire a dedicated connection to postgres
-		islistening chan struct{} // semaphore that's closed once broker is listening
-
-		mu         sync.Mutex             // sync access to maps
-		forwarders map[string]ForwardFunc // maps table name to event forwarder
+		islistening chan struct{} // semaphore that's populated once listener is listening.
+		brokers     map[Table]Broker
 	}
 
 	// ForwardFunc forwards an event to a client
 	ForwardFunc func(event Event)
+
+	// Broker is a broker handling events for a specific table.
+	Broker interface {
+		// Forward database event to broker
+		Forward(Event)
+		// Table retrieves the table the broker is handling events for.
+		Table() Table
+		// Enable the broker.
+		Enable()
+		// Disable the broker.
+		Disable()
+	}
 )
 
-func NewListener(logger logr.Logger, conn *DB) *Listener {
-	return &Listener{
-		Logger:      logger.WithValues("component", "listener"),
+func NewListener(logger logr.Logger, conn *DB, brokers ...Broker) *Listener {
+	listener := &Listener{
+		logger:      logger.WithValues("component", "listener"),
 		conn:        conn,
-		islistening: make(chan struct{}),
-		forwarders:  make(map[string]ForwardFunc),
+		islistening: make(chan struct{}, 1),
 	}
-}
+	listener.brokers = make(map[Table]Broker, len(brokers))
+	for _, broker := range brokers {
+		listener.brokers[broker.Table()] = broker
+	}
+	return listener
 
-// RegisterTable maps a table to an event forwarding function: the function
-// henceforth is called with events triggered on the table.
-func (b *Listener) RegisterTable(table string, forwarder ForwardFunc) {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-
-	b.forwarders[table] = forwarder
 }
 
 // Start the pubsub daemon; listen to notifications from postgres and forward to
 // local pubsub broker. The listening channel is closed once the broker has
 // started listening; from this point onwards published messages will be
 // forwarded.
-func (b *Listener) Start(ctx context.Context) error {
-	// Cancel listen connection when leaving func.
+func (l *Listener) Start(ctx context.Context) error {
+	// Close listen connection when leaving func.
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	notifications, err := b.conn.Listen(ctx, "events")
+	notifications, err := l.conn.Listen(ctx, "events")
 	if err != nil {
 		return fmt.Errorf("listening to postgres notification channel: %w", err)
 	}
 
-	b.V(2).Info("listening for events")
-	go func() {
-		// close semaphore to indicate broker is now listening
-		b.islistening <- struct{}{}
-	}()
+	// Inform caller that we're now listening. This routine may be called
+	// more than once if the listener is restarted, e.g. there is a
+	// transient database failure. Therefore we don't block on this channel
+	// if a message has already been published by a previous start.
+	select {
+	case l.islistening <- struct{}{}:
+	default:
+	}
+
+	// Now that we're listening inform the brokers.
+	for _, broker := range l.brokers {
+		broker.Enable()
+	}
 
 	g, ctx := errgroup.WithContext(ctx)
 
 	// cleanup old events
 	g.Go(func() error {
-		return b.cleanup(ctx)
+		return l.cleanup(ctx)
 	})
 
 	// check for new events
 	g.Go(func() error {
 		for notification := range notifications {
-			row := b.conn.Query(ctx, `SELECT * FROM events WHERE id = $1 `, notification)
+			row := l.conn.Query(ctx, `SELECT * FROM events WHERE id = $1 `, notification)
 			event, err := pgx.CollectOneRow(row, pgx.RowToStructByName[Event])
 			if err != nil {
 				return fmt.Errorf("retrieving events: %w", err)
 			}
-			if err := json.Unmarshal([]byte(event.Record), &event); err != nil {
-				b.Error(err, "unmarshaling postgres event")
-				continue
-			}
-			forwarder, ok := b.forwarders[string(event.Table)]
+			broker, ok := l.brokers[event.Table]
 			if !ok {
-				b.Error(nil, "no event forwarder found", "table", event.Table)
+				l.logger.Error(nil, "no event broker found for table", "table", event.Table)
 				continue
 			}
-			forwarder(event)
+			broker.Forward(event)
 		}
-		return nil
+		// Connection to notification channel closed; inform the brokers so that
+		// they can inform their subscribers).
+		for _, broker := range l.brokers {
+			broker.Disable()
+		}
+		return fmt.Errorf("connection to database notification channel terminated")
 	})
 	return g.Wait()
 }
 
-func (b *Listener) Started() <-chan struct{} {
-	return b.islistening
+func (l *Listener) Started() <-chan struct{} {
+	return l.islistening
 }
 
-func (b *Listener) cleanup(ctx context.Context) error {
+func (l *Listener) cleanup(ctx context.Context) error {
 	ticker := time.NewTicker(time.Minute)
 	for {
 		// delete events older than one minute
-		_, err := b.conn.conn(ctx).Exec(ctx, `DELETE FROM events WHERE time < (current_timestamp - interval '1 minute')`)
+		_, err := l.conn.conn(ctx).Exec(ctx, `DELETE FROM events WHERE time < (current_timestamp - interval '1 minute')`)
 		if err != nil {
 			return fmt.Errorf("cleaning up old events: %w", err)
 		}
@@ -131,22 +142,4 @@ func (b *Listener) cleanup(ctx context.Context) error {
 		}
 	}
 
-}
-
-// Event is a postgres event triggered by a database change.
-type Event struct {
-	ID     int             `db:"id"`
-	Table  string          `db:"_table"` // pg table associated with change
-	Action Action          // INSERT/UPDATE/DELETE
-	Record json.RawMessage // the changed row
-	Time   time.Time       // time at which event occured
-}
-
-func (v Event) LogValue() slog.Value {
-	attrs := []slog.Attr{
-		slog.String("action", string(v.Action)),
-		slog.String("table", v.Table),
-		slog.Time("time", v.Time),
-	}
-	return slog.GroupValue(attrs...)
 }

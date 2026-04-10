@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/leg100/otf/internal/logr"
+	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 )
@@ -64,7 +65,7 @@ func (s *jobSignaler) relay(signals <-chan string) error {
 			s.unsubscribe(signal.JobID)
 		}
 	}
-	return nil
+	return pubsub.ErrSubscriptionTerminated
 }
 
 func (s *jobSignaler) publish(ctx context.Context, jobID resource.TfeID, force bool) error {

@@ -21,6 +21,8 @@ import (
 	"github.com/pkg/errors"
 )
 
+const Table sql.Table = "runs"
+
 // pgdb is a database of runs on postgres
 type pgdb struct {
 	*sql.DB // provides access to generated SQL queries

@@ -67,8 +67,8 @@ func (f *fakeRunService) GetRun(ctx context.Context, id resource.TfeID) (*run.Ru
 	return &run.Run{ID: id}, nil
 }
 
-func (f *fakeRunService) WatchRuns(ctx context.Context) (<-chan pubsub.Event[*run.Event], func()) {
-	return nil, nil
+func (f *fakeRunService) WatchRuns(ctx context.Context) (<-chan pubsub.Event[*run.Event], func(), error) {
+	return nil, nil, nil
 }
 
 func (*fakeHostnameService) Hostname() string { return "" }

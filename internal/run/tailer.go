@@ -2,6 +2,7 @@ package run
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/leg100/otf/internal/pubsub"
 )
@@ -18,7 +19,10 @@ type tailer struct {
 func (t *tailer) Tail(ctx context.Context, opts TailOptions) (<-chan Chunk, error) {
 	// Subscribe first and only then retrieve from DB, guaranteeing that we
 	// won't miss any updates
-	sub, _ := t.broker.Subscribe(ctx)
+	sub, _, err := t.broker.Subscribe(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("subscribing to log chunk events: %w", err)
+	}
 
 	chunk, err := t.client.GetChunk(ctx, GetChunkOptions{
 		RunID:  opts.RunID,
