@@ -565,7 +565,7 @@ func (o *operation) setupSSHKey(ctx context.Context) error {
 		return fmt.Errorf("writing SSH key: %w", err)
 	}
 
-	sshCmd := fmt.Sprintf("ssh -i %s -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null", keyPath)
+	sshCmd := fmt.Sprintf("ssh -i %s -o IdentitiesOnly=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null", keyPath)
 	// Set GIT_SSH_COMMAND for engine versions that honour it.
 	o.envs = append(o.envs, "GIT_SSH_COMMAND="+sshCmd)
 

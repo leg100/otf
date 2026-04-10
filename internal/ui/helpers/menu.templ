@@ -50,7 +50,6 @@ templ WorkspaceMenu(workspace resource.Info, organization resource.ID, authorize
 			@MenuItem("Sentinel", paths.WorkspaceSentinel(workspace.ID))
 			if authorizer.CanAccess(ctx, authz.UpdateWorkspaceAction, workspace.ID) {
 				@MenuItem("Settings", paths.EditWorkspace(workspace.ID), paths.Workspace(workspace.ID)+"/setup-connection")
-				@MenuItem("SSH Key", paths.EditSSHKeyWorkspace(workspace.ID))
 			}
 		</ul>
 		<div class="">
