@@ -15,7 +15,7 @@ import (
 // lock and then releasing lock and the connection, and it does this several
 // times, to demonstrate that it is returning resources and not running into
 // limits.
-func TestWaitAndLock(t *testing.T) {
+func TestWaitForExclusiveLock(t *testing.T) {
 	integrationTest(t)
 
 	db, err := sql.New(t.Context(), logr.Discard(), sql.NewTestDB(t))
@@ -24,7 +24,7 @@ func TestWaitAndLock(t *testing.T) {
 
 	for range 100 {
 		func() {
-			err := db.WaitAndLock(t.Context(), 123, func(context.Context) error { return nil })
+			err := db.WaitForExclusiveLock(t.Context(), func(context.Context) error { return nil })
 			require.NoError(t, err)
 		}()
 	}

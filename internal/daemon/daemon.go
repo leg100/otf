@@ -910,51 +910,14 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 
 // Start the otfd daemon and block until ctx is cancelled or an error is
 // returned. The started channel is closed once the daemon has started.
-func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
+func (d *Daemon) Start(ctx context.Context, logger logr.Logger, started chan struct{}) error {
 	// Cancel context the first time a func started with g.Go() fails
 	g, ctx := errgroup.WithContext(ctx)
 
-	// Start non-exclusive subsystems first.
-	for _, ss := range d.subsystems {
-		if ss.Exclusive {
-			continue
-		}
-		if err := ss.Start(ctx, g); err != nil {
-			return err
-		}
-		// Wait for subsystem to finish starting up if it exposes the ability to
-		// do so.
-		wait, ok := ss.System.(interface{ Started() <-chan struct{} })
-		if ok {
-			select {
-			case <-ctx.Done():
-				return ctx.Err()
-			case <-time.After(time.Second * 10):
-				return fmt.Errorf("timed out waiting for subsystem to start: %s", ss.Name)
-			case <-wait.Started():
-			}
-		}
+	// Start automonomous subsystems
+	if err := startSubsystems(ctx, logger, g, d.subsystems, d.DB); err != nil {
+		return err
 	}
-
-	// Manage exclusive subsystems.
-	g.Go(func() error {
-		// Wait for for an exclusive lock before starting exclusive subsytems.
-		// On a single node cluster this'll start immediately, but on a multi
-		// node cluster or with a rolling upgrade then it'll wait until another
-		// node with the lock shuts down.
-		return d.DB.WaitForExclusiveLock(ctx, func(ctx context.Context) error {
-			for _, ss := range d.subsystems {
-				if !ss.Exclusive {
-					continue
-				}
-				if err := ss.Start(ctx, g); err != nil {
-					return err
-				}
-			}
-			<-ctx.Done()
-			return ctx.Err()
-		})
-	})
 
 	// Run HTTP/JSON-API server and web app
 	g.Go(func() error {

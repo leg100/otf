@@ -29,10 +29,60 @@ type (
 		Start(ctx context.Context) error
 	}
 
-	//subsystemDB interface {
-	//	WaitAndLock(ctx context.Context, id int64, fn func(context.Context) error) error
-	//}
+	locker interface {
+		WaitForExclusiveLock(ctx context.Context, fn func(context.Context) error) error
+	}
 )
+
+func startSubsystems(ctx context.Context, logger logr.Logger, g *errgroup.Group, subsystems []*Subsystem, locker locker) error {
+	// Start non-exclusive subsystems first.
+	for _, ss := range subsystems {
+		if ss.Exclusive {
+			continue
+		}
+		if err := ss.Start(ctx, g); err != nil {
+			return err
+		}
+		// Wait for subsystem to finish starting up if it exposes the ability to
+		// do so.
+		wait, ok := ss.System.(interface{ Started() <-chan struct{} })
+		if ok {
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-time.After(time.Second * 10):
+				return fmt.Errorf("timed out waiting for subsystem to start: %s", ss.Name)
+			case <-wait.Started():
+			}
+		}
+	}
+
+	// Manage exclusive subsystems.
+	g.Go(func() error {
+		// Wait for for an exclusive lock before starting exclusive subsytems.
+		// On a single node cluster this'll start immediately, but on a multi
+		// node cluster or with a rolling upgrade then it'll wait until another
+		// node with the lock shuts down.
+		err := locker.WaitForExclusiveLock(ctx, func(ctx context.Context) error {
+			logger.Info("obtained exclusive lock, starting exclusive subsytems")
+			for _, ss := range subsystems {
+				if !ss.Exclusive {
+					continue
+				}
+				if err := ss.Start(ctx, g); err != nil {
+					return err
+				}
+			}
+			<-ctx.Done()
+			return ctx.Err()
+		})
+		if ctx.Err() != nil {
+			return nil
+		}
+		return err
+	})
+	return nil
+}
 
 func (s *Subsystem) Start(ctx context.Context, g *errgroup.Group) error {
 	// Confer all privileges to subsystem and identify subsystem in service
@@ -40,7 +90,7 @@ func (s *Subsystem) Start(ctx context.Context, g *errgroup.Group) error {
 	ctx = authz.AddSubjectToContext(ctx, &authz.Superuser{Username: s.Name})
 
 	op := func() error {
-		s.Logger.V(1).Info("started subsystem", "name", s.Name)
+		s.Logger.V(1).Info("started subsystem", "name", s.Name, "exclusive", s.Exclusive)
 		err := s.System.Start(ctx)
 		if ctx.Err() != nil {
 			// don't return an error if subsystem was terminated via a
