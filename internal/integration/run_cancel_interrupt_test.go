@@ -23,7 +23,7 @@ func TestIntegration_RunCancelInterrupt(t *testing.T) {
 	// stage a fake terraform bin that sleeps until it receives an interrupt
 	// signal
 	bins := filepath.Join(t.TempDir(), "bins")
-	dst := filepath.Join(bins, engine.Terraform.DefaultVersion, "terraform")
+	dst := filepath.Join(bins, engine.Terraform().DefaultVersion, "terraform")
 	err := os.MkdirAll(filepath.Dir(dst), 0o755)
 	require.NoError(t, err)
 	wd, err := os.Getwd()

@@ -3,7 +3,6 @@ package integration
 import (
 	"fmt"
 	"testing"
-	"time"
 
 	"github.com/leg100/otf/internal/engine"
 	"github.com/leg100/otf/internal/github/testserver"
@@ -470,8 +469,6 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 			err = expect.Locator(page.Locator(`//*[@id='engine-selector']//input[@id='terraform']`)).ToBeChecked()
 			require.NoError(t, err)
 
-			time.Sleep(time.Minute)
-
 			// make tofu the current engine instead
 			err = page.Locator(`//*[@id='engine-selector']//input[@id='tofu']`).Click()
 			require.NoError(t, err)
@@ -487,7 +484,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 			// confirm tofu version is the default version (integration test
 			// disables the latest version checker, so the latest version
 			// defaults to the default version)
-			err = expect.Locator(page.Locator(`//*[@id='engine-version-selector']//input[@id='engine-specific-version']`)).ToHaveValue(engine.Tofu.DefaultVersion)
+			err = expect.Locator(page.Locator(`//*[@id='engine-version-selector']//input[@id='engine-specific-version']`)).ToHaveValue(engine.Tofu().DefaultVersion)
 			require.NoError(t, err)
 
 			// switch tofu version to v2.1.0

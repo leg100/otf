@@ -14,10 +14,12 @@ import (
 const defaultTofuVersion = "1.9.0"
 
 // Tofu is the opentofu engine.
-var Tofu = &Engine{
-	Name:           "tofu",
-	DefaultVersion: defaultTofuVersion,
-	client:         &tofuClient{},
+func Tofu() *Engine {
+	return &Engine{
+		Name:           "tofu",
+		DefaultVersion: defaultTofuVersion,
+		client:         &tofuClient{},
+	}
 }
 
 type tofuClient struct {
