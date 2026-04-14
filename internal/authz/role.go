@@ -92,6 +92,8 @@ var (
 			DeleteWorkspaceAction:          true,
 			ForceUnlockWorkspaceAction:     true,
 			UpdateWorkspaceAction:          true,
+			CreateRunTriggerAction:         true,
+			DeleteRunTriggerAction:         true,
 		},
 		inherits: &WorkspaceWriteRole,
 	}

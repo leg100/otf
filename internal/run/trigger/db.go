@@ -15,7 +15,7 @@ type pgdb struct {
 func (db *pgdb) create(ctx context.Context, trigger *trigger) error {
 	_, err := db.Exec(ctx, `
 INSERT INTO run_triggers (
-    run_id,
+    run_trigger_id,
     created_at,
     workspace_id,
     sourceable_workspace_id
