@@ -451,7 +451,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 	t.Run("engine settings", func(t *testing.T) {
 		daemon, org, ctx := setup(t)
 
-		// create workspace on which edit engine settings
+		// create workspace on which to edit engine settings
 		ws := daemon.createWorkspace(t, ctx, org)
 
 		browser.New(t, ctx, func(page playwright.Page) {
@@ -510,6 +510,27 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 			// expect tofu version to now track latest
 			err = expect.Locator(page.Locator(`//*[@id='engine-version-selector']//input[@id='engine-version-latest-true']`)).ToBeChecked()
 			require.NoError(t, err)
+		})
+
+		t.Run("set default to opentofu", func(t *testing.T) {
+			daemon, org, ctx := setup(t, withDefaultEngine(engine.Tofu()))
+
+			// create workspace on which to edit engine settings
+			ws := daemon.createWorkspace(t, ctx, org)
+
+			browser.New(t, ctx, func(page playwright.Page) {
+				// go to engine settings
+				_, err := page.Goto(daemon.URL(paths.Workspace(ws.ID)))
+				require.NoError(t, err)
+				err = page.Locator(`//li[@id='menu-item-settings']/a`).Click()
+				require.NoError(t, err)
+				err = page.Locator(`//li[@id='menu-item-engines']/a`).Click()
+				require.NoError(t, err)
+
+				// opentofu should be current engine
+				err = expect.Locator(page.Locator(`//*[@id='engine-selector']//input[@id='tofu']`)).ToBeChecked()
+				require.NoError(t, err)
+			})
 		})
 	})
 
