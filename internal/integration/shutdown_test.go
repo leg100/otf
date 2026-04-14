@@ -29,7 +29,7 @@ func TestDaemonShutdown(t *testing.T) {
 	started := make(chan struct{})
 	exited := make(chan error)
 	go func() {
-		exited <- d.Start(ctx, started)
+		exited <- d.Start(ctx, logr.Discard(), started)
 	}()
 	// Don't proceed until daemon has started.
 	<-started

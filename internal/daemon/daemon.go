@@ -758,10 +758,9 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 			System: sqlListener,
 		},
 		{
-			Name:   "reporter",
-			Logger: logger,
-			DB:     db,
-			LockID: internal.Ptr(sql.ReporterLockID),
+			Name:      "reporter",
+			Logger:    logger,
+			Exclusive: true,
 			System: run.NewReporter(
 				logger,
 				vcsService,
@@ -777,10 +776,9 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 			System: runService.MetricsCollector,
 		},
 		{
-			Name:   "timeout",
-			Logger: logger,
-			DB:     db,
-			LockID: internal.Ptr(sql.TimeoutLockID),
+			Name:      "timeout",
+			Logger:    logger,
+			Exclusive: true,
 			System: &run.Timeout{
 				Logger:                logger.WithValues("component", "timeout"),
 				OverrideCheckInterval: cfg.OverrideTimeoutCheckInterval,
@@ -810,10 +808,9 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 			},
 		},
 		{
-			Name:   "notifier",
-			Logger: logger,
-			DB:     db,
-			LockID: internal.Ptr(sql.NotifierLockID),
+			Name:      "notifier",
+			Logger:    logger,
+			Exclusive: true,
 			System: notifications.NewNotifier(notifications.NotifierOptions{
 				Logger:             logger,
 				HostnamesClient:    hostnameService,
@@ -824,18 +821,16 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 			}),
 		},
 		{
-			Name:   "job-allocator",
-			Logger: logger,
-			DB:     db,
-			LockID: internal.Ptr(sql.AllocatorLockID),
-			System: runnerService.NewAllocator(logger),
+			Name:      "job-allocator",
+			Logger:    logger,
+			Exclusive: true,
+			System:    runnerService.NewAllocator(logger),
 		},
 		{
-			Name:   "runner-manager",
-			Logger: logger,
-			DB:     db,
-			LockID: internal.Ptr(sql.RunnerManagerLockID),
-			System: runnerService.NewManager(),
+			Name:      "runner-manager",
+			Logger:    logger,
+			Exclusive: true,
+			System:    runnerService.NewManager(),
 		},
 		{
 			Name:   "job-signaler",
@@ -847,16 +842,14 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		subsystems = append(subsystems, &Subsystem{
 			Name:   "runner-daemon",
 			Logger: logger,
-			DB:     db,
 			System: serverRunner,
 		})
 	}
 	if !cfg.DisableScheduler {
 		subsystems = append(subsystems, &Subsystem{
-			Name:   "scheduler",
-			Logger: logger,
-			DB:     db,
-			LockID: internal.Ptr(sql.SchedulerLockID),
+			Name:      "scheduler",
+			Logger:    logger,
+			Exclusive: true,
 			System: run.NewScheduler(run.SchedulerOptions{
 				Logger:          logger,
 				WorkspaceClient: workspaceService,
@@ -917,26 +910,13 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 
 // Start the otfd daemon and block until ctx is cancelled or an error is
 // returned. The started channel is closed once the daemon has started.
-func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
+func (d *Daemon) Start(ctx context.Context, logger logr.Logger, started chan struct{}) error {
 	// Cancel context the first time a func started with g.Go() fails
 	g, ctx := errgroup.WithContext(ctx)
 
-	for _, ss := range d.subsystems {
-		if err := ss.Start(ctx, g); err != nil {
-			return err
-		}
-		// Wait for subsystem to finish starting up if it exposes the ability to
-		// do so.
-		wait, ok := ss.System.(interface{ Started() <-chan struct{} })
-		if ok {
-			select {
-			case <-ctx.Done():
-				return ctx.Err()
-			case <-time.After(time.Second * 10):
-				return fmt.Errorf("timed out waiting for subsystem to start: %s", ss.Name)
-			case <-wait.Started():
-			}
-		}
+	// Start automonomous subsystems
+	if err := startSubsystems(ctx, logger, g, d.subsystems, d.DB); err != nil {
+		return err
 	}
 
 	// Run HTTP/JSON-API server and web app

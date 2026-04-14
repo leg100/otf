@@ -17,8 +17,13 @@ import (
 	"github.com/leg100/otf/internal/logr"
 )
 
-// max conns avail in a pgx pool
-const defaultMaxConnections = 10
+const (
+	// max conns avail in a pgx pool
+	defaultMaxConnections = 10
+	// exclusiveLockID is a (hopefully) unique number on the postgres database
+	// for securing a session-level advisory lock.
+	exclusiveLockID int64 = 179366396344335597
+)
 
 type (
 	// DB provides access to the postgres db as well as queries generated from
@@ -147,27 +152,26 @@ func (db *DB) Tx(ctx context.Context, callback func(context.Context) error) erro
 	})
 }
 
-// WaitAndLock obtains an exclusive session-level advisory lock. If another
-// session holds the lock with the given id then it'll wait until the other
-// session releases the lock. The given fn is called once the lock is obtained
-// and when the fn finishes the lock is released.
-func (db *DB) WaitAndLock(ctx context.Context, id int64, fn func(context.Context) error) (err error) {
+// WaitForExclusiveLock obtains an exclusive session-level advisory lock. If
+// another session holds the lock then it'll wait until the other session
+// releases the lock. The given fn is called once the lock is obtained and when
+// the fn finishes the lock is released.
+func (db *DB) WaitForExclusiveLock(ctx context.Context, fn func(context.Context) error) (err error) {
 	// A dedicated connection is obtained. Using a connection pool would cause
 	// problems because a lock must be released on the same connection on which
 	// it was obtained.
 	return db.Pool.AcquireFunc(ctx, func(conn *pgxpool.Conn) error {
-		if _, err = conn.Exec(ctx, "SELECT pg_advisory_lock($1)", id); err != nil {
+		if _, err = conn.Exec(ctx, "SELECT pg_advisory_lock($1)", exclusiveLockID); err != nil {
 			return err
 		}
 		defer func() {
-			_, closeErr := conn.Exec(ctx, "SELECT pg_advisory_unlock($1)", id)
+			_, closeErr := conn.Exec(ctx, "SELECT pg_advisory_unlock($1)", exclusiveLockID)
 			if err != nil {
 				db.Error(err, "unlocking session-level advisory lock")
 				return
 			}
 			err = closeErr
 		}()
-		ctx = newContext(ctx, conn)
 		return fn(ctx)
 	})
 }

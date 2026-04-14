@@ -116,7 +116,7 @@ func setup(t *testing.T, opts ...configOption) (*testDaemon, *organization.Organ
 	done := make(chan error)
 	started := make(chan struct{})
 	go func() {
-		err := d.Start(ctx, started)
+		err := d.Start(ctx, logger, started)
 		// if context was canceled don't report any error
 		if ctx.Err() != nil {
 			done <- nil
