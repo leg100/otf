@@ -758,10 +758,9 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 			System: sqlListener,
 		},
 		{
-			Name:   "reporter",
-			Logger: logger,
-			DB:     db,
-			LockID: internal.Ptr(sql.ReporterLockID),
+			Name:      "reporter",
+			Logger:    logger,
+			Exclusive: true,
 			System: run.NewReporter(
 				logger,
 				vcsService,
@@ -777,10 +776,9 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 			System: runService.MetricsCollector,
 		},
 		{
-			Name:   "timeout",
-			Logger: logger,
-			DB:     db,
-			LockID: internal.Ptr(sql.TimeoutLockID),
+			Name:      "timeout",
+			Logger:    logger,
+			Exclusive: true,
 			System: &run.Timeout{
 				Logger:                logger.WithValues("component", "timeout"),
 				OverrideCheckInterval: cfg.OverrideTimeoutCheckInterval,
@@ -810,10 +808,9 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 			},
 		},
 		{
-			Name:   "notifier",
-			Logger: logger,
-			DB:     db,
-			LockID: internal.Ptr(sql.NotifierLockID),
+			Name:      "notifier",
+			Logger:    logger,
+			Exclusive: true,
 			System: notifications.NewNotifier(notifications.NotifierOptions{
 				Logger:             logger,
 				HostnamesClient:    hostnameService,
@@ -824,18 +821,16 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 			}),
 		},
 		{
-			Name:   "job-allocator",
-			Logger: logger,
-			DB:     db,
-			LockID: internal.Ptr(sql.AllocatorLockID),
-			System: runnerService.NewAllocator(logger),
+			Name:      "job-allocator",
+			Logger:    logger,
+			Exclusive: true,
+			System:    runnerService.NewAllocator(logger),
 		},
 		{
-			Name:   "runner-manager",
-			Logger: logger,
-			DB:     db,
-			LockID: internal.Ptr(sql.RunnerManagerLockID),
-			System: runnerService.NewManager(),
+			Name:      "runner-manager",
+			Logger:    logger,
+			Exclusive: true,
+			System:    runnerService.NewManager(),
 		},
 		{
 			Name:   "job-signaler",
@@ -847,16 +842,14 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		subsystems = append(subsystems, &Subsystem{
 			Name:   "runner-daemon",
 			Logger: logger,
-			DB:     db,
 			System: serverRunner,
 		})
 	}
 	if !cfg.DisableScheduler {
 		subsystems = append(subsystems, &Subsystem{
-			Name:   "scheduler",
-			Logger: logger,
-			DB:     db,
-			LockID: internal.Ptr(sql.SchedulerLockID),
+			Name:      "scheduler",
+			Logger:    logger,
+			Exclusive: true,
 			System: run.NewScheduler(run.SchedulerOptions{
 				Logger:          logger,
 				WorkspaceClient: workspaceService,
@@ -921,7 +914,11 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 	// Cancel context the first time a func started with g.Go() fails
 	g, ctx := errgroup.WithContext(ctx)
 
+	// Start non-exclusive subsystems first.
 	for _, ss := range d.subsystems {
+		if ss.Exclusive {
+			continue
+		}
 		if err := ss.Start(ctx, g); err != nil {
 			return err
 		}
@@ -938,6 +935,26 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 			}
 		}
 	}
+
+	// Manage exclusive subsystems.
+	g.Go(func() error {
+		// Wait for for an exclusive lock before starting exclusive subsytems.
+		// On a single node cluster this'll start immediately, but on a multi
+		// node cluster or with a rolling upgrade then it'll wait until another
+		// node with the lock shuts down.
+		return d.DB.WaitForExclusiveLock(ctx, func(ctx context.Context) error {
+			for _, ss := range d.subsystems {
+				if !ss.Exclusive {
+					continue
+				}
+				if err := ss.Start(ctx, g); err != nil {
+					return err
+				}
+			}
+			<-ctx.Done()
+			return ctx.Err()
+		})
+	})
 
 	// Run HTTP/JSON-API server and web app
 	g.Go(func() error {

@@ -10,4 +10,5 @@ const (
 	NotifierLockID
 	AllocatorLockID
 	RunnerManagerLockID
+	ExclusiveLockID = ReporterLockID
 )
