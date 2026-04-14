@@ -11,10 +11,10 @@ import (
 	"github.com/leg100/otf/internal/runstatus"
 )
 
-// triggerer creates runs when runs on a sourceable workspace complete.
-type triggerer struct {
-	client client
-	logger logr.Logger
+// Triggerer creates runs when runs on a sourceable workspace complete.
+type Triggerer struct {
+	Client client
+	Logger logr.Logger
 }
 
 type client interface {
@@ -23,9 +23,9 @@ type client interface {
 	CreateRun(context.Context, resource.TfeID, run.CreateOptions) (*run.Run, error)
 }
 
-func (t *triggerer) Start(ctx context.Context) error {
+func (t *Triggerer) Start(ctx context.Context) error {
 	// Subscribe to run events
-	sub, unsub, err := t.client.WatchRuns(ctx)
+	sub, unsub, err := t.Client.WatchRuns(ctx)
 	if err != nil {
 		return fmt.Errorf("watching runs: %w", err)
 	}
@@ -40,7 +40,7 @@ func (t *triggerer) Start(ctx context.Context) error {
 	return nil
 }
 
-func (t *triggerer) process(ctx context.Context, runEvent pubsub.Event[*run.Event]) error {
+func (t *Triggerer) process(ctx context.Context, runEvent pubsub.Event[*run.Event]) error {
 	// Only interested in run updates
 	if runEvent.Type != pubsub.UpdatedEvent {
 		return nil
@@ -55,7 +55,7 @@ func (t *triggerer) process(ctx context.Context, runEvent pubsub.Event[*run.Even
 	}
 
 	// Look up workspaces triggered by the finished run's workspace.
-	triggers, err := t.client.ListRunTriggers(ctx, ListOptions{
+	triggers, err := t.Client.ListRunTriggers(ctx, ListOptions{
 		WorkspaceID: runEvent.Payload.WorkspaceID,
 		Direction:   Outbound,
 	})
@@ -64,9 +64,9 @@ func (t *triggerer) process(ctx context.Context, runEvent pubsub.Event[*run.Even
 	}
 
 	for _, trigger := range triggers {
-		t.logger.Info("triggering run in connected workspace")
+		t.Logger.Info("triggering run in connected workspace")
 
-		_, err := t.client.CreateRun(ctx, trigger.WorkspaceID, run.CreateOptions{})
+		_, err := t.Client.CreateRun(ctx, trigger.WorkspaceID, run.CreateOptions{})
 		if err != nil {
 			return err
 		}

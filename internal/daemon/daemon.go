@@ -35,6 +35,7 @@ import (
 	"github.com/leg100/otf/internal/repohooks"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
+	"github.com/leg100/otf/internal/run/trigger"
 	runui "github.com/leg100/otf/internal/run/ui"
 	"github.com/leg100/otf/internal/runner"
 	runnerui "github.com/leg100/otf/internal/runner/ui"
@@ -328,6 +329,11 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Broker:             runBroker,
 		ChunkBroker:        chunkBroker,
 	})
+	runTriggerService := trigger.NewService(trigger.Options{
+		Logger:     logger,
+		Authorizer: authorizer,
+		DB:         db,
+	})
 	moduleService := module.NewService(module.Options{
 		Logger:             logger,
 		Authorizer:         authorizer,
@@ -544,6 +550,10 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 				signer,
 				responder,
 			),
+			&trigger.TFEAPI{
+				Responder: responder,
+				Client:    runTriggerService,
+			},
 			workspace.NewTFEAPI(
 				workspaceService,
 				responder,
@@ -836,6 +846,21 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 			Name:   "job-signaler",
 			Logger: logger,
 			System: runnerService.Signaler,
+		},
+		{
+			Name:      "run-triggerer",
+			Logger:    logger,
+			Exclusive: true,
+			System: &trigger.Triggerer{
+				Client: struct {
+					*run.RunService
+					*trigger.RunTriggerService
+				}{
+					RunService:        runService,
+					RunTriggerService: runTriggerService,
+				},
+				Logger: logger,
+			},
 		},
 	}
 	if !cfg.DisableRunner {
