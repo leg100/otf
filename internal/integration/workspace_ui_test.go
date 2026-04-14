@@ -446,8 +446,76 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 			require.Equal(t, false, ws.SpeculativeEnabled)
 		})
 
-		t.Run("engine settings", func(t *testing.T) {
-			// create workspace on which edit engine settings
+	})
+
+	t.Run("engine settings", func(t *testing.T) {
+		daemon, org, ctx := setup(t)
+
+		// create workspace on which to edit engine settings
+		ws := daemon.createWorkspace(t, ctx, org)
+
+		browser.New(t, ctx, func(page playwright.Page) {
+			// go to engine settings
+			_, err := page.Goto(daemon.URL(paths.Workspace(ws.ID)))
+			require.NoError(t, err)
+			err = page.Locator(`//li[@id='menu-item-settings']/a`).Click()
+			require.NoError(t, err)
+			err = page.Locator(`//li[@id='menu-item-engines']/a`).Click()
+			require.NoError(t, err)
+
+			// switch engine from terraform to tofu
+
+			// terraform should be current engine
+			err = expect.Locator(page.Locator(`//*[@id='engine-selector']//input[@id='terraform']`)).ToBeChecked()
+			require.NoError(t, err)
+
+			// make tofu the current engine instead
+			err = page.Locator(`//*[@id='engine-selector']//input[@id='tofu']`).Click()
+			require.NoError(t, err)
+
+			// submit
+			err = page.GetByRole("button").GetByText("Save changes").Click()
+			require.NoError(t, err)
+
+			// confirm tofu is now current engine
+			err = expect.Locator(page.Locator(`//*[@id='engine-selector']//input[@id='tofu']`)).ToBeChecked()
+			require.NoError(t, err)
+
+			// confirm tofu version is the default version (integration test
+			// disables the latest version checker, so the latest version
+			// defaults to the default version)
+			err = expect.Locator(page.Locator(`//*[@id='engine-version-selector']//input[@id='engine-specific-version']`)).ToHaveValue(engine.Tofu().DefaultVersion)
+			require.NoError(t, err)
+
+			// switch tofu version to v2.1.0
+			err = page.Locator(`//*[@id='engine-version-selector']//input[@id='engine-specific-version']`).Fill(`2.1.0`)
+			require.NoError(t, err)
+
+			// submit
+			err = page.GetByRole("button").GetByText("Save changes").Click()
+			require.NoError(t, err)
+
+			// expect tofu version to have been updated
+			err = expect.Locator(page.Locator(`//*[@id='engine-version-selector']//input[@id='engine-specific-version']`)).ToHaveValue(`2.1.0`)
+			require.NoError(t, err)
+
+			// switch tofu version to track latest
+			err = page.Locator(`//*[@id='engine-version-selector']//input[@id='engine-version-latest-true']`).Click()
+			require.NoError(t, err)
+
+			// submit
+			err = page.GetByRole("button").GetByText("Save changes").Click()
+			require.NoError(t, err)
+
+			// expect tofu version to now track latest
+			err = expect.Locator(page.Locator(`//*[@id='engine-version-selector']//input[@id='engine-version-latest-true']`)).ToBeChecked()
+			require.NoError(t, err)
+		})
+
+		t.Run("set default to opentofu", func(t *testing.T) {
+			daemon, org, ctx := setup(t, withDefaultEngine(engine.Tofu()))
+
+			// create workspace on which to edit engine settings
 			ws := daemon.createWorkspace(t, ctx, org)
 
 			browser.New(t, ctx, func(page playwright.Page) {
@@ -459,52 +527,12 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 				err = page.Locator(`//li[@id='menu-item-engines']/a`).Click()
 				require.NoError(t, err)
 
-				// switch engine from terraform to tofu
-
-				// terraform should be current engine
-				err = expect.Locator(page.Locator(`//*[@id='engine-selector']//input[@id='terraform']`)).ToBeChecked()
-				require.NoError(t, err)
-
-				// make tofu the current engine instead
-				err = page.Locator(`//*[@id='engine-selector']//input[@id='tofu']`).Click()
-				require.NoError(t, err)
-
-				// submit
-				err = page.GetByRole("button").GetByText("Save changes").Click()
-				require.NoError(t, err)
-
-				// confirm tofu is now current engine
+				// opentofu should be current engine
 				err = expect.Locator(page.Locator(`//*[@id='engine-selector']//input[@id='tofu']`)).ToBeChecked()
 				require.NoError(t, err)
 
-				// confirm tofu version is the default version (integration test
-				// disables the latest version checker, so the latest version
-				// defaults to the default version)
-				err = expect.Locator(page.Locator(`//*[@id='engine-version-selector']//input[@id='engine-specific-version']`)).ToHaveValue(engine.Tofu.DefaultVersion)
-				require.NoError(t, err)
-
-				// switch tofu version to v2.1.0
-				err = page.Locator(`//*[@id='engine-version-selector']//input[@id='engine-specific-version']`).Fill(`2.1.0`)
-				require.NoError(t, err)
-
-				// submit
-				err = page.GetByRole("button").GetByText("Save changes").Click()
-				require.NoError(t, err)
-
-				// expect tofu version to have been updated
-				err = expect.Locator(page.Locator(`//*[@id='engine-version-selector']//input[@id='engine-specific-version']`)).ToHaveValue(`2.1.0`)
-				require.NoError(t, err)
-
-				// switch tofu version to track latest
-				err = page.Locator(`//*[@id='engine-version-selector']//input[@id='engine-version-latest-true']`).Click()
-				require.NoError(t, err)
-
-				// submit
-				err = page.GetByRole("button").GetByText("Save changes").Click()
-				require.NoError(t, err)
-
-				// expect tofu version to now track latest
-				err = expect.Locator(page.Locator(`//*[@id='engine-version-selector']//input[@id='engine-version-latest-true']`)).ToBeChecked()
+				// terraform should be the other, unchecked, option.
+				err = expect.Locator(page.Locator(`//*[@id='engine-selector']//input[@id='terraform']`)).Not().ToBeChecked()
 				require.NoError(t, err)
 			})
 		})

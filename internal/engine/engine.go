@@ -21,7 +21,7 @@ var (
 	//
 	// NOTE: the actual default engine that has been set by the user should be
 	// retrieved via the daemon config.
-	Default = Terraform
+	Default = Terraform()
 	// ErrInvalidVersion is returned when a engine version string is
 	// not a semantic version string (major.minor.patch).
 	ErrInvalidVersion = errors.New("invalid engine version")
@@ -29,8 +29,8 @@ var (
 
 func Engines() []*Engine {
 	return []*Engine{
-		Terraform,
-		Tofu,
+		Terraform(),
+		Tofu(),
 	}
 }
 
@@ -88,9 +88,9 @@ func (e *Engine) Value() (driver.Value, error) {
 func (e *Engine) set(v string) error {
 	switch v {
 	case "terraform":
-		*e = *Terraform
+		*e = *Terraform()
 	case "tofu":
-		*e = *Tofu
+		*e = *Tofu()
 	default:
 		return fmt.Errorf("no engine found named %s: must be either 'terraform' or 'tofu'", v)
 	}

@@ -16,6 +16,7 @@ func TestStartRunUI(t *testing.T) {
 
 	for _, tt := range engineTestSpecs() {
 		t.Run(tt.name, func(t *testing.T) {
+			// Test with both terraform and opentofu
 			daemon, _, ctx := setup(t, withDefaultEngine(tt.Engine))
 
 			ws := daemon.createWorkspace(t, ctx, nil)
