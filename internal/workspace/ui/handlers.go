@@ -614,7 +614,7 @@ func (h *Handlers) connect(w http.ResponseWriter, r *http.Request) {
 	}
 
 	helpers.FlashSuccess(w, "connected workspace to repo")
-	http.Redirect(w, r, paths.Workspace(params.WorkspaceID), http.StatusFound)
+	http.Redirect(w, r, paths.EditVcsWorkspace(params.WorkspaceID), http.StatusFound)
 }
 
 func (h *Handlers) disconnect(w http.ResponseWriter, r *http.Request) {
