@@ -163,6 +163,7 @@ func (h *Handlers) newWorkspace(w http.ResponseWriter, r *http.Request) {
 		"new workspace",
 		w,
 		r,
+		helpers.WithOrganization(params.Organization),
 		helpers.WithBreadcrumbs(
 			helpers.Breadcrumb{Name: "workspaces", Link: paths.Workspaces(params.Organization)},
 			helpers.Breadcrumb{Name: "new"},

@@ -90,7 +90,7 @@ func OrganizationMenu(organization resource.ID) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = MenuItem("Workspaces", paths.Workspaces(organization), "/app/workspaces", "/app/variables").Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = MenuItem("Workspaces", paths.Workspaces(organization), "/app/workspaces", "/app/variables", paths.NewWorkspace(organization)).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -100,7 +100,7 @@ func OrganizationMenu(organization resource.ID) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = MenuItem("Teams", paths.Teams(organization), "/app/teams").Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = MenuItem("Teams", paths.Teams(organization), "/app/teams", paths.NewTeam(organization)).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -129,7 +129,7 @@ func OrganizationMenu(organization resource.ID) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = MenuItem("Variable Sets", paths.VariableSets(organization), "/app/variable-sets").Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = MenuItem("Variable Sets", paths.VariableSets(organization), "/app/variable-sets", paths.VariableSets(organization)).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -137,12 +137,12 @@ func OrganizationMenu(organization resource.ID) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = MenuItem("VCS Providers", paths.VCSProviders(organization), "/app/vcs-providers").Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = MenuItem("VCS Providers", paths.VCSProviders(organization), "/app/vcs-providers", paths.NewVCSProvider(organization)).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = MenuItem("Modules", paths.Modules(organization), "/app/modules").Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = MenuItem("Modules", paths.Modules(organization), "/app/modules", paths.NewModule(organization)).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

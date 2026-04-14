@@ -19,19 +19,19 @@ templ SiteMenu() {
 
 templ OrganizationMenu(organization resource.ID) {
 	<ul id="organization-menu" class="menu menu-horizontal w-full">
-		@MenuItem("Workspaces", paths.Workspaces(organization), "/app/workspaces", "/app/variables")
+		@MenuItem("Workspaces", paths.Workspaces(organization), "/app/workspaces", "/app/variables", paths.NewWorkspace(organization))
 		if IsOwner(ctx, organization) || IsSiteAdmin(ctx) {
 			@MenuItem("Runs", paths.OrganizationRuns(organization), "/app/runs")
 		}
-		@MenuItem("Teams", paths.Teams(organization), "/app/teams")
+		@MenuItem("Teams", paths.Teams(organization), "/app/teams", paths.NewTeam(organization))
 		if IsOwner(ctx, organization) || IsSiteAdmin(ctx) {
 			@MenuItem("Users", paths.Users(organization), "/app/users")
 			@MenuItem("Runners", paths.Runners(organization), "/app/runners")
 			@MenuItem("Agent Pools", paths.AgentPools(organization), "/app/agent-pools")
-			@MenuItem("Variable Sets", paths.VariableSets(organization), "/app/variable-sets")
-			@MenuItem("VCS Providers", paths.VCSProviders(organization), "/app/vcs-providers")
+			@MenuItem("Variable Sets", paths.VariableSets(organization), "/app/variable-sets", paths.VariableSets(organization))
+			@MenuItem("VCS Providers", paths.VCSProviders(organization), "/app/vcs-providers", paths.NewVCSProvider(organization))
 		}
-		@MenuItem("Modules", paths.Modules(organization), "/app/modules")
+		@MenuItem("Modules", paths.Modules(organization), "/app/modules", paths.NewModule(organization))
 		if IsOwner(ctx, organization) || IsSiteAdmin(ctx) {
 			@MenuItem("Settings", paths.EditOrganization(organization), paths.SSHKeys(organization), paths.OrganizationToken(organization), paths.EditAdvancedOrganization(organization))
 		}
