@@ -420,6 +420,30 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 			ws, err = daemon.Workspaces.GetWorkspaceByName(ctx, org.Name, ws1.Name)
 			require.NoError(t, err)
 			require.Equal(t, true, ws.Connection.AllowCLIApply)
+
+			// speculative plans for pull requests should be enabled by default
+			err = expect.Locator(page.Locator(`input#speculative-enabled`)).ToBeChecked()
+			require.NoError(t, err)
+
+			// disable speculative plans for pull requests
+			err = page.Locator(`input#speculative-enabled`).Click()
+			require.NoError(t, err)
+
+			err = page.GetByRole("button").GetByText("Save changes").Click()
+			require.NoError(t, err)
+
+			err = expect.Locator(page.GetByRole("alert")).ToHaveText("updated vcs settings")
+			require.NoError(t, err)
+
+			// checkbox should not be checked
+			err = expect.Locator(page.Locator(`input#speculative-enabled`)).Not().ToBeChecked()
+			require.NoError(t, err)
+
+			// check UI has correctly updated the workspace resource
+			// accordingly.
+			ws, err = daemon.Workspaces.GetWorkspaceByName(ctx, org.Name, ws1.Name)
+			require.NoError(t, err)
+			require.Equal(t, false, ws.SpeculativeEnabled)
 		})
 
 		t.Run("engine settings", func(t *testing.T) {

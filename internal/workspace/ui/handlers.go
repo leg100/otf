@@ -355,7 +355,6 @@ func (h *Handlers) updateWorkspace(w http.ResponseWriter, r *http.Request) {
 		WorkingDirectory      string                  `schema:"working_directory"`
 		WorkspaceID           resource.TfeID          `schema:"workspace_id,required"`
 		GlobalRemoteState     bool                    `schema:"global_remote_state"`
-		SpeculativeEnabled    bool                    `schema:"speculative_enabled"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
@@ -363,14 +362,13 @@ func (h *Handlers) updateWorkspace(w http.ResponseWriter, r *http.Request) {
 	}
 
 	opts := workspace.UpdateOptions{
-		AutoApply:          &params.AutoApply,
-		Name:               &params.Name,
-		Description:        &params.Description,
-		ExecutionMode:      &params.ExecutionMode,
-		Engine:             params.Engine,
-		WorkingDirectory:   &params.WorkingDirectory,
-		GlobalRemoteState:  &params.GlobalRemoteState,
-		SpeculativeEnabled: &params.SpeculativeEnabled,
+		AutoApply:         &params.AutoApply,
+		Name:              &params.Name,
+		Description:       &params.Description,
+		ExecutionMode:     &params.ExecutionMode,
+		Engine:            params.Engine,
+		WorkingDirectory:  &params.WorkingDirectory,
+		GlobalRemoteState: &params.GlobalRemoteState,
 	}
 	if params.LatestEngineVersion {
 		opts.EngineVersion = &workspace.Version{Latest: true}
@@ -888,6 +886,7 @@ func (h *Handlers) updateVCS(w http.ResponseWriter, r *http.Request) {
 		PredefinedTagsRegex string         `schema:"tags_regex"`
 		CustomTagsRegex     string         `schema:"custom_tags_regex"`
 		AllowCLIApply       bool           `schema:"allow_cli_apply"`
+		SpeculativeEnabled  bool           `schema:"speculative_enabled"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
@@ -901,7 +900,9 @@ func (h *Handlers) updateVCS(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var opts workspace.UpdateOptions
+	opts := workspace.UpdateOptions{
+		SpeculativeEnabled: &params.SpeculativeEnabled,
+	}
 
 	if ws.Connection != nil {
 		// workspace is connected, so set connection fields
