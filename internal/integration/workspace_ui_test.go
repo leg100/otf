@@ -530,6 +530,10 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 				// opentofu should be current engine
 				err = expect.Locator(page.Locator(`//*[@id='engine-selector']//input[@id='tofu']`)).ToBeChecked()
 				require.NoError(t, err)
+
+				// terraform should be the other, unchecked, option.
+				err = expect.Locator(page.Locator(`//*[@id='engine-selector']//input[@id='terraform']`)).Not().ToBeChecked()
+				require.NoError(t, err)
 			})
 		})
 	})
