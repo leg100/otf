@@ -387,7 +387,7 @@ func TestWorkspace_Update(t *testing.T) {
 			},
 			opts: UpdateOptions{Engine: engine.Tofu()},
 			want: func(t *testing.T, got *Workspace) {
-				assert.Equal(t, engine.Tofu, got.Engine)
+				assert.Equal(t, engine.Tofu(), got.Engine)
 			},
 		},
 	}
