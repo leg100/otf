@@ -63,7 +63,7 @@ func NewConfig() Config {
 	return Config{
 		RunnerConfig:    runner.NewDefaultConfig(),
 		MaxConfigSize:   configversion.DefaultConfigMaxSize,
-		DefaultEngine:   engine.Default,
+		DefaultEngine:   engine.Default(),
 		GithubHostname:  github.DefaultBaseURL(),
 		GitlabHostname:  gitlab.DefaultBaseURL,
 		ForgejoHostname: forgejo.DefaultBaseURL,

@@ -29,7 +29,7 @@ var (
 
 func Engines() []*Engine {
 	return []*Engine{
-		Terraform,
+		Terraform(),
 		Tofu,
 	}
 }
@@ -88,7 +88,7 @@ func (e *Engine) Value() (driver.Value, error) {
 func (e *Engine) set(v string) error {
 	switch v {
 	case "terraform":
-		*e = *Terraform
+		*e = *Terraform()
 	case "tofu":
 		*e = *Tofu
 	default:
