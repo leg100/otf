@@ -32,4 +32,5 @@ const (
 	TeamTokenKind                 Kind = "tt"
 	AgentTokenKind                Kind = "at"
 	SSHKeyKind                    Kind = "sshkey"
+	RunTriggerKind                Kind = "rt"
 )
