@@ -17,8 +17,13 @@ import (
 	"github.com/leg100/otf/internal/logr"
 )
 
-// max conns avail in a pgx pool
-const defaultMaxConnections = 10
+const (
+	// max conns avail in a pgx pool
+	defaultMaxConnections = 10
+	// exclusiveLockID is a (hopefully) unique number on the postgres database
+	// for securing a session-level advisory lock.
+	exclusiveLockID int64 = 179366396344335597
+)
 
 type (
 	// DB provides access to the postgres db as well as queries generated from
@@ -156,11 +161,11 @@ func (db *DB) WaitForExclusiveLock(ctx context.Context, fn func(context.Context)
 	// problems because a lock must be released on the same connection on which
 	// it was obtained.
 	return db.Pool.AcquireFunc(ctx, func(conn *pgxpool.Conn) error {
-		if _, err = conn.Exec(ctx, "SELECT pg_advisory_lock($1)", ExclusiveLockID); err != nil {
+		if _, err = conn.Exec(ctx, "SELECT pg_advisory_lock($1)", exclusiveLockID); err != nil {
 			return err
 		}
 		defer func() {
-			_, closeErr := conn.Exec(ctx, "SELECT pg_advisory_unlock($1)", ExclusiveLockID)
+			_, closeErr := conn.Exec(ctx, "SELECT pg_advisory_unlock($1)", exclusiveLockID)
 			if err != nil {
 				db.Error(err, "unlocking session-level advisory lock")
 				return
