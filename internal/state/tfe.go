@@ -157,7 +157,7 @@ func (a *tfe) createVersion(w http.ResponseWriter, r *http.Request) {
 
 func (a *tfe) listVersionsByName(w http.ResponseWriter, r *http.Request) {
 	var opts struct {
-		types.ListOptions
+		types.PageOptions
 		Organization organization.Name `schema:"filter[organization][name],required"`
 		Workspace    string            `schema:"filter[workspace][name],required"`
 	}
@@ -170,7 +170,7 @@ func (a *tfe) listVersionsByName(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	page, err := a.client.ListStateVersions(r.Context(), ws.ID, resource.PageOptions(opts.ListOptions))
+	page, err := a.client.ListStateVersions(r.Context(), ws.ID, resource.PageOptions(opts.PageOptions))
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -317,7 +317,7 @@ func (a *tfe) getCurrentVersionOutputs(w http.ResponseWriter, r *http.Request) {
 func (a *tfe) listOutputs(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		StateVersionID resource.TfeID `schema:"id,required"`
-		types.ListOptions
+		types.PageOptions
 	}
 	if err := decode.All(&params, r); err != nil {
 		tfeapi.Error(w, err)
@@ -331,7 +331,7 @@ func (a *tfe) listOutputs(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// client expects a page of results, so convert outputs map to a page
-	page := resource.NewPage(maps.Values(sv.Outputs), resource.PageOptions(params.ListOptions), nil)
+	page := resource.NewPage(maps.Values(sv.Outputs), resource.PageOptions(params.PageOptions), nil)
 
 	// convert to list of tfe types
 	items := make([]*TFEStateVersionOutput, len(page.Items))

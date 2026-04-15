@@ -34,7 +34,6 @@ func (res *Responder) RespondWithPage(w http.ResponseWriter, r *http.Request, it
 }
 
 func (res *Responder) Respond(w http.ResponseWriter, r *http.Request, payload any, status int, opts ...jsonapi.MarshalOption) {
-
 	if err := res.do(w, r, payload, status, opts...); err != nil {
 		res.logger.Error(err, "sending API response", "url", r.URL)
 

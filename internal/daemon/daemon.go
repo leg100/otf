@@ -550,10 +550,17 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 				signer,
 				responder,
 			),
-			&trigger.TFEAPI{
-				Responder: responder,
-				Client:    runTriggerService,
-			},
+			trigger.NewTFEAPI(
+				struct {
+					*trigger.RunTriggerService
+					*workspace.WorkspaceService
+				}{
+					RunTriggerService: runTriggerService,
+					WorkspaceService:  workspaceService,
+				},
+				authorizer,
+				responder,
+			),
 			workspace.NewTFEAPI(
 				workspaceService,
 				responder,

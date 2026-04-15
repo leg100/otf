@@ -238,7 +238,7 @@ func (a *tfe) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 	page, err := a.client.ListWorkspaces(r.Context(), ListOptions{
 		Search:       params.Search,
 		Organization: &pathParams.Organization,
-		PageOptions:  resource.PageOptions(params.ListOptions),
+		PageOptions:  resource.PageOptions(params.PageOptions),
 		Tags:         internal.SplitCSV(params.Tags),
 	})
 	if err != nil {

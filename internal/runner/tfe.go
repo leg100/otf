@@ -184,7 +184,7 @@ func (a *TFEAPI) listAgentPools(w http.ResponseWriter, r *http.Request) {
 
 	// client expects a page, whereas listPools returns full result set, so
 	// convert to page first
-	page := resource.NewPage(pools, resource.PageOptions(params.ListOptions), nil)
+	page := resource.NewPage(pools, resource.PageOptions(params.PageOptions), nil)
 
 	// convert items
 	items := make([]*TFEAgentPool, len(page.Items))
@@ -279,7 +279,7 @@ func (a *TFEAPI) listAgentTokens(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	var params types.ListOptions
+	var params types.PageOptions
 	if err := decode.All(&params, r); err != nil {
 		tfeapi.Error(w, err)
 		return

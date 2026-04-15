@@ -113,7 +113,7 @@ type TFEWorkspacePermissions struct {
 
 // TFEWorkspaceListOptions represents the options for listing workspaces.
 type TFEWorkspaceListOptions struct {
-	types.ListOptions
+	types.PageOptions
 
 	// Optional: A search string (partial workspace name) used to filter the results.
 	Search string `schema:"search[name],omitempty"`

@@ -2,20 +2,26 @@ package trigger
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tfeapi"
+	"github.com/leg100/otf/internal/tfeapi/types"
 	"github.com/leg100/otf/internal/workspace"
 )
 
+const IncludeSourceable tfeapi.IncludeName = "sourceable"
+
 type TFEAPI struct {
 	*tfeapi.Responder
-	Client tfeClient
+	Client     tfeClient
+	Authorizer *authz.Authorizer
 }
 
 type tfeClient interface {
@@ -23,6 +29,7 @@ type tfeClient interface {
 	ListRunTriggers(ctx context.Context, opts ListOptions) ([]*trigger, error)
 	GetRunTrigger(ctx context.Context, triggerID resource.TfeID) (*trigger, error)
 	DeleteRunTrigger(ctx context.Context, triggerID resource.TfeID) error
+	GetWorkspace(ctx context.Context, workspaceID resource.TfeID) (*workspace.Workspace, error)
 }
 
 // TFERunTrigger represents a run trigger in the TFE API.
@@ -31,6 +38,21 @@ type TFERunTrigger struct {
 	CreatedAt  time.Time               `jsonapi:"attribute" json:"created-at"`
 	Workspace  *workspace.TFEWorkspace `jsonapi:"relationship" json:"workspace"`
 	Sourceable *workspace.TFEWorkspace `jsonapi:"relationship" json:"sourceable"`
+}
+
+func NewTFEAPI(
+	client tfeClient,
+	authorizer *authz.Authorizer,
+	responder *tfeapi.Responder,
+) *TFEAPI {
+	api := &TFEAPI{
+		Client:     client,
+		Authorizer: authorizer,
+		Responder:  responder,
+	}
+	responder.Register(tfeapi.IncludeWorkspace, api.includeWorkspace)
+	responder.Register(IncludeSourceable, api.includeSourceable)
+	return api
 }
 
 func (a *TFEAPI) AddHandlers(r *mux.Router) {
@@ -64,7 +86,11 @@ func (a *TFEAPI) createRunTrigger(w http.ResponseWriter, r *http.Request) {
 
 	t, err := a.Client.CreateRunTrigger(r.Context(), workspaceID, params.Sourceable.ID)
 	if err != nil {
-		tfeapi.Error(w, err)
+		if errors.Is(err, errTriggerLoop) {
+			tfeapi.Error(w, err, tfeapi.WithStatus(http.StatusUnprocessableEntity))
+		} else {
+			tfeapi.Error(w, err)
+		}
 		return
 	}
 
@@ -72,23 +98,27 @@ func (a *TFEAPI) createRunTrigger(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *TFEAPI) listRunTriggers(w http.ResponseWriter, r *http.Request) {
-	var opts ListOptions
+	var opts struct {
+		types.PageOptions
+		ListOptions
+	}
 	if err := decode.All(&opts, r); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
 
-	triggers, err := a.Client.ListRunTriggers(r.Context(), opts)
+	triggers, err := a.Client.ListRunTriggers(r.Context(), opts.ListOptions)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
 
-	to := make([]*TFERunTrigger, len(triggers))
-	for i, t := range triggers {
+	page := resource.NewPage(triggers, resource.PageOptions(opts.PageOptions), nil)
+	to := make([]*TFERunTrigger, len(page.Items))
+	for i, t := range page.Items {
 		to[i] = a.convert(t)
 	}
-	a.Respond(w, r, to, http.StatusOK)
+	a.RespondWithPage(w, r, to, page.Pagination)
 }
 
 func (a *TFEAPI) getRunTrigger(w http.ResponseWriter, r *http.Request) {
@@ -129,4 +159,36 @@ func (a *TFEAPI) convert(from *trigger) *TFERunTrigger {
 			ID: from.SourceableWorkspaceID,
 		},
 	}
+}
+
+func (a *TFEAPI) includeWorkspace(ctx context.Context, v any) ([]any, error) {
+	trigger, ok := v.(*TFERunTrigger)
+	if !ok {
+		return nil, nil
+	}
+	ws, err := a.Client.GetWorkspace(ctx, trigger.Workspace.ID)
+	if err != nil {
+		return nil, fmt.Errorf("retrieving workspace: %w", err)
+	}
+	include, err := workspace.ToTFE(a.Authorizer, ws, (&http.Request{}).WithContext(ctx))
+	if err != nil {
+		return nil, err
+	}
+	return []any{include}, nil
+}
+
+func (a *TFEAPI) includeSourceable(ctx context.Context, v any) ([]any, error) {
+	trigger, ok := v.(*TFERunTrigger)
+	if !ok {
+		return nil, nil
+	}
+	ws, err := a.Client.GetWorkspace(ctx, trigger.Sourceable.ID)
+	if err != nil {
+		return nil, fmt.Errorf("retrieving sourceable workspace: %w", err)
+	}
+	include, err := workspace.ToTFE(a.Authorizer, ws, (&http.Request{}).WithContext(ctx))
+	if err != nil {
+		return nil, err
+	}
+	return []any{include}, nil
 }
