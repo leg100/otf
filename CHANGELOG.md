@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.5.23](https://github.com/leg100/otf/compare/v0.5.22...v0.5.23) (2026-04-14)
+
+
+### Features
+
+* merge session advisory locks into one ([#939](https://github.com/leg100/otf/issues/939)) ([6f21969](https://github.com/leg100/otf/commit/6f219693d96eb567c557f09cc014ac07a4db940a))
+
+
+### Bug Fixes
+
+* **ui:** send user to vcs settings after connecting workspace ([337d3af](https://github.com/leg100/otf/commit/337d3afd7ff5aa940a25bacafcbdee178c743ad0))
+* **ui:** setting `--default-engine=tofu` would remove terraform as alternative ([#941](https://github.com/leg100/otf/issues/941)) ([b33a9c6](https://github.com/leg100/otf/commit/b33a9c627ea691e7e1384d128c74d171cdec4a31))
+* **ui:** several pages missing highlighted menu item ([03babff](https://github.com/leg100/otf/commit/03babff1dfffda4220bf49ab1f09517bb252a05c))
+* **ui:** unable to toggle pull request speculative plans ([e122892](https://github.com/leg100/otf/commit/e1228924a9c2b9cbddd10154ae4d704a9502d246))
+
+
+### Miscellaneous
+
+* bump helm charts with app version v0.5.22 ([f1a2e00](https://github.com/leg100/otf/commit/f1a2e000b145d418bcf45d0e93d5cd4ab8cd1977))
+
 ## [0.5.22](https://github.com/leg100/otf/compare/v0.5.21...v0.5.22) (2026-04-08)
 
 

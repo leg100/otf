@@ -1,6 +1,6 @@
 # Helm Chart for `otf-agent`
 
-![Version: 0.1.27](https://img.shields.io/badge/Version-0.1.27-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 0.5.22](https://img.shields.io/badge/AppVersion-0.5.22-informational?style=flat-square)
+![Version: 0.1.28](https://img.shields.io/badge/Version-0.1.28-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 0.5.23](https://img.shields.io/badge/AppVersion-0.5.23-informational?style=flat-square)
 
 Installs the [otf agent](https://docs.otf.ninja/runners/).
 

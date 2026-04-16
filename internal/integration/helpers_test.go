@@ -90,7 +90,7 @@ type engineTestSpec struct {
 
 func engineTestSpecs() []engineTestSpec {
 	return []engineTestSpec{
-		{name: "Terraform", path: terraformPath, Engine: engine.Terraform},
-		{name: "OpenTofu", path: tofuPath, Engine: engine.Tofu},
+		{name: "Terraform", path: terraformPath, Engine: engine.Terraform()},
+		{name: "OpenTofu", path: tofuPath, Engine: engine.Tofu()},
 	}
 }

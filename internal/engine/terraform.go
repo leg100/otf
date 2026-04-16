@@ -16,12 +16,14 @@ const (
 	latestEndpoint          = "https://api.releases.hashicorp.com/v1/releases/terraform/latest"
 )
 
-var Terraform = &Engine{
-	Name:           "terraform",
-	DefaultVersion: defaultTerraformVersion,
-	client: &terraformClient{
-		endpoint: latestEndpoint,
-	},
+func Terraform() *Engine {
+	return &Engine{
+		Name:           "terraform",
+		DefaultVersion: defaultTerraformVersion,
+		client: &terraformClient{
+			endpoint: latestEndpoint,
+		},
+	}
 }
 
 type terraformClient struct {

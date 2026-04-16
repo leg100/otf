@@ -383,11 +383,11 @@ func TestWorkspace_Update(t *testing.T) {
 			ws: &Workspace{
 				Name:         "dev",
 				Organization: org1,
-				Engine:       engine.Terraform,
+				Engine:       engine.Terraform(),
 			},
-			opts: UpdateOptions{Engine: engine.Tofu},
+			opts: UpdateOptions{Engine: engine.Tofu()},
 			want: func(t *testing.T, got *Workspace) {
-				assert.Equal(t, engine.Tofu, got.Engine)
+				assert.Equal(t, engine.Tofu(), got.Engine)
 			},
 		},
 	}
