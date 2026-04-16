@@ -36,6 +36,7 @@ import (
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/run/trigger"
+	triggerui "github.com/leg100/otf/internal/run/trigger/ui"
 	runui "github.com/leg100/otf/internal/run/ui"
 	"github.com/leg100/otf/internal/runner"
 	runnerui "github.com/leg100/otf/internal/runner/ui"
@@ -650,6 +651,17 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 				}{
 					WorkspaceService: workspaceService,
 					StateService:     stateService,
+				},
+				authorizer,
+			),
+			triggerui.NewHandlers(
+				logger,
+				struct {
+					*trigger.RunTriggerService
+					*workspace.WorkspaceService
+				}{
+					RunTriggerService: runTriggerService,
+					WorkspaceService:  workspaceService,
 				},
 				authorizer,
 			),

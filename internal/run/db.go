@@ -50,7 +50,8 @@ INSERT INTO runs (
     created_by,
     engine,
     engine_version,
-    allow_empty_apply
+    allow_empty_apply,
+	triggering_run_id
 ) VALUES (
     $1,
     $2,
@@ -90,6 +91,7 @@ INSERT INTO runs (
 			run.Engine,
 			run.EngineVersion,
 			run.AllowEmptyApply,
+			run.TriggeringRunID,
 		)
 		for _, v := range run.Variables {
 			_, err := db.Exec(ctx, `INSERT INTO run_variables ( run_id, key, value) VALUES ( $1, $2, $3)`,
@@ -838,6 +840,7 @@ func (db *pgdb) scan(row pgx.CollectableRow) (*Run, error) {
 			CreatedBy              *user.Username                        `db:"created_by"`
 			CostEstimationEnabled  bool                                  `db:"cost_estimation_enabled"`
 			LockFile               []byte                                `db:"lock_file"`
+			TriggeringRunID        *resource.TfeID                       `db:"triggering_run_id"`
 		}
 	)
 	m, err := pgx.RowToStructByName[model](row)
@@ -884,6 +887,7 @@ func (db *pgdb) scan(row pgx.CollectableRow) (*Run, error) {
 		Latest:                m.Latest,
 		CostEstimationEnabled: m.CostEstimationEnabled,
 		CreatedBy:             m.CreatedBy,
+		TriggeringRunID:       m.TriggeringRunID,
 	}
 	if m.IngressAttributes != nil {
 		run.IngressAttributes = m.IngressAttributes.ToIngressAttributes()

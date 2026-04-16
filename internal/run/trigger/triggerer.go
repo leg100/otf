@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/leg100/otf/internal/configversion/source"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
@@ -18,7 +19,7 @@ type Triggerer struct {
 }
 
 type client interface {
-	ListRunTriggers(ctx context.Context, opts ListOptions) ([]*trigger, error)
+	ListRunTriggers(ctx context.Context, opts ListOptions) ([]*Trigger, error)
 	WatchRuns(context.Context) (<-chan pubsub.Event[*run.Event], func(), error)
 	CreateRun(context.Context, resource.TfeID, run.CreateOptions) (*run.Run, error)
 }
@@ -66,7 +67,11 @@ func (t *Triggerer) process(ctx context.Context, runEvent pubsub.Event[*run.Even
 	for _, trigger := range triggers {
 		t.Logger.Info("triggering run in connected workspace")
 
-		_, err := t.Client.CreateRun(ctx, trigger.WorkspaceID, run.CreateOptions{})
+		_, err := t.Client.CreateRun(ctx, trigger.WorkspaceID, run.CreateOptions{
+			CreatedBy:       runEvent.Payload.CreatedBy,
+			Source:          source.Trigger,
+			TriggeringRunID: &runEvent.Payload.ID,
+		})
 		if err != nil {
 			return err
 		}

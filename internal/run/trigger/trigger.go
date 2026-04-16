@@ -11,18 +11,18 @@ import (
 
 var errTriggerLoop = errors.New("workspace cannot trigger itself")
 
-type trigger struct {
+type Trigger struct {
 	ID                    resource.TfeID `db:"run_trigger_id"`
 	CreatedAt             time.Time      `db:"created_at"`
 	WorkspaceID           resource.TfeID `db:"workspace_id"`
 	SourceableWorkspaceID resource.TfeID `db:"sourceable_workspace_id"`
 }
 
-func newTrigger(workspaceID, sourceableWorkspaceID resource.TfeID) (*trigger, error) {
+func newTrigger(workspaceID, sourceableWorkspaceID resource.TfeID) (*Trigger, error) {
 	if workspaceID == sourceableWorkspaceID {
 		return nil, fmt.Errorf("%w: %s", errTriggerLoop, workspaceID)
 	}
-	return &trigger{
+	return &Trigger{
 		ID:                    resource.NewTfeID(resource.RunTriggerKind),
 		CreatedAt:             internal.CurrentTimestamp(nil),
 		WorkspaceID:           workspaceID,

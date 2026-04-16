@@ -67,7 +67,7 @@ func NewService(opts Options) *Service {
 	return svc
 }
 
-func (s *Service) CreateRunTrigger(ctx context.Context, workspaceID, sourceableWorkspaceID resource.TfeID) (*trigger, error) {
+func (s *Service) CreateRunTrigger(ctx context.Context, workspaceID, sourceableWorkspaceID resource.TfeID) (*Trigger, error) {
 	// User must have appropriate perm on the specified workspace and permission
 	// to read runs for the soureable workspace.
 	subject, err := s.authorizer.Authorize(ctx, authz.CreateRunTriggerAction, workspaceID)
@@ -92,12 +92,12 @@ func (s *Service) CreateRunTrigger(ctx context.Context, workspaceID, sourceableW
 	return t, nil
 }
 
-func (s *Service) ListRunTriggers(ctx context.Context, opts ListOptions) ([]*trigger, error) {
+func (s *Service) ListRunTriggers(ctx context.Context, opts ListOptions) ([]*Trigger, error) {
 	subject, err := s.authorizer.Authorize(ctx, authz.ListRunTriggersAction, opts.WorkspaceID)
 	if err != nil {
 		return nil, err
 	}
-	var triggers []*trigger
+	var triggers []*Trigger
 	switch opts.Direction {
 	case Outbound:
 		triggers, err = s.db.listBySourceableWorkspaceID(ctx, opts.WorkspaceID)
@@ -114,7 +114,7 @@ func (s *Service) ListRunTriggers(ctx context.Context, opts ListOptions) ([]*tri
 	return triggers, nil
 }
 
-func (s *Service) GetRunTrigger(ctx context.Context, triggerID resource.TfeID) (*trigger, error) {
+func (s *Service) GetRunTrigger(ctx context.Context, triggerID resource.TfeID) (*Trigger, error) {
 	subject, err := s.authorizer.Authorize(ctx, authz.GetRunTriggerAction, triggerID)
 	if err != nil {
 		return nil, err

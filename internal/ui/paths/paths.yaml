@@ -72,6 +72,9 @@
         - name: update-ssh-key
         - name: edit-engine
         - name: update-engine
+        - name: edit-triggers
+        - name: create-trigger
+        - name: delete-trigger
         - name: edit-vcs
         - name: update-vcs
         - name: edit-advanced

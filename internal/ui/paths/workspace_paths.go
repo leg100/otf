@@ -108,6 +108,18 @@ func UpdateEngineWorkspace(workspace any) string {
 	return fmt.Sprintf("/app/workspaces/%v/update-engine", workspace)
 }
 
+func EditTriggersWorkspace(workspace any) string {
+	return fmt.Sprintf("/app/workspaces/%v/edit-triggers", workspace)
+}
+
+func CreateTriggerWorkspace(workspace any) string {
+	return fmt.Sprintf("/app/workspaces/%v/create-trigger", workspace)
+}
+
+func DeleteTriggerWorkspace(workspace any) string {
+	return fmt.Sprintf("/app/workspaces/%v/delete-trigger", workspace)
+}
+
 func EditVcsWorkspace(workspace any) string {
 	return fmt.Sprintf("/app/workspaces/%v/edit-vcs", workspace)
 }

@@ -25,9 +25,9 @@ type TFEAPI struct {
 }
 
 type tfeClient interface {
-	CreateRunTrigger(ctx context.Context, workspaceID, sourceableWorkspaceID resource.TfeID) (*trigger, error)
-	ListRunTriggers(ctx context.Context, opts ListOptions) ([]*trigger, error)
-	GetRunTrigger(ctx context.Context, triggerID resource.TfeID) (*trigger, error)
+	CreateRunTrigger(ctx context.Context, workspaceID, sourceableWorkspaceID resource.TfeID) (*Trigger, error)
+	ListRunTriggers(ctx context.Context, opts ListOptions) ([]*Trigger, error)
+	GetRunTrigger(ctx context.Context, triggerID resource.TfeID) (*Trigger, error)
 	DeleteRunTrigger(ctx context.Context, triggerID resource.TfeID) error
 	GetWorkspace(ctx context.Context, workspaceID resource.TfeID) (*workspace.Workspace, error)
 }
@@ -148,7 +148,7 @@ func (a *TFEAPI) deleteRunTrigger(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (a *TFEAPI) convert(from *trigger) *TFERunTrigger {
+func (a *TFEAPI) convert(from *Trigger) *TFERunTrigger {
 	return &TFERunTrigger{
 		ID:        from.ID,
 		CreatedAt: from.CreatedAt,

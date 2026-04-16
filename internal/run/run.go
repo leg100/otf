@@ -81,6 +81,10 @@ type (
 		// instead triggered by a VCS event.
 		CreatedBy *user.Username
 
+		// TriggeringRunID is the ID of the run that triggered this
+		// run. Only set if a run trigger has been configured.
+		TriggeringRunID *resource.TfeID
+
 		// OTF doesn't support cost estimation but some go-tfe API tests expect
 		// a run to enter the RunCostEstimated state, and this boolean
 		// determines whether to enter that state upon finishing a plan.
@@ -121,6 +125,10 @@ type (
 		Variables     []Variable
 		CreatedBy     *user.Username
 		EngineVersion string
+
+		// TriggeringRunID is the ID of the run that triggered this
+		// run. Only set if a run trigger has been configured.
+		TriggeringRunID *resource.TfeID
 
 		// CreatedAt overrides the time the run was created at - for testing
 		// purposes only.

@@ -12,7 +12,7 @@ type pgdb struct {
 	*sql.DB
 }
 
-func (db *pgdb) create(ctx context.Context, trigger *trigger) error {
+func (db *pgdb) create(ctx context.Context, trigger *Trigger) error {
 	_, err := db.Exec(ctx, `
 INSERT INTO run_triggers (
     run_trigger_id,
@@ -36,31 +36,31 @@ INSERT INTO run_triggers (
 	return nil
 }
 
-func (db *pgdb) listByWorkspaceID(ctx context.Context, workspaceID resource.TfeID) ([]*trigger, error) {
+func (db *pgdb) listByWorkspaceID(ctx context.Context, workspaceID resource.TfeID) ([]*Trigger, error) {
 	rows := db.Query(ctx, `
 SELECT *
 FROM run_triggers
 WHERE run_triggers.workspace_id = $1
 `, workspaceID)
-	return sql.CollectRows(rows, pgx.RowToAddrOfStructByName[trigger])
+	return sql.CollectRows(rows, pgx.RowToAddrOfStructByName[Trigger])
 }
 
-func (db *pgdb) listBySourceableWorkspaceID(ctx context.Context, sourceableWorkspaceID resource.TfeID) ([]*trigger, error) {
+func (db *pgdb) listBySourceableWorkspaceID(ctx context.Context, sourceableWorkspaceID resource.TfeID) ([]*Trigger, error) {
 	rows := db.Query(ctx, `
 SELECT *
 FROM run_triggers
 WHERE run_triggers.sourceable_workspace_id = $1
 `, sourceableWorkspaceID)
-	return sql.CollectRows(rows, pgx.RowToAddrOfStructByName[trigger])
+	return sql.CollectRows(rows, pgx.RowToAddrOfStructByName[Trigger])
 }
 
-func (db *pgdb) get(ctx context.Context, triggerID resource.ID) (*trigger, error) {
+func (db *pgdb) get(ctx context.Context, triggerID resource.ID) (*Trigger, error) {
 	row := db.Query(ctx, `
 SELECT *
 FROM run_triggers
 WHERE run_trigger_id = $1
 `, triggerID)
-	return sql.CollectExactlyOneRow(row, pgx.RowToAddrOfStructByName[trigger])
+	return sql.CollectExactlyOneRow(row, pgx.RowToAddrOfStructByName[Trigger])
 }
 
 func (db *pgdb) delete(ctx context.Context, triggerID resource.ID) error {
