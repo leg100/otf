@@ -65,7 +65,11 @@ func (t *Triggerer) process(ctx context.Context, runEvent pubsub.Event[*run.Even
 	}
 
 	for _, trigger := range triggers {
-		t.Logger.Info("triggering run in connected workspace")
+		t.Logger.Info(
+			"triggering run in connected workspace",
+			"trigger", trigger,
+			"triggering_run_id", runEvent.Payload.ID,
+		)
 
 		_, err := t.Client.CreateRun(ctx, trigger.WorkspaceID, run.CreateOptions{
 			CreatedBy:       runEvent.Payload.CreatedBy,

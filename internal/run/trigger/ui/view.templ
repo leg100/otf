@@ -8,14 +8,17 @@ import (
 
 type editTriggersProps struct {
 	ws          *workspace.Workspace
-	connected   []*workspace.Workspace
+	connected   []connection
 	unconnected []*workspace.Workspace
 }
 
 templ editTriggers(props editTriggersProps) {
+	<p class="description max-w-2xl">
+		Run triggers allow you to connect this workspace to one or more source workspaces. These connections allow runs to queue automatically in this workspace on successful apply of runs in any of the source workspaces.
+	</p>
 	<form class="flex flex-col gap-5" action={ paths.CreateTriggerWorkspace(props.ws.ID.String()) } method="POST">
 		<select class="select select-sm" name="triggering_workspace_id" id="connect_workspace" onchange="this.form.submit()">
-			<option disabled selected>-- select workspace --</option>
+			<option disabled selected>Connect workspace</option>
 			for _, ws := range props.unconnected {
 				<option value={ ws.ID.String() }>{ ws.Name }</option>
 			}
@@ -33,13 +36,13 @@ templ (t table) Header() {
 	<th>Actions</th>
 }
 
-templ (t table) Row(ws *workspace.Workspace) {
-	<tr id={ "item-" + ws.ID.String() }>
+templ (t table) Row(connection connection) {
+	<tr id={ "item-" + connection.ws.ID.String() }>
 		<td>
-			{ ws.Name }
+			{ connection.ws.Name }
 		</td>
 		<td>
-			<form title="disconnect workspace" action={ paths.DeleteTriggerWorkspace(ws.ID.String()) } method="POST">
+			<form title="disconnect workspace" action={ paths.DeleteRunTrigger(connection.trigger.ID.String()) } method="POST">
 				<button class="btn btn-danger">
 					Disconnect
 				</button>

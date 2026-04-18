@@ -84,6 +84,7 @@ type (
 		Connections   *connections.Service
 		System        *internal.HostnameService
 		SSHKeys       *sshkey.Service
+		RunTriggers   *trigger.Service
 
 		netListener net.Listener
 		server      *http.Server
@@ -945,6 +946,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Connections:   connectionService,
 		Runners:       runnerService,
 		SSHKeys:       sshkeyService,
+		RunTriggers:   runTriggerService,
 		DB:            db,
 		netListener:   netListener,
 		server:        server,

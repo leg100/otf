@@ -3,6 +3,7 @@ package trigger
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/leg100/otf/internal"
@@ -28,4 +29,13 @@ func newTrigger(workspaceID, sourceableWorkspaceID resource.TfeID) (*Trigger, er
 		WorkspaceID:           workspaceID,
 		SourceableWorkspaceID: sourceableWorkspaceID,
 	}, nil
+}
+
+// LogValue implements slog.LogValuer.
+func (t *Trigger) LogValue() slog.Value {
+	return slog.GroupValue(
+		slog.String("id", t.ID.String()),
+		slog.Any("workspace_id", t.WorkspaceID),
+		slog.Any("triggering_workspace_id", t.SourceableWorkspaceID),
+	)
 }

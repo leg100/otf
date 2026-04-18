@@ -116,10 +116,6 @@ func CreateTriggerWorkspace(workspace any) string {
 	return fmt.Sprintf("/app/workspaces/%v/create-trigger", workspace)
 }
 
-func DeleteTriggerWorkspace(workspace any) string {
-	return fmt.Sprintf("/app/workspaces/%v/delete-trigger", workspace)
-}
-
 func EditVcsWorkspace(workspace any) string {
 	return fmt.Sprintf("/app/workspaces/%v/edit-vcs", workspace)
 }

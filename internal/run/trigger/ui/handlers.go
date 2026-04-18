@@ -45,6 +45,12 @@ func NewHandlers(
 func (h *Handlers) AddHandlers(r *mux.Router) {
 	r.HandleFunc("/workspaces/{workspace_id}/edit-triggers", h.editTriggers).Methods("GET")
 	r.HandleFunc("/workspaces/{workspace_id}/create-trigger", h.createTrigger).Methods("POST")
+	r.HandleFunc("/triggers/{trigger_id}/delete", h.deleteTrigger).Methods("POST")
+}
+
+type connection struct {
+	ws      *workspace.Workspace
+	trigger *trigger.Trigger
 }
 
 func (h *Handlers) editTriggers(w http.ResponseWriter, r *http.Request) {
@@ -82,7 +88,7 @@ func (h *Handlers) editTriggers(w http.ResponseWriter, r *http.Request) {
 
 	// Build list of connected and unconnected workspaces
 	var (
-		connected   []*workspace.Workspace
+		connected   []connection
 		unconnected []*workspace.Workspace
 	)
 	for _, ws := range workspaces {
@@ -90,15 +96,18 @@ func (h *Handlers) editTriggers(w http.ResponseWriter, r *http.Request) {
 		if ws.ID == workspaceID {
 			continue
 		}
-		var isConnected bool
-		for _, trigger := range triggers {
-			if ws.ID == trigger.SourceableWorkspaceID {
-				isConnected = true
+		var trigger *trigger.Trigger
+		for _, t := range triggers {
+			if ws.ID == t.SourceableWorkspaceID {
+				trigger = t
 				break
 			}
 		}
-		if isConnected {
-			connected = append(connected, ws)
+		if trigger != nil {
+			connected = append(connected, connection{
+				ws:      ws,
+				trigger: trigger,
+			})
 		} else {
 			unconnected = append(unconnected, ws)
 		}
@@ -140,4 +149,21 @@ func (h *Handlers) createTrigger(w http.ResponseWriter, r *http.Request) {
 
 	helpers.FlashSuccess(w, "created trigger: "+trigger.ID.String())
 	http.Redirect(w, r, paths.EditTriggersWorkspace(params.WorkspaceID), http.StatusFound)
+}
+
+func (h *Handlers) deleteTrigger(w http.ResponseWriter, r *http.Request) {
+	triggerID, err := decode.ID("trigger_id", r)
+	if err != nil {
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
+		return
+	}
+
+	err = h.client.DeleteRunTrigger(r.Context(), triggerID)
+	if err != nil {
+		helpers.Error(r, w, err.Error())
+		return
+	}
+
+	helpers.FlashSuccess(w, "deleted trigger: "+triggerID.String())
+	http.Redirect(w, r, r.Referer(), http.StatusFound)
 }
