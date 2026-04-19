@@ -206,6 +206,10 @@ func (s *Service) ListRuns(ctx context.Context, opts ListOptions) (*resource.Pag
 	return page, nil
 }
 
+func (s *Service) ListTriggeredRunIDs(ctx context.Context, runID resource.ID) ([]resource.TfeID, error) {
+	return s.db.listTriggeredRunIDs(ctx, runID)
+}
+
 // ListRunsOlderThan lists runs created before t. Implements resource.deleterClient.
 func (s *Service) ListRunsOlderThan(ctx context.Context, t time.Time) ([]*Run, error) {
 	return resource.ListAll(func(opts resource.PageOptions) (*resource.Page[*Run], error) {

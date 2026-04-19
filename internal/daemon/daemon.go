@@ -306,6 +306,11 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Broker:            workspaceBroker,
 	})
 
+	runTriggerService := trigger.NewService(trigger.Options{
+		Logger:     logger,
+		Authorizer: authorizer,
+		DB:         db,
+	})
 	runService := run.NewService(run.Options{
 		Logger:     logger,
 		Authorizer: authorizer,
@@ -330,11 +335,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		DaemonCtx:          ctx,
 		Broker:             runBroker,
 		ChunkBroker:        chunkBroker,
-	})
-	runTriggerService := trigger.NewService(trigger.Options{
-		Logger:     logger,
-		Authorizer: authorizer,
-		DB:         db,
 	})
 	moduleService := module.NewService(module.Options{
 		Logger:             logger,

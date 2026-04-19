@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"github.com/leg100/otf/internal/configversion/source"
 	"github.com/leg100/otf/internal/resource"
 	runpkg "github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/runstatus"
@@ -37,10 +38,11 @@ templ (t *templates) runList(props runListProps) {
 }
 
 type getRunProps struct {
-	run       *runpkg.Run
-	ws        *workspace.Workspace
-	planLogs  runpkg.Chunk
-	applyLogs runpkg.Chunk
+	run             *runpkg.Run
+	ws              *workspace.Workspace
+	planLogs        runpkg.Chunk
+	applyLogs       runpkg.Chunk
+	triggeredRunIDs []resource.TfeID
 }
 
 templ (t *templates) getRun(props getRunProps) {
@@ -62,6 +64,19 @@ templ (t *templates) getRun(props getRunProps) {
 					{ props.run.EngineVersion }
 				</span>
 			</div>
+			<div class="flex gap-1 items-center z-20" id="run-identifier">
+				@helpers.Identifier(props.run.ID)
+			</div>
+			if props.run.TriggeringRunID != nil {
+				<div class="flex gap-1 items-center" id="triggering-run">
+					<span>
+						@source.IconTrigger()
+					</span>
+					<span>
+						Triggered by <a class="link" href={ paths.Run(props.run.TriggeringRunID) }>{ props.run.TriggeringRunID.String() }</a>
+					</span>
+				</div>
+			}
 			<div class="flex gap-1 items-center" id="elapsed-time">
 				Elapsed time
 				<span
@@ -71,9 +86,6 @@ templ (t *templates) getRun(props getRunProps) {
 				>
 					@runningTime(props.run)
 				</span>
-			</div>
-			<div class="flex gap-1 items-center z-20" id="run-identifier">
-				@helpers.Identifier(props.run.ID)
 			</div>
 		</div>
 		<div class="flex flex-col gap-4">
@@ -118,6 +130,12 @@ templ (t *templates) getRun(props getRunProps) {
 				</div>
 			</details>
 		</div>
+		<div id="triggered-run-alerts" sse-swap={ triggeredRunAlertUpdate } hx-swap="beforeend" class="flex flex-col gap-2">
+			for _, id := range props.triggeredRunIDs {
+				@triggeredRunAlert(id)
+			}
+		</div>
+		@templ.JSFuncCall("scrollMessageIntoView", triggeredRunAlertUpdate)
 	</div>
 }
 
@@ -209,6 +227,17 @@ templ phaseStatus(phase runpkg.Phase) {
 	>
 		{ phase.Status.String() }
 	</span>
+}
+
+templ triggeredRunAlert(triggeredRunID resource.ID) {
+	<div id={ "triggered-run-alert-" + triggeredRunID.String() } role="alert" class="alert alert-soft alert-info">
+		<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-info h-6 w-6 shrink-0">
+			<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+		</svg>
+		<span>
+			Triggered <a class="link" href={ paths.Run(triggeredRunID) }>{ triggeredRunID.String() }</a> in connected workspace.
+		</span>
+	</div>
 }
 
 func runBoolString(b bool) string {

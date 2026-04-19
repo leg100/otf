@@ -197,6 +197,7 @@ func NewRun(
 		Variables:              opts.Variables,
 		CreatedBy:              opts.CreatedBy,
 		CostEstimationEnabled:  opts.costEstimationEnabled,
+		TriggeringRunID:        opts.TriggeringRunID,
 	}
 
 	run.Plan = newPhase(run.ID, PlanPhase)

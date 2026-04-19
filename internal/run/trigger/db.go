@@ -18,7 +18,7 @@ INSERT INTO run_triggers (
     run_trigger_id,
     created_at,
     workspace_id,
-    sourceable_workspace_id
+    triggering_workspace_id
 ) VALUES (
     $1,
     $2,
@@ -28,7 +28,7 @@ INSERT INTO run_triggers (
 		trigger.ID,
 		trigger.CreatedAt,
 		trigger.WorkspaceID,
-		trigger.SourceableWorkspaceID,
+		trigger.TriggeringWorkspaceID,
 	)
 	if err != nil {
 		return err
@@ -45,12 +45,12 @@ WHERE run_triggers.workspace_id = $1
 	return sql.CollectRows(rows, pgx.RowToAddrOfStructByName[Trigger])
 }
 
-func (db *pgdb) listBySourceableWorkspaceID(ctx context.Context, sourceableWorkspaceID resource.TfeID) ([]*Trigger, error) {
+func (db *pgdb) listByTriggeringWorkspaceID(ctx context.Context, triggeringWorkspaceID resource.TfeID) ([]*Trigger, error) {
 	rows := db.Query(ctx, `
 SELECT *
 FROM run_triggers
-WHERE run_triggers.sourceable_workspace_id = $1
-`, sourceableWorkspaceID)
+WHERE run_triggers.triggering_workspace_id = $1
+`, triggeringWorkspaceID)
 	return sql.CollectRows(rows, pgx.RowToAddrOfStructByName[Trigger])
 }
 

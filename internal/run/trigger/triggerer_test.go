@@ -96,7 +96,7 @@ func TestTriggerer_process(t *testing.T) {
 				Payload: &run.Event{Status: runstatus.Applied, WorkspaceID: ws1},
 			},
 			triggers: []*Trigger{
-				{WorkspaceID: ws2, SourceableWorkspaceID: ws1},
+				{WorkspaceID: ws2, TriggeringWorkspaceID: ws1},
 			},
 			wantRuns: 1,
 		},
@@ -107,8 +107,8 @@ func TestTriggerer_process(t *testing.T) {
 				Payload: &run.Event{Status: runstatus.Applied, WorkspaceID: ws1},
 			},
 			triggers: []*Trigger{
-				{WorkspaceID: ws2, SourceableWorkspaceID: ws1},
-				{WorkspaceID: resource.NewTfeID(resource.WorkspaceKind), SourceableWorkspaceID: ws1},
+				{WorkspaceID: ws2, TriggeringWorkspaceID: ws1},
+				{WorkspaceID: resource.NewTfeID(resource.WorkspaceKind), TriggeringWorkspaceID: ws1},
 			},
 			wantRuns: 2,
 		},
@@ -151,7 +151,7 @@ func TestTriggerer_Start(t *testing.T) {
 	fake := &fakeTriggererClient{
 		events: events,
 		triggers: []*Trigger{
-			{WorkspaceID: ws2, SourceableWorkspaceID: ws1},
+			{WorkspaceID: ws2, TriggeringWorkspaceID: ws1},
 		},
 	}
 	triggerer := &Triggerer{

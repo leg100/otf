@@ -14,7 +14,7 @@ type editTriggersProps struct {
 
 templ editTriggers(props editTriggersProps) {
 	<p class="description max-w-2xl">
-		Run triggers allow you to connect this workspace to one or more source workspaces. These connections allow runs to queue automatically in this workspace on successful apply of runs in any of the source workspaces.
+		Run triggers connect a workspace to another workspace. A successfully applied run on a connected workspace automatically triggers a run on this workspace.
 	</p>
 	<form class="flex flex-col gap-5" action={ paths.CreateTriggerWorkspace(props.ws.ID.String()) } method="POST">
 		<select class="select select-sm" name="triggering_workspace_id" id="connect_workspace" onchange="this.form.submit()">
@@ -39,7 +39,9 @@ templ (t table) Header() {
 templ (t table) Row(connection connection) {
 	<tr id={ "item-" + connection.ws.ID.String() }>
 		<td>
-			{ connection.ws.Name }
+			<a class="link" href={ paths.Workspace(connection.ws.ID) }>
+				{ connection.ws.Name }
+			</a>
 		</td>
 		<td>
 			<form title="disconnect workspace" action={ paths.DeleteRunTrigger(connection.trigger.ID.String()) } method="POST">

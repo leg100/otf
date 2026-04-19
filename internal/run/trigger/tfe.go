@@ -156,7 +156,7 @@ func (a *TFEAPI) convert(from *Trigger) *TFERunTrigger {
 			ID: from.WorkspaceID,
 		},
 		Sourceable: &workspace.TFEWorkspace{
-			ID: from.SourceableWorkspaceID,
+			ID: from.TriggeringWorkspaceID,
 		},
 	}
 }

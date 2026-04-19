@@ -22,7 +22,7 @@ type Handlers struct {
 }
 
 type Client interface {
-	CreateRunTrigger(ctx context.Context, workspaceID, sourceableWorkspaceID resource.TfeID) (*trigger.Trigger, error)
+	CreateRunTrigger(ctx context.Context, workspaceID, triggeringWorkspaceID resource.TfeID) (*trigger.Trigger, error)
 	ListRunTriggers(ctx context.Context, opts trigger.ListOptions) ([]*trigger.Trigger, error)
 	GetRunTrigger(ctx context.Context, triggerID resource.TfeID) (*trigger.Trigger, error)
 	DeleteRunTrigger(ctx context.Context, triggerID resource.TfeID) error
@@ -98,7 +98,7 @@ func (h *Handlers) editTriggers(w http.ResponseWriter, r *http.Request) {
 		}
 		var trigger *trigger.Trigger
 		for _, t := range triggers {
-			if ws.ID == t.SourceableWorkspaceID {
+			if ws.ID == t.TriggeringWorkspaceID {
 				trigger = t
 				break
 			}

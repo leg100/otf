@@ -25,6 +25,7 @@ var (
 			ListRunnersAction:      true,
 			GetSSHKeyAction:        true,
 			ListSSHKeysAction:      true,
+			ListRunTriggersAction:  true,
 		},
 	}
 

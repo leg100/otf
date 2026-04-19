@@ -42,7 +42,7 @@ type (
 	ListOptions struct {
 		// WorkspaceID is the workspace whose triggers are being listed.
 		WorkspaceID resource.TfeID `schema:"workspace_id"`
-		// Filters by direction: "inbound" (sourceables that trigger this
+		// Filters by direction: "inbound" (triggering workspaces that trigger this
 		// workspace) or "outbound" (workspaces this workspace triggers).
 		Direction Direction `schema:"filter[run-trigger][type]"`
 	}
@@ -67,19 +67,19 @@ func NewService(opts Options) *Service {
 	return svc
 }
 
-func (s *Service) CreateRunTrigger(ctx context.Context, workspaceID, sourceableWorkspaceID resource.TfeID) (*Trigger, error) {
+func (s *Service) CreateRunTrigger(ctx context.Context, workspaceID, triggeringWorkspaceID resource.TfeID) (*Trigger, error) {
 	// User must have appropriate perm on the specified workspace and permission
-	// to read runs for the soureable workspace.
+	// to read runs for the triggering workspace.
 	subject, err := s.authorizer.Authorize(ctx, authz.CreateRunTriggerAction, workspaceID)
 	if err != nil {
 		return nil, err
 	}
-	_, err = s.authorizer.Authorize(ctx, authz.GetRunAction, sourceableWorkspaceID)
+	_, err = s.authorizer.Authorize(ctx, authz.GetRunAction, triggeringWorkspaceID)
 	if err != nil {
 		return nil, err
 	}
 
-	t, err := newTrigger(workspaceID, sourceableWorkspaceID)
+	t, err := newTrigger(workspaceID, triggeringWorkspaceID)
 	if err != nil {
 		s.logger.Error(err, "constructing run trigger", "subject", subject)
 		return nil, err
@@ -88,7 +88,7 @@ func (s *Service) CreateRunTrigger(ctx context.Context, workspaceID, sourceableW
 		s.logger.Error(err, "creating run trigger", "subject", subject)
 		return nil, err
 	}
-	s.logger.V(0).Info("created run trigger", "trigger", t.ID, "workspace", workspaceID, "sourceable", sourceableWorkspaceID, "subject", subject)
+	s.logger.V(0).Info("created run trigger", "trigger", t.ID, "workspace_id", workspaceID, "triggering_workspace_id", triggeringWorkspaceID, "subject", subject)
 	return t, nil
 }
 
@@ -100,7 +100,7 @@ func (s *Service) ListRunTriggers(ctx context.Context, opts ListOptions) ([]*Tri
 	var triggers []*Trigger
 	switch opts.Direction {
 	case Outbound:
-		triggers, err = s.db.listBySourceableWorkspaceID(ctx, opts.WorkspaceID)
+		triggers, err = s.db.listByTriggeringWorkspaceID(ctx, opts.WorkspaceID)
 	case Inbound:
 		triggers, err = s.db.listByWorkspaceID(ctx, opts.WorkspaceID)
 	default:

@@ -569,6 +569,17 @@ WHERE runs.run_id = $1
 	return sql.CollectOneRow(rows, db.scan)
 }
 
+// listTriggeredRunIDs retrieves a list of IDs of runs triggered by a run with the given
+// ID.
+func (db *pgdb) listTriggeredRunIDs(ctx context.Context, runID resource.ID) ([]resource.TfeID, error) {
+	rows := db.Query(ctx, `
+SELECT runs.run_id
+FROM runs
+WHERE runs.triggering_run_id = $1
+`, runID)
+	return sql.CollectRows(rows, pgx.RowTo[resource.TfeID])
+}
+
 // SetPlanFile writes a plan file to the db
 func (db *pgdb) SetPlanFile(ctx context.Context, runID resource.TfeID, file []byte, format PlanFormat) error {
 	switch format {

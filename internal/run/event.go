@@ -30,6 +30,7 @@ type Event struct {
 	EngineVersion          string           `json:"engine_version"`
 	AllowEmptyApply        bool             `json:"allow_empty_apply"`
 	Engine                 *engine.Engine   `json:"engine"`
+	TriggeringRunID        *resource.TfeID  `json:"triggering_run_id"`
 }
 
 func (e Event) GetID() resource.TfeID { return e.ID }

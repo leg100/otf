@@ -63,7 +63,13 @@ templ (t *runsTable) Row(run *runpkg.Run) {
 						</span>
 					}
 					<div class="flex gap-2 items-center">
-						@t.configs.GetSourceIcon(run.Source)
+						if run.TriggeringRunID != nil {
+							<a title={ "run triggered by " + run.TriggeringRunID.String() } href={ paths.Run(*run.TriggeringRunID) }>
+								@t.configs.GetSourceIcon(run.Source)
+							</a>
+						} else {
+							@t.configs.GetSourceIcon(run.Source)
+						}
 						if run.IngressAttributes != nil {
 							<div class="badge badge-secondary badge-soft badge-sm font-mono">
 								<svg
