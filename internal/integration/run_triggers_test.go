@@ -86,6 +86,27 @@ func TestRunTriggers(t *testing.T) {
 		err = expect.Locator(page.Locator(`#triggering-run`)).ToHaveText("Triggered by " + triggeringRun.ID.String())
 		require.NoError(t, err)
 
+		// Enable auto-apply
+		//
+		// Navigate to triggers page
+		_, err = page.Goto(daemon.URL(paths.EditTriggersWorkspace(triggered.ID)))
+		require.NoError(t, err)
+
+		err = page.Locator(`//input[@id='auto-apply']`).Click()
+		require.NoError(t, err)
+
+		// Should redirect to same page and show alert.
+		err = expect.Locator(page.GetByRole("alert")).ToHaveText("updated auto apply setting: true")
+		require.NoError(t, err)
+
+		// Auto-apply should be enabled.
+		err = expect.Locator(page.Locator(`//input[@id='auto-apply']`)).ToBeChecked()
+		require.NoError(t, err)
+
+		// Auto-apply should be enabled on workspace.
+		triggered = daemon.getWorkspace(t, ctx, triggered.ID)
+		require.True(t, triggered.AutoApplyRunTrigger)
+
 		// Delete connection via UI.
 		//
 		// Navigate to triggers page

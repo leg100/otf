@@ -127,3 +127,7 @@ func UpdateVcsWorkspace(workspace any) string {
 func EditAdvancedWorkspace(workspace any) string {
 	return fmt.Sprintf("/app/workspaces/%v/edit-advanced", workspace)
 }
+
+func UpdateAutoApplyRunTriggerWorkspace(workspace any) string {
+	return fmt.Sprintf("/app/workspaces/%v/update-auto-apply-run-trigger", workspace)
+}

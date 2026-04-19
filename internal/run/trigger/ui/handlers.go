@@ -2,6 +2,7 @@ package ui
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -28,6 +29,7 @@ type Client interface {
 	DeleteRunTrigger(ctx context.Context, triggerID resource.TfeID) error
 	ListWorkspaces(ctx context.Context, opts workspace.ListOptions) (*resource.Page[*workspace.Workspace], error)
 	GetWorkspace(context.Context, resource.TfeID) (*workspace.Workspace, error)
+	UpdateWorkspace(ctx context.Context, workspaceID resource.TfeID, opts workspace.UpdateOptions) (*workspace.Workspace, error)
 }
 
 func NewHandlers(
@@ -46,6 +48,7 @@ func (h *Handlers) AddHandlers(r *mux.Router) {
 	r.HandleFunc("/workspaces/{workspace_id}/edit-triggers", h.editTriggers).Methods("GET")
 	r.HandleFunc("/workspaces/{workspace_id}/create-trigger", h.createTrigger).Methods("POST")
 	r.HandleFunc("/triggers/{trigger_id}/delete", h.deleteTrigger).Methods("POST")
+	r.HandleFunc("/workspaces/{workspace_id}/update-auto-apply-run-trigger", h.updateAutoApply).Methods("POST")
 }
 
 type connection struct {
@@ -166,4 +169,26 @@ func (h *Handlers) deleteTrigger(w http.ResponseWriter, r *http.Request) {
 
 	helpers.FlashSuccess(w, "deleted trigger: "+triggerID.String())
 	http.Redirect(w, r, r.Referer(), http.StatusFound)
+}
+
+func (h *Handlers) updateAutoApply(w http.ResponseWriter, r *http.Request) {
+	var params struct {
+		WorkspaceID resource.TfeID `schema:"workspace_id,required"`
+		AutoApply   bool           `schema:"auto_apply"`
+	}
+	if err := decode.All(&params, r); err != nil {
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
+		return
+	}
+
+	_, err := h.client.UpdateWorkspace(r.Context(), params.WorkspaceID, workspace.UpdateOptions{
+		AutoApplyRunTrigger: &params.AutoApply,
+	})
+	if err != nil {
+		helpers.Error(r, w, err.Error())
+		return
+	}
+
+	helpers.FlashSuccess(w, fmt.Sprintf("updated auto apply setting: %v", params.AutoApply))
+	http.Redirect(w, r, paths.EditTriggersWorkspace(params.WorkspaceID), http.StatusFound)
 }

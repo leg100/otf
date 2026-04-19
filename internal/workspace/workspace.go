@@ -35,6 +35,7 @@ type (
 		AgentPoolID                *resource.TfeID   `jsonapi:"attribute" json:"agent-pool-id"`
 		AllowDestroyPlan           bool              `jsonapi:"attribute" json:"allow_destroy_plan"`
 		AutoApply                  bool              `jsonapi:"attribute" json:"auto_apply"`
+		AutoApplyRunTrigger        bool              `jsonapi:"attribute" json:"auto_apply_run_trigger"`
 		CanQueueDestroyPlan        bool              `jsonapi:"attribute" json:"can_queue_destroy_plan"`
 		Description                string            `jsonapi:"attribute" json:"description"`
 		Environment                string            `jsonapi:"attribute" json:"environment"`
@@ -107,6 +108,7 @@ type (
 		AgentPoolID                *resource.TfeID
 		AllowDestroyPlan           *bool
 		AutoApply                  *bool
+		AutoApplyRunTrigger        *bool
 		Description                *string
 		ExecutionMode              *ExecutionMode
 		GlobalRemoteState          *bool
@@ -137,6 +139,7 @@ type (
 		AgentPoolID                *resource.TfeID `json:"agent-pool-id,omitempty"`
 		AllowDestroyPlan           *bool
 		AutoApply                  *bool
+		AutoApplyRunTrigger        *bool
 		Name                       *string
 		Description                *string
 		ExecutionMode              *ExecutionMode `json:"execution-mode,omitempty"`
@@ -230,6 +233,9 @@ func (f *factory) NewWorkspace(ctx context.Context, opts CreateOptions) (*Worksp
 	}
 	if opts.AutoApply != nil {
 		ws.AutoApply = *opts.AutoApply
+	}
+	if opts.AutoApplyRunTrigger != nil {
+		ws.AutoApplyRunTrigger = *opts.AutoApplyRunTrigger
 	}
 	if opts.Description != nil {
 		ws.Description = *opts.Description
@@ -394,6 +400,10 @@ func (ws *Workspace) Update(opts UpdateOptions) (*bool, error) {
 	}
 	if opts.AutoApply != nil {
 		ws.AutoApply = *opts.AutoApply
+		updated = true
+	}
+	if opts.AutoApplyRunTrigger != nil {
+		ws.AutoApplyRunTrigger = *opts.AutoApplyRunTrigger
 		updated = true
 	}
 	if opts.Description != nil {

@@ -77,6 +77,7 @@
         - name: edit-vcs
         - name: update-vcs
         - name: edit-advanced
+        - name: update-auto-apply-run-trigger
     - name: organization_run
       path: /run
       actions:

@@ -45,6 +45,7 @@ INSERT INTO workspaces (
     allow_cli_apply,
     allow_destroy_plan,
     auto_apply,
+    auto_apply_run_trigger,
     branch,
     can_queue_destroy_plan,
     description,
@@ -92,7 +93,8 @@ INSERT INTO workspaces (
     $24,
     $25,
     $26,
-	$27
+	$27,
+	$28
 )
 `,
 		ws.ID,
@@ -102,6 +104,7 @@ INSERT INTO workspaces (
 		allowCLIApply,
 		ws.AllowDestroyPlan,
 		ws.AutoApply,
+		ws.AutoApplyRunTrigger,
 		branch,
 		ws.CanQueueDestroyPlan,
 		ws.Description,
@@ -152,28 +155,30 @@ func (db *pgdb) update(ctx context.Context, workspaceID resource.TfeID, fn func(
 					allow_destroy_plan            = $2,
 					allow_cli_apply               = $3,
 					auto_apply                    = $4,
-					branch                        = $5,
-					description                   = $6,
-					execution_mode                = $7,
-					global_remote_state           = $8,
-					name                          = $9,
-					queue_all_runs                = $10,
-					speculative_enabled           = $11,
-					structured_run_output_enabled = $12,
-					engine_version                = $13,
-					trigger_prefixes              = $14,
-					trigger_patterns              = $15,
-					vcs_tags_regex                = $16,
-					working_directory             = $17,
-					updated_at                    = $18,
-					engine                        = $19,
-					ssh_key_id                    = $20
-				WHERE workspace_id = $21
+					auto_apply_run_trigger        = $5,
+					branch                        = $6,
+					description                   = $7,
+					execution_mode                = $8,
+					global_remote_state           = $9,
+					name                          = $10,
+					queue_all_runs                = $11,
+					speculative_enabled           = $12,
+					structured_run_output_enabled = $13,
+					engine_version                = $14,
+					trigger_prefixes              = $15,
+					trigger_patterns              = $16,
+					vcs_tags_regex                = $17,
+					working_directory             = $18,
+					updated_at                    = $19,
+					engine                        = $20,
+					ssh_key_id                    = $21
+				WHERE workspace_id = $22
 			`,
 				ws.AgentPoolID,
 				ws.AllowDestroyPlan,
 				allowCLIApply,
 				ws.AutoApply,
+				ws.AutoApplyRunTrigger,
 				branch,
 				ws.Description,
 				ws.ExecutionMode,
@@ -550,6 +555,7 @@ func scan(row pgx.CollectableRow) (*Workspace, error) {
 		AllowDestroyPlan           bool              `db:"allow_destroy_plan"`
 		AllowCLIApply              bool              `db:"allow_cli_apply"`
 		AutoApply                  bool              `db:"auto_apply"`
+		AutoApplyRunTrigger        bool              `db:"auto_apply_run_trigger"`
 		Branch                     string            `db:"branch"`
 		CanQueueDestroyPlan        bool              `db:"can_queue_destroy_plan"`
 		Description                string            `db:"description"`
@@ -590,6 +596,7 @@ func scan(row pgx.CollectableRow) (*Workspace, error) {
 		AgentPoolID:                m.AgentPoolID,
 		AllowDestroyPlan:           m.AllowDestroyPlan,
 		AutoApply:                  m.AutoApply,
+		AutoApplyRunTrigger:        m.AutoApplyRunTrigger,
 		CanQueueDestroyPlan:        m.CanQueueDestroyPlan,
 		Description:                m.Description,
 		Environment:                m.Environment,

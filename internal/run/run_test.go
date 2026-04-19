@@ -6,8 +6,10 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/user"
+	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -18,6 +20,32 @@ func TestRun_New_CreatedBy(t *testing.T) {
 	run := newTestRun(t, ctx, CreateOptions{})
 	assert.NotNil(t, run.CreatedBy)
 	assert.Equal(t, user.Username, *run.CreatedBy)
+}
+
+func TestRun_New_AutoApply(t *testing.T) {
+	t.Run("inherits workspace auto apply setting", func(t *testing.T) {
+		run := newTestRunWithWsOpts(t, t.Context(), &workspace.CreateOptions{AutoApply: new(true)}, CreateOptions{})
+		assert.True(t, run.AutoApply)
+	})
+
+	t.Run("defaults to false when workspace auto apply is disabled", func(t *testing.T) {
+		run := newTestRun(t, t.Context(), CreateOptions{})
+		assert.False(t, run.AutoApply)
+	})
+
+	t.Run("run-specific auto apply overrides workspace setting", func(t *testing.T) {
+		run := newTestRun(t, t.Context(), CreateOptions{AutoApply: new(true)})
+		assert.True(t, run.AutoApply)
+	})
+
+	t.Run("triggered run uses workspace auto apply run trigger setting", func(t *testing.T) {
+		triggeringRunID := resource.NewTfeID(resource.RunKind)
+		run := newTestRunWithWsOpts(t, t.Context(),
+			&workspace.CreateOptions{AutoApplyRunTrigger: new(true)},
+			CreateOptions{TriggeringRunID: &triggeringRunID},
+		)
+		assert.True(t, run.AutoApply)
+	})
 }
 
 func TestRun_States(t *testing.T) {

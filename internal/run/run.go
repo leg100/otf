@@ -189,7 +189,6 @@ func NewRun(
 		ReplaceAddrs:           opts.ReplaceAddrs,
 		TargetAddrs:            opts.TargetAddrs,
 		ExecutionMode:          ws.ExecutionMode,
-		AutoApply:              ws.AutoApply,
 		IngressAttributes:      cv.IngressAttributes,
 		Source:                 opts.Source,
 		Engine:                 ws.Engine,
@@ -206,6 +205,15 @@ func NewRun(
 
 	if run.Source == "" {
 		run.Source = source.API
+	}
+
+	// If run was triggered by another run then its auto apply setting is
+	// set to its workspace's run trigger auto apply setting. Otherwise it's set
+	// to its workspace's primary auto apply setting.
+	if opts.TriggeringRunID != nil {
+		run.AutoApply = ws.AutoApplyRunTrigger
+	} else {
+		run.AutoApply = ws.AutoApply
 	}
 
 	if opts.CreatedAt != nil {

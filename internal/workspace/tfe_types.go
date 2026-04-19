@@ -24,6 +24,7 @@ type TFEWorkspace struct {
 	AgentPoolID                *resource.TfeID          `jsonapi:"attribute" json:"agent-pool-id"`
 	AllowDestroyPlan           bool                     `jsonapi:"attribute" json:"allow-destroy-plan"`
 	AutoApply                  bool                     `jsonapi:"attribute" json:"auto-apply"`
+	AutoApplyRunTrigger        bool                     `jsonapi:"attribute" json:"auto-apply-run-trigger"`
 	CanQueueDestroyPlan        bool                     `jsonapi:"attribute" json:"can-queue-destroy-plan"`
 	CreatedAt                  time.Time                `jsonapi:"attribute" json:"created-at"`
 	Description                string                   `jsonapi:"attribute" json:"description"`
@@ -153,6 +154,10 @@ type TFEWorkspaceCreateOptions struct {
 	// Whether to automatically apply changes when a Terraform plan is successful.
 	AutoApply *bool `jsonapi:"attribute" json:"auto-apply,omitempty"`
 
+	// Whether to automatically apply changes when a Terraform plan is
+	// successful on a run triggered by a run in another workspace.
+	AutoApplyRunTrigger *bool `jsonapi:"attribute" json:"auto-apply-run-trigger,omitempty"`
+
 	// A description for the workspace.
 	Description *string `jsonapi:"attribute" json:"description,omitempty"`
 
@@ -258,6 +263,10 @@ type TFEWorkspaceUpdateOptions struct {
 
 	// Whether to automatically apply changes when a Terraform plan is successful.
 	AutoApply *bool `jsonapi:"attribute" json:"auto-apply,omitempty"`
+
+	// Whether to automatically apply changes when a Terraform plan is
+	// successful on a run triggered by a run in another workspace.
+	AutoApplyRunTrigger *bool `jsonapi:"attribute" json:"auto-apply-run-trigger,omitempty"`
 
 	// A new name for the workspace, which can only include letters, numbers, -,
 	// and _. This will be used as an identifier and must be unique in the
