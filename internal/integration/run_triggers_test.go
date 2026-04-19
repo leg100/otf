@@ -1,10 +1,10 @@
 package integration
 
 import (
+	"fmt"
+	"regexp"
 	"testing"
 
-	"github.com/leg100/otf/internal/resource"
-	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/ui/paths"
 	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/require"
@@ -43,70 +43,60 @@ func TestRunTriggers(t *testing.T) {
 		// workspace listed as connected workspace.
 		err = expect.Locator(page.Locator(`//table/tbody/tr/td[1]`)).ToHaveText(triggering.Name)
 		require.NoError(t, err)
-	})
 
-	// Create run on triggering workspace to test that it triggers a run on the
-	// triggered workspace.
+		// Create run on triggering workspace to test that it triggers a run on the
+		// triggered workspace.
 
-	// The triggered workspace first needs some config.
-	_ = daemon.createAndUploadConfigurationVersion(t, ctx, triggered, nil)
+		// The triggered workspace first needs some config.
+		_ = daemon.createAndUploadConfigurationVersion(t, ctx, triggered, nil)
 
-	// Create a run on the triggering workspace
-	cv1 := daemon.createAndUploadConfigurationVersion(t, ctx, triggering, nil)
-	triggeringRun := daemon.createRun(t, ctx, triggering, cv1, nil)
+		// Create a run on the triggering workspace
+		cv1 := daemon.createAndUploadConfigurationVersion(t, ctx, triggering, nil)
+		triggeringRun := daemon.createRun(t, ctx, triggering, cv1, nil)
 
-	// Wait for run to be applied on the triggering workspace.
-	for re := range daemon.runEvents {
-		require.True(t, re.Payload.WorkspaceID == triggering.ID)
-
-		switch re.Payload.Status {
-		case runstatus.Planned:
-			err := daemon.Runs.ApplyRun(ctx, re.Payload.ID)
-			require.NoError(t, err)
-		case runstatus.Applied:
-			goto triggeringRunApplied
-		}
-	}
-triggeringRunApplied:
-
-	// Run should now be automatically created on the triggered workspace.
-	var triggeredRunID resource.ID
-	for re := range daemon.runEvents {
-		require.True(t, re.Payload.WorkspaceID == triggered.ID)
-
-		switch re.Payload.Status {
-		case runstatus.Planned:
-			err := daemon.Runs.ApplyRun(ctx, re.Payload.ID)
-			require.NoError(t, err)
-		case runstatus.Applied:
-			triggeredRunID = re.Payload.ID
-			goto triggeredRunApplied
-		}
-	}
-triggeredRunApplied:
-
-	// Check that the triggered run page states that it was triggered by another
-	// run.
-	browser.New(t, ctx, func(page playwright.Page) {
 		// navigate to run page
-		_, err := page.Goto(daemon.URL(paths.Run(triggeredRunID)))
+		_, err = page.Goto(daemon.URL(paths.Run(triggeringRun.ID)))
 		require.NoError(t, err)
 
-		err = expect.Locator(page.Locator(`//div[@id='triggering-run']/span[2]`)).ToHaveText("Triggered by " + triggeringRun.ID.String())
-		require.NoError(t, err)
-	})
-
-	// Delete connection via UI.
-	browser.New(t, ctx, func(page playwright.Page) {
-		// navigate to triggers page
-		_, err := page.Goto(daemon.URL(paths.EditTriggersWorkspace(triggered.ID)))
+		// Wait for run to reach planned status
+		triggeringRunStatusID := fmt.Sprintf("#%s-status", triggeringRun.ID.String())
+		err = expect.Locator(page.Locator(triggeringRunStatusID)).ToHaveText("planned")
 		require.NoError(t, err)
 
-		// now delete the connection to the triggering workspace.
+		// Apply run
+		err = page.Locator(`//button[@id='apply-button']`).Click()
+		require.NoError(t, err)
+
+		// Once run is applied expect alert to be scrolled into view confirming
+		// another run has been triggered.
+		triggeredRunAlert := page.Locator("//div[@id='triggered-run-alerts']").GetByRole("alert")
+		err = expect.Locator(triggeredRunAlert).ToBeInViewport()
+		require.NoError(t, err)
+
+		triggeredRunAlertRe := regexp.MustCompile(`Triggered run-.* in connected workspace`)
+		err = expect.Locator(triggeredRunAlert).ToContainText(triggeredRunAlertRe)
+		require.NoError(t, err)
+
+		// Click on alert to take user to triggered run's page.
+		err = triggeredRunAlert.Locator("a").Click()
+		require.NoError(t, err)
+
+		// Check that the triggered run page states that it was triggered by another
+		// run.
+		err = expect.Locator(page.Locator(`#triggering-run`)).ToHaveText("Triggered by " + triggeringRun.ID.String())
+		require.NoError(t, err)
+
+		// Delete connection via UI.
+		//
+		// Navigate to triggers page
+		_, err = page.Goto(daemon.URL(paths.EditTriggersWorkspace(triggered.ID)))
+		require.NoError(t, err)
+
+		// Now delete the connection to the triggering workspace.
 		err = page.Locator(`//table/tbody/tr/td[2]//button`).Click()
 		require.NoError(t, err)
 
-		// should redirect to same page and show alert.
+		// Should redirect to same page and show alert.
 		err = expect.Locator(page.GetByRole("alert")).ToContainText("deleted trigger")
 		require.NoError(t, err)
 	})

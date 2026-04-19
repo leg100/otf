@@ -10,7 +10,10 @@ terraform {
       version = "= 3.4.3"
     }
     null = {
-      version = "= 3.2.3"
+      version = "= 3.2.4"
+    }
+    google = {
+      version = "7.28.0"
     }
   }
 }

@@ -33,7 +33,6 @@ function scrollMessageIntoView(message) {
 
 		if (e.detail.type == message) {
 			document.getElementById(e.detail.elt.id).scrollIntoView(true);
-			console.log(e.detail);
 		}
 	});
 }
