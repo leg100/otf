@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.5.24](https://github.com/leg100/otf/compare/v0.5.23...v0.5.24) (2026-04-19)
+
+
+### Features
+
+* run triggers ([#942](https://github.com/leg100/otf/issues/942)) ([a2c051b](https://github.com/leg100/otf/commit/a2c051b3d8511f99733309ab90c2fd7fc262622f)), closes [#614](https://github.com/leg100/otf/issues/614)
+
+
+### Miscellaneous
+
+* bump helm charts with app version v0.5.23 ([5f0d0ed](https://github.com/leg100/otf/commit/5f0d0ed830653c5294a5698f04118ee3dfc052ea))
+
 ## [0.5.23](https://github.com/leg100/otf/compare/v0.5.22...v0.5.23) (2026-04-14)
 
 
