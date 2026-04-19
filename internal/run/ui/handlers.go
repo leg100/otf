@@ -423,17 +423,19 @@ func (h *Handlers) watchRun(w http.ResponseWriter, r *http.Request) {
 				// client should not reconnect.
 				return
 			}
+			// If a run has been triggered by the watched run then send an alert
+			// notifiying the user.
 			if ev.Type == pubsub.CreatedEvent {
 				if ev.Payload.TriggeringRunID != nil && *ev.Payload.TriggeringRunID == runID {
 					if err := conn.Render(r.Context(), triggeredRunAlert(ev.Payload.ID), triggeredRunAlertUpdate); err != nil {
 						return
 					}
+					continue
 				}
 			}
-			if ev.Payload.ID != runID {
-				continue
+			if ev.Payload.ID == runID {
+				send()
 			}
-			send()
 		case <-r.Context().Done():
 			return
 		}
