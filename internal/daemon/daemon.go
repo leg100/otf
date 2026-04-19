@@ -35,6 +35,8 @@ import (
 	"github.com/leg100/otf/internal/repohooks"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
+	"github.com/leg100/otf/internal/run/trigger"
+	triggerui "github.com/leg100/otf/internal/run/trigger/ui"
 	runui "github.com/leg100/otf/internal/run/ui"
 	"github.com/leg100/otf/internal/runner"
 	runnerui "github.com/leg100/otf/internal/runner/ui"
@@ -82,6 +84,7 @@ type (
 		Connections   *connections.Service
 		System        *internal.HostnameService
 		SSHKeys       *sshkey.Service
+		RunTriggers   *trigger.Service
 
 		netListener net.Listener
 		server      *http.Server
@@ -303,6 +306,11 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Broker:            workspaceBroker,
 	})
 
+	runTriggerService := trigger.NewService(trigger.Options{
+		Logger:     logger,
+		Authorizer: authorizer,
+		DB:         db,
+	})
 	runService := run.NewService(run.Options{
 		Logger:     logger,
 		Authorizer: authorizer,
@@ -544,6 +552,17 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 				signer,
 				responder,
 			),
+			trigger.NewTFEAPI(
+				struct {
+					*trigger.RunTriggerService
+					*workspace.WorkspaceService
+				}{
+					RunTriggerService: runTriggerService,
+					WorkspaceService:  workspaceService,
+				},
+				authorizer,
+				responder,
+			),
 			workspace.NewTFEAPI(
 				workspaceService,
 				responder,
@@ -633,6 +652,17 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 				}{
 					WorkspaceService: workspaceService,
 					StateService:     stateService,
+				},
+				authorizer,
+			),
+			triggerui.NewHandlers(
+				logger,
+				struct {
+					*trigger.RunTriggerService
+					*workspace.WorkspaceService
+				}{
+					RunTriggerService: runTriggerService,
+					WorkspaceService:  workspaceService,
 				},
 				authorizer,
 			),
@@ -837,6 +867,21 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 			Logger: logger,
 			System: runnerService.Signaler,
 		},
+		{
+			Name:      "run-triggerer",
+			Logger:    logger,
+			Exclusive: true,
+			System: &trigger.Triggerer{
+				Client: struct {
+					*run.RunService
+					*trigger.RunTriggerService
+				}{
+					RunService:        runService,
+					RunTriggerService: runTriggerService,
+				},
+				Logger: logger,
+			},
+		},
 	}
 	if !cfg.DisableRunner {
 		subsystems = append(subsystems, &Subsystem{
@@ -901,6 +946,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Connections:   connectionService,
 		Runners:       runnerService,
 		SSHKeys:       sshkeyService,
+		RunTriggers:   runTriggerService,
 		DB:            db,
 		netListener:   netListener,
 		server:        server,

@@ -81,6 +81,10 @@ type (
 		// instead triggered by a VCS event.
 		CreatedBy *user.Username
 
+		// TriggeringRunID is the ID of the run that triggered this
+		// run. Only set if a run trigger has been configured.
+		TriggeringRunID *resource.TfeID
+
 		// OTF doesn't support cost estimation but some go-tfe API tests expect
 		// a run to enter the RunCostEstimated state, and this boolean
 		// determines whether to enter that state upon finishing a plan.
@@ -121,6 +125,10 @@ type (
 		Variables     []Variable
 		CreatedBy     *user.Username
 		EngineVersion string
+
+		// TriggeringRunID is the ID of the run that triggered this
+		// run. Only set if a run trigger has been configured.
+		TriggeringRunID *resource.TfeID
 
 		// CreatedAt overrides the time the run was created at - for testing
 		// purposes only.
@@ -181,7 +189,6 @@ func NewRun(
 		ReplaceAddrs:           opts.ReplaceAddrs,
 		TargetAddrs:            opts.TargetAddrs,
 		ExecutionMode:          ws.ExecutionMode,
-		AutoApply:              ws.AutoApply,
 		IngressAttributes:      cv.IngressAttributes,
 		Source:                 opts.Source,
 		Engine:                 ws.Engine,
@@ -189,6 +196,7 @@ func NewRun(
 		Variables:              opts.Variables,
 		CreatedBy:              opts.CreatedBy,
 		CostEstimationEnabled:  opts.costEstimationEnabled,
+		TriggeringRunID:        opts.TriggeringRunID,
 	}
 
 	run.Plan = newPhase(run.ID, PlanPhase)
@@ -197,6 +205,15 @@ func NewRun(
 
 	if run.Source == "" {
 		run.Source = source.API
+	}
+
+	// If run was triggered by another run then its auto apply setting is
+	// set to its workspace's run trigger auto apply setting. Otherwise it's set
+	// to its workspace's primary auto apply setting.
+	if opts.TriggeringRunID != nil {
+		run.AutoApply = ws.AutoApplyRunTrigger
+	} else {
+		run.AutoApply = ws.AutoApply
 	}
 
 	if opts.CreatedAt != nil {

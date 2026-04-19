@@ -25,6 +25,7 @@ var (
 			ListRunnersAction:      true,
 			GetSSHKeyAction:        true,
 			ListSSHKeysAction:      true,
+			ListRunTriggersAction:  true,
 		},
 	}
 
@@ -92,6 +93,8 @@ var (
 			DeleteWorkspaceAction:          true,
 			ForceUnlockWorkspaceAction:     true,
 			UpdateWorkspaceAction:          true,
+			CreateRunTriggerAction:         true,
+			DeleteRunTriggerAction:         true,
 		},
 		inherits: &WorkspaceWriteRole,
 	}

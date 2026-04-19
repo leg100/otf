@@ -14,6 +14,7 @@ import (
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
 	runpkg "github.com/leg100/otf/internal/run"
+	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/ui/helpers"
 	"github.com/leg100/otf/internal/ui/paths"
 	"github.com/leg100/otf/internal/user"
@@ -43,6 +44,7 @@ type Client interface {
 	DeleteRun(context.Context, resource.TfeID) error
 	ApplyRun(context.Context, resource.TfeID) error
 	WatchRuns(ctx context.Context) (<-chan pubsub.Event[*runpkg.Event], func(), error)
+	ListTriggeredRunIDs(ctx context.Context, runID resource.ID) ([]resource.TfeID, error)
 	GetWorkspace(context.Context, resource.TfeID) (*workspace.Workspace, error)
 	WatchWorkspaces(ctx context.Context) (<-chan pubsub.Event[*workspace.Event], func(), error)
 	GetUser(ctx context.Context, spec user.UserSpec) (*user.User, error)
@@ -207,11 +209,24 @@ func (h *Handlers) getRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Get the IDs of any runs that are triggered as a result of this run. (they
+	// are only triggered after a successful apply, so to avoid a db query check
+	// that this run has been applied first).
+	var triggeredRunIDs []resource.TfeID
+	if run.Status == runstatus.Applied {
+		triggeredRunIDs, err = h.client.ListTriggeredRunIDs(r.Context(), runID)
+		if err != nil {
+			helpers.Error(r, w, "retrieving run: "+err.Error())
+			return
+		}
+	}
+
 	props := getRunProps{
-		run:       run,
-		ws:        ws,
-		planLogs:  runpkg.Chunk{Data: planLogs.Data},
-		applyLogs: runpkg.Chunk{Data: applyLogs.Data},
+		run:             run,
+		ws:              ws,
+		planLogs:        runpkg.Chunk{Data: planLogs.Data},
+		applyLogs:       runpkg.Chunk{Data: applyLogs.Data},
+		triggeredRunIDs: triggeredRunIDs,
 	}
 	helpers.RenderPage(
 		h.templates.getRun(props),
@@ -335,13 +350,14 @@ func (h *Handlers) retryRun(w http.ResponseWriter, r *http.Request) {
 }
 
 const (
-	periodReportUpdate sseEvent = "PeriodReportUpdate"
-	runWidgetUpdate    sseEvent = "RunWidgetUpdate"
-	runTimeUpdate      sseEvent = "RunTimeUpdate"
-	planTimeUpdate     sseEvent = "PlanTimeUpdate"
-	applyTimeUpdate    sseEvent = "ApplyTimeUpdate"
-	planStatusUpdate   sseEvent = "PlanStatusUpdate"
-	applyStatusUpdate  sseEvent = "ApplyStatusUpdate"
+	periodReportUpdate      sseEvent = "PeriodReportUpdate"
+	runWidgetUpdate         sseEvent = "RunWidgetUpdate"
+	runTimeUpdate           sseEvent = "RunTimeUpdate"
+	planTimeUpdate          sseEvent = "PlanTimeUpdate"
+	applyTimeUpdate         sseEvent = "ApplyTimeUpdate"
+	planStatusUpdate        sseEvent = "PlanStatusUpdate"
+	applyStatusUpdate       sseEvent = "ApplyStatusUpdate"
+	triggeredRunAlertUpdate sseEvent = "TriggeredRunAlertUpdate"
 )
 
 func (h *Handlers) watchRun(w http.ResponseWriter, r *http.Request) {
@@ -384,7 +400,6 @@ func (h *Handlers) watchRun(w http.ResponseWriter, r *http.Request) {
 		if err := conn.Render(r.Context(), periodReport(run), periodReportUpdate); err != nil {
 			return
 		}
-
 		if err := conn.Render(r.Context(), h.templates.singleRunTable(run), runWidgetUpdate); err != nil {
 			return
 		}
@@ -408,10 +423,19 @@ func (h *Handlers) watchRun(w http.ResponseWriter, r *http.Request) {
 				// client should not reconnect.
 				return
 			}
-			if ev.Payload.ID != runID {
-				continue
+			// If a run has been triggered by the watched run then send an alert
+			// notifiying the user.
+			if ev.Type == pubsub.CreatedEvent {
+				if ev.Payload.TriggeringRunID != nil && *ev.Payload.TriggeringRunID == runID {
+					if err := conn.Render(r.Context(), triggeredRunAlert(ev.Payload.ID), triggeredRunAlertUpdate); err != nil {
+						return
+					}
+					continue
+				}
 			}
-			send()
+			if ev.Payload.ID == runID {
+				send()
+			}
 		case <-r.Context().Done():
 			return
 		}

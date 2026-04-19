@@ -63,7 +63,7 @@ type TFEAgentPoolUpdateOptions struct {
 
 // TFEAgentPoolListOptions represents the options for listing agent pools.
 type TFEAgentPoolListOptions struct {
-	types.ListOptions
+	types.PageOptions
 	// Optional: A list of relations to include. See available resources
 	// https://developer.hashicorp.com/terraform/cloud-docs/api-docs/agents#available-related-resources
 	// Include []AgentPoolIncludeOpt `url:"include,omitempty"`

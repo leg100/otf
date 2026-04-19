@@ -6,9 +6,9 @@ const (
 )
 
 type (
-	// ListOptions is used to specify pagination options when making API requests.
+	// PageOptions is used to specify pagination options when making API requests.
 	// Pagination allows breaking up large result sets into chunks, or "pages".
-	ListOptions struct {
+	PageOptions struct {
 		// The page number to request. The results vary based on the PageSize.
 		PageNumber int `schema:"page[number],omitempty"`
 		// The number of elements returned in a single page.

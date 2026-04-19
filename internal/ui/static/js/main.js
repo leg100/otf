@@ -20,3 +20,19 @@ window.addEventListener("load", (e) => {
 		Alpine.initTree(evt.detail.elt);
 	});
 });
+
+function scrollMessageIntoView(message) {
+	document.addEventListener("htmx:sseMessage", (e) => {
+		// Only scroll if user has already scrolled to the bottom of the page.
+		atBottom =
+			Math.floor(window.scrollY) + window.innerHeight >=
+			document.body.scrollHeight - 100;
+		if (!atBottom) {
+			return;
+		}
+
+		if (e.detail.type == message) {
+			document.getElementById(e.detail.elt.id).scrollIntoView(true);
+		}
+	});
+}

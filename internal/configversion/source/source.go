@@ -11,6 +11,7 @@ var (
 	API       Source = "tfe-api"
 	UI        Source = "tfe-ui"
 	Terraform Source = "terraform+cloud"
+	Trigger   Source = "tfe-run-trigger"
 )
 
 // Source is the source or origin of the configuration
@@ -28,6 +29,7 @@ func NewIconDB() *IconDB {
 			API:       IconAPI(),
 			UI:        IconUI(),
 			Terraform: IconTerraform(),
+			Trigger:   IconTrigger(),
 		},
 	}
 }

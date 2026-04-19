@@ -159,4 +159,9 @@ const (
 	ListSSHKeysAction
 	UpdateSSHKeyAction
 	DeleteSSHKeyAction
+
+	CreateRunTriggerAction
+	ListRunTriggersAction
+	GetRunTriggerAction
+	DeleteRunTriggerAction
 )

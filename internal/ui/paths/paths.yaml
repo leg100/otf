@@ -72,14 +72,22 @@
         - name: update-ssh-key
         - name: edit-engine
         - name: update-engine
+        - name: edit-triggers
+        - name: create-trigger
         - name: edit-vcs
         - name: update-vcs
         - name: edit-advanced
+        - name: update-auto-apply-run-trigger
     - name: organization_run
       path: /run
       actions:
         - name: list
           collection: true
+      skip_default_actions: true
+    - name: run_trigger
+      path: /trigger
+      actions:
+        - name: delete
       skip_default_actions: true
     - name: runner
       actions:

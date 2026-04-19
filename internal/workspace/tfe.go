@@ -109,6 +109,7 @@ func (a *tfe) createWorkspace(w http.ResponseWriter, r *http.Request) {
 		AgentPoolID:                params.AgentPoolID,
 		AllowDestroyPlan:           params.AllowDestroyPlan,
 		AutoApply:                  params.AutoApply,
+		AutoApplyRunTrigger:        params.AutoApplyRunTrigger,
 		Description:                params.Description,
 		ExecutionMode:              (*ExecutionMode)(params.ExecutionMode),
 		GlobalRemoteState:          params.GlobalRemoteState,
@@ -238,7 +239,7 @@ func (a *tfe) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 	page, err := a.client.ListWorkspaces(r.Context(), ListOptions{
 		Search:       params.Search,
 		Organization: &pathParams.Organization,
-		PageOptions:  resource.PageOptions(params.ListOptions),
+		PageOptions:  resource.PageOptions(params.PageOptions),
 		Tags:         internal.SplitCSV(params.Tags),
 	})
 	if err != nil {
@@ -410,6 +411,7 @@ func (a *tfe) updateWorkspace(w http.ResponseWriter, r *http.Request, workspaceI
 		AgentPoolID:                params.AgentPoolID,
 		AllowDestroyPlan:           params.AllowDestroyPlan,
 		AutoApply:                  params.AutoApply,
+		AutoApplyRunTrigger:        params.AutoApplyRunTrigger,
 		Description:                params.Description,
 		ExecutionMode:              (*ExecutionMode)(params.ExecutionMode),
 		GlobalRemoteState:          params.GlobalRemoteState,
@@ -556,6 +558,7 @@ func ToTFE(a *authz.Authorizer, from *Workspace, r *http.Request) (*TFEWorkspace
 		AllowDestroyPlan:     from.AllowDestroyPlan,
 		AgentPoolID:          from.AgentPoolID,
 		AutoApply:            from.AutoApply,
+		AutoApplyRunTrigger:  from.AutoApplyRunTrigger,
 		CanQueueDestroyPlan:  from.CanQueueDestroyPlan,
 		CreatedAt:            from.CreatedAt,
 		Description:          from.Description,

@@ -185,7 +185,7 @@ func (a *tfe) listRuns(w http.ResponseWriter, r *http.Request) {
 	a.listRunsWithOptions(w, r, ListOptions{
 		Organization: params.Organization,
 		WorkspaceID:  params.WorkspaceID,
-		PageOptions:  resource.PageOptions(params.ListOptions),
+		PageOptions:  resource.PageOptions(params.PageOptions),
 		Statuses:     statuses,
 		Sources:      sources,
 		PlanOnly:     planOnly,

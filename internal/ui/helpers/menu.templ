@@ -57,7 +57,7 @@ templ WorkspaceMenu(workspace resource.Info, organization resource.ID, authorize
 			@MenuItem("State", paths.StateVersions(workspace.ID), "/app/state-versions")
 			@MenuItem("Variables", paths.Variables(workspace.ID), "/app/variables", paths.Variables(workspace.ID))
 			if authorizer.CanAccess(ctx, authz.UpdateWorkspaceAction, workspace.ID) {
-				@MenuItem("Settings", paths.EditWorkspace(workspace.ID), paths.Workspace(workspace.ID)+"/setup-connection", paths.EditPermissionsWorkspace(workspace.ID), paths.EditSSHKeyWorkspace(workspace.ID), paths.EditEngineWorkspace(workspace.ID), paths.EditVcsWorkspace(workspace.ID), paths.EditAdvancedWorkspace(workspace.ID))
+				@MenuItem("Settings", paths.EditWorkspace(workspace.ID), paths.Workspace(workspace.ID)+"/setup-connection", paths.EditPermissionsWorkspace(workspace.ID), paths.EditSSHKeyWorkspace(workspace.ID), paths.EditEngineWorkspace(workspace.ID), paths.EditVcsWorkspace(workspace.ID), paths.EditAdvancedWorkspace(workspace.ID), paths.EditTriggersWorkspace(workspace.ID))
 			}
 		</ul>
 		<div class="">
@@ -83,6 +83,7 @@ templ WorkspaceSettingsMenu(workspaceID resource.ID) {
 		@MenuItem("Permissions", paths.EditPermissionsWorkspace(workspaceID))
 		@MenuItem("VCS", paths.EditVcsWorkspace(workspaceID))
 		@MenuItem("Engines", paths.EditEngineWorkspace(workspaceID))
+		@MenuItem("Run Triggers", paths.EditTriggersWorkspace(workspaceID))
 		@MenuItem("SSH Key", paths.EditSSHKeyWorkspace(workspaceID))
 		@MenuItem("Advanced", paths.EditAdvancedWorkspace(workspaceID))
 	</ul>

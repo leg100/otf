@@ -167,7 +167,7 @@ type TFERunCreateOptions struct {
 
 // TFERunListOptions represents the options for listing runs.
 type TFERunListOptions struct {
-	types.ListOptions
+	types.PageOptions
 
 	Organization *organization.Name `schema:"organization_name,omitempty"`
 
