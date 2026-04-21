@@ -11,7 +11,7 @@ import (
 	"github.com/google/go-github/v65/github"
 )
 
-const defaultTofuVersion = "1.9.0"
+const defaultTofuVersion = "1.11.6"
 
 // Tofu is the opentofu engine.
 func Tofu() *Engine {
