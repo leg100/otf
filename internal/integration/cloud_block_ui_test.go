@@ -37,5 +37,5 @@ resource "null_resource" "e2e" {}
 	// a successful 'terraform init' sufficiently demonstrates support for the
 	// 'cloud' block.
 	out := daemon.engineCLI(t, ctx, "", "init", root)
-	require.Contains(t, out, "Terraform Cloud has been successfully initialized!")
+	require.Contains(t, out, "HCP Terraform has been successfully initialized!")
 }
