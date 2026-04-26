@@ -125,12 +125,6 @@ doc-screenshots: # update documentation screenshots
 tunnel:
 	cloudflared tunnel run otf
 
-# Generate path helpers
-.PHONY: paths
-paths:
-	go generate ./...
-	go tool goimports -w ./internal/ui/paths
-
 # Re-generate RBAC action strings
 .PHONY: actions
 actions:
@@ -184,7 +178,7 @@ live:
 generate-templates:
 	go tool templ generate
 
-check-no-diff: paths actions generate-templates helm-docs
+check-no-diff: actions generate-templates helm-docs
 	git diff --exit-code
 
 .PHONY: deploy-otfd
