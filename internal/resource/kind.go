@@ -57,6 +57,7 @@ var fullKinds = map[Kind]string{
 	AgentTokenKind:                "agent-token",
 	SSHKeyKind:                    "ssh-key",
 	RunTriggerKind:                "trigger",
+	VCSProviderKind:               "vcs-provider",
 }
 
 // Full returns the unabbreviated name for the kind.
