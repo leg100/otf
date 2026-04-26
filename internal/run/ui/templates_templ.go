@@ -111,9 +111,9 @@ func (t *templates) getRun(props getRunProps) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var3 string
-		templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(path.Resource(resource.Action("watch"), props.run.ID))
+		templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(path.Resource(resource.Watch, props.run.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/ui/templates.templ`, Line: 51, Col: 69}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/ui/templates.templ`, Line: 51, Col: 59}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 		if templ_7745c5c3_Err != nil {
@@ -494,13 +494,13 @@ func getPostContent(props getRunProps) templ.Component {
 		}
 		ctx = templ.ClearChildren(ctx)
 		if !props.planLogs.IsEnd() {
-			templ_7745c5c3_Err = templ.JSFuncCall("setupTail", path.Resource(resource.Action("tail"), props.run.ID), "plan", props.planLogs.NextOffset()).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = templ.JSFuncCall("setupTail", path.Resource(runpkg.Tail, props.run.ID), "plan", props.planLogs.NextOffset()).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
 		if !props.applyLogs.IsEnd() {
-			templ_7745c5c3_Err = templ.JSFuncCall("setupTail", path.Resource(resource.Action("tail"), props.run.ID), "apply", props.applyLogs.NextOffset()).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = templ.JSFuncCall("setupTail", path.Resource(runpkg.Tail, props.run.ID), "apply", props.applyLogs.NextOffset()).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

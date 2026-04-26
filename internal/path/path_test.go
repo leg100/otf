@@ -52,7 +52,7 @@ func TestResource(t *testing.T) {
 			want:   "/app/runs/run-ghi789",
 		},
 		{
-			name:   "kind with trailing 's' doesn't get another 's' added",
+			name:   "kind with trailing s does not get double s",
 			action: resource.Get,
 			id:     iaID,
 			want:   "/app/ingress-attributes/ia-jkl012",

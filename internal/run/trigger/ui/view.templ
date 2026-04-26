@@ -1,9 +1,9 @@
 package ui
 
 import (
-	"github.com/leg100/otf/internal/ui/helpers"
 	"github.com/leg100/otf/internal/path"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/ui/helpers"
 	"github.com/leg100/otf/internal/workspace"
 )
 
@@ -36,7 +36,7 @@ templ editTriggers(props editTriggersProps) {
 		</form>
 	</div>
 	<p></p>
-	<form class="flex flex-col gap-5" action={ path.Resource(resource.Action("create-trigger"), props.ws.ID.String()) } method="POST">
+	<form class="flex flex-col gap-5" action={ path.Create(resource.RunTriggerKind, props.ws.ID) } method="POST">
 		<select class="select select-sm" name="triggering_workspace_id" id="connect_workspace" onchange="this.form.submit()">
 			<option disabled selected>Connect workspace</option>
 			for _, ws := range props.unconnected {
@@ -64,7 +64,7 @@ templ (t table) Row(connection connection) {
 			</a>
 		</td>
 		<td>
-			<form title="disconnect workspace" action={ path.Delete(connection.trigger.ID.String()) } method="POST">
+			<form title="disconnect workspace" action={ path.Delete(connection.trigger.ID) } method="POST">
 				<button class="btn btn-danger">
 					Disconnect
 				</button>

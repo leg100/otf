@@ -144,11 +144,11 @@ debug:
 connect:
 	dlv connect 127.0.0.1:4300 .
 
-.PHONY: playwright-ubuntu
+.PHONY: install-playwright-ubuntu
 install-playwright-ubuntu:
 	go tool playwright install chromium --with-deps
 
-.PHONY: playwright-arch
+.PHONY: install-playwright-arch
 install-playwright-arch:
 	go tool playwright install chromium
 

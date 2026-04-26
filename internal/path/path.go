@@ -6,9 +6,6 @@ import (
 	"github.com/leg100/otf/internal/resource"
 )
 
-// Prefix added to all paths
-const prefix = "/app"
-
 // Prefix is the site-wide prefix added to all web UI paths requiring authentication.
 const Prefix = "/app"
 
@@ -16,7 +13,7 @@ const Prefix = "/app"
 // action and ID.
 func Resource(action resource.Action, id resource.ID) string {
 	var b strings.Builder
-	b.WriteString(prefix)
+	b.WriteString(Prefix)
 	b.WriteRune('/')
 
 	b.WriteString(pluralise(id.Kind().Full()))
@@ -39,7 +36,7 @@ func Resource(action resource.Action, id resource.ID) string {
 // set parentID to nil.
 func Resources(action resource.Action, kind resource.Kind, parentID resource.ID) string {
 	var b strings.Builder
-	b.WriteString(prefix)
+	b.WriteString(Prefix)
 	b.WriteRune('/')
 
 	if parentID != nil {
@@ -102,6 +99,9 @@ func Create(kind resource.Kind, parentID resource.ID) string {
 // Add an 's' to make a plural form of the string unless the string
 // already ends with an 's'.
 func pluralise(s string) string {
+	if len(s) == 0 {
+		return ""
+	}
 	if s[len(s)-1] != 's' {
 		return s + "s"
 	}

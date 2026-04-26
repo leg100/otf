@@ -9,10 +9,10 @@ import (
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/logr"
+	"github.com/leg100/otf/internal/path"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run/trigger"
 	"github.com/leg100/otf/internal/ui/helpers"
-	"github.com/leg100/otf/internal/path"
 	"github.com/leg100/otf/internal/workspace"
 )
 
@@ -46,7 +46,7 @@ func NewHandlers(
 
 func (h *Handlers) AddHandlers(r *mux.Router) {
 	r.HandleFunc("/workspaces/{workspace_id}/edit-triggers", h.editTriggers).Methods("GET")
-	r.HandleFunc("/workspaces/{workspace_id}/create-trigger", h.createTrigger).Methods("POST")
+	r.HandleFunc("/workspaces/{workspace_id}/triggers/create", h.createTrigger).Methods("POST")
 	r.HandleFunc("/triggers/{trigger_id}/delete", h.deleteTrigger).Methods("POST")
 	r.HandleFunc("/workspaces/{workspace_id}/update-auto-apply-run-trigger", h.updateAutoApply).Methods("POST")
 }

@@ -5,7 +5,6 @@ import (
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/path"
 	"github.com/leg100/otf/internal/resource"
-	"github.com/leg100/otf/internal/path"
 	"strings"
 )
 
@@ -13,7 +12,7 @@ templ SiteMenu() {
 	<ul class="menu menu-horizontal w-full">
 		@MenuItem("Organizations", path.List(resource.OrganizationKind, nil))
 		@MenuItem("Profile", path.Profile())
-		@MenuItem("User Tokens", path.Tokens(), "/app/current-user/tokens")
+		@MenuItem("User Tokens", path.Tokens())
 		@MenuItem("Github App", path.GithubApps())
 	</ul>
 }

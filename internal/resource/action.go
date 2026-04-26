@@ -7,6 +7,7 @@ func (k Action) String() string {
 	return string(k)
 }
 
+// Standard set of actions.
 const (
 	Get    Action = "get"
 	List   Action = "list"
@@ -15,4 +16,5 @@ const (
 	Edit   Action = "edit"
 	Update Action = "update"
 	Delete Action = "delete"
+	Watch  Action = "watch"
 )

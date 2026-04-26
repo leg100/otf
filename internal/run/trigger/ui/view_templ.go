@@ -83,9 +83,9 @@ func editTriggers(props editTriggersProps) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var4 templ.SafeURL
-		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinURLErrs(path.Resource(resource.Action("create-trigger"), props.ws.ID.String()))
+		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinURLErrs(path.Create(resource.RunTriggerKind, props.ws.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/trigger/ui/view.templ`, Line: 39, Col: 114}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/trigger/ui/view.templ`, Line: 39, Col: 93}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 		if templ_7745c5c3_Err != nil {
@@ -235,9 +235,9 @@ func (t table) Row(connection connection) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var12 templ.SafeURL
-		templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinURLErrs(path.Delete(connection.trigger.ID.String()))
+		templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinURLErrs(path.Delete(connection.trigger.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/trigger/ui/view.templ`, Line: 67, Col: 90}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/trigger/ui/view.templ`, Line: 67, Col: 81}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 		if templ_7745c5c3_Err != nil {
