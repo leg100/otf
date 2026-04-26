@@ -11,7 +11,7 @@ import (
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/testutils"
-	"github.com/leg100/otf/internal/ui/paths"
+	"github.com/leg100/otf/internal/path"
 	"github.com/leg100/otf/internal/user"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -44,13 +44,13 @@ func TestTeam_WebHandlers(t *testing.T) {
 		r := httptest.NewRequest("GET", q, nil)
 		w := httptest.NewRecorder()
 		h.updateTeam(w, r)
-		testutils.AssertRedirect(t, w, paths.Team(team.ID))
+		testutils.AssertRedirect(t, w, path.Get(team.ID))
 	})
 
 	t.Run("get", func(t *testing.T) {
 		org1 := organization.NewTestName(t)
 		// page only renders successfully if authenticated user is an owner.
-		owners := &team.Team{Name: "owners", Organization: org1}
+		owners := &team.Team{Name: "owners", ID: testutils.ParseID(t, "team-123"), Organization: org1}
 		owner, err := user.NewUser(uuid.NewString(), user.WithTeams(owners))
 		require.NoError(t, err)
 		h := &Handlers{
@@ -92,7 +92,7 @@ func TestTeam_WebHandlers(t *testing.T) {
 		r := httptest.NewRequest("POST", q, nil)
 		w := httptest.NewRecorder()
 		h.deleteTeam(w, r)
-		testutils.AssertRedirect(t, w, paths.Teams(team.Organization))
+		testutils.AssertRedirect(t, w, path.List(resource.TeamKind, team.Organization))
 	})
 }
 

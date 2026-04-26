@@ -11,8 +11,8 @@ import templruntime "github.com/a-h/templ/runtime"
 import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/github"
+	"github.com/leg100/otf/internal/path"
 	"github.com/leg100/otf/internal/ui/helpers"
-	"github.com/leg100/otf/internal/ui/paths"
 	"github.com/leg100/otf/internal/vcs"
 	"strconv"
 )
@@ -161,9 +161,9 @@ func getApps(props getAppsProps) templ.Component {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var6 templ.SafeURL
-				templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinURLErrs(paths.NewGithubApp())
+				templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinURLErrs(path.NewGithubApp())
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/github/ui/templates.templ`, Line: 73, Col: 91}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/github/ui/templates.templ`, Line: 73, Col: 90}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 				if templ_7745c5c3_Err != nil {
@@ -318,9 +318,9 @@ func (t appTable) Row(app *github.App) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var13 templ.SafeURL
-			templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinURLErrs(paths.DeleteGithubApp(app.ID))
+			templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinURLErrs(path.DeleteGithubApp(app.ID))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/github/ui/templates.templ`, Line: 109, Col: 48}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/github/ui/templates.templ`, Line: 109, Col: 47}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 			if templ_7745c5c3_Err != nil {
@@ -482,9 +482,9 @@ func (t installsTable) Row(install vcs.Installation) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var21 templ.SafeURL
-		templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinURLErrs(paths.DeleteInstallGithubApp(internal.ToStringer(strconv.Itoa(int(install.ID)))))
+		templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinURLErrs(path.DeleteInstallGithubApp(internal.ToStringer(strconv.Itoa(int(install.ID)))))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/github/ui/templates.templ`, Line: 150, Col: 98}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/github/ui/templates.templ`, Line: 150, Col: 97}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
 		if templ_7745c5c3_Err != nil {

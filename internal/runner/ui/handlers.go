@@ -14,7 +14,7 @@ import (
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runner"
 	"github.com/leg100/otf/internal/ui/helpers"
-	"github.com/leg100/otf/internal/ui/paths"
+	"github.com/leg100/otf/internal/path"
 	"github.com/leg100/otf/internal/workspace"
 )
 
@@ -121,7 +121,7 @@ func (h *Handlers) createAgentPool(w http.ResponseWriter, r *http.Request) {
 	}
 
 	helpers.FlashSuccess(w, "created agent pool: "+pool.Name)
-	http.Redirect(w, r, paths.AgentPool(pool.ID), http.StatusFound)
+	http.Redirect(w, r, path.Get(pool.ID), http.StatusFound)
 }
 
 func (h *Handlers) updateAgentPool(w http.ResponseWriter, r *http.Request) {
@@ -162,7 +162,7 @@ func (h *Handlers) updateAgentPool(w http.ResponseWriter, r *http.Request) {
 	}
 
 	helpers.FlashSuccess(w, "updated agent pool: "+pool.Name)
-	http.Redirect(w, r, paths.AgentPool(pool.ID), http.StatusFound)
+	http.Redirect(w, r, path.Get(pool.ID), http.StatusFound)
 }
 
 func (h *Handlers) listAgentPools(w http.ResponseWriter, r *http.Request) {
@@ -275,7 +275,7 @@ func (h *Handlers) getAgentPool(w http.ResponseWriter, r *http.Request) {
 		r,
 		helpers.WithOrganization(pool.Organization),
 		helpers.WithBreadcrumbs(
-			helpers.Breadcrumb{Name: "Agent Pools", Link: paths.AgentPools(props.pool.Organization)},
+			helpers.Breadcrumb{Name: "Agent Pools", Link: path.List(resource.AgentPoolKind, props.pool.Organization)},
 			helpers.Breadcrumb{Name: props.pool.Name},
 		),
 	)
@@ -295,7 +295,7 @@ func (h *Handlers) deleteAgentPool(w http.ResponseWriter, r *http.Request) {
 	}
 
 	helpers.FlashSuccess(w, "Deleted agent pool: "+pool.Name)
-	http.Redirect(w, r, paths.AgentPools(pool.Organization), http.StatusFound)
+	http.Redirect(w, r, path.List(resource.AgentPoolKind, pool.Organization), http.StatusFound)
 }
 
 func (h *Handlers) listAllowedPools(w http.ResponseWriter, r *http.Request) {
@@ -351,7 +351,7 @@ func (h *Handlers) createAgentToken(w http.ResponseWriter, r *http.Request) {
 		helpers.Error(r, w, err.Error())
 		return
 	}
-	http.Redirect(w, r, paths.AgentPool(poolID), http.StatusFound)
+	http.Redirect(w, r, path.Get(poolID), http.StatusFound)
 }
 
 func (h *Handlers) deleteAgentToken(w http.ResponseWriter, r *http.Request) {
@@ -368,7 +368,7 @@ func (h *Handlers) deleteAgentToken(w http.ResponseWriter, r *http.Request) {
 	}
 
 	helpers.FlashSuccess(w, "Deleted token: "+at.Description)
-	http.Redirect(w, r, paths.AgentPool(at.AgentPoolID), http.StatusFound)
+	http.Redirect(w, r, path.Get(at.AgentPoolID), http.StatusFound)
 }
 
 func toJSON(v any) string {

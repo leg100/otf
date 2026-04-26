@@ -18,7 +18,7 @@ import (
 	"github.com/leg100/otf/internal/sshkey"
 	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/ui/helpers"
-	"github.com/leg100/otf/internal/ui/paths"
+	"github.com/leg100/otf/internal/path"
 	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/workspace"
@@ -165,7 +165,7 @@ func (h *Handlers) newWorkspace(w http.ResponseWriter, r *http.Request) {
 		r,
 		helpers.WithOrganization(params.Organization),
 		helpers.WithBreadcrumbs(
-			helpers.Breadcrumb{Name: "workspaces", Link: paths.Workspaces(params.Organization)},
+			helpers.Breadcrumb{Name: "workspaces", Link: path.List(resource.WorkspaceKind, params.Organization)},
 			helpers.Breadcrumb{Name: "new"},
 		),
 	)
@@ -190,7 +190,7 @@ func (h *Handlers) createWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	helpers.FlashSuccess(w, "created workspace: "+ws.Name)
-	http.Redirect(w, r, paths.Workspace(ws.ID), http.StatusFound)
+	http.Redirect(w, r, path.Get(ws.ID), http.StatusFound)
 }
 
 func (h *Handlers) getWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -271,7 +271,7 @@ func (h *Handlers) getWorkspace(w http.ResponseWriter, r *http.Request) {
 			Name:        "tag_name",
 			Available:   availableTags,
 			Existing:    ws.Tags,
-			Action:      templ.SafeURL(paths.CreateTagWorkspace(ws.ID)),
+			Action:      templ.SafeURL(path.Resource(resource.Action("create-tag"), ws.ID)),
 			Placeholder: "Add tags",
 			Width:       helpers.NarrowDropDown,
 		},
@@ -305,7 +305,7 @@ func (h *Handlers) getWorkspaceByName(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, paths.Workspace(ws.ID), http.StatusFound)
+	http.Redirect(w, r, path.Get(ws.ID), http.StatusFound)
 }
 
 func (h *Handlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -321,7 +321,7 @@ func (h *Handlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	poolsURL := paths.PoolsWorkspace(workspaceID)
+	poolsURL := path.Resource(resource.Action("pools"), workspaceID)
 	if ws.AgentPoolID != nil {
 		poolsURL += "?agent_pool_id=" + ws.AgentPoolID.String()
 	}
@@ -389,7 +389,7 @@ func (h *Handlers) updateWorkspace(w http.ResponseWriter, r *http.Request) {
 
 	helpers.FlashSuccess(w, "updated workspace")
 	// User may have updated workspace name so path references updated workspace
-	http.Redirect(w, r, paths.EditWorkspace(ws.ID), http.StatusFound)
+	http.Redirect(w, r, path.Edit(ws.ID), http.StatusFound)
 }
 
 func (h *Handlers) editWorkspaceSSHKey(w http.ResponseWriter, r *http.Request) {
@@ -453,7 +453,7 @@ func (h *Handlers) updateWorkspaceSSHKey(w http.ResponseWriter, r *http.Request)
 
 	helpers.FlashSuccess(w, "updated workspace")
 	// User may have updated workspace name so path references updated workspace
-	http.Redirect(w, r, paths.EditSSHKeyWorkspace(ws.ID), http.StatusFound)
+	http.Redirect(w, r, path.Resource(resource.Action("edit-ssh-key"), ws.ID), http.StatusFound)
 }
 
 func (h *Handlers) deleteWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -469,7 +469,7 @@ func (h *Handlers) deleteWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	helpers.FlashSuccess(w, "deleted workspace: "+ws.Name)
-	http.Redirect(w, r, paths.Workspaces(ws.Organization), http.StatusFound)
+	http.Redirect(w, r, path.List(resource.WorkspaceKind, ws.Organization), http.StatusFound)
 }
 
 func (h *Handlers) lockWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -484,7 +484,7 @@ func (h *Handlers) lockWorkspace(w http.ResponseWriter, r *http.Request) {
 		helpers.Error(r, w, err.Error())
 		return
 	}
-	http.Redirect(w, r, paths.Workspace(ws.ID), http.StatusFound)
+	http.Redirect(w, r, path.Get(ws.ID), http.StatusFound)
 }
 
 func (h *Handlers) unlockWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -500,7 +500,7 @@ func (h *Handlers) unlockWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, paths.Workspace(ws.ID), http.StatusFound)
+	http.Redirect(w, r, path.Get(ws.ID), http.StatusFound)
 }
 
 func (h *Handlers) forceUnlockWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -516,7 +516,7 @@ func (h *Handlers) forceUnlockWorkspace(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	http.Redirect(w, r, paths.Workspace(ws.ID), http.StatusFound)
+	http.Redirect(w, r, path.Get(ws.ID), http.StatusFound)
 }
 
 func (h *Handlers) listWorkspaceVCSProviders(w http.ResponseWriter, r *http.Request) {
@@ -614,7 +614,7 @@ func (h *Handlers) connect(w http.ResponseWriter, r *http.Request) {
 	}
 
 	helpers.FlashSuccess(w, "connected workspace to repo")
-	http.Redirect(w, r, paths.EditVcsWorkspace(params.WorkspaceID), http.StatusFound)
+	http.Redirect(w, r, path.Resource(resource.Action("edit-vcs"), params.WorkspaceID), http.StatusFound)
 }
 
 func (h *Handlers) disconnect(w http.ResponseWriter, r *http.Request) {
@@ -633,7 +633,7 @@ func (h *Handlers) disconnect(w http.ResponseWriter, r *http.Request) {
 	}
 
 	helpers.FlashSuccess(w, "disconnected workspace from repo")
-	http.Redirect(w, r, paths.Workspace(workspaceID), http.StatusFound)
+	http.Redirect(w, r, path.Get(workspaceID), http.StatusFound)
 }
 
 func (h *Handlers) editPermissions(w http.ResponseWriter, r *http.Request) {
@@ -724,7 +724,7 @@ func (h *Handlers) setWorkspacePermission(w http.ResponseWriter, r *http.Request
 		return
 	}
 	helpers.FlashSuccess(w, "updated workspace permissions")
-	http.Redirect(w, r, paths.EditPermissionsWorkspace(params.WorkspaceID), http.StatusFound)
+	http.Redirect(w, r, path.Resource(resource.Action("edit-permissions"), params.WorkspaceID), http.StatusFound)
 }
 
 func (h *Handlers) unsetWorkspacePermission(w http.ResponseWriter, r *http.Request) {
@@ -743,7 +743,7 @@ func (h *Handlers) unsetWorkspacePermission(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	helpers.FlashSuccess(w, "deleted workspace permission")
-	http.Redirect(w, r, paths.EditPermissionsWorkspace(params.WorkspaceID), http.StatusFound)
+	http.Redirect(w, r, path.Resource(resource.Action("edit-permissions"), params.WorkspaceID), http.StatusFound)
 }
 
 type engine struct {
@@ -834,7 +834,7 @@ func (h *Handlers) updateEngine(w http.ResponseWriter, r *http.Request) {
 	}
 
 	helpers.FlashSuccess(w, "updated engine")
-	http.Redirect(w, r, paths.EditEngineWorkspace(ws.ID), http.StatusFound)
+	http.Redirect(w, r, path.Resource(resource.Action("edit-engine"), ws.ID), http.StatusFound)
 }
 
 func (h *Handlers) editVCS(w http.ResponseWriter, r *http.Request) {
@@ -936,7 +936,7 @@ func (h *Handlers) updateVCS(w http.ResponseWriter, r *http.Request) {
 	}
 
 	helpers.FlashSuccess(w, "updated vcs settings")
-	http.Redirect(w, r, paths.EditVcsWorkspace(ws.ID), http.StatusFound)
+	http.Redirect(w, r, path.Resource(resource.Action("edit-vcs"), ws.ID), http.StatusFound)
 }
 
 func (h *Handlers) editAdvanced(w http.ResponseWriter, r *http.Request) {
@@ -982,7 +982,7 @@ func (h *Handlers) createTag(w http.ResponseWriter, r *http.Request) {
 	}
 
 	helpers.FlashSuccess(w, "created tag: "+*params.TagName)
-	http.Redirect(w, r, paths.Workspace(params.WorkspaceID), http.StatusFound)
+	http.Redirect(w, r, path.Get(params.WorkspaceID), http.StatusFound)
 }
 
 func (h *Handlers) deleteTag(w http.ResponseWriter, r *http.Request) {
@@ -1002,7 +1002,7 @@ func (h *Handlers) deleteTag(w http.ResponseWriter, r *http.Request) {
 	}
 
 	helpers.FlashSuccess(w, "removed tag: "+*params.TagName)
-	http.Redirect(w, r, paths.Workspace(params.WorkspaceID), http.StatusFound)
+	http.Redirect(w, r, path.Get(params.WorkspaceID), http.StatusFound)
 }
 
 // filterUnassigned removes from the list of teams those that are part of the

@@ -10,7 +10,7 @@ import (
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runner"
 	"github.com/leg100/otf/internal/testutils"
-	"github.com/leg100/otf/internal/ui/paths"
+	"github.com/leg100/otf/internal/path"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -32,7 +32,7 @@ func TestRunnerHandlers_createAgentPool(t *testing.T) {
 		Organization: organization,
 	}
 	assert.Equal(t, want, svc.createAgentPoolOptions)
-	testutils.AssertRedirect(t, w, paths.AgentPool(id))
+	testutils.AssertRedirect(t, w, path.Get(id))
 }
 
 func TestRunnerHandlers_listAgentPools(t *testing.T) {
@@ -61,7 +61,7 @@ func TestRunnerHandlers_createAgentToken(t *testing.T) {
 
 	h.createAgentToken(w, r)
 
-	testutils.AssertRedirect(t, w, paths.AgentPool(id))
+	testutils.AssertRedirect(t, w, path.Get(id))
 }
 
 func TestRunnerHandlers_deleteAgentToken(t *testing.T) {
@@ -80,7 +80,7 @@ func TestRunnerHandlers_deleteAgentToken(t *testing.T) {
 
 	h.deleteAgentToken(w, r)
 
-	testutils.AssertRedirect(t, w, paths.AgentPool(agentPoolID))
+	testutils.AssertRedirect(t, w, path.Get(agentPoolID))
 }
 
 type fakeClient struct {

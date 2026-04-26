@@ -12,8 +12,9 @@ import (
 	"context"
 	"fmt"
 	"github.com/leg100/otf/internal/organization"
+	"github.com/leg100/otf/internal/path"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/ui/helpers"
-	"github.com/leg100/otf/internal/ui/paths"
 )
 
 func workspaceNew(organization organization.Name) templ.Component {
@@ -42,9 +43,9 @@ func workspaceNew(organization organization.Name) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var2 templ.SafeURL
-		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinURLErrs(paths.CreateWorkspace(organization))
+		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinURLErrs(path.Create(resource.WorkspaceKind, organization))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/ui/view.templ`, Line: 12, Col: 79}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/ui/view.templ`, Line: 13, Col: 93}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 		if templ_7745c5c3_Err != nil {
@@ -86,7 +87,7 @@ func tag(name string) templ.Component {
 		var templ_7745c5c3_Var4 string
 		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs("tag-" + name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/ui/view.templ`, Line: 24, Col: 25}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/ui/view.templ`, Line: 25, Col: 25}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 		if templ_7745c5c3_Err != nil {
@@ -99,7 +100,7 @@ func tag(name string) templ.Component {
 		var templ_7745c5c3_Var5 string
 		templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/ui/view.templ`, Line: 36, Col: 8}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/ui/view.templ`, Line: 37, Col: 8}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 		if templ_7745c5c3_Err != nil {

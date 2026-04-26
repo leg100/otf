@@ -10,10 +10,11 @@ import templruntime "github.com/a-h/templ/runtime"
 
 import (
 	"context"
+	"github.com/leg100/otf/internal/path"
+	"github.com/leg100/otf/internal/resource"
 	runpkg "github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/ui/helpers"
-	"github.com/leg100/otf/internal/ui/paths"
 	"github.com/leg100/otf/internal/user"
 )
 
@@ -99,7 +100,7 @@ func (t *runsTable) Row(run *runpkg.Run) templ.Component {
 		var templ_7745c5c3_Var3 string
 		templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs("run-item-" + run.ID.String())
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/ui/table.templ`, Line: 39, Col: 39}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/ui/table.templ`, Line: 40, Col: 39}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 		if templ_7745c5c3_Err != nil {
@@ -110,9 +111,9 @@ func (t *runsTable) Row(run *runpkg.Run) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var4 templ.SafeURL
-		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinURLErrs(paths.Run(run.ID))
+		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinURLErrs(path.Get(run.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/ui/table.templ`, Line: 41, Col: 43}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/ui/table.templ`, Line: 42, Col: 42}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 		if templ_7745c5c3_Err != nil {
@@ -125,7 +126,7 @@ func (t *runsTable) Row(run *runpkg.Run) templ.Component {
 		var templ_7745c5c3_Var5 string
 		templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(run.ID.String())
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/ui/table.templ`, Line: 42, Col: 21}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/ui/table.templ`, Line: 43, Col: 21}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 		if templ_7745c5c3_Err != nil {
@@ -141,9 +142,9 @@ func (t *runsTable) Row(run *runpkg.Run) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var6 templ.SafeURL
-			templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinURLErrs(paths.Workspace(run.WorkspaceID))
+			templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinURLErrs(path.Get(run.WorkspaceID))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/ui/table.templ`, Line: 47, Col: 59}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/ui/table.templ`, Line: 48, Col: 52}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 			if templ_7745c5c3_Err != nil {
@@ -156,7 +157,7 @@ func (t *runsTable) Row(run *runpkg.Run) templ.Component {
 			var templ_7745c5c3_Var7 string
 			templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(t.getWorkspaceName(ctx, run))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/ui/table.templ`, Line: 48, Col: 35}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/ui/table.templ`, Line: 49, Col: 35}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 			if templ_7745c5c3_Err != nil {
@@ -187,7 +188,7 @@ func (t *runsTable) Row(run *runpkg.Run) templ.Component {
 			var templ_7745c5c3_Var8 string
 			templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(run.CreatedBy.String())
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/ui/table.templ`, Line: 58, Col: 31}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/ui/table.templ`, Line: 59, Col: 31}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 			if templ_7745c5c3_Err != nil {
@@ -205,7 +206,7 @@ func (t *runsTable) Row(run *runpkg.Run) templ.Component {
 			var templ_7745c5c3_Var9 templ.SafeURL
 			templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(run.IngressAttributes.SenderHTMLURL))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/ui/table.templ`, Line: 62, Col: 85}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/ui/table.templ`, Line: 63, Col: 85}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 			if templ_7745c5c3_Err != nil {
@@ -218,7 +219,7 @@ func (t *runsTable) Row(run *runpkg.Run) templ.Component {
 			var templ_7745c5c3_Var10 string
 			templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(run.IngressAttributes.SenderUsername)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/ui/table.templ`, Line: 62, Col: 126}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/ui/table.templ`, Line: 63, Col: 126}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 			if templ_7745c5c3_Err != nil {
@@ -241,7 +242,7 @@ func (t *runsTable) Row(run *runpkg.Run) templ.Component {
 			var templ_7745c5c3_Var11 string
 			templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs("run triggered by " + run.TriggeringRunID.String())
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/ui/table.templ`, Line: 67, Col: 68}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/ui/table.templ`, Line: 68, Col: 68}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 			if templ_7745c5c3_Err != nil {
@@ -252,9 +253,9 @@ func (t *runsTable) Row(run *runpkg.Run) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var12 templ.SafeURL
-			templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinURLErrs(paths.Run(*run.TriggeringRunID))
+			templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinURLErrs(path.Get(*run.TriggeringRunID))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/ui/table.templ`, Line: 67, Col: 109}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/ui/table.templ`, Line: 68, Col: 108}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 			if templ_7745c5c3_Err != nil {
@@ -291,7 +292,7 @@ func (t *runsTable) Row(run *runpkg.Run) templ.Component {
 				var templ_7745c5c3_Var13 templ.SafeURL
 				templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(run.IngressAttributes.PullRequestURL))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/ui/table.templ`, Line: 84, Col: 93}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/ui/table.templ`, Line: 85, Col: 93}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 				if templ_7745c5c3_Err != nil {
@@ -304,7 +305,7 @@ func (t *runsTable) Row(run *runpkg.Run) templ.Component {
 				var templ_7745c5c3_Var14 string
 				templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(run.IngressAttributes.PullRequestTitle)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/ui/table.templ`, Line: 84, Col: 142}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/ui/table.templ`, Line: 85, Col: 142}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 				if templ_7745c5c3_Err != nil {
@@ -317,7 +318,7 @@ func (t *runsTable) Row(run *runpkg.Run) templ.Component {
 				var templ_7745c5c3_Var15 string
 				templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(run.IngressAttributes.PullRequestNumber)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/ui/table.templ`, Line: 84, Col: 187}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/ui/table.templ`, Line: 85, Col: 187}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 				if templ_7745c5c3_Err != nil {
@@ -335,7 +336,7 @@ func (t *runsTable) Row(run *runpkg.Run) templ.Component {
 				var templ_7745c5c3_Var16 templ.SafeURL
 				templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(run.IngressAttributes.CommitURL))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/ui/table.templ`, Line: 86, Col: 65}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/ui/table.templ`, Line: 87, Col: 65}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 				if templ_7745c5c3_Err != nil {
@@ -348,7 +349,7 @@ func (t *runsTable) Row(run *runpkg.Run) templ.Component {
 				var templ_7745c5c3_Var17 string
 				templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(run.IngressAttributes.Branch)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/ui/table.templ`, Line: 87, Col: 93}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/ui/table.templ`, Line: 88, Col: 93}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 				if templ_7745c5c3_Err != nil {
@@ -366,7 +367,7 @@ func (t *runsTable) Row(run *runpkg.Run) templ.Component {
 				var templ_7745c5c3_Var18 templ.SafeURL
 				templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(run.IngressAttributes.CommitURL))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/ui/table.templ`, Line: 90, Col: 65}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/ui/table.templ`, Line: 91, Col: 65}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
 				if templ_7745c5c3_Err != nil {
@@ -379,7 +380,7 @@ func (t *runsTable) Row(run *runpkg.Run) templ.Component {
 				var templ_7745c5c3_Var19 string
 				templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(run.IngressAttributes.Tag)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/ui/table.templ`, Line: 91, Col: 87}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/ui/table.templ`, Line: 92, Col: 87}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 				if templ_7745c5c3_Err != nil {
@@ -397,7 +398,7 @@ func (t *runsTable) Row(run *runpkg.Run) templ.Component {
 			var templ_7745c5c3_Var20 templ.SafeURL
 			templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(run.IngressAttributes.CommitURL))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/ui/table.templ`, Line: 94, Col: 87}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/ui/table.templ`, Line: 95, Col: 87}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var20))
 			if templ_7745c5c3_Err != nil {
@@ -410,7 +411,7 @@ func (t *runsTable) Row(run *runpkg.Run) templ.Component {
 			var templ_7745c5c3_Var21 string
 			templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs(run.IngressAttributes.CommitSHA[:7])
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/ui/table.templ`, Line: 94, Col: 128}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/ui/table.templ`, Line: 95, Col: 128}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
 			if templ_7745c5c3_Err != nil {
@@ -484,9 +485,9 @@ func (t *runsTable) Row(run *runpkg.Run) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var22 templ.SafeURL
-			templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.JoinURLErrs(paths.ApplyRun(run.ID))
+			templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.JoinURLErrs(path.Resource(resource.Action("apply"), run.ID))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/ui/table.templ`, Line: 128, Col: 42}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/ui/table.templ`, Line: 129, Col: 67}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var22))
 			if templ_7745c5c3_Err != nil {
@@ -503,9 +504,9 @@ func (t *runsTable) Row(run *runpkg.Run) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var23 string
-			templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinStringErrs(paths.CancelRun(run.ID))
+			templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinStringErrs(path.Resource(resource.Action("cancel"), run.ID))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/ui/table.templ`, Line: 135, Col: 39}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/ui/table.templ`, Line: 136, Col: 64}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var23))
 			if templ_7745c5c3_Err != nil {
@@ -521,9 +522,9 @@ func (t *runsTable) Row(run *runpkg.Run) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var24 string
-			templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinStringErrs(paths.ForceCancelRun(run.ID))
+			templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinStringErrs(path.Resource(resource.Action("force-cancel"), run.ID))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/ui/table.templ`, Line: 143, Col: 44}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/ui/table.templ`, Line: 144, Col: 70}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var24))
 			if templ_7745c5c3_Err != nil {
@@ -539,9 +540,9 @@ func (t *runsTable) Row(run *runpkg.Run) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var25 string
-			templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinStringErrs(paths.DiscardRun(run.ID))
+			templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinStringErrs(path.Resource(resource.Action("discard"), run.ID))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/ui/table.templ`, Line: 152, Col: 40}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/ui/table.templ`, Line: 153, Col: 65}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var25))
 			if templ_7745c5c3_Err != nil {
@@ -557,9 +558,9 @@ func (t *runsTable) Row(run *runpkg.Run) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var26 templ.SafeURL
-			templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.JoinURLErrs(paths.RetryRun(run.ID))
+			templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.JoinURLErrs(path.Resource(resource.Action("retry"), run.ID))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/ui/table.templ`, Line: 158, Col: 42}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/ui/table.templ`, Line: 159, Col: 67}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var26))
 			if templ_7745c5c3_Err != nil {
@@ -633,7 +634,7 @@ func (t runsTable) avatar(run *runpkg.Run) templ.Component {
 			var templ_7745c5c3_Var28 string
 			templ_7745c5c3_Var28, templ_7745c5c3_Err = templ.JoinStringErrs(templ.SafeURL(run.IngressAttributes.SenderAvatarURL))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/ui/table.templ`, Line: 189, Col: 67}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/ui/table.templ`, Line: 190, Col: 67}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var28))
 			if templ_7745c5c3_Err != nil {

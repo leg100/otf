@@ -8,7 +8,7 @@ import (
 	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/tfeapi"
-	"github.com/leg100/otf/internal/ui/paths"
+	"github.com/leg100/otf/internal/path"
 )
 
 // AuthenticatedPrefixes are those URL path prefixes requiring authentication.
@@ -16,7 +16,7 @@ var AuthenticatedPrefixes = []string{
 	tfeapi.APIPrefixV2,
 	tfeapi.ModuleV1Prefix,
 	otfhttp.APIBasePath,
-	paths.UIPrefix,
+	path.Prefix,
 }
 
 type (

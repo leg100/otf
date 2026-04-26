@@ -9,7 +9,7 @@ import (
 
 	"github.com/leg100/otf/internal/github/testserver"
 	"github.com/leg100/otf/internal/testutils"
-	"github.com/leg100/otf/internal/ui/paths"
+	"github.com/leg100/otf/internal/path"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/require"
@@ -36,7 +36,7 @@ func TestModuleE2E(t *testing.T) {
 	browser.New(t, ctx, func(page playwright.Page) {
 		// publish module
 		// go to org
-		_, err := page.Goto(daemon.URL(paths.Organization(org.Name)))
+		_, err := page.Goto(daemon.URL(path.Get(org.Name)))
 		require.NoError(t, err)
 
 		// go to modules
@@ -138,7 +138,7 @@ module "mod" {
 
 	browser.New(t, ctx, func(page playwright.Page) {
 		// go to org
-		_, err = page.Goto(daemon.URL(paths.Organization(org.Name)))
+		_, err = page.Goto(daemon.URL(path.Get(org.Name)))
 		require.NoError(t, err)
 
 		// go to modules

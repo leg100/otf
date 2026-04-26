@@ -4,7 +4,8 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal/runstatus"
-	"github.com/leg100/otf/internal/ui/paths"
+	"github.com/leg100/otf/internal/path"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/require"
 )
@@ -19,7 +20,7 @@ func TestIntegration_RunListUI(t *testing.T) {
 
 	browser.New(t, ctx, func(page playwright.Page) {
 		// navigate to workspace page
-		_, err := page.Goto(daemon.URL(paths.Workspace(ws1.ID)))
+		_, err := page.Goto(daemon.URL(path.Get(ws1.ID)))
 		require.NoError(t, err)
 
 		// navigate to runs page
@@ -52,7 +53,7 @@ func TestIntegration_RunListUI(t *testing.T) {
 
 	browser.New(t, ctx, func(page playwright.Page) {
 		// navigate to workspace runs page
-		_, err := page.Goto(daemon.URL(paths.Runs(ws1.ID)))
+		_, err := page.Goto(daemon.URL(path.List(resource.RunKind, ws1.ID)))
 		require.NoError(t, err)
 
 		// confirm 'runs' submenu button is active
@@ -83,7 +84,7 @@ func TestIntegration_RunListUI(t *testing.T) {
 
 	browser.New(t, ctx, func(page playwright.Page) {
 		// navigate to organization runs page
-		_, err := page.Goto(daemon.URL(paths.OrganizationRuns(org.Name)))
+		_, err := page.Goto(daemon.URL(path.List(resource.RunKind, org.Name)))
 		require.NoError(t, err)
 
 		// should be four runs

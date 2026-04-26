@@ -10,7 +10,7 @@ import (
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runstatus"
-	"github.com/leg100/otf/internal/ui/paths"
+	"github.com/leg100/otf/internal/path"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/workspace"
 )
@@ -176,7 +176,7 @@ func (r *Reporter) handleRun(ctx context.Context, event *Event) error {
 		Repo:        cv.IngressAttributes.Repo,
 		Status:      status,
 		Description: description,
-		TargetURL:   r.urls.URL(paths.Run(event.ID)),
+		TargetURL:   r.urls.URL(path.Get(event.ID)),
 	})
 	if err != nil {
 		return err

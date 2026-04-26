@@ -16,7 +16,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/json"
 	"github.com/leg100/otf/internal/logr"
-	"github.com/leg100/otf/internal/ui/paths"
+	"github.com/leg100/otf/internal/path"
 	"github.com/leg100/otf/internal/ui/static"
 )
 
@@ -129,7 +129,7 @@ func NewServer(logger logr.Logger, cfg ServerConfig) (*Server, error) {
 	// TODO: consider applying to all responses, including API.
 	r.Use((&etagMiddleware{
 		logger: logger,
-		prefix: paths.UIPrefix,
+		prefix: path.Prefix,
 	}).middleware)
 
 	return &Server{

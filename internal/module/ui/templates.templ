@@ -6,7 +6,7 @@ import (
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/ui"
 	"github.com/leg100/otf/internal/ui/helpers"
-	"github.com/leg100/otf/internal/ui/paths"
+	"github.com/leg100/otf/internal/path"
 	"github.com/leg100/otf/internal/vcs"
 	vcsui "github.com/leg100/otf/internal/vcs/ui"
 	"html/template"
@@ -32,7 +32,7 @@ templ newView(props newViewProps) {
 }
 
 templ selectVCSProviderAction(vcsProviderID resource.TfeID) {
-	<form action={ paths.ConnectModule(vcsProviderID) }>
+	<form action={ path.Resource(resource.Action("connect"), vcsProviderID) }>
 		<input type="hidden" name="vcs_provider_id" value={ vcsProviderID.String() }/>
 		<button class="btn">Select</button>
 	</form>
@@ -49,7 +49,7 @@ templ connect(props connectProps) {
 	<div>
 		Choose the repository that hosts your module source code. We'll watch this for commits and tags. The format of your repository name should be `{ "terraform-<PROVIDER>-<NAME>" }`.
 	</div>
-	<form action={ paths.CreateModule(props.provider.Organization) } method="POST">
+	<form action={ path.Create(resource.ModuleKind, props.provider.Organization) } method="POST">
 		<input type="hidden" name="vcs_provider_id" id="vcs_provider_id" value={ props.provider.ID.String() }/>
 		<input class="input" type="text" name="identifier" id="identifier" value="" placeholder="{owner}/{repository}" required/>
 		<button class="btn">Connect</button>
@@ -69,7 +69,7 @@ type moduleRepoSelector struct {
 }
 
 templ (s moduleRepoSelector) action(repo vcs.Repo) {
-	<form action={ paths.CreateModule(s.provider.Organization) } method="POST">
+	<form action={ path.Create(resource.ModuleKind, s.provider.Organization) } method="POST">
 		<input type="hidden" name="vcs_provider_id" value={ s.provider.ID.String() }/>
 		<input type="hidden" name="identifier" id="identifier" value={ repo.String() }/>
 		<button class="btn">Connect</button>
@@ -111,7 +111,7 @@ templ providerFilterLabel(provider string) {
 
 templ moduleListActions(props moduleListProps) {
 	if props.canPublishModule {
-		<form action={ paths.NewModule(props.organization) } method="GET">
+		<form action={ path.New(resource.ModuleKind, props.organization) } method="GET">
 			<button class="btn" id="list-module-vcs-providers-button">Publish</button>
 		</form>
 	}
@@ -128,7 +128,7 @@ templ (t moduleTable) Header() {
 templ (t moduleTable) Row(mod *module.Module) {
 	<tr id={ "mod-item-" + mod.Name }>
 		<td>
-			<a class="link" href={ paths.Module(mod.ID) }>
+			<a class="link" href={ path.Get(mod.ID) }>
 				{ mod.Name }
 			</a>
 		</td>
@@ -161,7 +161,7 @@ templ moduleGet(props moduleGetProps) {
 				Module setup failed.
 			case module.ModuleStatusSetupComplete:
 				<div class="flex gap-4 items-center">
-					<form class="flex gap-2 items-center" action={ paths.Module(props.module.ID) } method="GET">
+					<form class="flex gap-2 items-center" action={ path.Get(props.module.ID) } method="GET">
 						<label>Version</label>
 						<select class="select w-32" name="version" id="version" onchange="this.form.submit()">
 							{{ slices.Reverse(props.module.AvailableVersions()) }}
@@ -220,7 +220,7 @@ templ moduleGet(props moduleGetProps) {
 					}
 				</div>
 		}
-		<form id="module-delete-button" action={ paths.DeleteModule(props.module.ID) } method="POST">
+		<form id="module-delete-button" action={ path.Delete(props.module.ID) } method="POST">
 			<button class="btn btn-error btn-outline" onclick="return confirm('Are you sure you want to delete?')">Delete module</button>
 		</form>
 	</div>

@@ -17,7 +17,7 @@ import (
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runstatus"
-	"github.com/leg100/otf/internal/ui/paths"
+	"github.com/leg100/otf/internal/path"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/require"
@@ -67,7 +67,7 @@ func TestSSHKeyPrivateModule(t *testing.T) {
 
 	// Register the SSH key with OTF via the UI.
 	browser.New(t, ctx, func(page playwright.Page) {
-		_, err := page.Goto(daemon.URL(paths.Organization(org.Name)))
+		_, err := page.Goto(daemon.URL(path.Get(org.Name)))
 		require.NoError(t, err)
 
 		err = page.Locator(`//li[@id='menu-item-settings']/a`).Click()
@@ -120,7 +120,7 @@ func TestSSHKeyPrivateModule(t *testing.T) {
 
 			// Update workspace via UI to use ssh key.
 			browser.New(t, ctx, func(page playwright.Page) {
-				_, err := page.Goto(daemon.URL(paths.Workspace(ws.ID)))
+				_, err := page.Goto(daemon.URL(path.Get(ws.ID)))
 				require.NoError(t, err)
 
 				// navigate to workspace settings

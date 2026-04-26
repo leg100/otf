@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/gomarkdown/markdown"
-	"github.com/leg100/otf/internal/ui/paths"
+	"github.com/leg100/otf/internal/path"
 )
 
 const (
@@ -29,18 +29,18 @@ func htmlPanic(format string, a ...any) {
 func SendUserToLoginPage(w http.ResponseWriter, r *http.Request) {
 	// if request path was for a background event-stream then save the referring
 	// html page, otherwise the user will be returned to a blank page.
-	path := r.URL.String()
+	returnURL := r.URL.String()
 	if r.Header.Get("Accept") == "text/event-stream" {
-		path = r.Referer()
+		returnURL = r.Referer()
 	}
-	SetCookie(w, pathCookie, path, nil)
+	SetCookie(w, pathCookie, returnURL, nil)
 
 	// Force ajax requests to reload entire page
 	if isHTMX := r.Header.Get("HX-Request"); isHTMX == "true" {
 		w.Header().Add("HX-Refresh", "true")
 		return
 	}
-	http.Redirect(w, r, paths.Login(), http.StatusFound)
+	http.Redirect(w, r, path.Login(), http.StatusFound)
 }
 
 // ReturnUserOriginalPage returns a user to the original page they tried to
@@ -51,6 +51,6 @@ func ReturnUserOriginalPage(w http.ResponseWriter, r *http.Request) {
 		SetCookie(w, pathCookie, "", &time.Time{})
 		http.Redirect(w, r, cookie.Value, http.StatusFound)
 	} else {
-		http.Redirect(w, r, paths.Profile(), http.StatusFound)
+		http.Redirect(w, r, path.Profile(), http.StatusFound)
 	}
 }

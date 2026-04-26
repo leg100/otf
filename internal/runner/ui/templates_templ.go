@@ -11,10 +11,10 @@ import templruntime "github.com/a-h/templ/runtime"
 import (
 	"fmt"
 	"github.com/leg100/otf/internal/organization"
+	"github.com/leg100/otf/internal/path"
 	"github.com/leg100/otf/internal/resource"
 	runnerpkg "github.com/leg100/otf/internal/runner"
 	"github.com/leg100/otf/internal/ui/helpers"
-	"github.com/leg100/otf/internal/ui/paths"
 )
 
 type listRunnersProps struct {
@@ -49,9 +49,9 @@ func listRunners(props listRunnersProps) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var2 templ.SafeURL
-		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinURLErrs(paths.Runners(props.organization))
+		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinURLErrs(path.List(resource.RunnerKind, props.organization))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/ui/templates.templ`, Line: 22, Col: 49}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/ui/templates.templ`, Line: 22, Col: 66}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 		if templ_7745c5c3_Err != nil {
@@ -380,9 +380,9 @@ func listAgentPools(props listAgentPoolProps) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var19 templ.SafeURL
-		templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinURLErrs(paths.CreateAgentPool(props.organization))
+		templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinURLErrs(path.Create(resource.AgentPoolKind, props.organization))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/ui/templates.templ`, Line: 130, Col: 86}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/ui/templates.templ`, Line: 130, Col: 100}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 		if templ_7745c5c3_Err != nil {
@@ -470,9 +470,9 @@ func (t agentPoolsTable) Row(pool *runnerpkg.Pool) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var23 templ.SafeURL
-		templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinURLErrs(paths.AgentPool(pool.ID))
+		templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinURLErrs(path.Get(pool.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/ui/templates.templ`, Line: 156, Col: 50}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/ui/templates.templ`, Line: 156, Col: 43}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var23))
 		if templ_7745c5c3_Err != nil {
@@ -639,9 +639,9 @@ func getAgentPool(props getAgentPoolProps) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var29 templ.SafeURL
-		templ_7745c5c3_Var29, templ_7745c5c3_Err = templ.JoinURLErrs(paths.UpdateAgentPool(props.pool.ID))
+		templ_7745c5c3_Var29, templ_7745c5c3_Err = templ.JoinURLErrs(path.Update(props.pool.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/ui/templates.templ`, Line: 196, Col: 61}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/ui/templates.templ`, Line: 196, Col: 51}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var29))
 		if templ_7745c5c3_Err != nil {
@@ -729,9 +729,9 @@ func getAgentPool(props getAgentPoolProps) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var34 templ.SafeURL
-			templ_7745c5c3_Var34, templ_7745c5c3_Err = templ.JoinURLErrs(paths.EditWorkspace(ws.ID))
+			templ_7745c5c3_Var34, templ_7745c5c3_Err = templ.JoinURLErrs(path.Edit(ws.ID))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/ui/templates.templ`, Line: 258, Col: 99}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/ui/templates.templ`, Line: 258, Col: 89}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var34))
 			if templ_7745c5c3_Err != nil {
@@ -744,7 +744,7 @@ func getAgentPool(props getAgentPoolProps) templ.Component {
 			var templ_7745c5c3_Var35 string
 			templ_7745c5c3_Var35, templ_7745c5c3_Err = templ.JoinStringErrs(ws.Name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/ui/templates.templ`, Line: 258, Col: 111}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/ui/templates.templ`, Line: 258, Col: 101}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var35))
 			if templ_7745c5c3_Err != nil {
@@ -760,9 +760,9 @@ func getAgentPool(props getAgentPoolProps) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var36 templ.SafeURL
-		templ_7745c5c3_Var36, templ_7745c5c3_Err = templ.JoinURLErrs(paths.CreateAgentToken(props.pool.ID))
+		templ_7745c5c3_Var36, templ_7745c5c3_Err = templ.JoinURLErrs(path.Create(resource.AgentTokenKind, props.pool.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/ui/templates.templ`, Line: 275, Col: 82}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/ui/templates.templ`, Line: 275, Col: 96}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var36))
 		if templ_7745c5c3_Err != nil {
@@ -800,9 +800,9 @@ func getAgentPool(props getAgentPoolProps) templ.Component {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var37 templ.SafeURL
-					templ_7745c5c3_Var37, templ_7745c5c3_Err = templ.JoinURLErrs(paths.EditWorkspace(ws.ID))
+					templ_7745c5c3_Var37, templ_7745c5c3_Err = templ.JoinURLErrs(path.Edit(ws.ID))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/ui/templates.templ`, Line: 297, Col: 96}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/ui/templates.templ`, Line: 297, Col: 86}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var37))
 					if templ_7745c5c3_Err != nil {
@@ -815,7 +815,7 @@ func getAgentPool(props getAgentPoolProps) templ.Component {
 					var templ_7745c5c3_Var38 string
 					templ_7745c5c3_Var38, templ_7745c5c3_Err = templ.JoinStringErrs(ws.Name)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/ui/templates.templ`, Line: 297, Col: 108}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/ui/templates.templ`, Line: 297, Col: 98}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var38))
 					if templ_7745c5c3_Err != nil {
@@ -836,9 +836,9 @@ func getAgentPool(props getAgentPoolProps) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var39 templ.SafeURL
-			templ_7745c5c3_Var39, templ_7745c5c3_Err = templ.JoinURLErrs(paths.DeleteAgentPool(props.pool.ID))
+			templ_7745c5c3_Var39, templ_7745c5c3_Err = templ.JoinURLErrs(path.Delete(props.pool.ID))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/ui/templates.templ`, Line: 301, Col: 66}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/ui/templates.templ`, Line: 301, Col: 56}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var39))
 			if templ_7745c5c3_Err != nil {
@@ -949,9 +949,9 @@ func (t agentTokensTable) Row(token *runnerpkg.AgentToken) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var43 templ.SafeURL
-		templ_7745c5c3_Var43, templ_7745c5c3_Err = templ.JoinURLErrs(paths.DeleteAgentToken(token.ID))
+		templ_7745c5c3_Var43, templ_7745c5c3_Err = templ.JoinURLErrs(path.Delete(token.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/ui/templates.templ`, Line: 328, Col: 74}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/ui/templates.templ`, Line: 328, Col: 63}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var43))
 		if templ_7745c5c3_Err != nil {

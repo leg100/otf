@@ -16,14 +16,12 @@ import (
 	runpkg "github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/ui/helpers"
-	"github.com/leg100/otf/internal/ui/paths"
+	"github.com/leg100/otf/internal/path"
 	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/workspace"
 )
 
 const LatestRunUpdate sseEvent = "LatestRunUpdate"
-
-var _ = paths.Run // suppress unused import
 
 type Handlers struct {
 	authorizer authz.Interface
@@ -114,7 +112,7 @@ func (h *Handlers) createRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, paths.Run(createdRun.ID), http.StatusFound)
+	http.Redirect(w, r, path.Get(createdRun.ID), http.StatusFound)
 }
 
 func (h *Handlers) listRuns(w http.ResponseWriter, r *http.Request) {
@@ -259,7 +257,7 @@ func (h *Handlers) deleteRun(w http.ResponseWriter, r *http.Request) {
 		helpers.Error(r, w, err.Error())
 		return
 	}
-	http.Redirect(w, r, paths.Workspace(runItem.WorkspaceID), http.StatusFound)
+	http.Redirect(w, r, path.Get(runItem.WorkspaceID), http.StatusFound)
 }
 
 func (h *Handlers) cancelRun(w http.ResponseWriter, r *http.Request) {
@@ -274,7 +272,7 @@ func (h *Handlers) cancelRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Add("HX-Redirect", paths.Run(runID))
+	w.Header().Add("HX-Redirect", path.Get(runID))
 }
 
 func (h *Handlers) forceCancelRun(w http.ResponseWriter, r *http.Request) {
@@ -289,7 +287,7 @@ func (h *Handlers) forceCancelRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Add("HX-Redirect", paths.Run(runID))
+	w.Header().Add("HX-Redirect", path.Get(runID))
 }
 
 func (h *Handlers) applyRun(w http.ResponseWriter, r *http.Request) {
@@ -304,7 +302,7 @@ func (h *Handlers) applyRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, paths.Run(runID)+"#apply", http.StatusFound)
+	http.Redirect(w, r, path.Get(runID)+"#apply", http.StatusFound)
 }
 
 func (h *Handlers) discardRun(w http.ResponseWriter, r *http.Request) {
@@ -319,7 +317,7 @@ func (h *Handlers) discardRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Add("HX-Redirect", paths.Run(runID))
+	w.Header().Add("HX-Redirect", path.Get(runID))
 }
 
 func (h *Handlers) retryRun(w http.ResponseWriter, r *http.Request) {
@@ -346,7 +344,7 @@ func (h *Handlers) retryRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, paths.Run(newRun.ID), http.StatusFound)
+	http.Redirect(w, r, path.Get(newRun.ID), http.StatusFound)
 }
 
 const (

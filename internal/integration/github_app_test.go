@@ -13,7 +13,7 @@ import (
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/testutils"
-	"github.com/leg100/otf/internal/ui/paths"
+	"github.com/leg100/otf/internal/path"
 	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/workspace"
@@ -87,7 +87,7 @@ func TestIntegration_GithubAppsUI(t *testing.T) {
 
 			browser.New(t, ctx, func(page playwright.Page) {
 				// go to site settings page
-				_, err := page.Goto(daemon.URL(paths.Admin()))
+				_, err := page.Goto(daemon.URL(path.Admin()))
 				require.NoError(t, err)
 				screenshot(t, page, "site_settings")
 
@@ -152,7 +152,7 @@ func TestIntegration_GithubAppsUI(t *testing.T) {
 			_, err := page.Goto((&url.URL{
 				Scheme:   "https",
 				Host:     daemon.System.Hostname(),
-				Path:     paths.ExchangeCodeGithubApp(),
+				Path:     path.ExchangeCodeGithubApp(),
 				RawQuery: "code=anything",
 			}).String())
 			require.NoError(t, err)
@@ -194,7 +194,7 @@ func TestIntegration_GithubAppsUI(t *testing.T) {
 		require.NoError(t, err)
 
 		browser.New(t, ctx, func(page playwright.Page) {
-			_, err = page.Goto(daemon.URL(paths.GithubApps()))
+			_, err = page.Goto(daemon.URL(path.GithubApps()))
 			require.NoError(t, err)
 
 			err = expect.Locator(page.Locator(`//div[@id='installations']//tbody//td[1]//a`)).ToContainText("user/leg100")
@@ -232,7 +232,7 @@ func TestIntegration_GithubAppsUI(t *testing.T) {
 		require.NoError(t, err)
 
 		browser.New(t, ctx, func(page playwright.Page) {
-			_, err = page.Goto(daemon.URL(paths.GithubApps()))
+			_, err = page.Goto(daemon.URL(path.GithubApps()))
 			require.NoError(t, err)
 
 			err = expect.Locator(page.Locator(`//tr[@id='item-github-app']//td[1]`)).ToHaveText("my-otf-app")

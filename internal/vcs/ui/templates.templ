@@ -6,7 +6,7 @@ import (
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/ui/helpers"
-	"github.com/leg100/otf/internal/ui/paths"
+	"github.com/leg100/otf/internal/path"
 	"github.com/leg100/otf/internal/vcs"
 )
 
@@ -22,7 +22,7 @@ templ list(props listProps) {
 	</div>
 	<div class="flex flex-wrap gap-4 mt-4">
 		for _, kind := range props.kinds {
-			<form action={ paths.NewVCSProvider(props.organization) } method="GET">
+			<form action={ path.New(resource.VCSProviderKind, props.organization) } method="GET">
 				<button class="btn">
 					@kind.Icon
 					New { internal.Title(string(kind.ID)) } Provider
@@ -40,7 +40,7 @@ templ list(props listProps) {
 }
 
 templ tableAction(vcsProviderID resource.TfeID) {
-	<form id="edit-vcs-provider" action={ paths.EditVCSProvider(vcsProviderID) }>
+	<form id="edit-vcs-provider" action={ path.Edit(vcsProviderID) }>
 		@helpers.EditButton()
 		<input type="hidden" name="id" value={ vcsProviderID.String() }/>
 	</form>
@@ -50,11 +50,11 @@ templ edit(provider *vcs.Provider) {
 	@vcsForm(vcsFormProps{
 		provider: provider,
 		edit:     true,
-		action:   paths.UpdateVCSProvider(provider.ID),
+		action:   path.Update(provider.ID),
 	})
 	<hr class="my-4"/>
 	<h3 class="font-semibold text-lg mb-2">Advanced</h3>
-	<form action={ paths.DeleteVCSProvider(provider.ID) } method="POST">
+	<form action={ path.Delete(provider.ID) } method="POST">
 		<button id="delete-vcs-provider-button" class="btn btn-outline btn-error" onclick="return confirm('Are you sure you want to delete?')">
 			Delete VCS provider
 		</button>
@@ -69,7 +69,7 @@ type newProviderProps struct {
 templ newProvider(props newProviderProps) {
 	@vcsForm(vcsFormProps{
 		provider: &vcs.Provider{Kind: props.kind},
-		action:   paths.CreateVCSProvider(props.organization),
+		action:   path.Create(resource.VCSProviderKind, props.organization),
 		edit:     false,
 	})
 }
@@ -102,7 +102,7 @@ templ vcsForm(props vcsFormProps) {
 	}}
 	if showCreateAppNotice {
 		<span>
-			Application not yet created. Create one <a class="link" href={ paths.NewGithubApp() }>here</a>.
+			Application not yet created. Create one <a class="link" href={ path.NewGithubApp() }>here</a>.
 		</span>
 	} else {
 		<form class="flex flex-col gap-5" action={ props.action } method="POST">

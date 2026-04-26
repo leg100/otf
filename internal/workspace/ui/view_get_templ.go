@@ -9,10 +9,10 @@ import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
 import (
+	"github.com/leg100/otf/internal/path"
 	"github.com/leg100/otf/internal/resource"
 	runui "github.com/leg100/otf/internal/run/ui"
 	"github.com/leg100/otf/internal/ui/helpers"
-	"github.com/leg100/otf/internal/ui/paths"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/workspace"
 )
@@ -59,9 +59,9 @@ func workspaceGet(props workspaceGetProps) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var2 string
-		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(paths.WatchLatestRun(props.ws.ID))
+		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(path.Resources(resource.Action("watch-latest"), resource.RunKind, props.ws.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/ui/view_get.templ`, Line: 31, Col: 49}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/ui/view_get.templ`, Line: 31, Col: 94}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 		if templ_7745c5c3_Err != nil {
@@ -111,9 +111,9 @@ func workspaceGet(props workspaceGetProps) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var4 string
-		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(paths.StateWorkspace(props.ws.ID))
+		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(path.Resource(resource.Action("state"), props.ws.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/ui/view_get.templ`, Line: 57, Col: 51}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/ui/view_get.templ`, Line: 57, Col: 70}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 		if templ_7745c5c3_Err != nil {
@@ -132,9 +132,9 @@ func workspaceGet(props workspaceGetProps) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var5 templ.SafeURL
-		templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinURLErrs(paths.EditEngineWorkspace(props.ws.ID))
+		templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinURLErrs(path.Resource(resource.Action("edit-engine"), props.ws.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/ui/view_get.templ`, Line: 71, Col: 51}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/ui/view_get.templ`, Line: 71, Col: 71}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 		if templ_7745c5c3_Err != nil {
@@ -158,9 +158,9 @@ func workspaceGet(props workspaceGetProps) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var7 templ.SafeURL
-		templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinURLErrs(paths.EditEngineWorkspace(props.ws.ID))
+		templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinURLErrs(path.Resource(resource.Action("edit-engine"), props.ws.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/ui/view_get.templ`, Line: 80, Col: 51}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/ui/view_get.templ`, Line: 80, Col: 71}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 		if templ_7745c5c3_Err != nil {
@@ -236,9 +236,9 @@ func workspaceGet(props workspaceGetProps) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var11 templ.SafeURL
-		templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinURLErrs(paths.DeleteTagWorkspace(props.ws.ID))
+		templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinURLErrs(path.Resource(resource.Action("delete-tag"), props.ws.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/ui/view_get.templ`, Line: 109, Col: 56}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/ui/view_get.templ`, Line: 109, Col: 76}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 		if templ_7745c5c3_Err != nil {
@@ -368,9 +368,9 @@ func lockWidget(props lockWidgetProps) templ.Component {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var16 templ.SafeURL
-				templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinURLErrs(paths.Run(props.ws.Lock))
+				templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinURLErrs(path.Get(props.ws.Lock))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/ui/view_get.templ`, Line: 168, Col: 65}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/ui/view_get.templ`, Line: 168, Col: 64}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 				if templ_7745c5c3_Err != nil {

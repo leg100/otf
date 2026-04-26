@@ -5,12 +5,12 @@ import (
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/ui/helpers"
-	"github.com/leg100/otf/internal/ui/paths"
+	"github.com/leg100/otf/internal/path"
 	"time"
 )
 
 templ organizationNew() {
-	<form class="flex flex-col gap-2" action={ paths.CreateOrganization() } method="POST">
+	<form class="flex flex-col gap-2" action={ path.Create(resource.OrganizationKind, nil) } method="POST">
 		<div class="field">
 			<label for="name">Name</label>
 			<input class="input w-80" type="text" name="name" id="name" required/>
@@ -40,7 +40,7 @@ templ (t organizationTable) Header() {
 templ (t organizationTable) Row(org *organization.Organization) {
 	<tr id={ "org-item-" + org.Name.String() }>
 		<td>
-			<a class="link" href={ paths.Organization(org.Name) }>
+			<a class="link" href={ path.Get(org.Name) }>
 				{ org.Name.String() }
 			</a>
 		</td>
@@ -51,7 +51,7 @@ templ (t organizationTable) Row(org *organization.Organization) {
 }
 
 templ organizationListActions(canCreate bool) {
-	<form action={ paths.NewOrganization() } method="GET">
+	<form action={ path.New(resource.OrganizationKind, nil) } method="GET">
 		<button
 			class="btn"
 			id="new-organization-button"
@@ -68,7 +68,7 @@ templ organizationListActions(canCreate bool) {
 }
 
 templ organizationEdit(org *organization.Organization) {
-	<form class="flex flex-col gap-5" action={ paths.UpdateOrganization(org.Name) } method="POST">
+	<form class="flex flex-col gap-5" action={ path.Update(org.Name) } method="POST">
 		<div class="field">
 			<label for="name">Name</label>
 			<input class="input w-80" type="text" name="new_name" id="name" value={ org.Name.String() } required/>
@@ -81,7 +81,7 @@ templ organizationEdit(org *organization.Organization) {
 
 templ editAdvanced(org *organization.Organization) {
 	Delete the organization. Warning: this action is irreversible.
-	<form action={ paths.DeleteOrganization(org.Name) } method="POST">
+	<form action={ path.Delete(org.Name) } method="POST">
 		<button id="delete-organization-button" class="btn btn-error btn-outline" onclick="return confirm('Are you sure you want to delete?')">
 			Delete organization
 		</button>
@@ -99,7 +99,7 @@ templ getToken(org organization.Name, token *organization.OrganizationToken) {
 			[]*organization.OrganizationToken{token},
 		)
 	} else {
-		<form class="mt-2" action={ paths.CreateOrganizationToken(org) } method="POST">
+		<form class="mt-2" action={ path.CreateOrganizationToken(org) } method="POST">
 			<button class="btn w-72">Create organization token</button>
 		</form>
 	}
@@ -123,10 +123,10 @@ templ (t organizationTokenTable) Row(token *organization.OrganizationToken) {
 		</td>
 		<td>
 			<div class="flex gap-2">
-				<form action={ paths.CreateOrganizationToken(token.Organization) } method="POST">
+				<form action={ path.CreateOrganizationToken(token.Organization) } method="POST">
 					<button class="btn">Regenerate</button>
 				</form>
-				<form action={ paths.DeleteOrganizationToken(token.Organization) } method="POST">
+				<form action={ path.DeleteOrganizationToken(token.Organization) } method="POST">
 					@helpers.DeleteButton()
 				</form>
 			</div>

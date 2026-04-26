@@ -5,7 +5,7 @@ import (
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/ui/helpers"
-	"github.com/leg100/otf/internal/ui/paths"
+	"github.com/leg100/otf/internal/path"
 	"github.com/leg100/otf/internal/user"
 	"time"
 )
@@ -38,7 +38,7 @@ templ profile() {
 }
 
 templ profileActions() {
-	<form action={ paths.Logout() } method="POST">
+	<form action={ path.Logout() } method="POST">
 		<button class="btn" id="logout">logout</button>
 	</form>
 }
@@ -53,7 +53,7 @@ templ userList(props userListProps) {
 }
 
 templ newToken() {
-	<form class="flex flex-col gap-2" action={ paths.CreateToken() } method="POST">
+	<form class="flex flex-col gap-2" action={ path.CreateToken() } method="POST">
 		<div class="field">
 			<label for="description">Description</label>
 			<textarea class="textarea w-80" name="description" id="description" required></textarea>
@@ -72,7 +72,7 @@ templ tokenList(tokens []*user.UserToken) {
 }
 
 templ tokenListActions() {
-	<form action={ paths.NewToken() } method="GET">
+	<form action={ path.NewToken() } method="GET">
 		<button class="btn" id="new-user-token-button">New Token</button>
 	</form>
 }
@@ -98,7 +98,7 @@ templ (t tokensTable) Row(token *user.UserToken) {
 			<span>{ internal.Ago(time.Now(), token.CreatedAt) }</span>
 		</td>
 		<td>
-			<form id="delete-user-token" action={ paths.DeleteToken() } method="POST">
+			<form id="delete-user-token" action={ path.DeleteToken() } method="POST">
 				@helpers.DeleteButton()
 				<input type="hidden" name="id" value={ token.ID.String() }/>
 			</form>

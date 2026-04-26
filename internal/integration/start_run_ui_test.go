@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal/run"
-	"github.com/leg100/otf/internal/ui/paths"
+	"github.com/leg100/otf/internal/path"
 	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/require"
 )
@@ -25,7 +25,7 @@ func TestStartRunUI(t *testing.T) {
 			// now we have a config version, start a run with the plan-and-apply
 			// operation
 			browser.New(t, ctx, func(page playwright.Page) {
-				workspaceURL := daemon.URL(paths.Workspace(ws.ID))
+				workspaceURL := daemon.URL(path.Get(ws.ID))
 				startRun(t, page, workspaceURL, run.PlanAndApplyOperation, true)
 
 				// now destroy resources with the destroy-all operation

@@ -11,9 +11,9 @@ import templruntime "github.com/a-h/templ/runtime"
 import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/organization"
+	"github.com/leg100/otf/internal/path"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/ui/helpers"
-	"github.com/leg100/otf/internal/ui/paths"
 	"github.com/leg100/otf/internal/user"
 	"time"
 )
@@ -143,9 +143,9 @@ func profileActions() templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var6 templ.SafeURL
-		templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinURLErrs(paths.Logout())
+		templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinURLErrs(path.Logout())
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/user/ui/templates.templ`, Line: 41, Col: 30}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/user/ui/templates.templ`, Line: 41, Col: 29}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 		if templ_7745c5c3_Err != nil {
@@ -219,9 +219,9 @@ func newToken() templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var9 templ.SafeURL
-		templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinURLErrs(paths.CreateToken())
+		templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinURLErrs(path.CreateToken())
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/user/ui/templates.templ`, Line: 56, Col: 63}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/user/ui/templates.templ`, Line: 56, Col: 62}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 		if templ_7745c5c3_Err != nil {
@@ -293,9 +293,9 @@ func tokenListActions() templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var12 templ.SafeURL
-		templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinURLErrs(paths.NewToken())
+		templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinURLErrs(path.NewToken())
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/user/ui/templates.templ`, Line: 75, Col: 32}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/user/ui/templates.templ`, Line: 75, Col: 31}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 		if templ_7745c5c3_Err != nil {
@@ -400,9 +400,9 @@ func (t tokensTable) Row(token *user.UserToken) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var17 templ.SafeURL
-		templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinURLErrs(paths.DeleteToken())
+		templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinURLErrs(path.DeleteToken())
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/user/ui/templates.templ`, Line: 101, Col: 60}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/user/ui/templates.templ`, Line: 101, Col: 59}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 		if templ_7745c5c3_Err != nil {

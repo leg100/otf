@@ -9,9 +9,9 @@ import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
 import (
+	"github.com/leg100/otf/internal/path"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runstatus"
-	"github.com/leg100/otf/internal/ui/paths"
 	"strings"
 )
 
@@ -88,9 +88,9 @@ func RunStatusBadge(runID resource.TfeID, status runstatus.Status) templ.Compone
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var5 templ.SafeURL
-		templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinURLErrs(paths.Run(runID))
+		templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinURLErrs(path.Get(runID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/helpers/view.templ`, Line: 28, Col: 28}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/helpers/view.templ`, Line: 28, Col: 27}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 		if templ_7745c5c3_Err != nil {
@@ -103,7 +103,7 @@ func RunStatusBadge(runID resource.TfeID, status runstatus.Status) templ.Compone
 		var templ_7745c5c3_Var6 string
 		templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(strings.ReplaceAll(string(status), "_", " "))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/helpers/view.templ`, Line: 28, Col: 77}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/helpers/view.templ`, Line: 28, Col: 76}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 		if templ_7745c5c3_Err != nil {

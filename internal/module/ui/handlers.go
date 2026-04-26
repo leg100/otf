@@ -13,7 +13,7 @@ import (
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/ui/helpers"
-	"github.com/leg100/otf/internal/ui/paths"
+	"github.com/leg100/otf/internal/path"
 	"github.com/leg100/otf/internal/vcs"
 )
 
@@ -147,7 +147,7 @@ func (h *Handlers) getModule(w http.ResponseWriter, r *http.Request) {
 		r,
 		helpers.WithOrganization(mod.Organization),
 		helpers.WithBreadcrumbs(
-			helpers.Breadcrumb{Name: "Modules", Link: paths.Modules(mod.Organization)},
+			helpers.Breadcrumb{Name: "Modules", Link: path.List(resource.ModuleKind, mod.Organization)},
 			helpers.Breadcrumb{Name: mod.Name},
 		),
 	)
@@ -176,7 +176,7 @@ func (h *Handlers) newModule(w http.ResponseWriter, r *http.Request) {
 		r,
 		helpers.WithOrganization(params.Organization),
 		helpers.WithBreadcrumbs(
-			helpers.Breadcrumb{Name: "Modules", Link: paths.Modules(params.Organization)},
+			helpers.Breadcrumb{Name: "Modules", Link: path.List(resource.ModuleKind, params.Organization)},
 			helpers.Breadcrumb{Name: "new"},
 		),
 	)
@@ -235,7 +235,7 @@ func (h *Handlers) connectModule(w http.ResponseWriter, r *http.Request) {
 		r,
 		helpers.WithOrganization(provider.Organization),
 		helpers.WithBreadcrumbs(
-			helpers.Breadcrumb{Name: "Modules", Link: paths.Modules(provider.Organization)},
+			helpers.Breadcrumb{Name: "Modules", Link: path.List(resource.ModuleKind, provider.Organization)},
 			helpers.Breadcrumb{Name: "new"},
 		),
 	)
@@ -264,7 +264,7 @@ func (h *Handlers) publishModule(w http.ResponseWriter, r *http.Request) {
 	}
 
 	helpers.FlashSuccess(w, "published module: "+mod.Name)
-	http.Redirect(w, r, paths.Module(mod.ID), http.StatusFound)
+	http.Redirect(w, r, path.Get(mod.ID), http.StatusFound)
 }
 
 func (h *Handlers) deleteModule(w http.ResponseWriter, r *http.Request) {
@@ -281,5 +281,5 @@ func (h *Handlers) deleteModule(w http.ResponseWriter, r *http.Request) {
 	}
 
 	helpers.FlashSuccess(w, "deleted module: "+deleted.Name)
-	http.Redirect(w, r, paths.Modules(deleted.Organization), http.StatusFound)
+	http.Redirect(w, r, path.List(resource.ModuleKind, deleted.Organization), http.StatusFound)
 }

@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal/github/testserver"
-	"github.com/leg100/otf/internal/ui/paths"
+	"github.com/leg100/otf/internal/path"
 	"github.com/leg100/otf/internal/user"
 	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/require"
@@ -24,7 +24,7 @@ func TestGithubLogin(t *testing.T) {
 
 	browser.New(t, nil, func(page playwright.Page) {
 		// go to login page
-		_, err := page.Goto(daemon.URL(paths.Login()))
+		_, err := page.Goto(daemon.URL(path.Login()))
 		require.NoError(t, err)
 		screenshot(t, page, "github_login_button")
 

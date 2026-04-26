@@ -10,8 +10,8 @@ import templruntime "github.com/a-h/templ/runtime"
 
 import (
 	"github.com/leg100/otf/internal/authz"
+	"github.com/leg100/otf/internal/path"
 	"github.com/leg100/otf/internal/resource"
-	"github.com/leg100/otf/internal/ui/paths"
 )
 
 func editAdvanced(workspaceID resource.ID, authorizer authz.Interface) templ.Component {
@@ -40,9 +40,9 @@ func editAdvanced(workspaceID resource.ID, authorizer authz.Interface) templ.Com
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var2 templ.SafeURL
-		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinURLErrs(paths.StartRunWorkspace(workspaceID))
+		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinURLErrs(path.Resource(resource.Action("start-run"), workspaceID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/ui/view_advanced.templ`, Line: 11, Col: 53}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/ui/view_advanced.templ`, Line: 11, Col: 73}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 		if templ_7745c5c3_Err != nil {
@@ -58,9 +58,9 @@ func editAdvanced(workspaceID resource.ID, authorizer authz.Interface) templ.Com
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var3 templ.SafeURL
-			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinURLErrs(paths.DeleteWorkspace(workspaceID))
+			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinURLErrs(path.Delete(workspaceID))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/ui/view_advanced.templ`, Line: 18, Col: 52}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/ui/view_advanced.templ`, Line: 18, Col: 42}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 			if templ_7745c5c3_Err != nil {

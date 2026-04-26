@@ -7,7 +7,7 @@ import (
 
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/resource"
-	"github.com/leg100/otf/internal/ui/paths"
+	"github.com/leg100/otf/internal/path"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -34,7 +34,7 @@ func TestService_StartSession(t *testing.T) {
 	assert.Equal(t, 302, w.Code)
 	loc, err := w.Result().Location()
 	require.NoError(t, err)
-	assert.Equal(t, paths.Profile(), loc.Path)
+	assert.Equal(t, path.Profile(), loc.Path)
 }
 
 type fakeSessionClient struct{}

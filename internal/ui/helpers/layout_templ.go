@@ -11,8 +11,8 @@ import templruntime "github.com/a-h/templ/runtime"
 import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
+	"github.com/leg100/otf/internal/path"
 	"github.com/leg100/otf/internal/resource"
-	"github.com/leg100/otf/internal/ui/paths"
 )
 
 type Breadcrumb struct {
@@ -508,9 +508,9 @@ func navbar(organization resource.ID, workspace *resource.Info) templ.Component 
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var22 templ.SafeURL
-			templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.JoinURLErrs(paths.Organization(organization))
+			templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.JoinURLErrs(path.Get(organization))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/helpers/layout.templ`, Line: 160, Col: 76}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/helpers/layout.templ`, Line: 160, Col: 66}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var22))
 			if templ_7745c5c3_Err != nil {
@@ -591,9 +591,9 @@ func navbar(organization resource.ID, workspace *resource.Info) templ.Component 
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var27 templ.SafeURL
-			templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinURLErrs(paths.Organizations())
+			templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinURLErrs(path.List(resource.OrganizationKind, nil))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/helpers/layout.templ`, Line: 214, Col: 70}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/helpers/layout.templ`, Line: 214, Col: 90}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var27))
 			if templ_7745c5c3_Err != nil {
@@ -604,9 +604,9 @@ func navbar(organization resource.ID, workspace *resource.Info) templ.Component 
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var28 templ.SafeURL
-			templ_7745c5c3_Var28, templ_7745c5c3_Err = templ.JoinURLErrs(paths.Admin())
+			templ_7745c5c3_Var28, templ_7745c5c3_Err = templ.JoinURLErrs(path.Admin())
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/helpers/layout.templ`, Line: 217, Col: 62}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/helpers/layout.templ`, Line: 217, Col: 61}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var28))
 			if templ_7745c5c3_Err != nil {
@@ -617,9 +617,9 @@ func navbar(organization resource.ID, workspace *resource.Info) templ.Component 
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var29 templ.SafeURL
-			templ_7745c5c3_Var29, templ_7745c5c3_Err = templ.JoinURLErrs(paths.Profile())
+			templ_7745c5c3_Var29, templ_7745c5c3_Err = templ.JoinURLErrs(path.Profile())
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/helpers/layout.templ`, Line: 220, Col: 64}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/helpers/layout.templ`, Line: 220, Col: 63}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var29))
 			if templ_7745c5c3_Err != nil {
@@ -698,9 +698,9 @@ func footer() templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var32 templ.SafeURL
-			templ_7745c5c3_Var32, templ_7745c5c3_Err = templ.JoinURLErrs(paths.AdminLogin())
+			templ_7745c5c3_Var32, templ_7745c5c3_Err = templ.JoinURLErrs(path.AdminLogin())
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/helpers/layout.templ`, Line: 243, Col: 46}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/helpers/layout.templ`, Line: 243, Col: 45}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var32))
 			if templ_7745c5c3_Err != nil {

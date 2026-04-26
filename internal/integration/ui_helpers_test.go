@@ -10,7 +10,7 @@ import (
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
-	"github.com/leg100/otf/internal/ui/paths"
+	"github.com/leg100/otf/internal/path"
 	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/require"
 )
@@ -20,7 +20,7 @@ import (
 func createWorkspace(t *testing.T, page playwright.Page, daemon *testDaemon, org organization.Name, name string) string {
 	t.Helper()
 
-	_, err := page.Goto(daemon.URL(paths.Organization(org)))
+	_, err := page.Goto(daemon.URL(path.Get(org)))
 	require.NoError(t, err)
 
 	err = page.Locator("#menu-item-workspaces > a").Click()

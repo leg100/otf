@@ -10,9 +10,9 @@ import templruntime "github.com/a-h/templ/runtime"
 
 import (
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/path"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/ui/helpers"
-	"github.com/leg100/otf/internal/ui/paths"
 	"github.com/leg100/otf/internal/vcs"
 	"time"
 )
@@ -97,9 +97,9 @@ func (t Table) Row(provider *vcs.Provider) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var4 templ.SafeURL
-		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinURLErrs(paths.EditVCSProvider(provider.ID))
+		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinURLErrs(path.Edit(provider.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/vcs/ui/table.templ`, Line: 28, Col: 61}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/vcs/ui/table.templ`, Line: 28, Col: 49}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 		if templ_7745c5c3_Err != nil {

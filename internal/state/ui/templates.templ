@@ -5,7 +5,7 @@ import (
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/state"
 	"github.com/leg100/otf/internal/ui/helpers"
-	"github.com/leg100/otf/internal/ui/paths"
+	"github.com/leg100/otf/internal/path"
 )
 
 templ getState(f *state.File) {
@@ -109,7 +109,7 @@ templ (t stateVersionsTable) Row(sv *state.Version) {
 	{{ isCurrent := t.currentID != nil && sv.ID == *t.currentID }}
 	<tr id={ "item-state-version-" + sv.ID.String() }>
 		<td>
-			<a class="link" href={ paths.StateVersion(sv.ID) }>
+			<a class="link" href={ path.Get(sv.ID) }>
 				{ sv.ID.String() }
 			</a>
 			if isCurrent {
@@ -126,10 +126,10 @@ templ (t stateVersionsTable) Row(sv *state.Version) {
 			<span class="badge badge-sm badge-ghost">{ string(sv.Status) }</span>
 		</td>
 		<td class="flex gap-2 justify-end">
-			<a href={ templ.URL(paths.StateVersion(sv.ID)) } class="btn btn-xs btn-ghost">View</a>
-			<a href={ templ.URL(paths.DiffStateVersion(sv.ID)) } class="btn btn-xs btn-ghost">Diff</a>
+			<a href={ templ.URL(path.Get(sv.ID)) } class="btn btn-xs btn-ghost">View</a>
+			<a href={ templ.URL(path.Resource(resource.Action("diff"), sv.ID)) } class="btn btn-xs btn-ghost">Diff</a>
 			if !isCurrent {
-				<form action={ paths.RollbackStateVersion(sv.ID) } method="POST">
+				<form action={ path.Resource(resource.Action("rollback"), sv.ID) } method="POST">
 					<button
 						class="btn btn-xs btn-primary btn-soft"
 						id="rollback-state-version-button"
@@ -138,7 +138,7 @@ templ (t stateVersionsTable) Row(sv *state.Version) {
 						Rollback
 					</button>
 				</form>
-				<form action={ paths.DeleteStateVersion(sv.ID) } method="POST">
+				<form action={ path.Delete(sv.ID) } method="POST">
 					<button
 						class="btn btn-xs btn-error btn-outline"
 						id="delete-state-version-button"

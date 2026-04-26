@@ -5,7 +5,7 @@ import (
 
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/runstatus"
-	"github.com/leg100/otf/internal/ui/paths"
+	"github.com/leg100/otf/internal/path"
 	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/require"
 )
@@ -25,7 +25,7 @@ func TestIntegration_RetryRunUI(t *testing.T) {
 
 	// open browser, go to run, and click retry
 	browser.New(t, ctx, func(page playwright.Page) {
-		_, err := page.Goto(daemon.URL(paths.Run(r.ID)))
+		_, err := page.Goto(daemon.URL(path.Get(r.ID)))
 		require.NoError(t, err)
 		// run should be in planned and finished state
 		err = expect.Locator(page.Locator(`//a[text()='planned and finished']`)).ToBeVisible()

@@ -5,13 +5,13 @@ import (
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/ui/helpers"
-	"github.com/leg100/otf/internal/ui/paths"
+	"github.com/leg100/otf/internal/path"
 	"github.com/leg100/otf/internal/user"
 	userui "github.com/leg100/otf/internal/user/ui"
 )
 
 templ newTeamView(organization organization.Name) {
-	<form class="flex flex-col gap-2" action={ paths.CreateTeam(organization) } method="POST">
+	<form class="flex flex-col gap-2" action={ path.Create(resource.TeamKind, organization) } method="POST">
 		<div class="field">
 			<label for="name">Name</label>
 			<input class="input w-80" type="text" name="name" id="name" required/>
@@ -46,7 +46,7 @@ templ (t teamTable) Header() {
 templ (t teamTable) Row(tm *team.Team) {
 	<tr id={ "item-team-" + tm.Name }>
 		<td>
-			<a class="link" href={ paths.Team(tm.ID) }>
+			<a class="link" href={ path.Get(tm.ID) }>
 				{ tm.Name }
 			</a>
 		</td>
@@ -58,7 +58,7 @@ templ (t teamTable) Row(tm *team.Team) {
 
 templ listTeamsActions(props listTeamsProps) {
 	if props.canCreateTeam {
-		<form action={ paths.NewTeam(props.organization) } method="GET">
+		<form action={ path.New(resource.TeamKind, props.organization) } method="GET">
 			<button class="btn" id="new-team-button">
 				New Team
 			</button>
@@ -80,7 +80,7 @@ type getTeamProps struct {
 templ getTeam(props getTeamProps) {
 	if props.canUpdateTeam {
 		<h3 class="font-semibold my-2 text-lg">Permissions</h3>
-		<form class="flex flex-col gap-5" action={ paths.UpdateTeam(props.team.ID) } method="POST">
+		<form class="flex flex-col gap-5" action={ path.Update(props.team.ID) } method="POST">
 			<div class="form-checkbox">
 				<input
 					type="checkbox"
@@ -149,7 +149,7 @@ templ getTeam(props getTeamProps) {
 	if !props.team.IsOwners() && props.canDeleteTeam {
 		<hr class="my-4"/>
 		<h3 class="font-semibold my-2 text-lg">Advanced</h3>
-		<form action={ paths.DeleteTeam(props.team.ID) } method="POST">
+		<form action={ path.Delete(props.team.ID) } method="POST">
 			<button class="btn btn-error btn-outline" onclick="return confirm('Are you sure you want to delete?')">
 				Delete team
 			</button>

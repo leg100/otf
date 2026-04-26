@@ -15,7 +15,7 @@ import (
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/ui/helpers"
-	"github.com/leg100/otf/internal/ui/paths"
+	"github.com/leg100/otf/internal/path"
 	"github.com/leg100/otf/internal/vcs"
 )
 
@@ -86,9 +86,9 @@ func (h *Handlers) newGithubApp(w http.ResponseWriter, r *http.Request) {
 	m := manifest{
 		Name:        "otf-" + internal.GenerateRandomString(4),
 		URL:         h.Hostnames.URL(""),
-		SetupURL:    h.Hostnames.URL(paths.GithubApps()),
+		SetupURL:    h.Hostnames.URL(path.GithubApps()),
 		HookAttrs:   hookAttrs{URL: h.Hostnames.WebhookURL(github.AppEventsPath)},
-		Redirect:    h.Hostnames.URL(paths.ExchangeCodeGithubApp()),
+		Redirect:    h.Hostnames.URL(path.ExchangeCodeGithubApp()),
 		Description: "Trigger terraform runs in OTF from GitHub",
 		Events:      []string{"push", "pull_request"},
 		Public:      false,
@@ -193,7 +193,7 @@ func (h *Handlers) exchangeCodeGithubApp(w http.ResponseWriter, r *http.Request)
 	}
 
 	helpers.FlashSuccess(w, "created github app: "+cfg.GetSlug())
-	http.Redirect(w, r, paths.GithubApps(), http.StatusFound)
+	http.Redirect(w, r, path.GithubApps(), http.StatusFound)
 }
 
 func (h *Handlers) deleteGithubApp(w http.ResponseWriter, r *http.Request) {
@@ -214,7 +214,7 @@ func (h *Handlers) deleteGithubApp(w http.ResponseWriter, r *http.Request) {
 	}
 	helpers.FlashSuccess(w, buf.String())
 
-	http.Redirect(w, r, paths.GithubApps(), http.StatusFound)
+	http.Redirect(w, r, path.GithubApps(), http.StatusFound)
 }
 
 func (h *Handlers) deleteGithubAppInstall(w http.ResponseWriter, r *http.Request) {
@@ -231,5 +231,5 @@ func (h *Handlers) deleteGithubAppInstall(w http.ResponseWriter, r *http.Request
 		return
 	}
 	helpers.FlashSuccess(w, fmt.Sprintf("deleted installation: %d", params.InstallID))
-	http.Redirect(w, r, paths.GithubApps(), http.StatusFound)
+	http.Redirect(w, r, path.GithubApps(), http.StatusFound)
 }

@@ -12,9 +12,9 @@ import (
 	"errors"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/organization"
+	"github.com/leg100/otf/internal/path"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/ui/helpers"
-	"github.com/leg100/otf/internal/ui/paths"
 	"github.com/leg100/otf/internal/vcs"
 )
 
@@ -55,9 +55,9 @@ func list(props listProps) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var2 templ.SafeURL
-			templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinURLErrs(paths.NewVCSProvider(props.organization))
+			templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinURLErrs(path.New(resource.VCSProviderKind, props.organization))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/vcs/ui/templates.templ`, Line: 25, Col: 58}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/vcs/ui/templates.templ`, Line: 25, Col: 72}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 			if templ_7745c5c3_Err != nil {
@@ -147,9 +147,9 @@ func tableAction(vcsProviderID resource.TfeID) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var6 templ.SafeURL
-		templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinURLErrs(paths.EditVCSProvider(vcsProviderID))
+		templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinURLErrs(path.Edit(vcsProviderID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/vcs/ui/templates.templ`, Line: 43, Col: 75}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/vcs/ui/templates.templ`, Line: 43, Col: 63}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 		if templ_7745c5c3_Err != nil {
@@ -208,7 +208,7 @@ func edit(provider *vcs.Provider) templ.Component {
 		templ_7745c5c3_Err = vcsForm(vcsFormProps{
 			provider: provider,
 			edit:     true,
-			action:   paths.UpdateVCSProvider(provider.ID),
+			action:   path.Update(provider.ID),
 		}).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
@@ -218,9 +218,9 @@ func edit(provider *vcs.Provider) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var9 templ.SafeURL
-		templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinURLErrs(paths.DeleteVCSProvider(provider.ID))
+		templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinURLErrs(path.Delete(provider.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/vcs/ui/templates.templ`, Line: 57, Col: 52}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/vcs/ui/templates.templ`, Line: 57, Col: 40}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 		if templ_7745c5c3_Err != nil {
@@ -262,7 +262,7 @@ func newProvider(props newProviderProps) templ.Component {
 		ctx = templ.ClearChildren(ctx)
 		templ_7745c5c3_Err = vcsForm(vcsFormProps{
 			provider: &vcs.Provider{Kind: props.kind},
-			action:   paths.CreateVCSProvider(props.organization),
+			action:   path.Create(resource.VCSProviderKind, props.organization),
 			edit:     false,
 		}).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
@@ -343,9 +343,9 @@ func vcsForm(props vcsFormProps) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var13 templ.SafeURL
-			templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinURLErrs(paths.NewGithubApp())
+			templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinURLErrs(path.NewGithubApp())
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/vcs/ui/templates.templ`, Line: 105, Col: 86}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/vcs/ui/templates.templ`, Line: 105, Col: 85}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 			if templ_7745c5c3_Err != nil {

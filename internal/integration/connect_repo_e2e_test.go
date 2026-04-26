@@ -6,7 +6,7 @@ import (
 	"github.com/leg100/otf/internal/github/testserver"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/testutils"
-	"github.com/leg100/otf/internal/ui/paths"
+	"github.com/leg100/otf/internal/path"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/require"
@@ -88,7 +88,7 @@ func TestConnectRepoE2E(t *testing.T) {
 		// delete vcs provider
 		//
 		// go to org
-		_, err = page.Goto(daemon.URL(paths.Organization(org.Name)))
+		_, err = page.Goto(daemon.URL(path.Get(org.Name)))
 		require.NoError(t, err)
 		// go to vcs providers
 		err = page.Locator("#menu-item-vcs-providers > a").Click()

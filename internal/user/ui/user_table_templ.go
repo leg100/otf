@@ -9,9 +9,9 @@ import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
 import (
+	"github.com/leg100/otf/internal/path"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/ui/helpers"
-	"github.com/leg100/otf/internal/ui/paths"
 	"github.com/leg100/otf/internal/user"
 )
 
@@ -135,9 +135,9 @@ func (t UserTable) Row(user *user.User) templ.Component {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var5 templ.SafeURL
-				templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinURLErrs(paths.RemoveMemberTeam(t.TeamID))
+				templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinURLErrs(path.Resource(resource.Action("remove-member"), t.TeamID))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/user/ui/user_table.templ`, Line: 42, Col: 52}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/user/ui/user_table.templ`, Line: 42, Col: 77}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 				if templ_7745c5c3_Err != nil {

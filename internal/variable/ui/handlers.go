@@ -13,7 +13,7 @@ import (
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/ui/helpers"
-	"github.com/leg100/otf/internal/ui/paths"
+	"github.com/leg100/otf/internal/path"
 	"github.com/leg100/otf/internal/variable"
 	"github.com/leg100/otf/internal/workspace"
 )
@@ -158,7 +158,7 @@ func (h *Handlers) createWorkspaceVariable(w http.ResponseWriter, r *http.Reques
 	}
 
 	helpers.FlashSuccess(w, "added variable: "+variable.Key)
-	http.Redirect(w, r, paths.Variables(params.WorkspaceID), http.StatusFound)
+	http.Redirect(w, r, path.List(resource.VariableKind, params.WorkspaceID), http.StatusFound)
 }
 
 func (h *Handlers) listWorkspaceVariables(w http.ResponseWriter, r *http.Request) {
@@ -240,7 +240,7 @@ func (h *Handlers) listWorkspaceVariables(w http.ResponseWriter, r *http.Request
 		r,
 		helpers.WithWorkspace(ws, h.authorizer),
 		helpers.WithBreadcrumbs(
-			helpers.Breadcrumb{Name: "Variables", Link: paths.Variables(ws.ID)},
+			helpers.Breadcrumb{Name: "Variables", Link: path.List(resource.VariableKind, ws.ID)},
 		),
 		helpers.WithContentActions(h.templates.newWorkspaceVariableButton(ws.ID)),
 	)
@@ -301,7 +301,7 @@ func (h *Handlers) updateWorkspaceVariable(w http.ResponseWriter, r *http.Reques
 	}
 
 	helpers.FlashSuccess(w, "updated variable: "+wv.Key)
-	http.Redirect(w, r, paths.Variables(wv.WorkspaceID), http.StatusFound)
+	http.Redirect(w, r, path.List(resource.VariableKind, wv.WorkspaceID), http.StatusFound)
 }
 
 func (h *Handlers) deleteWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
@@ -318,7 +318,7 @@ func (h *Handlers) deleteWorkspaceVariable(w http.ResponseWriter, r *http.Reques
 	}
 
 	helpers.FlashSuccess(w, "deleted variable: "+wv.Key)
-	http.Redirect(w, r, paths.Variables(wv.WorkspaceID), http.StatusFound)
+	http.Redirect(w, r, path.List(resource.VariableKind, wv.WorkspaceID), http.StatusFound)
 }
 
 func (h *Handlers) listVariableSets(w http.ResponseWriter, r *http.Request) {
@@ -379,7 +379,7 @@ func (h *Handlers) newVariableSet(w http.ResponseWriter, r *http.Request) {
 		r,
 		helpers.WithOrganization(props.organization),
 		helpers.WithBreadcrumbs(
-			helpers.Breadcrumb{Name: "Variable Sets", Link: paths.VariableSets(props.organization)},
+			helpers.Breadcrumb{Name: "Variable Sets", Link: path.List(resource.VariableSetKind, props.organization)},
 			helpers.Breadcrumb{Name: "new"},
 		),
 	)
@@ -420,7 +420,7 @@ func (h *Handlers) createVariableSet(w http.ResponseWriter, r *http.Request) {
 	}
 
 	helpers.FlashSuccess(w, "added variable set: "+set.Name)
-	http.Redirect(w, r, paths.EditVariableSet(set.ID), http.StatusFound)
+	http.Redirect(w, r, path.Edit(set.ID), http.StatusFound)
 }
 
 func (h *Handlers) editVariableSet(w http.ResponseWriter, r *http.Request) {
@@ -478,7 +478,7 @@ func (h *Handlers) editVariableSet(w http.ResponseWriter, r *http.Request) {
 		r,
 		helpers.WithOrganization(set.Organization),
 		helpers.WithBreadcrumbs(
-			helpers.Breadcrumb{Name: "Variable Sets", Link: paths.VariableSets(set.Organization)},
+			helpers.Breadcrumb{Name: "Variable Sets", Link: path.List(resource.VariableSetKind, set.Organization)},
 			helpers.Breadcrumb{Name: set.Name},
 			helpers.Breadcrumb{Name: "edit"},
 		),
@@ -520,7 +520,7 @@ func (h *Handlers) updateVariableSet(w http.ResponseWriter, r *http.Request) {
 	}
 
 	helpers.FlashSuccess(w, "updated variable set: "+set.Name)
-	http.Redirect(w, r, paths.EditVariableSet(set.ID), http.StatusFound)
+	http.Redirect(w, r, path.Edit(set.ID), http.StatusFound)
 }
 
 func (h *Handlers) deleteVariableSet(w http.ResponseWriter, r *http.Request) {
@@ -537,7 +537,7 @@ func (h *Handlers) deleteVariableSet(w http.ResponseWriter, r *http.Request) {
 	}
 
 	helpers.FlashSuccess(w, "deleted variable set: "+set.Name)
-	http.Redirect(w, r, paths.VariableSets(set.Organization), http.StatusFound)
+	http.Redirect(w, r, path.List(resource.VariableSetKind, set.Organization), http.StatusFound)
 }
 
 func (h *Handlers) newVariableSetVariable(w http.ResponseWriter, r *http.Request) {
@@ -560,8 +560,8 @@ func (h *Handlers) newVariableSetVariable(w http.ResponseWriter, r *http.Request
 		r,
 		helpers.WithOrganization(set.Organization),
 		helpers.WithBreadcrumbs(
-			helpers.Breadcrumb{Name: "Variable Sets", Link: paths.VariableSets(set.Organization)},
-			helpers.Breadcrumb{Name: set.Name, Link: paths.VariableSet(set.ID)},
+			helpers.Breadcrumb{Name: "Variable Sets", Link: path.List(resource.VariableSetKind, set.Organization)},
+			helpers.Breadcrumb{Name: set.Name, Link: path.Get(set.ID)},
 			helpers.Breadcrumb{Name: "new variable"},
 		),
 	)
@@ -591,7 +591,7 @@ func (h *Handlers) createVariableSetVariable(w http.ResponseWriter, r *http.Requ
 	}
 
 	helpers.FlashSuccess(w, "added variable: "+variable.Key)
-	http.Redirect(w, r, paths.EditVariableSet(params.SetID), http.StatusFound)
+	http.Redirect(w, r, path.Edit(params.SetID), http.StatusFound)
 }
 
 func (h *Handlers) editVariableSetVariable(w http.ResponseWriter, r *http.Request) {
@@ -615,8 +615,8 @@ func (h *Handlers) editVariableSetVariable(w http.ResponseWriter, r *http.Reques
 		r,
 		helpers.WithOrganization(set.Organization),
 		helpers.WithBreadcrumbs(
-			helpers.Breadcrumb{Name: "Variable Sets", Link: paths.VariableSets(set.Organization)},
-			helpers.Breadcrumb{Name: set.Name, Link: paths.EditVariableSet(set.ID)},
+			helpers.Breadcrumb{Name: "Variable Sets", Link: path.List(resource.VariableSetKind, set.Organization)},
+			helpers.Breadcrumb{Name: set.Name, Link: path.Edit(set.ID)},
 			helpers.Breadcrumb{Name: "Variables"},
 			helpers.Breadcrumb{Name: v.ID.String()},
 			helpers.Breadcrumb{Name: "edit"},
@@ -646,7 +646,7 @@ func (h *Handlers) updateVariableSetVariable(w http.ResponseWriter, r *http.Requ
 	v := set.GetVariableByID(params.VariableID)
 
 	helpers.FlashSuccess(w, "updated variable: "+v.Key)
-	http.Redirect(w, r, paths.EditVariableSet(set.ID), http.StatusFound)
+	http.Redirect(w, r, path.Edit(set.ID), http.StatusFound)
 }
 
 func (h *Handlers) deleteVariableSetVariable(w http.ResponseWriter, r *http.Request) {
@@ -664,7 +664,7 @@ func (h *Handlers) deleteVariableSetVariable(w http.ResponseWriter, r *http.Requ
 	v := set.GetVariableByID(variableID)
 
 	helpers.FlashSuccess(w, "deleted variable: "+v.Key)
-	http.Redirect(w, r, paths.EditVariableSet(set.ID), http.StatusFound)
+	http.Redirect(w, r, path.Edit(set.ID), http.StatusFound)
 }
 
 func (h *Handlers) getAvailableWorkspaces(ctx context.Context, org organization.Name) ([]resource.Info, error) {

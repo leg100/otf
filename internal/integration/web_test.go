@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal/team"
-	"github.com/leg100/otf/internal/ui/paths"
+	"github.com/leg100/otf/internal/path"
 	userpkg "github.com/leg100/otf/internal/user"
 	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/require"
@@ -30,7 +30,7 @@ func TestWeb(t *testing.T) {
 		workspaceURL := createWorkspace(t, page, daemon, org.Name, "my-workspace")
 		// assign workspace manager role to devops team
 		// go to org
-		_, err = page.Goto(daemon.URL(paths.Organization(org.Name)))
+		_, err = page.Goto(daemon.URL(path.Get(org.Name)))
 		require.NoError(t, err)
 		// list teams
 		err = page.Locator("#menu-item-teams > a").Click()
@@ -53,7 +53,7 @@ func TestWeb(t *testing.T) {
 		// list users
 
 		// go to org
-		_, err = page.Goto(daemon.URL(paths.Organization(org.Name)))
+		_, err = page.Goto(daemon.URL(path.Get(org.Name)))
 		require.NoError(t, err)
 
 		// list users
@@ -66,7 +66,7 @@ func TestWeb(t *testing.T) {
 		// list team members
 
 		// go to org
-		_, err = page.Goto(daemon.URL(paths.Organization(org.Name)))
+		_, err = page.Goto(daemon.URL(path.Get(org.Name)))
 		require.NoError(t, err)
 
 		// list teams
