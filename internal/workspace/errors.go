@@ -16,6 +16,6 @@ var (
 	ErrTriggerPatternsAndAlwaysTrigger = errors.New("cannot specify both trigger-patterns and always-trigger")
 	ErrInvalidTriggerPattern           = errors.New("invalid trigger glob pattern")
 	ErrInvalidTagsRegex                = errors.New("invalid vcs tags regular expression")
-	ErrAgentExecutionModeWithoutPool   = errors.New("agent execution mode requires agent pool ID")
-	ErrNonAgentExecutionModeWithPool   = errors.New("agent pool ID can only be specified with agent execution mode")
+	ErrExecutionAgentModeWithoutPool   = errors.New("agent execution mode requires agent pool ID")
+	ErrNonExecutionAgentModeWithPool   = errors.New("agent pool ID can only be specified with agent execution mode")
 )

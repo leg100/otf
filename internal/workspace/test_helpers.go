@@ -29,7 +29,7 @@ func NewTestWorkspace(t *testing.T, opts *CreateOptions) *Workspace {
 
 	factory := &factory{
 		defaultEngine: engine.Default,
-		engines: &fakeReleasesService{
+		client: &fakeReleasesService{
 			latestVersion: "1.9.0",
 		},
 	}

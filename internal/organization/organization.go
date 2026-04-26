@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/execution"
 	"github.com/leg100/otf/internal/resource"
 )
 
@@ -16,10 +17,11 @@ const (
 type (
 	// Organization is an OTF organization, comprising workspaces, users, etc.
 	Organization struct {
-		ID        resource.TfeID `jsonapi:"primary,organizations" db:"organization_id"`
-		CreatedAt time.Time      `jsonapi:"attribute" json:"created-at" db:"created_at"`
-		UpdatedAt time.Time      `jsonapi:"attribute" json:"updated-at" db:"updated_at"`
-		Name      Name           `jsonapi:"attribute" json:"name" db:"name"`
+		ID                   resource.TfeID `jsonapi:"primary,organizations" db:"organization_id"`
+		CreatedAt            time.Time      `jsonapi:"attribute" json:"created-at" db:"created_at"`
+		UpdatedAt            time.Time      `jsonapi:"attribute" json:"updated-at" db:"updated_at"`
+		Name                 Name           `jsonapi:"attribute" json:"name" db:"name"`
+		DefaultExecutionMode execution.Mode `jsonapi:"attribute" json:"default-execution-mode" db:"default_execution_mode"`
 
 		// TFE fields that OTF does not support but persists merely to pass the
 		// go-tfe integration tests

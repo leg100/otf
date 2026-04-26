@@ -11,6 +11,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/engine"
+	"github.com/leg100/otf/internal/execution"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
@@ -111,7 +112,7 @@ func (a *tfe) createWorkspace(w http.ResponseWriter, r *http.Request) {
 		AutoApply:                  params.AutoApply,
 		AutoApplyRunTrigger:        params.AutoApplyRunTrigger,
 		Description:                params.Description,
-		ExecutionMode:              (*ExecutionMode)(params.ExecutionMode),
+		ExecutionMode:              (*execution.Mode)(params.ExecutionMode),
 		GlobalRemoteState:          params.GlobalRemoteState,
 		MigrationEnvironment:       params.MigrationEnvironment,
 		Name:                       params.Name,
@@ -142,9 +143,9 @@ func (a *tfe) createWorkspace(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if *params.Operations {
-			opts.ExecutionMode = new(RemoteExecutionMode)
+			opts.ExecutionMode = new(execution.RemoteMode)
 		} else {
-			opts.ExecutionMode = new(LocalExecutionMode)
+			opts.ExecutionMode = new(execution.LocalMode)
 		}
 	}
 	if params.VCSRepo != nil {
@@ -413,7 +414,7 @@ func (a *tfe) updateWorkspace(w http.ResponseWriter, r *http.Request, workspaceI
 		AutoApply:                  params.AutoApply,
 		AutoApplyRunTrigger:        params.AutoApplyRunTrigger,
 		Description:                params.Description,
-		ExecutionMode:              (*ExecutionMode)(params.ExecutionMode),
+		ExecutionMode:              (*execution.Mode)(params.ExecutionMode),
 		GlobalRemoteState:          params.GlobalRemoteState,
 		Name:                       params.Name,
 		QueueAllRuns:               params.QueueAllRuns,

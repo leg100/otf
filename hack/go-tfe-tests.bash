@@ -113,7 +113,7 @@ allBetaTests=$(join_by '|' "${betaTests[@]}")
 # TODO: temporarily fixed version of go-tfe to v1.38.0 to avoid latest changes
 # in v1.39.0 which introduce integration tests for features not yet supported
 # in OTF.
-dest_dir=$(go mod download -json github.com/hashicorp/go-tfe@v1.38.0 | jq -r '.Dir')
+dest_dir=$(go mod download -json github.com/hashicorp/go-tfe@v1.39.2 | jq -r '.Dir')
 echo "downloaded go-tfe module to $dest_dir"
 
 # some tests generate a tarball and save locally and need write perms

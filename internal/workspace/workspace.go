@@ -12,19 +12,14 @@ import (
 	"github.com/gobwas/glob"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/engine"
+	"github.com/leg100/otf/internal/execution"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/vcs"
 )
 
-const (
-	RemoteExecutionMode ExecutionMode = "remote"
-	LocalExecutionMode  ExecutionMode = "local"
-	AgentExecutionMode  ExecutionMode = "agent"
-
-	DefaultAllowDestroyPlan = true
-)
+const DefaultAllowDestroyPlan = true
 
 type (
 	// Workspace is a terraform workspace.
@@ -39,7 +34,7 @@ type (
 		CanQueueDestroyPlan        bool              `jsonapi:"attribute" json:"can_queue_destroy_plan"`
 		Description                string            `jsonapi:"attribute" json:"description"`
 		Environment                string            `jsonapi:"attribute" json:"environment"`
-		ExecutionMode              ExecutionMode     `jsonapi:"attribute" json:"execution_mode"`
+		ExecutionMode              execution.Mode    `jsonapi:"attribute" json:"execution_mode"`
 		GlobalRemoteState          bool              `jsonapi:"attribute" json:"global_remote_state"`
 		MigrationEnvironment       string            `jsonapi:"attribute" json:"migration_environment"`
 		Name                       string            `jsonapi:"attribute" json:"name"`
@@ -110,7 +105,7 @@ type (
 		AutoApply                  *bool
 		AutoApplyRunTrigger        *bool
 		Description                *string
-		ExecutionMode              *ExecutionMode
+		ExecutionMode              *execution.Mode
 		GlobalRemoteState          *bool
 		MigrationEnvironment       *string
 		Name                       *string
@@ -142,7 +137,7 @@ type (
 		AutoApplyRunTrigger        *bool
 		Name                       *string
 		Description                *string
-		ExecutionMode              *ExecutionMode `json:"execution-mode,omitempty"`
+		ExecutionMode              *execution.Mode `json:"execution-mode,omitempty"`
 		GlobalRemoteState          *bool
 		Operations                 *bool
 		QueueAllRuns               *bool
@@ -195,11 +190,12 @@ type (
 	// factory makes workspaces
 	factory struct {
 		defaultEngine *engine.Engine
-		engines       engineClient
+		client        factoryClient
 	}
 
-	engineClient interface {
+	factoryClient interface {
 		GetLatest(ctx context.Context, engine *engine.Engine) (string, time.Time, error)
+		GetOrganization(ctx context.Context, name organization.Name) (*organization.Organization, error)
 	}
 )
 
@@ -212,12 +208,17 @@ func (f *factory) NewWorkspace(ctx context.Context, opts CreateOptions) (*Worksp
 		return nil, internal.ErrRequiredOrg
 	}
 
+	org, err := f.client.GetOrganization(ctx, *opts.Organization)
+	if err != nil {
+		return nil, err
+	}
+
 	ws := Workspace{
 		ID:                 resource.NewTfeID("ws"),
 		CreatedAt:          internal.CurrentTimestamp(nil),
 		UpdatedAt:          internal.CurrentTimestamp(nil),
 		AllowDestroyPlan:   DefaultAllowDestroyPlan,
-		ExecutionMode:      RemoteExecutionMode,
+		ExecutionMode:      execution.RemoteMode,
 		Engine:             f.defaultEngine,
 		SpeculativeEnabled: true,
 		Organization:       *opts.Organization,
@@ -265,7 +266,7 @@ func (f *factory) NewWorkspace(ctx context.Context, opts CreateOptions) (*Worksp
 		ws.EngineVersion = opts.EngineVersion
 	} else {
 		// default to the current latest version of the engine.
-		latest, _, err := f.engines.GetLatest(ctx, ws.Engine)
+		latest, _, err := f.client.GetLatest(ctx, ws.Engine)
 		if err != nil {
 			return nil, fmt.Errorf("retrieving latest engine version: %w", err)
 		}
@@ -573,28 +574,28 @@ func (ws *Workspace) setName(name string) error {
 // setExecutionModeAndAgentPoolID sets the execution mode and/or the agent pool
 // ID. The two parameters are intimately related, hence the validation and
 // setting of the parameters is handled in tandem.
-func (ws *Workspace) setExecutionModeAndAgentPoolID(m *ExecutionMode, agentPoolID *resource.TfeID) (bool, error) {
+func (ws *Workspace) setExecutionModeAndAgentPoolID(m *execution.Mode, agentPoolID *resource.TfeID) (bool, error) {
 	if m == nil {
 		if agentPoolID == nil {
 			// neither specified; nothing more to be done
 			return false, nil
 		} else {
 			// agent pool ID can be set without specifying execution mode as long as
-			// existing execution mode is AgentExecutionMode
-			if ws.ExecutionMode != AgentExecutionMode {
-				return false, ErrNonAgentExecutionModeWithPool
+			// existing execution mode is execution.AgentMode
+			if ws.ExecutionMode != execution.AgentMode {
+				return false, ErrNonExecutionAgentModeWithPool
 			}
 		}
 	} else {
-		if *m == AgentExecutionMode {
+		if *m == execution.AgentMode {
 			if agentPoolID == nil {
-				return false, ErrAgentExecutionModeWithoutPool
+				return false, ErrExecutionAgentModeWithoutPool
 			}
 		} else {
 			// mode is either remote or local; in either case no pool ID should be
 			// provided
 			if agentPoolID != nil {
-				return false, ErrNonAgentExecutionModeWithPool
+				return false, ErrNonExecutionAgentModeWithPool
 			}
 		}
 	}

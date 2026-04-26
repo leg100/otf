@@ -12,6 +12,7 @@ import (
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/configversion/source"
 	"github.com/leg100/otf/internal/engine"
+	"github.com/leg100/otf/internal/execution"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runstatus"
@@ -42,31 +43,31 @@ type (
 
 	// Run is a terraform run.
 	Run struct {
-		ID                     resource.TfeID          `jsonapi:"primary,runs"`
-		CreatedAt              time.Time               `jsonapi:"attribute" json:"created_at"`
-		UpdatedAt              time.Time               `jsonapi:"attribute" json:"updated_at"`
-		IsDestroy              bool                    `jsonapi:"attribute" json:"is_destroy"`
-		CancelSignaledAt       *time.Time              `jsonapi:"attribute" json:"cancel_signaled_at"`
-		Message                string                  `jsonapi:"attribute" json:"message"`
-		Organization           organization.Name       `jsonapi:"attribute" json:"organization"`
-		Refresh                bool                    `jsonapi:"attribute" json:"refresh"`
-		RefreshOnly            bool                    `jsonapi:"attribute" json:"refresh_only"`
-		ReplaceAddrs           []string                `jsonapi:"attribute" json:"replace_addrs"`
-		PositionInQueue        int                     `jsonapi:"attribute" json:"position_in_queue"`
-		TargetAddrs            []string                `jsonapi:"attribute" json:"target_addrs"`
-		EngineVersion          string                  `jsonapi:"attribute" json:"engine_version"`
-		Engine                 *engine.Engine          `jsonapi:"attribute" json:"engine"`
-		AllowEmptyApply        bool                    `jsonapi:"attribute" json:"allow_empty_apply"`
-		AutoApply              bool                    `jsonapi:"attribute" json:"auto_apply"`
-		PlanOnly               bool                    `jsonapi:"attribute" json:"plan_only"`
-		Source                 source.Source           `jsonapi:"attribute" json:"source"`
-		Status                 runstatus.Status        `jsonapi:"attribute" json:"status"`
-		WorkspaceID            resource.TfeID          `jsonapi:"attribute" json:"workspace_id"`
-		ConfigurationVersionID resource.TfeID          `jsonapi:"attribute" json:"configuration_version_id"`
-		ExecutionMode          workspace.ExecutionMode `jsonapi:"attribute" json:"execution_mode"`
-		Variables              []Variable              `jsonapi:"attribute" json:"variables"`
-		Plan                   Phase                   `jsonapi:"attribute" json:"plan"`
-		Apply                  Phase                   `jsonapi:"attribute" json:"apply"`
+		ID                     resource.TfeID    `jsonapi:"primary,runs"`
+		CreatedAt              time.Time         `jsonapi:"attribute" json:"created_at"`
+		UpdatedAt              time.Time         `jsonapi:"attribute" json:"updated_at"`
+		IsDestroy              bool              `jsonapi:"attribute" json:"is_destroy"`
+		CancelSignaledAt       *time.Time        `jsonapi:"attribute" json:"cancel_signaled_at"`
+		Message                string            `jsonapi:"attribute" json:"message"`
+		Organization           organization.Name `jsonapi:"attribute" json:"organization"`
+		Refresh                bool              `jsonapi:"attribute" json:"refresh"`
+		RefreshOnly            bool              `jsonapi:"attribute" json:"refresh_only"`
+		ReplaceAddrs           []string          `jsonapi:"attribute" json:"replace_addrs"`
+		PositionInQueue        int               `jsonapi:"attribute" json:"position_in_queue"`
+		TargetAddrs            []string          `jsonapi:"attribute" json:"target_addrs"`
+		EngineVersion          string            `jsonapi:"attribute" json:"engine_version"`
+		Engine                 *engine.Engine    `jsonapi:"attribute" json:"engine"`
+		AllowEmptyApply        bool              `jsonapi:"attribute" json:"allow_empty_apply"`
+		AutoApply              bool              `jsonapi:"attribute" json:"auto_apply"`
+		PlanOnly               bool              `jsonapi:"attribute" json:"plan_only"`
+		Source                 source.Source     `jsonapi:"attribute" json:"source"`
+		Status                 runstatus.Status  `jsonapi:"attribute" json:"status"`
+		WorkspaceID            resource.TfeID    `jsonapi:"attribute" json:"workspace_id"`
+		ConfigurationVersionID resource.TfeID    `jsonapi:"attribute" json:"configuration_version_id"`
+		ExecutionMode          execution.Mode    `jsonapi:"attribute" json:"execution_mode"`
+		Variables              []Variable        `jsonapi:"attribute" json:"variables"`
+		Plan                   Phase             `jsonapi:"attribute" json:"plan"`
+		Apply                  Phase             `jsonapi:"attribute" json:"apply"`
 
 		// Timestamps of when a state transition occured. Ordered earliest
 		// first.

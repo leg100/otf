@@ -56,7 +56,7 @@ func NewService(opts Options) *Service {
 		connections: opts.ConnectionService,
 		factory: &factory{
 			defaultEngine: opts.DefaultEngine,
-			engines:       opts.EngineService,
+			client:        opts.EngineService,
 		},
 		broker: opts.Broker,
 	}

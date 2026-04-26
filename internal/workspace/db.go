@@ -10,6 +10,7 @@ import (
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/connections"
 	"github.com/leg100/otf/internal/engine"
+	"github.com/leg100/otf/internal/execution"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runstatus"
@@ -560,7 +561,7 @@ func scan(row pgx.CollectableRow) (*Workspace, error) {
 		CanQueueDestroyPlan        bool              `db:"can_queue_destroy_plan"`
 		Description                string            `db:"description"`
 		Environment                string            `db:"environment"`
-		ExecutionMode              ExecutionMode     `db:"execution_mode"`
+		ExecutionMode              execution.Mode    `db:"execution_mode"`
 		GlobalRemoteState          bool              `db:"global_remote_state"`
 		MigrationEnvironment       string            `db:"migration_environment"`
 		Name                       string            `db:"name"`

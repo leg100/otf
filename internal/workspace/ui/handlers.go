@@ -11,6 +11,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	enginepkg "github.com/leg100/otf/internal/engine"
+	"github.com/leg100/otf/internal/execution"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
@@ -349,13 +350,13 @@ func (h *Handlers) updateWorkspace(w http.ResponseWriter, r *http.Request) {
 		AutoApply             bool            `schema:"auto_apply"`
 		Name                  string
 		Description           string
-		ExecutionMode         workspace.ExecutionMode `schema:"execution_mode"`
-		Engine                *enginepkg.Engine       `schema:"engine"`
-		LatestEngineVersion   bool                    `schema:"latest_engine_version"`
-		SpecificEngineVersion *workspace.Version      `schema:"specific_engine_version"`
-		WorkingDirectory      string                  `schema:"working_directory"`
-		WorkspaceID           resource.TfeID          `schema:"workspace_id,required"`
-		GlobalRemoteState     bool                    `schema:"global_remote_state"`
+		ExecutionMode         execution.Mode     `schema:"execution_mode"`
+		Engine                *enginepkg.Engine  `schema:"engine"`
+		LatestEngineVersion   bool               `schema:"latest_engine_version"`
+		SpecificEngineVersion *workspace.Version `schema:"specific_engine_version"`
+		WorkingDirectory      string             `schema:"working_directory"`
+		WorkspaceID           resource.TfeID     `schema:"workspace_id,required"`
+		GlobalRemoteState     bool               `schema:"global_remote_state"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
@@ -377,7 +378,7 @@ func (h *Handlers) updateWorkspace(w http.ResponseWriter, r *http.Request) {
 		opts.EngineVersion = params.SpecificEngineVersion
 	}
 	// only set agent pool ID if execution mode is set to agent
-	if params.ExecutionMode == workspace.AgentExecutionMode {
+	if params.ExecutionMode == execution.AgentMode {
 		opts.AgentPoolID = params.AgentPoolID
 	}
 

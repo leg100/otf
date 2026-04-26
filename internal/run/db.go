@@ -12,12 +12,12 @@ import (
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/configversion/source"
 	"github.com/leg100/otf/internal/engine"
+	"github.com/leg100/otf/internal/execution"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/user"
-	"github.com/leg100/otf/internal/workspace"
 	"github.com/pkg/errors"
 )
 
@@ -839,7 +839,7 @@ func (db *pgdb) scan(row pgx.CollectableRow) (*Run, error) {
 			ApplyStatus            PhaseStatus                           `db:"apply_status"`
 			WorkspaceID            resource.TfeID                        `db:"workspace_id"`
 			ConfigurationVersionID resource.TfeID                        `db:"configuration_version_id"`
-			ExecutionMode          workspace.ExecutionMode               `db:"execution_mode"`
+			ExecutionMode          execution.Mode                        `db:"execution_mode"`
 			RunVariables           []runVariableModel                    `db:"run_variables"`
 			PlanResourceReport     *Report                               `db:"plan_resource_report"`
 			PlanOutputReport       *Report                               `db:"plan_output_report"`

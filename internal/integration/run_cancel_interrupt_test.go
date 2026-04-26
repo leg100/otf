@@ -9,6 +9,7 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/engine"
+	"github.com/leg100/otf/internal/execution"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/variable"
 	"github.com/leg100/otf/internal/workspace"
@@ -56,7 +57,7 @@ func TestIntegration_RunCancelInterrupt(t *testing.T) {
 	ws, err := daemon.Workspaces.CreateWorkspace(ctx, workspace.CreateOptions{
 		Name:          new("ws-1"),
 		Organization:  &org.Name,
-		ExecutionMode: internal.Ptr(workspace.AgentExecutionMode),
+		ExecutionMode: internal.Ptr(execution.AgentMode),
 		AgentPoolID:   &agent.AgentPool.ID,
 	})
 	require.NoError(t, err)

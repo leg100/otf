@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/leg100/otf/internal/execution"
 	otfhttp "github.com/leg100/otf/internal/http"
 
 	"github.com/leg100/otf/internal/organization"
@@ -131,7 +132,7 @@ func (a *CLI) workspaceEditCommand() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			name := args[0]
 			if mode != "" {
-				opts.ExecutionMode = (*ExecutionMode)(&mode)
+				opts.ExecutionMode = (*execution.Mode)(&mode)
 			}
 			// Set agent pool ID if user set it.
 			if cmd.Flags().Changed(poolIDFlag) {
