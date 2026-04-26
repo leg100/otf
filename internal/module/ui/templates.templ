@@ -3,10 +3,10 @@ package ui
 import (
 	"github.com/leg100/otf/internal/module"
 	"github.com/leg100/otf/internal/organization"
+	"github.com/leg100/otf/internal/path"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/ui"
 	"github.com/leg100/otf/internal/ui/helpers"
-	"github.com/leg100/otf/internal/path"
 	"github.com/leg100/otf/internal/vcs"
 	vcsui "github.com/leg100/otf/internal/vcs/ui"
 	"html/template"
@@ -32,7 +32,7 @@ templ newView(props newViewProps) {
 }
 
 templ selectVCSProviderAction(vcsProviderID resource.TfeID) {
-	<form action={ path.Resource(resource.Action("connect"), vcsProviderID) }>
+	<form action={ path.Resources(resource.Action("connect"), resource.ModuleKind, nil) }>
 		<input type="hidden" name="vcs_provider_id" value={ vcsProviderID.String() }/>
 		<button class="btn">Select</button>
 	</form>
