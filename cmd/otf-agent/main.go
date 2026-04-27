@@ -49,8 +49,12 @@ func run(ctx context.Context, args []string) error {
 			if err != nil {
 				return err
 			}
-			// if using the kubernetes executor then the server url should be
-			// set to the value of the --url flag
+			// If using the kubernetes executor then the server URL should be
+			// set to the value of the --url flag, because the kube config
+			// otherwise defaults to composing the URL from
+			// OTF_KUBERNETES_SERVICE_NAME, OTF_KUBERNETES_NAMESPACE, and
+			// OTF_KUBERNETES_SERVICE_PORT, which are not set in the agent's
+			// helm chart.
 			if config.ExecutorKind == runner.KubeExecutorKind {
 				config.KubeConfig.ServerURL = url
 			}
