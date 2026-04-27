@@ -13,6 +13,32 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// fakeOperationClientHostname is a minimal OperationClient stub that only
+// satisfies the Hostname() call used by resolveCredentialHostname.
+type fakeOperationClientHostname struct {
+	OperationClient
+	hostname string
+}
+
+func (f *fakeOperationClientHostname) Hostname() string { return f.hostname }
+
+func TestResolveCredentialHostname(t *testing.T) {
+	t.Run("uses CredentialHostname when set", func(t *testing.T) {
+		opts := OperationOptions{
+			Client:             &fakeOperationClientHostname{hostname: "internal.svc:8080"},
+			CredentialHostname: "app.otf.example.com",
+		}
+		assert.Equal(t, "app.otf.example.com", resolveCredentialHostname(opts))
+	})
+
+	t.Run("falls back to Client.Hostname when CredentialHostname is empty", func(t *testing.T) {
+		opts := OperationOptions{
+			Client: &fakeOperationClientHostname{hostname: "app.otf.example.com"},
+		}
+		assert.Equal(t, "app.otf.example.com", resolveCredentialHostname(opts))
+	})
+}
+
 func TestExecutor_execute(t *testing.T) {
 	t.Run("no options", func(t *testing.T) {
 		var got bytes.Buffer

@@ -72,12 +72,16 @@ var (
 	defaultKubeConfig kubeConfig
 )
 
-
 type kubeConfig struct {
-	Namespace      string
-	Image          string
-	ConfigPath     string
-	ServerURL      string
+	Namespace  string
+	Image      string
+	ConfigPath string
+	ServerURL  string
+	// Hostname is the public-facing OTF hostname (host:port) used to construct
+	// the TF_TOKEN_* credential env var inside the job pod. When set it
+	// overrides the hostname derived from ServerURL, which may be an internal
+	// Kubernetes service address that Terraform cannot use for authentication.
+	Hostname       string
 	ServiceAccount string
 	CachePVC       string
 	TTLAfterFinish time.Duration
@@ -279,6 +283,10 @@ func (s *kubeExecutor) SpawnOperation(ctx context.Context, _ *errgroup.Group, jo
 								{
 									Name:  "OTF_URL",
 									Value: s.Config.ServerURL,
+								},
+								{
+									Name:  "OTF_HOSTNAME",
+									Value: s.Config.Hostname,
 								},
 								{
 									Name:  "OTF_JOB_ID",
