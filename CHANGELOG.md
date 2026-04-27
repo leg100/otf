@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.6.0](https://github.com/leg100/otf/compare/v0.5.24...v0.6.0) (2026-04-27)
+
+
+### ⚠ BREAKING CHANGES
+
+* bump default terraform and tofu to latest version
+
+### Features
+
+* bump default terraform and tofu to latest version ([8a67e73](https://github.com/leg100/otf/commit/8a67e7342d3bc3a54aa4d1ab0e66d95b7fbb2d3e))
+
+
+### Bug Fixes
+
+* **tests:** terraform init test broke with new default version ([fe24f22](https://github.com/leg100/otf/commit/fe24f22f8075b00395ab06730802f125a1a345e4))
+
+
+### Miscellaneous
+
+* **agent:** add further comment on setting k8s server url ([7c48284](https://github.com/leg100/otf/commit/7c482845d4f5f17ca3ea450378ff6670ed2638c7))
+* bump helm charts with app version v0.5.24 ([2c860c9](https://github.com/leg100/otf/commit/2c860c922d532b89acd1109aa660c8be69551b30))
+* **test:** cover remote-state-sharing disabled case ([2bcafee](https://github.com/leg100/otf/commit/2bcafeeece97e8204a93cdf33e291a7731ba0383))
+
 ## [0.5.24](https://github.com/leg100/otf/compare/v0.5.23...v0.5.24) (2026-04-19)
 
 
