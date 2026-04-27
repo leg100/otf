@@ -109,6 +109,11 @@ type (
 		Job      *Job
 		JobToken []byte
 		Client   OperationClient
+		// CredentialHostname overrides Client.Hostname() when constructing the
+		// TF_TOKEN_* credential env var. Needed when the API client uses an
+		// internal address (e.g. a Kubernetes service URL) that differs from the
+		// public-facing OTF hostname that Terraform uses to look up credentials.
+		CredentialHostname string
 	}
 
 	// downloader downloads engine versions
@@ -142,7 +147,7 @@ func DoOperation(runnerCtx context.Context, g *errgroup.Group, opts OperationOpt
 
 	envs := defaultEnvs
 	// make token available to engine CLI
-	envs = append(envs, internal.CredentialEnv(opts.Client.Hostname(), opts.JobToken))
+	envs = append(envs, internal.CredentialEnv(resolveCredentialHostname(opts), opts.JobToken))
 
 	op := &operation{
 		Logger:   opts.Logger.WithValues("job", opts.Job),
@@ -167,6 +172,17 @@ func DoOperation(runnerCtx context.Context, g *errgroup.Group, opts OperationOpt
 	} else {
 		op.doAndFinish()
 	}
+}
+
+// resolveCredentialHostname returns the hostname to use when constructing the
+// TF_TOKEN_* environment variable. CredentialHostname takes precedence so that
+// callers (e.g. the kubernetes job pod) can supply the public-facing OTF
+// hostname when the API client is pointed at an internal address.
+func resolveCredentialHostname(opts OperationOptions) string {
+	if opts.CredentialHostname != "" {
+		return opts.CredentialHostname
+	}
+	return opts.Client.Hostname()
 }
 
 // doAndFinish executes the job and marks the job as complete with the

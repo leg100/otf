@@ -125,6 +125,53 @@ func TestKubeExecutor_SpawnOperation(t *testing.T) {
 	assert.Equal(t, map[string]string{"jobToken": "token"}, secretsClient.secret.StringData)
 }
 
+func TestKubeExecutor_SpawnOperation_Hostname(t *testing.T) {
+	containerEnv := func(t *testing.T, cfg kubeConfig) []corev1.EnvVar {
+		t.Helper()
+		executor, err := newKubeExecutor(logr.Discard(), defaultOperationConfig(), cfg)
+		require.NoError(t, err)
+
+		jobsClient := &fakeJobsClient{}
+		executor.jobs = jobsClient
+		executor.secrets = &fakeSecretsClient{}
+
+		job := &Job{
+			ID:           resource.NewTfeID(resource.JobKind),
+			RunID:        resource.NewTfeID(resource.RunKind),
+			Phase:        run.PlanPhase,
+			Status:       JobAllocated,
+			Organization: organization.NewTestName(t),
+			WorkspaceID:  resource.NewTfeID(resource.WorkspaceKind),
+			RunnerID:     new(resource.NewTfeID(resource.RunnerKind)),
+		}
+		require.NoError(t, executor.SpawnOperation(t.Context(), nil, job, []byte("token")))
+		return jobsClient.job.Spec.Template.Spec.Containers[0].Env
+	}
+
+	envValue := func(envs []corev1.EnvVar, name string) string {
+		for _, e := range envs {
+			if e.Name == name {
+				return e.Value
+			}
+		}
+		return ""
+	}
+
+	t.Run("propagates public hostname to OTF_HOSTNAME", func(t *testing.T) {
+		cfg := defaultKubeConfig
+		cfg.Hostname = "app.otf.example.com"
+		envs := containerEnv(t, cfg)
+		assert.Equal(t, "app.otf.example.com", envValue(envs, "OTF_HOSTNAME"))
+	})
+
+	t.Run("OTF_HOSTNAME is empty when Hostname not configured", func(t *testing.T) {
+		cfg := defaultKubeConfig
+		cfg.Hostname = ""
+		envs := containerEnv(t, cfg)
+		assert.Equal(t, "", envValue(envs, "OTF_HOSTNAME"))
+	})
+}
+
 type fakeSecretsClient struct {
 	secret *corev1.Secret
 }
