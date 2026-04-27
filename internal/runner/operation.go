@@ -109,6 +109,12 @@ type (
 		Job      *Job
 		JobToken []byte
 		Client   OperationClient
+		// CredentialHostname sets an additional TF_TOKEN_* credential env var
+		// alongside the one derived from Client.Hostname(). Needed when the API
+		// client uses an internal address (e.g. a Kubernetes service URL) that
+		// differs from the public-facing OTF hostname that Terraform uses to look
+		// up credentials.
+		CredentialHostname string
 	}
 
 	// downloader downloads engine versions
@@ -140,9 +146,7 @@ func DoOperation(runnerCtx context.Context, g *errgroup.Group, opts OperationOpt
 	// runner instead authenticates remotely via its job token).
 	ctx = authz.AddSubjectToContext(ctx, opts.Job)
 
-	envs := defaultEnvs
-	// make token available to engine CLI
-	envs = append(envs, internal.CredentialEnv(opts.Client.Hostname(), opts.JobToken))
+	envs := append(defaultEnvs, credentialEnvs(opts)...)
 
 	op := &operation{
 		Logger:   opts.Logger.WithValues("job", opts.Job),
@@ -390,6 +394,17 @@ type (
 
 	executionOptionFunc func(*executionOptions)
 )
+
+// credentialEnvs returns TF_TOKEN_* env vars for the job token. It always
+// includes an entry for the client's hostname, and adds a second entry for
+// CredentialHostname when it differs (e.g. internal k8s URL vs public hostname).
+func credentialEnvs(opts OperationOptions) []string {
+	envs := []string{internal.CredentialEnv(opts.Client.Hostname(), opts.JobToken)}
+	if opts.CredentialHostname != "" && opts.CredentialHostname != opts.Client.Hostname() {
+		envs = append(envs, internal.CredentialEnv(opts.CredentialHostname, opts.JobToken))
+	}
+	return envs
+}
 
 // redirectStdout redirects stdout to the destination path.
 func redirectStdout(dst string) executionOptionFunc {

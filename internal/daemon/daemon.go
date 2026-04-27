@@ -480,6 +480,9 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		DB:         db,
 	})
 
+	// Job pods also need a TF_TOKEN_* credential env var for the public hostname.
+	cfg.RunnerConfig.KubeConfig.Hostname = hostnameService.Hostname()
+
 	serverRunner, err := runner.New(
 		logger,
 		runnerService,
