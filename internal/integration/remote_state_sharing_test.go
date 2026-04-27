@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal"
+	runpkg "github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/assert"
@@ -89,4 +90,27 @@ output "remote_foo" {
 	if assert.Contains(t, got.Outputs, "remote_foo", got.Outputs) {
 		assert.Equal(t, `"bar"`, string(got.Outputs["remote_foo"].Value))
 	}
+
+	// Now this time deny state sharing, and create another run on the consumer
+	// workspace, which this time should error.
+	_, err = daemon.Workspaces.UpdateWorkspace(ctx, producer.ID, workspace.UpdateOptions{
+		GlobalRemoteState: new(false),
+	})
+	require.NoError(t, err)
+
+	// create run
+	consumerRun2 := daemon.createRun(t, ctx, consumer, consumerCV, nil)
+	planned = daemon.waitRunStatus(t, ctx, consumerRun2.ID, runstatus.Errored)
+
+	// get run logs
+	logs, err := daemon.Runs.GetChunk(ctx, runpkg.GetChunkOptions{
+		RunID: consumerRun2.ID,
+		Phase: runpkg.PlanPhase,
+	})
+	require.NoError(t, err)
+
+	// strip of ANSI codes
+	stripped := internal.StripAnsi(string(logs.Data))
+
+	assert.Contains(t, stripped, `Forbidden access to the resource is not permitted`)
 }
