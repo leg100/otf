@@ -26,9 +26,10 @@ type TFEAPI struct {
 type tfeClient interface {
 	CreateWorkspaceVariable(ctx context.Context, workspaceID resource.TfeID, opts CreateVariableOptions) (*Variable, error)
 	ListWorkspaceVariables(ctx context.Context, workspaceID resource.TfeID) ([]*Variable, error)
-	GetWorkspaceVariable(ctx context.Context, variableID resource.TfeID) (*WorkspaceVariable, error)
-	UpdateWorkspaceVariable(ctx context.Context, variableID resource.TfeID, opts UpdateVariableOptions) (*WorkspaceVariable, error)
-	DeleteWorkspaceVariable(ctx context.Context, variableID resource.TfeID) (*WorkspaceVariable, error)
+	GetVariable(ctx context.Context, variableID resource.TfeID) (*Variable, error)
+	UpdateVariable(ctx context.Context, variableID resource.TfeID, opts UpdateVariableOptions) (*Variable, error)
+	DeleteVariable(ctx context.Context, variableID resource.TfeID) (*Variable, error)
+
 	ListWorkspaceVariableSets(ctx context.Context, workspaceID resource.TfeID) ([]*VariableSet, error)
 	ListVariableSets(ctx context.Context, organization organization.Name) ([]*VariableSet, error)
 	GetVariableSet(ctx context.Context, setID resource.TfeID) (*VariableSet, error)
@@ -101,13 +102,13 @@ func (a *TFEAPI) get(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	wv, err := a.Client.GetWorkspaceVariable(r.Context(), variableID)
+	v, err := a.Client.GetVariable(r.Context(), variableID)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
 
-	a.Respond(w, r, a.convertWorkspaceVariable(wv.Variable, wv.WorkspaceID), http.StatusOK)
+	a.Respond(w, r, a.convertWorkspaceVariable(v, v.ParentID), http.StatusOK)
 }
 
 func (a *TFEAPI) list(w http.ResponseWriter, r *http.Request) {
@@ -141,7 +142,7 @@ func (a *TFEAPI) update(w http.ResponseWriter, r *http.Request) {
 		variableError(w, err)
 		return
 	}
-	updated, err := a.Client.UpdateWorkspaceVariable(r.Context(), variableID, UpdateVariableOptions{
+	updated, err := a.Client.UpdateVariable(r.Context(), variableID, UpdateVariableOptions{
 		Key:         opts.Key,
 		Value:       opts.Value,
 		Description: opts.Description,
@@ -154,7 +155,7 @@ func (a *TFEAPI) update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.Respond(w, r, a.convertWorkspaceVariable(updated.Variable, updated.WorkspaceID), http.StatusOK)
+	a.Respond(w, r, a.convertWorkspaceVariable(updated, updated.ParentID), http.StatusOK)
 }
 
 func (a *TFEAPI) delete(w http.ResponseWriter, r *http.Request) {
@@ -163,7 +164,7 @@ func (a *TFEAPI) delete(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	_, err = a.Client.DeleteWorkspaceVariable(r.Context(), variableID)
+	_, err = a.Client.DeleteVariable(r.Context(), variableID)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return

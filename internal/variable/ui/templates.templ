@@ -3,9 +3,9 @@ package ui
 import (
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/organization"
+	"github.com/leg100/otf/internal/path"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/ui/helpers"
-	"github.com/leg100/otf/internal/path"
 	"github.com/leg100/otf/internal/variable"
 	"github.com/leg100/otf/internal/workspace"
 )
@@ -37,7 +37,7 @@ templ (t *templates) newVSV(vs *variable.VariableSet) {
 	<span class="text-xl">Add new variable to variable set</span>
 	@variableForm(variableFormProps{
 		variable: &variable.Variable{},
-		action:   path.CreateVariableSetVariable(vs.ID),
+		action:   path.Create(resource.VariableSetVariableKind, vs.ID),
 	})
 }
 
@@ -165,7 +165,7 @@ templ (t *templates) editVariableSet(props editVariableSetProps) {
 		},
 		props.rows,
 	)
-	<form class="mt-2" action={ path.NewVariableSetVariable(props.set.ID) } method="GET">
+	<form class="mt-2" action={ path.New(resource.VariableSetVariableKind, props.set.ID) } method="GET">
 		<button class="btn" id="add-variable-button">Add variable</button>
 	</form>
 }
@@ -180,7 +180,7 @@ templ (t *templates) editVSV(props editVSVProps) {
 	@variableForm(variableFormProps{
 		variable: props.variable,
 		edit:     true,
-		action:   path.UpdateVariableSetVariable(props.variable.ID),
+		action:   path.Update(resource.VariableSetVariableKind, props.variable.ID),
 	})
 }
 
@@ -406,9 +406,9 @@ templ (t variablesTable) Row(v variableRow) {
 
 func (t variablesTable) editPath(row variableRow) string {
 	if row.set != nil {
-		return path.EditVariableSetVariable(row.ID)
+		return path.Edit(resource.VariableSetVariableKind, row.ID)
 	}
-	return path.Edit(row.ID)
+	return path.Edit(resource.VariableSetVariableKind, row.ID)
 }
 
 func (t variablesTable) deletePath(row variableRow) string {

@@ -40,14 +40,14 @@ type (
 		Sensitive   bool             `jsonapi:"attribute" json:"sensitive"`
 		HCL         bool             `jsonapi:"attribute" json:"hcl"`
 
+		// ParentID is the ID of the variable's parent resource. Must be either
+		// a workspace ID if a workspace variable, or a variable set ID if a
+		// variable set variable.
+		ParentID resource.TfeID `jsonapi:"attribute" json:"parent_id" db:"parent_id"`
+
 		// OTF doesn't use this internally but the go-tfe integration tests
 		// expect it to be a random value that changes on every update.
 		VersionID string
-	}
-
-	WorkspaceVariable struct {
-		*Variable
-		WorkspaceID resource.TfeID
 	}
 
 	CreateVariableOptions struct {
@@ -57,6 +57,11 @@ type (
 		Category    *VariableCategory
 		Sensitive   *bool
 		HCL         *bool
+
+		// ParentID is the ID of the variable's parent resource. Must be either
+		// a workspace ID if a workspace variable, or a variable set ID if a
+		// variable set variable.
+		ParentID resource.TfeID
 
 		generateVersion
 	}
@@ -135,6 +140,7 @@ func (v *Variable) LogValue() slog.Value {
 		slog.String("id", v.ID.String()),
 		slog.String("key", v.Key),
 		slog.Bool("sensitive", v.Sensitive),
+		slog.String("parent_id", v.ParentID.String()),
 	}
 	if v.Sensitive {
 		attrs = append(attrs, slog.String("value", "*****"))
