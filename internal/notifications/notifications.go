@@ -8,7 +8,7 @@ import (
 
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/run"
-	"github.com/leg100/otf/internal/ui/paths"
+	"github.com/leg100/otf/internal/path"
 	"github.com/leg100/otf/internal/workspace"
 )
 
@@ -55,6 +55,6 @@ func (n *notification) genericPayload() (*GenericPayload, error) {
 }
 
 func (n *notification) runURL() string {
-	u := &url.URL{Scheme: "https", Host: n.hostname, Path: paths.Run(n.event.Payload.ID)}
+	u := &url.URL{Scheme: "https", Host: n.hostname, Path: path.Get(n.event.Payload.ID)}
 	return u.String()
 }

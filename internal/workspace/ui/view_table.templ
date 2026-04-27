@@ -2,7 +2,7 @@ package ui
 
 import (
 	"github.com/leg100/otf/internal/ui/helpers"
-	"github.com/leg100/otf/internal/ui/paths"
+	"github.com/leg100/otf/internal/path"
 	"github.com/leg100/otf/internal/workspace"
 )
 
@@ -17,7 +17,7 @@ templ (t workspacesTable) Header() {
 templ (t workspacesTable) Row(ws *workspace.Workspace) {
 	<tr id={ "item-workspace-" + ws.Name }>
 		<td>
-			<a class="link" href={ paths.Workspace(ws.ID) }>{ ws.Name }</a>
+			<a class="link" href={ path.Get(ws.ID) }>{ ws.Name }</a>
 		</td>
 		<td>
 			if ws.LatestRun != nil {

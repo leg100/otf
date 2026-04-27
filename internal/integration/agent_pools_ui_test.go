@@ -7,7 +7,7 @@ import (
 
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/runner"
-	"github.com/leg100/otf/internal/ui/paths"
+	"github.com/leg100/otf/internal/path"
 	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -35,7 +35,7 @@ func TestAgentPoolsUI(t *testing.T) {
 	// create agent pool via UI
 	browser.New(t, ctx, func(page playwright.Page) {
 		// go to org main menu
-		_, err := page.Goto(daemon.URL(paths.Organization(org.Name)))
+		_, err := page.Goto(daemon.URL(path.Get(org.Name)))
 		require.NoError(t, err)
 
 		// go to list of agent pools
@@ -66,7 +66,7 @@ func TestAgentPoolsUI(t *testing.T) {
 		assert.Equal(t, pubsub.CreatedEvent, created.Type)
 		assert.Equal(t, "pool-1", created.Payload.Name)
 
-		agentPoolURL := daemon.URL(paths.AgentPool(created.Payload.ID))
+		agentPoolURL := daemon.URL(path.Get(created.Payload.ID))
 
 		// grant and assign workspace to agent pool, and create agent token.
 		//
@@ -99,7 +99,7 @@ func TestAgentPoolsUI(t *testing.T) {
 		require.NoError(t, err)
 
 		// go to workspace
-		_, err = page.Goto(daemon.URL(paths.Workspace(ws1.ID)))
+		_, err = page.Goto(daemon.URL(path.Get(ws1.ID)))
 		require.NoError(t, err)
 
 		// go to workspace settings
@@ -201,7 +201,7 @@ func TestAgentPoolsUI(t *testing.T) {
 		require.NoError(t, err)
 
 		// go to workspace
-		_, err = page.Goto(daemon.URL(paths.Workspace(ws1.ID)))
+		_, err = page.Goto(daemon.URL(path.Get(ws1.ID)))
 		require.NoError(t, err)
 
 		// go to workspace settings

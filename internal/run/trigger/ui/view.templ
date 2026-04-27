@@ -1,8 +1,9 @@
 package ui
 
 import (
+	"github.com/leg100/otf/internal/path"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/ui/helpers"
-	"github.com/leg100/otf/internal/ui/paths"
 	"github.com/leg100/otf/internal/workspace"
 )
 
@@ -17,7 +18,7 @@ templ editTriggers(props editTriggersProps) {
 		Run triggers connect a workspace to another workspace. A successfully applied run on a connected workspace automatically triggers a run on this workspace.
 	</p>
 	<div>
-		<form action={ paths.UpdateAutoApplyRunTriggerWorkspace(props.ws.ID) } method="POST">
+		<form action={ path.Resource(resource.Action("update-auto-apply-run-trigger"), props.ws.ID) } method="POST">
 			<fieldset class="fieldset bg-base-100 border-base-300 rounded-box w-64 border p-4">
 				<legend class="fieldset-legend">Auto-apply</legend>
 				<label class="label">
@@ -29,13 +30,13 @@ templ editTriggers(props editTriggersProps) {
 						checked?={ props.ws.AutoApplyRunTrigger }
 						onchange="this.form.submit()"
 					/>
-					Automatically apply changes on triggered runs. Note: the workspace's primary <a class="link" href={ paths.EditWorkspace(props.ws.ID) }>auto-apply</a> setting isn't applicable to triggered runs.
+					Automatically apply changes on triggered runs. Note: the workspace's primary <a class="link" href={ path.Edit(props.ws.ID) }>auto-apply</a> setting isn't applicable to triggered runs.
 				</label>
 			</fieldset>
 		</form>
 	</div>
 	<p></p>
-	<form class="flex flex-col gap-5" action={ paths.CreateTriggerWorkspace(props.ws.ID.String()) } method="POST">
+	<form class="flex flex-col gap-5" action={ path.Create(resource.RunTriggerKind, props.ws.ID) } method="POST">
 		<select class="select select-sm" name="triggering_workspace_id" id="connect_workspace" onchange="this.form.submit()">
 			<option disabled selected>Connect workspace</option>
 			for _, ws := range props.unconnected {
@@ -58,12 +59,12 @@ templ (t table) Header() {
 templ (t table) Row(connection connection) {
 	<tr id={ "item-" + connection.ws.ID.String() }>
 		<td>
-			<a class="link" href={ paths.Workspace(connection.ws.ID) }>
+			<a class="link" href={ path.Get(connection.ws.ID) }>
 				{ connection.ws.Name }
 			</a>
 		</td>
 		<td>
-			<form title="disconnect workspace" action={ paths.DeleteRunTrigger(connection.trigger.ID.String()) } method="POST">
+			<form title="disconnect workspace" action={ path.Delete(connection.trigger.ID) } method="POST">
 				<button class="btn btn-danger">
 					Disconnect
 				</button>

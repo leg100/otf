@@ -4,7 +4,8 @@ import (
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/sshkey"
 	"github.com/leg100/otf/internal/ui/helpers"
-	"github.com/leg100/otf/internal/ui/paths"
+	"github.com/leg100/otf/internal/path"
+	"github.com/leg100/otf/internal/resource"
 )
 
 type listSSHKeysProps struct {
@@ -17,7 +18,7 @@ templ listSSHKeys(props listSSHKeysProps) {
 		OTF uses these private SSH keys for downloading private modules with Git-based sources during a run. SSH keys for downloading modules are assigned per-workspace.
 	</p>
 	<p class="text-lg font-bold">Add an SSH Key</p>
-	<form class="flex flex-col gap-2" action={ paths.CreateSSHKey(props.organization) } method="POST">
+	<form class="flex flex-col gap-2" action={ path.Create(resource.SSHKeyKind, props.organization) } method="POST">
 		<div class="field">
 			<label for="name">Name</label>
 			<input class="input w-80" type="text" name="name" id="name" required/>
@@ -55,7 +56,7 @@ templ (t sshKeysTable) Row(key *sshkey.SSHKey) {
 	<tr id={ "ssh-key-item-" + key.Name }>
 		<td>{ key.Name } </td>
 		<td>
-			<form action={ paths.DeleteSSHKey(key.ID) } method="POST">
+			<form action={ path.Delete(key.ID) } method="POST">
 				@helpers.DeleteButton()
 			</form>
 		</td>

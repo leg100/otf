@@ -4,7 +4,7 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/leg100/otf/internal/ui/paths"
+	"github.com/leg100/otf/internal/path"
 	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/require"
 )
@@ -16,7 +16,7 @@ func TestIntegration_UserTokenUI(t *testing.T) {
 	daemon, _, ctx := setup(t)
 	browser.New(t, ctx, func(page playwright.Page) {
 		// go to profile
-		_, err := page.Goto(daemon.URL(paths.Profile()))
+		_, err := page.Goto(daemon.URL(path.Profile()))
 		require.NoError(t, err)
 
 		// go to user tokens

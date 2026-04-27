@@ -8,7 +8,8 @@ import (
 	"github.com/leg100/otf/internal/github/testserver"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/testutils"
-	"github.com/leg100/otf/internal/ui/paths"
+	"github.com/leg100/otf/internal/path"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/playwright-community/playwright-go"
@@ -24,7 +25,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 
 		t.Run("create with no error", func(t *testing.T) {
 			browser.New(t, ctx, func(page playwright.Page) {
-				_, err := page.Goto(daemon.URL(paths.Organization(org.Name)))
+				_, err := page.Goto(daemon.URL(path.Get(org.Name)))
 				require.NoError(t, err)
 
 				err = page.Locator("#menu-item-workspaces > a").Click()
@@ -46,7 +47,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 
 		t.Run("create with error", func(t *testing.T) {
 			browser.New(t, ctx, func(page playwright.Page) {
-				_, err := page.Goto(daemon.URL(paths.Organization(org.Name)))
+				_, err := page.Goto(daemon.URL(path.Get(org.Name)))
 				require.NoError(t, err)
 
 				err = page.Locator("#menu-item-workspaces > a").Click()
@@ -76,7 +77,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 		run := daemon.createRun(t, ctx, ws, nil, nil)
 
 		browser.New(t, ctx, func(page playwright.Page) {
-			_, err := page.Goto(daemon.URL(paths.Workspace(ws.ID)))
+			_, err := page.Goto(daemon.URL(path.Get(ws.ID)))
 			require.NoError(t, err)
 
 			err = expect.Locator(page.Locator("//div[@id='latest-run']//tbody/tr")).ToHaveId("run-item-" + run.ID.String())
@@ -123,7 +124,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 
 		// navigate through different pages and back
 		browser.New(t, ctx, func(page playwright.Page) {
-			_, err := page.Goto(daemon.URL(paths.Workspaces(org.Name)))
+			_, err := page.Goto(daemon.URL(path.List(resource.WorkspaceKind, org.Name)))
 			require.NoError(t, err)
 
 			steps := []struct {
@@ -191,7 +192,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 
 		// demonstrate listing and searching
 		browser.New(t, ctx, func(page playwright.Page) {
-			_, err := page.Goto(daemon.URL(paths.Workspaces(org.Name)))
+			_, err := page.Goto(daemon.URL(path.List(resource.WorkspaceKind, org.Name)))
 			require.NoError(t, err)
 
 			// search for 'workspace-1'
@@ -226,7 +227,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 		ws1 := daemon.createWorkspace(t, ctx, org)
 
 		browser.New(t, ctx, func(page playwright.Page) {
-			_, err := page.Goto(daemon.URL(paths.Workspace(ws1.ID)))
+			_, err := page.Goto(daemon.URL(path.Get(ws1.ID)))
 			require.NoError(t, err)
 
 			// go to workspace settings
@@ -270,7 +271,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 		browser.New(t, ctx, func(page playwright.Page) {
 			// demonstrate setting vcs trigger patterns
 			//
-			workspaceURL := daemon.URL(paths.Workspace(ws1.ID))
+			workspaceURL := daemon.URL(path.Get(ws1.ID))
 			connectWorkspaceTasks(t, page, workspaceURL, provider.String())
 
 			_, err := page.Goto(workspaceURL)
@@ -456,7 +457,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 
 		browser.New(t, ctx, func(page playwright.Page) {
 			// go to engine settings
-			_, err := page.Goto(daemon.URL(paths.Workspace(ws.ID)))
+			_, err := page.Goto(daemon.URL(path.Get(ws.ID)))
 			require.NoError(t, err)
 			err = page.Locator(`//li[@id='menu-item-settings']/a`).Click()
 			require.NoError(t, err)
@@ -520,7 +521,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 
 			browser.New(t, ctx, func(page playwright.Page) {
 				// go to engine settings
-				_, err := page.Goto(daemon.URL(paths.Workspace(ws.ID)))
+				_, err := page.Goto(daemon.URL(path.Get(ws.ID)))
 				require.NoError(t, err)
 				err = page.Locator(`//li[@id='menu-item-settings']/a`).Click()
 				require.NoError(t, err)
@@ -543,7 +544,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 		ws1 := daemon.createWorkspace(t, ctx, org)
 
 		browser.New(t, ctx, func(page playwright.Page) {
-			_, err := page.Goto(daemon.URL(paths.Workspace(ws1.ID)))
+			_, err := page.Goto(daemon.URL(path.Get(ws1.ID)))
 			require.NoError(t, err)
 
 			// expect workspace to be unlocked by default

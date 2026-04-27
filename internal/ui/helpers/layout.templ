@@ -4,7 +4,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/resource"
-	"github.com/leg100/otf/internal/ui/paths"
+	"github.com/leg100/otf/internal/path"
 )
 
 type Breadcrumb struct {
@@ -157,7 +157,7 @@ templ navbar(organization resource.ID, workspace *resource.Info) {
 			</div>
 			<div class="flex gap-4 items-center">
 				if organization != nil {
-					<a id="organization-breadcrumb" href={ paths.Organization(organization) }>
+					<a id="organization-breadcrumb" href={ path.Get(organization) }>
 						<span class="flex gap-2 items-center">
 							<svg
 								xmlns="http://www.w3.org/2000/svg"
@@ -211,13 +211,13 @@ templ navbar(organization resource.ID, workspace *resource.Info) {
 		<div class="flex items-center">
 			if Authenticated(ctx) {
 				<div class="">
-					<a class="btn btn-ghost font-normal" href={ paths.Organizations() }>Organizations</a>
+					<a class="btn btn-ghost font-normal" href={ path.List(resource.OrganizationKind, nil) }>Organizations</a>
 				</div>
 				<div class="">
-					<a class="btn btn-ghost font-normal" href={ paths.Admin() }>Site</a>
+					<a class="btn btn-ghost font-normal" href={ path.Admin() }>Site</a>
 				</div>
 				<div class="">
-					<a class="btn btn-ghost font-normal" href={ paths.Profile() }>
+					<a class="btn btn-ghost font-normal" href={ path.Profile() }>
 						<div class="size-6">
 							@CurrentUserAvatar()
 						</div>
@@ -240,7 +240,7 @@ templ footer() {
 			</div>
 			<div class="footer-site-login">
 				if !Authenticated(ctx) {
-					<a class="link" href={ paths.AdminLogin() }>site admin</a>
+					<a class="link" href={ path.AdminLogin() }>site admin</a>
 				}
 			</div>
 		</div>

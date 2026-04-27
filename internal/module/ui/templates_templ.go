@@ -11,10 +11,10 @@ import templruntime "github.com/a-h/templ/runtime"
 import (
 	"github.com/leg100/otf/internal/module"
 	"github.com/leg100/otf/internal/organization"
+	"github.com/leg100/otf/internal/path"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/ui"
 	"github.com/leg100/otf/internal/ui/helpers"
-	"github.com/leg100/otf/internal/ui/paths"
 	"github.com/leg100/otf/internal/vcs"
 	vcsui "github.com/leg100/otf/internal/vcs/ui"
 	"html/template"
@@ -93,9 +93,9 @@ func selectVCSProviderAction(vcsProviderID resource.TfeID) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var3 templ.SafeURL
-		templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinURLErrs(paths.ConnectModule(vcsProviderID))
+		templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinURLErrs(path.Resources(resource.Action("connect"), resource.ModuleKind, nil))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/module/ui/templates.templ`, Line: 35, Col: 50}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/module/ui/templates.templ`, Line: 35, Col: 84}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 		if templ_7745c5c3_Err != nil {
@@ -170,9 +170,9 @@ func connect(props connectProps) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var7 templ.SafeURL
-		templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinURLErrs(paths.CreateModule(props.provider.Organization))
+		templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinURLErrs(path.Create(resource.ModuleKind, props.provider.Organization))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/module/ui/templates.templ`, Line: 52, Col: 63}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/module/ui/templates.templ`, Line: 52, Col: 77}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 		if templ_7745c5c3_Err != nil {
@@ -240,9 +240,9 @@ func (s moduleRepoSelector) action(repo vcs.Repo) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var10 templ.SafeURL
-		templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinURLErrs(paths.CreateModule(s.provider.Organization))
+		templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinURLErrs(path.Create(resource.ModuleKind, s.provider.Organization))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/module/ui/templates.templ`, Line: 72, Col: 59}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/module/ui/templates.templ`, Line: 72, Col: 73}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 		if templ_7745c5c3_Err != nil {
@@ -438,9 +438,9 @@ func moduleListActions(props moduleListProps) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var19 templ.SafeURL
-			templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinURLErrs(paths.NewModule(props.organization))
+			templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinURLErrs(path.New(resource.ModuleKind, props.organization))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/module/ui/templates.templ`, Line: 114, Col: 52}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/module/ui/templates.templ`, Line: 114, Col: 66}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 			if templ_7745c5c3_Err != nil {
@@ -525,9 +525,9 @@ func (t moduleTable) Row(mod *module.Module) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var23 templ.SafeURL
-		templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinURLErrs(paths.Module(mod.ID))
+		templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinURLErrs(path.Get(mod.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/module/ui/templates.templ`, Line: 131, Col: 46}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/module/ui/templates.templ`, Line: 131, Col: 42}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var23))
 		if templ_7745c5c3_Err != nil {
@@ -631,9 +631,9 @@ func moduleGet(props moduleGetProps) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var27 templ.SafeURL
-			templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinURLErrs(paths.Module(props.module.ID))
+			templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinURLErrs(path.Get(props.module.ID))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/module/ui/templates.templ`, Line: 164, Col: 81}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/module/ui/templates.templ`, Line: 164, Col: 77}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var27))
 			if templ_7745c5c3_Err != nil {
@@ -814,9 +814,9 @@ func moduleGet(props moduleGetProps) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var35 templ.SafeURL
-		templ_7745c5c3_Var35, templ_7745c5c3_Err = templ.JoinURLErrs(paths.DeleteModule(props.module.ID))
+		templ_7745c5c3_Var35, templ_7745c5c3_Err = templ.JoinURLErrs(path.Delete(props.module.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/module/ui/templates.templ`, Line: 223, Col: 78}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/module/ui/templates.templ`, Line: 223, Col: 71}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var35))
 		if templ_7745c5c3_Err != nil {

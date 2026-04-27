@@ -6,7 +6,7 @@ import (
 	"github.com/leg100/otf/internal/resource"
 	runnerpkg "github.com/leg100/otf/internal/runner"
 	"github.com/leg100/otf/internal/ui/helpers"
-	"github.com/leg100/otf/internal/ui/paths"
+	"github.com/leg100/otf/internal/path"
 )
 
 type listRunnersProps struct {
@@ -19,7 +19,7 @@ templ listRunners(props listRunnersProps) {
 	<div class="description max-w-2xl">
 		A runner handles the execution of runs. There are two types of runners: the runner built into <span class="font-bold">otfd</span> which handles runs for workspaces with the <span class="font-bold">remote</span> execution mode; and <span class="font-bold">otf-agent</span>, which handles runs for workspaces with the <span class="font-bold">agent</span> execution mode.
 	</div>
-	<form action={ paths.Runners(props.organization) }>
+	<form action={ path.List(resource.RunnerKind, props.organization) }>
 		<fieldset class="fieldset p-4 bg-base-100 border border-base-content/20 rounded-box w-64">
 			<legend class="fieldset-legend">Filters</legend>
 			<label class="fieldset-label">
@@ -127,7 +127,7 @@ templ listAgentPools(props listAgentPoolProps) {
 		<summary class="cursor-pointer py-2">
 			<span class="font-semibold">New agent pool</span>
 		</summary>
-		<form class="flex flex-col gap-5" action={ paths.CreateAgentPool(props.organization) } method="POST">
+		<form class="flex flex-col gap-5" action={ path.Create(resource.AgentPoolKind, props.organization) } method="POST">
 			<div class="field">
 				<label for="name">Name</label>
 				<input class="input w-80" rows="3" type="text" name="name" id="new-pool-name" required/>
@@ -153,7 +153,7 @@ templ (t agentPoolsTable) Header() {
 templ (t agentPoolsTable) Row(pool *runnerpkg.Pool) {
 	<tr id={ pool.ID.String() }>
 		<td>
-			<a class="link" href={ paths.AgentPool(pool.ID) }>
+			<a class="link" href={ path.Get(pool.ID) }>
 				{ pool.Name }
 			</a>
 		</td>
@@ -193,7 +193,7 @@ templ getAgentPool(props getAgentPoolProps) {
 	<div>
 		@helpers.Identifier(props.pool.ID)
 	</div>
-	<form class="" action={ paths.UpdateAgentPool(props.pool.ID) } method="POST">
+	<form class="" action={ path.Update(props.pool.ID) } method="POST">
 		<div class="field mb-4">
 			<label for="name">Name</label>
 			<input class="input w-80" type="text" name="name" id="name" value={ props.pool.Name } required/>
@@ -255,7 +255,7 @@ templ getAgentPool(props getAgentPoolProps) {
 						<div id="granted-and-assigned-workspaces" class="flex flex-row gap-2">
 							<input type="hidden" id="assigned-workspaces" name="assigned_workspaces" value={ toJSON(props.assignedWorkspaces) }/>
 							for _, ws := range props.assignedWorkspaces {
-								<a class="bg-blue-300 hover:text-white py-1 px-2 text-sm" href={ paths.EditWorkspace(ws.ID) }>{ ws.Name }</a>
+								<a class="bg-blue-300 hover:text-white py-1 px-2 text-sm" href={ path.Edit(ws.ID) }>{ ws.Name }</a>
 							}
 						</div>
 					</div>
@@ -272,7 +272,7 @@ templ getAgentPool(props getAgentPoolProps) {
 		<summary class="cursor-pointer py-2">
 			<span class="font-semibold">New token</span>
 		</summary>
-		<form class="flex flex-col gap-5" action={ paths.CreateAgentToken(props.pool.ID) } method="POST">
+		<form class="flex flex-col gap-5" action={ path.Create(resource.AgentTokenKind, props.pool.ID) } method="POST">
 			<div class="field">
 				<label for="new-token-description">Description</label>
 				<input class="input w-3/4" rows="3" type="text" name="description" id="new-token-description" required/>
@@ -294,11 +294,11 @@ templ getAgentPool(props getAgentPoolProps) {
 			<span class="description">Before deleting an agent pool you must unassign the pool from the following workspaces:</span>
 			<ul id="unassign-workspaces-before-deletion" class="flex flex-row gap-2">
 				for _, ws := range props.assignedWorkspaces {
-					<a class="bg-blue-300 text-sm hover:text-white py-1 px-2" href={ paths.EditWorkspace(ws.ID) }>{ ws.Name }</a>
+					<a class="bg-blue-300 text-sm hover:text-white py-1 px-2" href={ path.Edit(ws.ID) }>{ ws.Name }</a>
 				}
 			</ul>
 		}
-		<form class="mt-2" action={ paths.DeleteAgentPool(props.pool.ID) } method="POST">
+		<form class="mt-2" action={ path.Delete(props.pool.ID) } method="POST">
 			<button id="delete-agent-pool-button" class="btn btn-outline btn-error disabled:opacity-75" onclick="return confirm('Are you sure you want to delete?')" disabled?={ len(props.assignedWorkspaces) > 0 }>
 				Delete agent pool
 			</button>
@@ -325,7 +325,7 @@ templ (t agentTokensTable) Row(token *runnerpkg.AgentToken) {
 			@helpers.Ago(token.CreatedAt)
 		</td>
 		<td>
-			<form id="delete-agent-token" action={ paths.DeleteAgentToken(token.ID) } method="POST">
+			<form id="delete-agent-token" action={ path.Delete(token.ID) } method="POST">
 				@helpers.DeleteButton()
 			</form>
 		</td>

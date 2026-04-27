@@ -11,9 +11,9 @@ import templruntime "github.com/a-h/templ/runtime"
 import (
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/organization"
+	"github.com/leg100/otf/internal/path"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/ui/helpers"
-	"github.com/leg100/otf/internal/ui/paths"
 	"github.com/leg100/otf/internal/variable"
 	"github.com/leg100/otf/internal/workspace"
 )
@@ -45,7 +45,7 @@ func (t *templates) newWorkspaceVariable(ws *workspace.Workspace) templ.Componen
 		}
 		templ_7745c5c3_Err = variableForm(variableFormProps{
 			variable: &variable.Variable{},
-			action:   paths.CreateVariable(ws.ID),
+			action:   path.Create(resource.VariableKind, ws.ID),
 		}).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
@@ -86,7 +86,7 @@ func (t *templates) newVariableSet(props newVariableSetProps) templ.Component {
 		}
 		templ_7745c5c3_Err = variableSetForm(variableSetFormProps{
 			set:                 &variable.VariableSet{Global: true}, // set global as default
-			action:              paths.CreateVariableSet(props.organization),
+			action:              path.Create(resource.VariableSetKind, props.organization),
 			availableWorkspaces: props.availableWorkspaces,
 			existingWorkspaces:  []resource.Info{},
 		}).Render(ctx, templ_7745c5c3_Buffer)
@@ -124,7 +124,7 @@ func (t *templates) newVSV(vs *variable.VariableSet) templ.Component {
 		}
 		templ_7745c5c3_Err = variableForm(variableFormProps{
 			variable: &variable.Variable{},
-			action:   paths.CreateVariableSetVariable(vs.ID),
+			action:   path.CreateVariableSetVariable(vs.ID),
 		}).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
@@ -218,9 +218,9 @@ func (t *templates) newWorkspaceVariableButton(workspaceID resource.ID) templ.Co
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var6 templ.SafeURL
-			templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinURLErrs(paths.NewVariable(workspaceID))
+			templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinURLErrs(path.New(resource.VariableKind, workspaceID))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/ui/templates.templ`, Line: 73, Col: 60}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/ui/templates.templ`, Line: 73, Col: 74}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 			if templ_7745c5c3_Err != nil {
@@ -305,9 +305,9 @@ func listVariableSetsActions(props listVariableSetsProps) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var9 templ.SafeURL
-			templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinURLErrs(paths.NewVariableSet(props.organization))
+			templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinURLErrs(path.New(resource.VariableSetKind, props.organization))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/ui/templates.templ`, Line: 93, Col: 57}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/ui/templates.templ`, Line: 93, Col: 71}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 			if templ_7745c5c3_Err != nil {
@@ -392,9 +392,9 @@ func (t listVariableSetsTable) Row(vs *variable.VariableSet) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var13 templ.SafeURL
-		templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinURLErrs(paths.EditVariableSet(vs.ID))
+		templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinURLErrs(path.Edit(vs.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/ui/templates.templ`, Line: 112, Col: 54}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/ui/templates.templ`, Line: 112, Col: 42}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 		if templ_7745c5c3_Err != nil {
@@ -486,7 +486,7 @@ func (t *templates) editWorkspaceVariable(props editWorkspaceVariableProps) temp
 		templ_7745c5c3_Err = variableForm(variableFormProps{
 			variable: props.variable,
 			edit:     true,
-			action:   paths.UpdateVariable(props.variable.ID),
+			action:   path.Update(props.variable.ID),
 		}).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
@@ -531,7 +531,7 @@ func (t *templates) editVariableSet(props editVariableSetProps) templ.Component 
 		templ_7745c5c3_Err = variableSetForm(variableSetFormProps{
 			set:                 props.set,
 			edit:                true,
-			action:              paths.UpdateVariableSet(props.set.ID),
+			action:              path.Update(props.set.ID),
 			availableWorkspaces: props.availableWorkspaces,
 			existingWorkspaces:  props.existingWorkspaces,
 		}).Render(ctx, templ_7745c5c3_Buffer)
@@ -556,9 +556,9 @@ func (t *templates) editVariableSet(props editVariableSetProps) templ.Component 
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var18 templ.SafeURL
-		templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinURLErrs(paths.NewVariableSetVariable(props.set.ID))
+		templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinURLErrs(path.NewVariableSetVariable(props.set.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/ui/templates.templ`, Line: 168, Col: 71}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/ui/templates.templ`, Line: 168, Col: 70}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
 		if templ_7745c5c3_Err != nil {
@@ -605,7 +605,7 @@ func (t *templates) editVSV(props editVSVProps) templ.Component {
 		templ_7745c5c3_Err = variableForm(variableFormProps{
 			variable: props.variable,
 			edit:     true,
-			action:   paths.UpdateVariableSetVariable(props.variable.ID),
+			action:   path.UpdateVariableSetVariable(props.variable.ID),
 		}).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
@@ -1017,9 +1017,9 @@ func (t variablesTable) Row(v variableRow) templ.Component {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var34 templ.SafeURL
-				templ_7745c5c3_Var34, templ_7745c5c3_Err = templ.JoinURLErrs(paths.EditVariableSet(v.set.ID))
+				templ_7745c5c3_Var34, templ_7745c5c3_Err = templ.JoinURLErrs(path.Edit(v.set.ID))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/ui/templates.templ`, Line: 367, Col: 59}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/ui/templates.templ`, Line: 367, Col: 47}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var34))
 				if templ_7745c5c3_Err != nil {
@@ -1185,16 +1185,16 @@ func (t variablesTable) Row(v variableRow) templ.Component {
 
 func (t variablesTable) editPath(row variableRow) string {
 	if row.set != nil {
-		return paths.EditVariableSetVariable(row.ID)
+		return path.EditVariableSetVariable(row.ID)
 	}
-	return paths.EditVariable(row.ID)
+	return path.Edit(row.ID)
 }
 
 func (t variablesTable) deletePath(row variableRow) string {
 	if row.set != nil {
-		return paths.DeleteVariableSetVariable(row.ID)
+		return path.DeleteVariableSetVariable(row.ID)
 	}
-	return paths.DeleteVariable(row.ID)
+	return path.Delete(row.ID)
 }
 
 var _ = templruntime.GeneratedTemplate

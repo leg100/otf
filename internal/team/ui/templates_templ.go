@@ -10,10 +10,10 @@ import templruntime "github.com/a-h/templ/runtime"
 
 import (
 	"github.com/leg100/otf/internal/organization"
+	"github.com/leg100/otf/internal/path"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/ui/helpers"
-	"github.com/leg100/otf/internal/ui/paths"
 	"github.com/leg100/otf/internal/user"
 	userui "github.com/leg100/otf/internal/user/ui"
 )
@@ -44,9 +44,9 @@ func newTeamView(organization organization.Name) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var2 templ.SafeURL
-		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinURLErrs(paths.CreateTeam(organization))
+		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinURLErrs(path.Create(resource.TeamKind, organization))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/team/ui/templates.templ`, Line: 14, Col: 74}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/team/ui/templates.templ`, Line: 14, Col: 88}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 		if templ_7745c5c3_Err != nil {
@@ -175,9 +175,9 @@ func (t teamTable) Row(tm *team.Team) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var7 templ.SafeURL
-		templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinURLErrs(paths.Team(tm.ID))
+		templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinURLErrs(path.Get(tm.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/team/ui/templates.templ`, Line: 49, Col: 43}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/team/ui/templates.templ`, Line: 49, Col: 41}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 		if templ_7745c5c3_Err != nil {
@@ -239,9 +239,9 @@ func listTeamsActions(props listTeamsProps) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var10 templ.SafeURL
-			templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinURLErrs(paths.NewTeam(props.organization))
+			templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinURLErrs(path.New(resource.TeamKind, props.organization))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/team/ui/templates.templ`, Line: 61, Col: 50}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/team/ui/templates.templ`, Line: 61, Col: 64}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 			if templ_7745c5c3_Err != nil {
@@ -294,9 +294,9 @@ func getTeam(props getTeamProps) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var12 templ.SafeURL
-			templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinURLErrs(paths.UpdateTeam(props.team.ID))
+			templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinURLErrs(path.Update(props.team.ID))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/team/ui/templates.templ`, Line: 83, Col: 76}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/team/ui/templates.templ`, Line: 83, Col: 71}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 			if templ_7745c5c3_Err != nil {
@@ -400,9 +400,9 @@ func getTeam(props getTeamProps) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var13 templ.SafeURL
-			templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinURLErrs(paths.DeleteTeam(props.team.ID))
+			templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinURLErrs(path.Delete(props.team.ID))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/team/ui/templates.templ`, Line: 152, Col: 48}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/team/ui/templates.templ`, Line: 152, Col: 43}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 			if templ_7745c5c3_Err != nil {

@@ -11,8 +11,8 @@ import templruntime "github.com/a-h/templ/runtime"
 import (
 	"context"
 	"github.com/leg100/otf/internal/authz"
+	"github.com/leg100/otf/internal/path"
 	"github.com/leg100/otf/internal/resource"
-	"github.com/leg100/otf/internal/ui/paths"
 	"strings"
 )
 
@@ -41,19 +41,19 @@ func SiteMenu() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = MenuItem("Organizations", paths.Organizations()).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = MenuItem("Organizations", path.List(resource.OrganizationKind, nil)).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = MenuItem("Profile", paths.Profile()).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = MenuItem("Profile", path.Profile()).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = MenuItem("User Tokens", paths.Tokens(), "/app/current-user/tokens").Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = MenuItem("User Tokens", path.Tokens()).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = MenuItem("Github App", paths.GithubApps()).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = MenuItem("Github App", path.GithubApps()).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -90,22 +90,22 @@ func OrganizationMenu(organization resource.ID) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = MenuItem("Workspaces", paths.Workspaces(organization), "/app/workspaces", "/app/variables", paths.NewWorkspace(organization)).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = MenuItem("Workspaces", path.List(resource.WorkspaceKind, organization), "/app/workspaces", "/app/variables", path.New(resource.WorkspaceKind, organization)).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if IsOwner(ctx, organization) || IsSiteAdmin(ctx) {
-			templ_7745c5c3_Err = MenuItem("Runs", paths.OrganizationRuns(organization), "/app/runs").Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = MenuItem("Runs", path.List(resource.RunKind, organization), "/app/runs").Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = MenuItem("Teams", paths.Teams(organization), "/app/teams", paths.NewTeam(organization)).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = MenuItem("Teams", path.List(resource.TeamKind, organization), "/app/teams", path.New(resource.TeamKind, organization)).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if IsOwner(ctx, organization) || IsSiteAdmin(ctx) {
-			templ_7745c5c3_Err = MenuItem("Users", paths.Users(organization), "/app/users").Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = MenuItem("Users", path.List(resource.UserKind, organization), "/app/users").Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -113,7 +113,7 @@ func OrganizationMenu(organization resource.ID) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = MenuItem("Runners", paths.Runners(organization), "/app/runners").Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = MenuItem("Runners", path.List(resource.RunnerKind, organization), "/app/runners").Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -121,7 +121,7 @@ func OrganizationMenu(organization resource.ID) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = MenuItem("Agent Pools", paths.AgentPools(organization), "/app/agent-pools").Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = MenuItem("Agent Pools", path.List(resource.AgentPoolKind, organization), "/app/agent-pools").Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -129,7 +129,7 @@ func OrganizationMenu(organization resource.ID) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = MenuItem("Variable Sets", paths.VariableSets(organization), "/app/variable-sets", paths.VariableSets(organization)).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = MenuItem("Variable Sets", path.List(resource.VariableSetKind, organization), "/app/variable-sets", path.List(resource.VariableSetKind, organization)).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -137,17 +137,17 @@ func OrganizationMenu(organization resource.ID) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = MenuItem("VCS Providers", paths.VCSProviders(organization), "/app/vcs-providers", paths.NewVCSProvider(organization)).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = MenuItem("VCS Providers", path.List(resource.VCSProviderKind, organization), "/app/vcs-providers", path.New(resource.VCSProviderKind, organization)).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = MenuItem("Modules", paths.Modules(organization), "/app/modules", paths.NewModule(organization)).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = MenuItem("Modules", path.List(resource.ModuleKind, organization), "/app/modules", path.New(resource.ModuleKind, organization)).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if IsOwner(ctx, organization) || IsSiteAdmin(ctx) {
-			templ_7745c5c3_Err = MenuItem("Settings", paths.EditOrganization(organization), paths.SSHKeys(organization), paths.OrganizationToken(organization), paths.EditAdvancedOrganization(organization)).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = MenuItem("Settings", path.Edit(organization), path.List(resource.SSHKeyKind, organization), path.OrganizationToken(organization), path.Resource(resource.Action("edit-advanced"), organization)).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -185,19 +185,19 @@ func OrganizationSettingsMenu(organization resource.ID) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = MenuItem("General", paths.EditOrganization(organization)).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = MenuItem("General", path.Edit(organization)).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = MenuItem("SSH Keys", paths.SSHKeys(organization)).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = MenuItem("SSH Keys", path.List(resource.SSHKeyKind, organization)).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = MenuItem("Token", paths.OrganizationToken(organization)).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = MenuItem("Token", path.OrganizationToken(organization)).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = MenuItem("Advanced", paths.EditAdvancedOrganization(organization)).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = MenuItem("Advanced", path.Resource(resource.Action("edit-advanced"), organization)).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -234,28 +234,28 @@ func WorkspaceMenu(workspace resource.Info, organization resource.ID, authorizer
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = MenuItem("<", paths.Organization(organization)).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = MenuItem("<", path.Get(organization)).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = MenuItem("Overview", paths.Workspace(workspace.ID)).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = MenuItem("Overview", path.Get(workspace.ID)).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = MenuItem("Runs", paths.Runs(workspace.ID), "/app/runs").Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = MenuItem("Runs", path.List(resource.RunKind, workspace.ID), "/app/runs").Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = MenuItem("State", paths.StateVersions(workspace.ID), "/app/state-versions").Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = MenuItem("State", path.List(resource.StateVersionKind, workspace.ID), "/app/state-versions").Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = MenuItem("Variables", paths.Variables(workspace.ID), "/app/variables", paths.Variables(workspace.ID)).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = MenuItem("Variables", path.List(resource.VariableKind, workspace.ID), "/app/variables", path.List(resource.VariableKind, workspace.ID)).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if authorizer.CanAccess(ctx, authz.UpdateWorkspaceAction, workspace.ID) {
-			templ_7745c5c3_Err = MenuItem("Settings", paths.EditWorkspace(workspace.ID), paths.Workspace(workspace.ID)+"/setup-connection", paths.EditPermissionsWorkspace(workspace.ID), paths.EditSSHKeyWorkspace(workspace.ID), paths.EditEngineWorkspace(workspace.ID), paths.EditVcsWorkspace(workspace.ID), paths.EditAdvancedWorkspace(workspace.ID), paths.EditTriggersWorkspace(workspace.ID)).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = MenuItem("Settings", path.Edit(workspace.ID), path.Get(workspace.ID)+"/setup-connection", path.Resource(resource.Action("edit-permissions"), workspace.ID), path.Resource(resource.Action("edit-ssh-key"), workspace.ID), path.Resource(resource.Action("edit-engine"), workspace.ID), path.Resource(resource.Action("edit-vcs"), workspace.ID), path.Resource(resource.Action("edit-advanced"), workspace.ID), path.Resource(resource.Action("edit-triggers"), workspace.ID)).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -265,9 +265,9 @@ func WorkspaceMenu(workspace resource.Info, organization resource.ID, authorizer
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var5 templ.SafeURL
-		templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinURLErrs(paths.StartRunWorkspace(workspace.ID))
+		templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinURLErrs(path.Resource(resource.Action("start-run"), workspace.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/helpers/menu.templ`, Line: 64, Col: 85}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/helpers/menu.templ`, Line: 64, Col: 105}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 		if templ_7745c5c3_Err != nil {
@@ -326,31 +326,31 @@ func WorkspaceSettingsMenu(workspaceID resource.ID) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = MenuItem("General", paths.EditWorkspace(workspaceID)).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = MenuItem("General", path.Edit(workspaceID)).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = MenuItem("Permissions", paths.EditPermissionsWorkspace(workspaceID)).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = MenuItem("Permissions", path.Resource(resource.Action("edit-permissions"), workspaceID)).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = MenuItem("VCS", paths.EditVcsWorkspace(workspaceID)).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = MenuItem("VCS", path.Resource(resource.Action("edit-vcs"), workspaceID)).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = MenuItem("Engines", paths.EditEngineWorkspace(workspaceID)).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = MenuItem("Engines", path.Resource(resource.Action("edit-engine"), workspaceID)).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = MenuItem("Run Triggers", paths.EditTriggersWorkspace(workspaceID)).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = MenuItem("Run Triggers", path.Resource(resource.Action("edit-triggers"), workspaceID)).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = MenuItem("SSH Key", paths.EditSSHKeyWorkspace(workspaceID)).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = MenuItem("SSH Key", path.Resource(resource.Action("edit-ssh-key"), workspaceID)).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = MenuItem("Advanced", paths.EditAdvancedWorkspace(workspaceID)).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = MenuItem("Advanced", path.Resource(resource.Action("edit-advanced"), workspaceID)).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

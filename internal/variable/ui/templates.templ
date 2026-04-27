@@ -5,7 +5,7 @@ import (
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/ui/helpers"
-	"github.com/leg100/otf/internal/ui/paths"
+	"github.com/leg100/otf/internal/path"
 	"github.com/leg100/otf/internal/variable"
 	"github.com/leg100/otf/internal/workspace"
 )
@@ -14,7 +14,7 @@ templ (t *templates) newWorkspaceVariable(ws *workspace.Workspace) {
 	<span class="text-md">Add a new workspace variable</span>
 	@variableForm(variableFormProps{
 		variable: &variable.Variable{},
-		action:   paths.CreateVariable(ws.ID),
+		action:   path.Create(resource.VariableKind, ws.ID),
 	})
 }
 
@@ -27,7 +27,7 @@ templ (t *templates) newVariableSet(props newVariableSetProps) {
 	<span class="text-md">Add a new variable set</span>
 	@variableSetForm(variableSetFormProps{
 		set:                 &variable.VariableSet{Global: true}, // set global as default
-		action:              paths.CreateVariableSet(props.organization),
+		action:              path.Create(resource.VariableSetKind, props.organization),
 		availableWorkspaces: props.availableWorkspaces,
 		existingWorkspaces:  []resource.Info{},
 	})
@@ -37,7 +37,7 @@ templ (t *templates) newVSV(vs *variable.VariableSet) {
 	<span class="text-xl">Add new variable to variable set</span>
 	@variableForm(variableFormProps{
 		variable: &variable.Variable{},
-		action:   paths.CreateVariableSetVariable(vs.ID),
+		action:   path.CreateVariableSetVariable(vs.ID),
 	})
 }
 
@@ -70,7 +70,7 @@ templ (t *templates) listWorkspaceVariables(props listWorkspaceVariablesProps) {
 
 templ (t *templates) newWorkspaceVariableButton(workspaceID resource.ID) {
 	if t.CanAccess(ctx, authz.CreateWorkspaceVariableAction, workspaceID) {
-		<form class="mt-2" action={ paths.NewVariable(workspaceID) } method="GET">
+		<form class="mt-2" action={ path.New(resource.VariableKind, workspaceID) } method="GET">
 			<button class="btn">Add variable</button>
 		</form>
 	}
@@ -90,7 +90,7 @@ templ (t *templates) listVariableSets(props listVariableSetsProps) {
 
 templ listVariableSetsActions(props listVariableSetsProps) {
 	if props.canCreateVariableSet {
-		<form action={ paths.NewVariableSet(props.organization) } method="GET">
+		<form action={ path.New(resource.VariableSetKind, props.organization) } method="GET">
 			<button class="btn" id="new-variable-set-button">
 				New Variable Set
 			</button>
@@ -109,7 +109,7 @@ templ (t listVariableSetsTable) Header() {
 templ (t listVariableSetsTable) Row(vs *variable.VariableSet) {
 	<tr id={ "item-variable-set-" + vs.Name }>
 		<td>
-			<a class="link" href={ paths.EditVariableSet(vs.ID) }>
+			<a class="link" href={ path.Edit(vs.ID) }>
 				{ vs.Name }
 			</a>
 		</td>
@@ -136,7 +136,7 @@ templ (t *templates) editWorkspaceVariable(props editWorkspaceVariableProps) {
 	@variableForm(variableFormProps{
 		variable: props.variable,
 		edit:     true,
-		action:   paths.UpdateVariable(props.variable.ID),
+		action:   path.Update(props.variable.ID),
 	})
 }
 
@@ -153,7 +153,7 @@ templ (t *templates) editVariableSet(props editVariableSetProps) {
 	@variableSetForm(variableSetFormProps{
 		set:                 props.set,
 		edit:                true,
-		action:              paths.UpdateVariableSet(props.set.ID),
+		action:              path.Update(props.set.ID),
 		availableWorkspaces: props.availableWorkspaces,
 		existingWorkspaces:  props.existingWorkspaces,
 	})
@@ -165,7 +165,7 @@ templ (t *templates) editVariableSet(props editVariableSetProps) {
 		},
 		props.rows,
 	)
-	<form class="mt-2" action={ paths.NewVariableSetVariable(props.set.ID) } method="GET">
+	<form class="mt-2" action={ path.NewVariableSetVariable(props.set.ID) } method="GET">
 		<button class="btn" id="add-variable-button">Add variable</button>
 	</form>
 }
@@ -180,7 +180,7 @@ templ (t *templates) editVSV(props editVSVProps) {
 	@variableForm(variableFormProps{
 		variable: props.variable,
 		edit:     true,
-		action:   paths.UpdateVariableSetVariable(props.variable.ID),
+		action:   path.UpdateVariableSetVariable(props.variable.ID),
 	})
 }
 
@@ -364,7 +364,7 @@ templ (t variablesTable) Row(v variableRow) {
 		if t.showVariableSetColumn() {
 			<td class="">
 				if v.set != nil {
-					<a class="link" href={ paths.EditVariableSet(v.set.ID) }>
+					<a class="link" href={ path.Edit(v.set.ID) }>
 						{ v.set.Name }
 					</a>
 				} else {
@@ -406,14 +406,14 @@ templ (t variablesTable) Row(v variableRow) {
 
 func (t variablesTable) editPath(row variableRow) string {
 	if row.set != nil {
-		return paths.EditVariableSetVariable(row.ID)
+		return path.EditVariableSetVariable(row.ID)
 	}
-	return paths.EditVariable(row.ID)
+	return path.Edit(row.ID)
 }
 
 func (t variablesTable) deletePath(row variableRow) string {
 	if row.set != nil {
-		return paths.DeleteVariableSetVariable(row.ID)
+		return path.DeleteVariableSetVariable(row.ID)
 	}
-	return paths.DeleteVariable(row.ID)
+	return path.Delete(row.ID)
 }

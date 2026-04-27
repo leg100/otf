@@ -34,3 +34,36 @@ const (
 	SSHKeyKind                    Kind = "sshkey"
 	RunTriggerKind                Kind = "rt"
 )
+
+var fullKinds = map[Kind]string{
+	OrganizationKind:              "organization",
+	WorkspaceKind:                 "workspace",
+	RunKind:                       "run",
+	ConfigVersionKind:             "config",
+	IngressAttributesKind:         "ingress-attributes",
+	JobKind:                       "job",
+	ModuleKind:                    "module",
+	ModuleVersionKind:             "module-version",
+	NotificationConfigurationKind: "notification-config",
+	AgentPoolKind:                 "agent-pool",
+	RunnerKind:                    "runner",
+	StateVersionKind:              "state-version",
+	StateVersionOutputKind:        "workspace-output",
+	VariableSetKind:               "variable-set",
+	VariableKind:                  "variable",
+	OrganizationTokenKind:         "organization-token",
+	UserTokenKind:                 "user-token",
+	TeamTokenKind:                 "team-token",
+	AgentTokenKind:                "agent-token",
+	SSHKeyKind:                    "ssh-key",
+	RunTriggerKind:                "trigger",
+	VCSProviderKind:               "vcs-provider",
+}
+
+// Full returns the unabbreviated name for the kind.
+func (k Kind) Full() string {
+	if full, ok := fullKinds[k]; ok {
+		return full
+	}
+	return k.String()
+}

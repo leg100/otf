@@ -12,7 +12,7 @@ import (
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/testutils"
-	"github.com/leg100/otf/internal/ui/paths"
+	"github.com/leg100/otf/internal/path"
 	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/assert"
@@ -66,7 +66,7 @@ func TestRuns_CancelHandler(t *testing.T) {
 	h.cancelRun(w, r)
 
 	assert.Equal(t, 200, w.Code, w.Body.String())
-	assert.Equal(t, paths.Run(run.ID), w.Header().Get("HX-Redirect"))
+	assert.Equal(t, path.Get(run.ID), w.Header().Get("HX-Redirect"))
 }
 
 func TestRuns_ForceCancelHandler(t *testing.T) {
@@ -80,7 +80,7 @@ func TestRuns_ForceCancelHandler(t *testing.T) {
 	h.forceCancelRun(w, r)
 
 	assert.Equal(t, 200, w.Code, w.Body.String())
-	assert.Equal(t, paths.Run(run.ID), w.Header().Get("HX-Redirect"))
+	assert.Equal(t, path.Get(run.ID), w.Header().Get("HX-Redirect"))
 }
 
 func TestRuns_DiscardHandler(t *testing.T) {
@@ -94,7 +94,7 @@ func TestRuns_DiscardHandler(t *testing.T) {
 	h.discardRun(w, r)
 
 	assert.Equal(t, 200, w.Code, w.Body.String())
-	assert.Equal(t, paths.Run(run.ID), w.Header().Get("HX-Redirect"))
+	assert.Equal(t, path.Get(run.ID), w.Header().Get("HX-Redirect"))
 }
 
 func TestWebHandlers_CreateRun_Connected(t *testing.T) {
@@ -107,7 +107,7 @@ func TestWebHandlers_CreateRun_Connected(t *testing.T) {
 	r := httptest.NewRequest("POST", q, nil)
 	w := httptest.NewRecorder()
 	h.createRun(w, r)
-	testutils.AssertRedirect(t, w, paths.Run(run.ID))
+	testutils.AssertRedirect(t, w, path.Get(run.ID))
 }
 
 func TestWebHandlers_CreateRun_Unconnected(t *testing.T) {
@@ -120,7 +120,7 @@ func TestWebHandlers_CreateRun_Unconnected(t *testing.T) {
 	r := httptest.NewRequest("POST", q, nil)
 	w := httptest.NewRecorder()
 	h.createRun(w, r)
-	testutils.AssertRedirect(t, w, paths.Run(run.ID))
+	testutils.AssertRedirect(t, w, path.Get(run.ID))
 }
 
 func TestTailLogs(t *testing.T) {

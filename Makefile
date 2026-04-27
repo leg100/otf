@@ -125,12 +125,6 @@ doc-screenshots: # update documentation screenshots
 tunnel:
 	cloudflared tunnel run otf
 
-# Generate path helpers
-.PHONY: paths
-paths:
-	go generate ./...
-	go tool goimports -w ./internal/ui/paths
-
 # Re-generate RBAC action strings
 .PHONY: actions
 actions:
@@ -144,11 +138,11 @@ debug:
 connect:
 	dlv connect 127.0.0.1:4300 .
 
-.PHONY: playwright-ubuntu
+.PHONY: install-playwright-ubuntu
 install-playwright-ubuntu:
 	go tool playwright install chromium --with-deps
 
-.PHONY: playwright-arch
+.PHONY: install-playwright-arch
 install-playwright-arch:
 	go tool playwright install chromium
 
@@ -184,7 +178,7 @@ live:
 generate-templates:
 	go tool templ generate
 
-check-no-diff: paths actions generate-templates helm-docs
+check-no-diff: actions generate-templates helm-docs
 	git diff --exit-code
 
 .PHONY: deploy-otfd

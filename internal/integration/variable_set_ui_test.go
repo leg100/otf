@@ -6,7 +6,7 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/resource"
-	"github.com/leg100/otf/internal/ui/paths"
+	"github.com/leg100/otf/internal/path"
 	"github.com/leg100/otf/internal/variable"
 	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/require"
@@ -21,7 +21,7 @@ func TestIntegration_VariableSetUI_New(t *testing.T) {
 	// Create global variable set in browser
 	browser.New(t, ctx, func(page playwright.Page) {
 		// go to org
-		_, err := page.Goto(daemon.URL(paths.Organization(org.Name)))
+		_, err := page.Goto(daemon.URL(path.Get(org.Name)))
 		require.NoError(t, err)
 
 		// go to variable sets
@@ -68,7 +68,7 @@ func TestIntegration_VariableSetUI_Edit(t *testing.T) {
 	// Edit global variable set in browser
 	browser.New(t, ctx, func(page playwright.Page) {
 		// go to variable set's page
-		_, err := page.Goto(daemon.URL(paths.EditVariableSet(set.ID)))
+		_, err := page.Goto(daemon.URL(path.Edit(set.ID)))
 		require.NoError(t, err)
 
 		// edit description
@@ -131,7 +131,7 @@ func TestIntegration_VariableSetUI_VariableDelete(t *testing.T) {
 	// Delete variable set variable set in browser
 	browser.New(t, ctx, func(page playwright.Page) {
 		// go to variable set's page
-		_, err := page.Goto(daemon.URL(paths.EditVariableSet(set.ID)))
+		_, err := page.Goto(daemon.URL(path.Edit(set.ID)))
 		require.NoError(t, err)
 
 		// delete variable
@@ -157,7 +157,7 @@ func TestIntegration_VariableSetUI_New_WorkspaceScoped(t *testing.T) {
 	// Create workspace-scoped variable set in browser, and add a variable.
 	browser.New(t, ctx, func(page playwright.Page) {
 		// go to org
-		_, err := page.Goto(daemon.URL(paths.Organization(org.Name)))
+		_, err := page.Goto(daemon.URL(path.Get(org.Name)))
 		require.NoError(t, err)
 
 		// go to variable sets
@@ -261,7 +261,7 @@ func TestIntegration_VariableSetUI_WorkspaceVariables(t *testing.T) {
 
 	browser.New(t, ctx, func(page playwright.Page) {
 		// go to variables page for workspace ws1
-		_, err = page.Goto(daemon.URL(paths.Variables(ws1.ID)))
+		_, err = page.Goto(daemon.URL(path.List(resource.VariableKind, ws1.ID)))
 		require.NoError(t, err)
 
 		err = page.Locator(`//li[@id='menu-item-variables']/a`).Click()

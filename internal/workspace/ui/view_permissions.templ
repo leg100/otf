@@ -4,7 +4,8 @@ import (
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/ui/helpers"
-	"github.com/leg100/otf/internal/ui/paths"
+	"github.com/leg100/otf/internal/path"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/workspace"
 )
 
@@ -42,8 +43,8 @@ templ editPermissions(props editPermissionsProps) {
 						continue
 					}
 					<tr id={ "permissions-" + workspacePerm.team.Name }>
-						<form class="" id="update-permissions" action={ paths.SetPermissionWorkspace(props.ws.ID) } method="POST"></form>
-						<td class=""><a href={ paths.Team(workspacePerm.team.ID) }>{ workspacePerm.team.Name }</a></td>
+						<form class="" id="update-permissions" action={ path.Resource(resource.Action("set-permission"), props.ws.ID) } method="POST"></form>
+						<td class=""><a href={ path.Get(workspacePerm.team.ID) }>{ workspacePerm.team.Name }</a></td>
 						<td class="">
 							<input name="team_id" value={ workspacePerm.team.ID.String() } type="hidden" form="update-permissions"/>
 							<select class="select" name="role" id="role-select" form="update-permissions">
@@ -54,7 +55,7 @@ templ editPermissions(props editPermissionsProps) {
 						</td>
 						<td class="flex items-center gap-2">
 							<button class="btn" form="update-permissions">Update</button>
-							<form class="" action={ paths.UnsetPermissionWorkspace(props.ws.ID) } method="POST">
+							<form class="" action={ path.Resource(resource.Action("unset-permission"), props.ws.ID) } method="POST">
 								<input name="team_id" value={ workspacePerm.team.ID.String() } type="hidden"/>
 								@helpers.DeleteButton()
 							</form>
@@ -62,7 +63,7 @@ templ editPermissions(props editPermissionsProps) {
 					</tr>
 				}
 				<tr class="">
-					<form id="permissions-add-form" action={ paths.SetPermissionWorkspace(props.ws.ID) } method="POST"></form>
+					<form id="permissions-add-form" action={ path.Resource(resource.Action("set-permission"), props.ws.ID) } method="POST"></form>
 					<td>
 						<select class="select" form="permissions-add-form" name="team_id" id="permissions-add-select-team">
 							<option disabled selected>--team--</option>

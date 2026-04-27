@@ -16,7 +16,7 @@ import (
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/ui/helpers"
-	"github.com/leg100/otf/internal/ui/paths"
+	"github.com/leg100/otf/internal/path"
 	userpkg "github.com/leg100/otf/internal/user"
 	"golang.org/x/oauth2"
 )
@@ -163,7 +163,7 @@ func (a *OAuthClient) callbackHandler(w http.ResponseWriter, r *http.Request) {
 	}()
 	if err != nil {
 		helpers.FlashError(w, err.Error())
-		http.Redirect(w, r, paths.Login(), http.StatusFound)
+		http.Redirect(w, r, path.Login(), http.StatusFound)
 		return
 	}
 	// Extract user info from OAuth token

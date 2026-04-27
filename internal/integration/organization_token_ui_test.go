@@ -4,7 +4,7 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/leg100/otf/internal/ui/paths"
+	"github.com/leg100/otf/internal/path"
 	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/require"
 )
@@ -17,7 +17,7 @@ func TestIntegration_OrganizationTokenUI(t *testing.T) {
 
 	browser.New(t, ctx, func(page playwright.Page) {
 		// go to organization
-		_, err := page.Goto(daemon.URL(paths.Organization(org.Name)))
+		_, err := page.Goto(daemon.URL(path.Get(org.Name)))
 		require.NoError(t, err)
 
 		// go to organization settings

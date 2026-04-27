@@ -13,7 +13,7 @@ import (
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/ui/helpers"
-	"github.com/leg100/otf/internal/ui/paths"
+	"github.com/leg100/otf/internal/path"
 	"github.com/leg100/otf/internal/user"
 )
 
@@ -57,7 +57,7 @@ func (h *Handlers) newTeam(w http.ResponseWriter, r *http.Request) {
 		r,
 		helpers.WithOrganization(params.Organization),
 		helpers.WithBreadcrumbs(
-			helpers.Breadcrumb{Name: "Teams", Link: paths.Teams(params.Organization)},
+			helpers.Breadcrumb{Name: "Teams", Link: path.List(resource.TeamKind, params.Organization)},
 			helpers.Breadcrumb{Name: "new"},
 		),
 	)
@@ -82,7 +82,7 @@ func (h *Handlers) createTeam(w http.ResponseWriter, r *http.Request) {
 	}
 
 	helpers.FlashSuccess(w, "created team: "+createdTeam.Name)
-	http.Redirect(w, r, paths.Team(createdTeam.ID), http.StatusFound)
+	http.Redirect(w, r, path.Get(createdTeam.ID), http.StatusFound)
 }
 
 func (h *Handlers) updateTeam(w http.ResponseWriter, r *http.Request) {
@@ -110,7 +110,7 @@ func (h *Handlers) updateTeam(w http.ResponseWriter, r *http.Request) {
 	}
 
 	helpers.FlashSuccess(w, "team permissions updated")
-	http.Redirect(w, r, paths.Team(updatedTeam.ID), http.StatusFound)
+	http.Redirect(w, r, path.Get(updatedTeam.ID), http.StatusFound)
 }
 
 func (h *Handlers) getTeam(w http.ResponseWriter, r *http.Request) {
@@ -165,7 +165,7 @@ func (h *Handlers) getTeam(w http.ResponseWriter, r *http.Request) {
 			Name:        "username",
 			Available:   internal.ConvertSliceToString(nonMemberUsernames),
 			Existing:    internal.ConvertSliceToString(usernames),
-			Action:      templ.SafeURL(paths.AddMemberTeam(team.ID)),
+			Action:      templ.SafeURL(path.Resource(resource.Action("add-member"), team.ID)),
 			Placeholder: "Add user",
 			Width:       helpers.WideDropDown,
 		},
@@ -177,7 +177,7 @@ func (h *Handlers) getTeam(w http.ResponseWriter, r *http.Request) {
 		r,
 		helpers.WithOrganization(team.Organization),
 		helpers.WithBreadcrumbs(
-			helpers.Breadcrumb{Name: "Teams", Link: paths.Teams(props.team.Organization)},
+			helpers.Breadcrumb{Name: "Teams", Link: path.List(resource.TeamKind, props.team.Organization)},
 			helpers.Breadcrumb{Name: props.team.Name},
 		),
 	)
@@ -231,7 +231,7 @@ func (h *Handlers) deleteTeam(w http.ResponseWriter, r *http.Request) {
 	}
 
 	helpers.FlashSuccess(w, "deleted team: "+deletedTeam.Name)
-	http.Redirect(w, r, paths.Teams(deletedTeam.Organization), http.StatusFound)
+	http.Redirect(w, r, path.List(resource.TeamKind, deletedTeam.Organization), http.StatusFound)
 }
 
 // diffUsers returns the users from b that are not in a.

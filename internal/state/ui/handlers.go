@@ -15,7 +15,7 @@ import (
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/state"
 	"github.com/leg100/otf/internal/ui/helpers"
-	"github.com/leg100/otf/internal/ui/paths"
+	"github.com/leg100/otf/internal/path"
 	"github.com/leg100/otf/internal/workspace"
 )
 
@@ -125,7 +125,7 @@ func (h *Handlers) rollbackStateVersion(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	http.Redirect(w, r, paths.StateVersions(sv.WorkspaceID), http.StatusFound)
+	http.Redirect(w, r, path.List(resource.StateVersionKind, sv.WorkspaceID), http.StatusFound)
 }
 
 func (h *Handlers) deleteStateVersion(w http.ResponseWriter, r *http.Request) {
@@ -147,7 +147,7 @@ func (h *Handlers) deleteStateVersion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, paths.StateVersions(workspaceID), http.StatusFound)
+	http.Redirect(w, r, path.List(resource.StateVersionKind, workspaceID), http.StatusFound)
 }
 
 func (h *Handlers) getStateVersion(w http.ResponseWriter, r *http.Request) {
@@ -181,7 +181,7 @@ func (h *Handlers) getStateVersion(w http.ResponseWriter, r *http.Request) {
 		w, r,
 		helpers.WithWorkspace(ws, h.authorizer),
 		helpers.WithBreadcrumbs(
-			helpers.Breadcrumb{Name: "State versions", Link: paths.StateVersions(sv.WorkspaceID)},
+			helpers.Breadcrumb{Name: "State versions", Link: path.List(resource.StateVersionKind, sv.WorkspaceID)},
 			helpers.Breadcrumb{Name: sv.ID.String()},
 		),
 	)
@@ -241,7 +241,7 @@ func (h *Handlers) diffStateVersion(w http.ResponseWriter, r *http.Request) {
 		w, r,
 		helpers.WithWorkspace(ws, h.authorizer),
 		helpers.WithBreadcrumbs(
-			helpers.Breadcrumb{Name: "State versions", Link: paths.StateVersions(sv.WorkspaceID)},
+			helpers.Breadcrumb{Name: "State versions", Link: path.List(resource.StateVersionKind, sv.WorkspaceID)},
 			helpers.Breadcrumb{Name: fmt.Sprintf("Diff (%s)", sv.ID.String())},
 		),
 	)

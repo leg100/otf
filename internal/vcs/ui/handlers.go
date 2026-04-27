@@ -11,7 +11,7 @@ import (
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/ui/helpers"
-	"github.com/leg100/otf/internal/ui/paths"
+	"github.com/leg100/otf/internal/path"
 	"github.com/leg100/otf/internal/vcs"
 )
 
@@ -96,7 +96,7 @@ func (h *Handlers) createVCSProvider(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	helpers.FlashSuccess(w, "created provider: "+provider.String())
-	http.Redirect(w, r, paths.VCSProviders(provider.Organization), http.StatusFound)
+	http.Redirect(w, r, path.List(resource.VCSProviderKind, provider.Organization), http.StatusFound)
 }
 
 func (h *Handlers) editVCSProvider(w http.ResponseWriter, r *http.Request) {
@@ -119,7 +119,7 @@ func (h *Handlers) editVCSProvider(w http.ResponseWriter, r *http.Request) {
 		r,
 		helpers.WithOrganization(provider.Organization),
 		helpers.WithBreadcrumbs(
-			helpers.Breadcrumb{Name: "VCS Providers", Link: paths.VCSProviders(provider.Organization)},
+			helpers.Breadcrumb{Name: "VCS Providers", Link: path.List(resource.VCSProviderKind, provider.Organization)},
 			helpers.Breadcrumb{Name: provider.String()},
 			helpers.Breadcrumb{Name: "settings"},
 		),
@@ -154,7 +154,7 @@ func (h *Handlers) updateVCSProvider(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	helpers.FlashSuccess(w, "updated provider: "+provider.String())
-	http.Redirect(w, r, paths.VCSProviders(provider.Organization), http.StatusFound)
+	http.Redirect(w, r, path.List(resource.VCSProviderKind, provider.Organization), http.StatusFound)
 }
 
 func (h *Handlers) listVCSProviders(w http.ResponseWriter, r *http.Request) {
@@ -196,5 +196,5 @@ func (h *Handlers) deleteVCSProvider(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	helpers.FlashSuccess(w, "deleted provider: "+provider.String())
-	http.Redirect(w, r, paths.VCSProviders(provider.Organization), http.StatusFound)
+	http.Redirect(w, r, path.List(resource.VCSProviderKind, provider.Organization), http.StatusFound)
 }

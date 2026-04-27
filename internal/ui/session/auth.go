@@ -13,7 +13,7 @@ import (
 
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/ui/helpers"
-	"github.com/leg100/otf/internal/ui/paths"
+	"github.com/leg100/otf/internal/path"
 )
 
 const (
@@ -32,7 +32,7 @@ type AuthenticatorClient interface {
 }
 
 func (a *Authenticator) Authenticate(w http.ResponseWriter, r *http.Request) (authz.Subject, error) {
-	if !strings.HasPrefix(r.URL.Path, paths.UIPrefix) {
+	if !strings.HasPrefix(r.URL.Path, path.Prefix) {
 		// This is a non-UI request; session authenticator only authenticates
 		// access to the UI.
 		return nil, nil

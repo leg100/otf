@@ -44,12 +44,6 @@ OTF_DOC_SCREENSHOTS=true make test
 
 The database schema is migrated using [tern](https://github.com/jackc/tern). The SQL migration files are kept in the repo in `./internal/sql/migrations`. Upon startup `otfd` automatically migrates the DB to the latest version.
 
-## HTML path helpers
-
-Rails-style path helpers are generated using `go generate`. The path specifications are maintained in `./ui/paths/paths.yaml`. After making changes to the specs run the following make task to generate the helpers:
-
-* `make paths`
-
 ## Web development
 
 If you're making changes to web templates then you may want to enable developer mode: set the environment variable `DEV_MODE=1`. Once enabled you will be able to see changes without restarting `otfd`.

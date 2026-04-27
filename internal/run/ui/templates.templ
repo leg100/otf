@@ -3,11 +3,11 @@ package ui
 import (
 	"fmt"
 	"github.com/leg100/otf/internal/configversion/source"
+	"github.com/leg100/otf/internal/path"
 	"github.com/leg100/otf/internal/resource"
 	runpkg "github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/ui/helpers"
-	"github.com/leg100/otf/internal/ui/paths"
 	"github.com/leg100/otf/internal/workspace"
 	"strings"
 	"time"
@@ -48,7 +48,7 @@ type getRunProps struct {
 templ (t *templates) getRun(props getRunProps) {
 	<div
 		hx-ext="sse"
-		sse-connect={ paths.WatchRun(props.run.ID) }
+		sse-connect={ path.Resource(resource.Watch, props.run.ID) }
 		class="flex flex-col gap-4"
 	>
 		<div class="flex gap-4 text-sm">
@@ -73,7 +73,7 @@ templ (t *templates) getRun(props getRunProps) {
 						@source.IconTrigger()
 					</span>
 					<span>
-						Triggered by <a class="link" href={ paths.Run(props.run.TriggeringRunID) }>{ props.run.TriggeringRunID.String() }</a>
+						Triggered by <a class="link" href={ path.Get(props.run.TriggeringRunID) }>{ props.run.TriggeringRunID.String() }</a>
 					</span>
 				</div>
 			}
@@ -147,10 +147,10 @@ templ getPreContent() {
 
 templ getPostContent(props getRunProps) {
 	if !props.planLogs.IsEnd() {
-		@templ.JSFuncCall("setupTail", paths.TailRun(props.run.ID), "plan", props.planLogs.NextOffset())
+		@templ.JSFuncCall("setupTail", path.Resource(runpkg.Tail, props.run.ID), "plan", props.planLogs.NextOffset())
 	}
 	if !props.applyLogs.IsEnd() {
-		@templ.JSFuncCall("setupTail", paths.TailRun(props.run.ID), "apply", props.applyLogs.NextOffset())
+		@templ.JSFuncCall("setupTail", path.Resource(runpkg.Tail, props.run.ID), "apply", props.applyLogs.NextOffset())
 	}
 }
 
@@ -235,7 +235,7 @@ templ triggeredRunAlert(triggeredRunID resource.ID) {
 			<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
 		</svg>
 		<span>
-			Triggered <a class="link" href={ paths.Run(triggeredRunID) }>{ triggeredRunID.String() }</a> in connected workspace.
+			Triggered <a class="link" href={ path.Get(triggeredRunID) }>{ triggeredRunID.String() }</a> in connected workspace.
 		</span>
 	</div>
 }

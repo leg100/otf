@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal/module"
-	"github.com/leg100/otf/internal/ui/paths"
+	"github.com/leg100/otf/internal/path"
 	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/require"
 )
@@ -37,7 +37,7 @@ func TestModuleProviderFilterUI(t *testing.T) {
 	// check provider filtering capabilities on UI
 	browser.New(t, ctx, func(page playwright.Page) {
 		// go to org
-		_, err := page.Goto(daemon.URL(paths.Organization(org.Name)))
+		_, err := page.Goto(daemon.URL(path.Get(org.Name)))
 		require.NoError(t, err)
 
 		// go to modules

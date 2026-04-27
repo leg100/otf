@@ -7,7 +7,7 @@ import (
 
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/resource"
-	"github.com/leg100/otf/internal/ui/paths"
+	"github.com/leg100/otf/internal/path"
 	"github.com/leg100/otf/internal/user"
 	"github.com/stretchr/testify/assert"
 )
@@ -33,7 +33,7 @@ func TestUserHandlers(t *testing.T) {
 
 		if assert.Equal(t, 302, w.Code) {
 			redirect, _ := w.Result().Location()
-			assert.Equal(t, paths.Tokens(), redirect.Path)
+			assert.Equal(t, path.Tokens(), redirect.Path)
 		}
 	})
 
@@ -64,7 +64,7 @@ func TestUserHandlers(t *testing.T) {
 
 		if assert.Equal(t, 302, w.Code) {
 			redirect, _ := w.Result().Location()
-			assert.Equal(t, paths.Tokens(), redirect.Path)
+			assert.Equal(t, path.Tokens(), redirect.Path)
 		}
 	})
 }

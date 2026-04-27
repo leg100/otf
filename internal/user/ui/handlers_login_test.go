@@ -10,7 +10,7 @@ import (
 	"github.com/leg100/otf/internal/authenticator"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/resource"
-	"github.com/leg100/otf/internal/ui/paths"
+	"github.com/leg100/otf/internal/path"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -88,6 +88,6 @@ func (f *fakeLoginClient) Clients() []*authenticator.OAuthClient {
 }
 
 func (f *fakeLoginClient) StartSession(w http.ResponseWriter, r *http.Request, userID resource.TfeID) error {
-	http.Redirect(w, r, paths.Profile(), http.StatusFound)
+	http.Redirect(w, r, path.Profile(), http.StatusFound)
 	return nil
 }

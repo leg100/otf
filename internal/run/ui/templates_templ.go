@@ -11,11 +11,11 @@ import templruntime "github.com/a-h/templ/runtime"
 import (
 	"fmt"
 	"github.com/leg100/otf/internal/configversion/source"
+	"github.com/leg100/otf/internal/path"
 	"github.com/leg100/otf/internal/resource"
 	runpkg "github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/ui/helpers"
-	"github.com/leg100/otf/internal/ui/paths"
 	"github.com/leg100/otf/internal/workspace"
 	"strings"
 	"time"
@@ -111,9 +111,9 @@ func (t *templates) getRun(props getRunProps) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var3 string
-		templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(paths.WatchRun(props.run.ID))
+		templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(path.Resource(resource.Watch, props.run.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/ui/templates.templ`, Line: 51, Col: 44}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/ui/templates.templ`, Line: 51, Col: 59}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 		if templ_7745c5c3_Err != nil {
@@ -171,9 +171,9 @@ func (t *templates) getRun(props getRunProps) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var6 templ.SafeURL
-			templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinURLErrs(paths.Run(props.run.TriggeringRunID))
+			templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinURLErrs(path.Get(props.run.TriggeringRunID))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/ui/templates.templ`, Line: 76, Col: 78}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/ui/templates.templ`, Line: 76, Col: 77}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 			if templ_7745c5c3_Err != nil {
@@ -186,7 +186,7 @@ func (t *templates) getRun(props getRunProps) templ.Component {
 			var templ_7745c5c3_Var7 string
 			templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(props.run.TriggeringRunID.String())
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/ui/templates.templ`, Line: 76, Col: 117}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/ui/templates.templ`, Line: 76, Col: 116}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 			if templ_7745c5c3_Err != nil {
@@ -494,13 +494,13 @@ func getPostContent(props getRunProps) templ.Component {
 		}
 		ctx = templ.ClearChildren(ctx)
 		if !props.planLogs.IsEnd() {
-			templ_7745c5c3_Err = templ.JSFuncCall("setupTail", paths.TailRun(props.run.ID), "plan", props.planLogs.NextOffset()).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = templ.JSFuncCall("setupTail", path.Resource(runpkg.Tail, props.run.ID), "plan", props.planLogs.NextOffset()).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
 		if !props.applyLogs.IsEnd() {
-			templ_7745c5c3_Err = templ.JSFuncCall("setupTail", paths.TailRun(props.run.ID), "apply", props.applyLogs.NextOffset()).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = templ.JSFuncCall("setupTail", path.Resource(runpkg.Tail, props.run.ID), "apply", props.applyLogs.NextOffset()).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -925,9 +925,9 @@ func triggeredRunAlert(triggeredRunID resource.ID) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var46 templ.SafeURL
-		templ_7745c5c3_Var46, templ_7745c5c3_Err = templ.JoinURLErrs(paths.Run(triggeredRunID))
+		templ_7745c5c3_Var46, templ_7745c5c3_Err = templ.JoinURLErrs(path.Get(triggeredRunID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/ui/templates.templ`, Line: 238, Col: 61}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/ui/templates.templ`, Line: 238, Col: 60}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var46))
 		if templ_7745c5c3_Err != nil {
@@ -940,7 +940,7 @@ func triggeredRunAlert(triggeredRunID resource.ID) templ.Component {
 		var templ_7745c5c3_Var47 string
 		templ_7745c5c3_Var47, templ_7745c5c3_Err = templ.JoinStringErrs(triggeredRunID.String())
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/ui/templates.templ`, Line: 238, Col: 89}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/ui/templates.templ`, Line: 238, Col: 88}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var47))
 		if templ_7745c5c3_Err != nil {

@@ -11,7 +11,7 @@ import (
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/testutils"
-	"github.com/leg100/otf/internal/ui/paths"
+	"github.com/leg100/otf/internal/path"
 	"github.com/leg100/otf/internal/user"
 	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/require"
@@ -27,7 +27,7 @@ func TestIntegration_VCSProviderTokenUI(t *testing.T) {
 	// create a vcs provider with a github personal access token
 	browser.New(t, ctx, func(page playwright.Page) {
 		// go to org
-		_, err := page.Goto(daemon.URL(paths.Organization(org.Name)))
+		_, err := page.Goto(daemon.URL(path.Get(org.Name)))
 		require.NoError(t, err)
 
 		screenshot(t, page, "organization_main_menu")
@@ -186,7 +186,7 @@ func TestIntegration_VCSProviderAppUI(t *testing.T) {
 	// create github app vcs provider via UI.
 	browser.New(t, ctx, func(page playwright.Page) {
 		// go to org
-		_, err = page.Goto(daemon.URL(paths.Organization(org.Name)))
+		_, err = page.Goto(daemon.URL(path.Get(org.Name)))
 		require.NoError(t, err)
 
 		// go to vcs providers

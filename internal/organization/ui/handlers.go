@@ -10,7 +10,7 @@ import (
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/ui/helpers"
-	"github.com/leg100/otf/internal/ui/paths"
+	"github.com/leg100/otf/internal/path"
 )
 
 type Handlers struct {
@@ -59,7 +59,7 @@ func (h *Handlers) newOrganization(w http.ResponseWriter, r *http.Request) {
 		w,
 		r,
 		helpers.WithBreadcrumbs(
-			helpers.Breadcrumb{Name: "organizations", Link: paths.Organizations()},
+			helpers.Breadcrumb{Name: "organizations", Link: path.List(resource.OrganizationKind, nil)},
 			helpers.Breadcrumb{Name: "new"},
 		),
 	)
@@ -79,7 +79,7 @@ func (h *Handlers) createOrganization(w http.ResponseWriter, r *http.Request) {
 	}
 
 	helpers.FlashSuccess(w, "created organization: "+org.Name.String())
-	http.Redirect(w, r, paths.Organization(org.Name), http.StatusFound)
+	http.Redirect(w, r, path.Get(org.Name), http.StatusFound)
 }
 
 func (h *Handlers) listOrganizations(w http.ResponseWriter, r *http.Request) {
@@ -128,7 +128,7 @@ func (h *Handlers) getOrganization(w http.ResponseWriter, r *http.Request) {
 		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
-	http.Redirect(w, r, paths.Workspaces(params.Name), http.StatusFound)
+	http.Redirect(w, r, path.List(resource.WorkspaceKind, params.Name), http.StatusFound)
 }
 
 func (h *Handlers) editOrganization(w http.ResponseWriter, r *http.Request) {
@@ -178,7 +178,7 @@ func (h *Handlers) updateOrganization(w http.ResponseWriter, r *http.Request) {
 	}
 
 	helpers.FlashSuccess(w, "updated organization")
-	http.Redirect(w, r, paths.EditOrganization(org.Name), http.StatusFound)
+	http.Redirect(w, r, path.Edit(org.Name), http.StatusFound)
 }
 
 func (h *Handlers) deleteOrganization(w http.ResponseWriter, r *http.Request) {
@@ -196,7 +196,7 @@ func (h *Handlers) deleteOrganization(w http.ResponseWriter, r *http.Request) {
 	}
 
 	helpers.FlashSuccess(w, "deleted organization: "+params.Name.String())
-	http.Redirect(w, r, paths.Organizations(), http.StatusFound)
+	http.Redirect(w, r, path.List(resource.OrganizationKind, nil), http.StatusFound)
 }
 
 func (h *Handlers) editAdvancedOrganization(w http.ResponseWriter, r *http.Request) {
@@ -247,7 +247,7 @@ func (h *Handlers) createOrganizationToken(w http.ResponseWriter, r *http.Reques
 		helpers.Error(r, w, err.Error())
 		return
 	}
-	http.Redirect(w, r, paths.OrganizationToken(opts.Organization), http.StatusFound)
+	http.Redirect(w, r, path.OrganizationToken(opts.Organization), http.StatusFound)
 }
 
 func (h *Handlers) organizationToken(w http.ResponseWriter, r *http.Request) {
@@ -294,5 +294,5 @@ func (h *Handlers) deleteOrganizationToken(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	helpers.FlashSuccess(w, "Deleted organization token")
-	http.Redirect(w, r, paths.OrganizationToken(params.Name), http.StatusFound)
+	http.Redirect(w, r, path.OrganizationToken(params.Name), http.StatusFound)
 }

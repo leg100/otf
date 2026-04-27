@@ -3,37 +3,37 @@ package helpers
 import (
 	"context"
 	"github.com/leg100/otf/internal/authz"
+	"github.com/leg100/otf/internal/path"
 	"github.com/leg100/otf/internal/resource"
-	"github.com/leg100/otf/internal/ui/paths"
 	"strings"
 )
 
 templ SiteMenu() {
 	<ul class="menu menu-horizontal w-full">
-		@MenuItem("Organizations", paths.Organizations())
-		@MenuItem("Profile", paths.Profile())
-		@MenuItem("User Tokens", paths.Tokens(), "/app/current-user/tokens")
-		@MenuItem("Github App", paths.GithubApps())
+		@MenuItem("Organizations", path.List(resource.OrganizationKind, nil))
+		@MenuItem("Profile", path.Profile())
+		@MenuItem("User Tokens", path.Tokens())
+		@MenuItem("Github App", path.GithubApps())
 	</ul>
 }
 
 templ OrganizationMenu(organization resource.ID) {
 	<ul id="organization-menu" class="menu menu-horizontal w-full">
-		@MenuItem("Workspaces", paths.Workspaces(organization), "/app/workspaces", "/app/variables", paths.NewWorkspace(organization))
+		@MenuItem("Workspaces", path.List(resource.WorkspaceKind, organization), "/app/workspaces", "/app/variables", path.New(resource.WorkspaceKind, organization))
 		if IsOwner(ctx, organization) || IsSiteAdmin(ctx) {
-			@MenuItem("Runs", paths.OrganizationRuns(organization), "/app/runs")
+			@MenuItem("Runs", path.List(resource.RunKind, organization), "/app/runs")
 		}
-		@MenuItem("Teams", paths.Teams(organization), "/app/teams", paths.NewTeam(organization))
+		@MenuItem("Teams", path.List(resource.TeamKind, organization), "/app/teams", path.New(resource.TeamKind, organization))
 		if IsOwner(ctx, organization) || IsSiteAdmin(ctx) {
-			@MenuItem("Users", paths.Users(organization), "/app/users")
-			@MenuItem("Runners", paths.Runners(organization), "/app/runners")
-			@MenuItem("Agent Pools", paths.AgentPools(organization), "/app/agent-pools")
-			@MenuItem("Variable Sets", paths.VariableSets(organization), "/app/variable-sets", paths.VariableSets(organization))
-			@MenuItem("VCS Providers", paths.VCSProviders(organization), "/app/vcs-providers", paths.NewVCSProvider(organization))
+			@MenuItem("Users", path.List(resource.UserKind, organization), "/app/users")
+			@MenuItem("Runners", path.List(resource.RunnerKind, organization), "/app/runners")
+			@MenuItem("Agent Pools", path.List(resource.AgentPoolKind, organization), "/app/agent-pools")
+			@MenuItem("Variable Sets", path.List(resource.VariableSetKind, organization), "/app/variable-sets", path.List(resource.VariableSetKind, organization))
+			@MenuItem("VCS Providers", path.List(resource.VCSProviderKind, organization), "/app/vcs-providers", path.New(resource.VCSProviderKind, organization))
 		}
-		@MenuItem("Modules", paths.Modules(organization), "/app/modules", paths.NewModule(organization))
+		@MenuItem("Modules", path.List(resource.ModuleKind, organization), "/app/modules", path.New(resource.ModuleKind, organization))
 		if IsOwner(ctx, organization) || IsSiteAdmin(ctx) {
-			@MenuItem("Settings", paths.EditOrganization(organization), paths.SSHKeys(organization), paths.OrganizationToken(organization), paths.EditAdvancedOrganization(organization))
+			@MenuItem("Settings", path.Edit(organization), path.List(resource.SSHKeyKind, organization), path.OrganizationToken(organization), path.Resource(resource.Action("edit-advanced"), organization))
 		}
 	</ul>
 }
@@ -41,27 +41,27 @@ templ OrganizationMenu(organization resource.ID) {
 templ OrganizationSettingsMenu(organization resource.ID) {
 	<ul id="organization-settings-menu" class="menu">
 		<li class="menu-title">Settings</li>
-		@MenuItem("General", paths.EditOrganization(organization))
-		@MenuItem("SSH Keys", paths.SSHKeys(organization))
-		@MenuItem("Token", paths.OrganizationToken(organization))
-		@MenuItem("Advanced", paths.EditAdvancedOrganization(organization))
+		@MenuItem("General", path.Edit(organization))
+		@MenuItem("SSH Keys", path.List(resource.SSHKeyKind, organization))
+		@MenuItem("Token", path.OrganizationToken(organization))
+		@MenuItem("Advanced", path.Resource(resource.Action("edit-advanced"), organization))
 	</ul>
 }
 
 templ WorkspaceMenu(workspace resource.Info, organization resource.ID, authorizer authz.Interface) {
 	<div class="flex flex-row items-center">
 		<ul id="workspace-menu" class="menu menu-horizontal">
-			@MenuItem("<", paths.Organization(organization))
-			@MenuItem("Overview", paths.Workspace(workspace.ID))
-			@MenuItem("Runs", paths.Runs(workspace.ID), "/app/runs")
-			@MenuItem("State", paths.StateVersions(workspace.ID), "/app/state-versions")
-			@MenuItem("Variables", paths.Variables(workspace.ID), "/app/variables", paths.Variables(workspace.ID))
+			@MenuItem("<", path.Get(organization))
+			@MenuItem("Overview", path.Get(workspace.ID))
+			@MenuItem("Runs", path.List(resource.RunKind, workspace.ID), "/app/runs")
+			@MenuItem("State", path.List(resource.StateVersionKind, workspace.ID), "/app/state-versions")
+			@MenuItem("Variables", path.List(resource.VariableKind, workspace.ID), "/app/variables", path.List(resource.VariableKind, workspace.ID))
 			if authorizer.CanAccess(ctx, authz.UpdateWorkspaceAction, workspace.ID) {
-				@MenuItem("Settings", paths.EditWorkspace(workspace.ID), paths.Workspace(workspace.ID)+"/setup-connection", paths.EditPermissionsWorkspace(workspace.ID), paths.EditSSHKeyWorkspace(workspace.ID), paths.EditEngineWorkspace(workspace.ID), paths.EditVcsWorkspace(workspace.ID), paths.EditAdvancedWorkspace(workspace.ID), paths.EditTriggersWorkspace(workspace.ID))
+				@MenuItem("Settings", path.Edit(workspace.ID), path.Get(workspace.ID)+"/setup-connection", path.Resource(resource.Action("edit-permissions"), workspace.ID), path.Resource(resource.Action("edit-ssh-key"), workspace.ID), path.Resource(resource.Action("edit-engine"), workspace.ID), path.Resource(resource.Action("edit-vcs"), workspace.ID), path.Resource(resource.Action("edit-advanced"), workspace.ID), path.Resource(resource.Action("edit-triggers"), workspace.ID))
 			}
 		</ul>
 		<div class="">
-			<form id="workspace-start-run-form" action={ paths.StartRunWorkspace(workspace.ID) } method="POST">
+			<form id="workspace-start-run-form" action={ path.Resource(resource.Action("start-run"), workspace.ID) } method="POST">
 				if authorizer.CanAccess(ctx, authz.CreateRunAction, workspace.ID) {
 					<select class="select select-sm" name="operation" id="start-run-operation" onchange="this.form.submit()">
 						<option disabled selected>-- start run --</option>
@@ -79,13 +79,13 @@ templ WorkspaceMenu(workspace resource.Info, organization resource.ID, authorize
 templ WorkspaceSettingsMenu(workspaceID resource.ID) {
 	<ul id="workspace-settings-menu" class="menu">
 		<li class="menu-title">Settings</li>
-		@MenuItem("General", paths.EditWorkspace(workspaceID))
-		@MenuItem("Permissions", paths.EditPermissionsWorkspace(workspaceID))
-		@MenuItem("VCS", paths.EditVcsWorkspace(workspaceID))
-		@MenuItem("Engines", paths.EditEngineWorkspace(workspaceID))
-		@MenuItem("Run Triggers", paths.EditTriggersWorkspace(workspaceID))
-		@MenuItem("SSH Key", paths.EditSSHKeyWorkspace(workspaceID))
-		@MenuItem("Advanced", paths.EditAdvancedWorkspace(workspaceID))
+		@MenuItem("General", path.Edit(workspaceID))
+		@MenuItem("Permissions", path.Resource(resource.Action("edit-permissions"), workspaceID))
+		@MenuItem("VCS", path.Resource(resource.Action("edit-vcs"), workspaceID))
+		@MenuItem("Engines", path.Resource(resource.Action("edit-engine"), workspaceID))
+		@MenuItem("Run Triggers", path.Resource(resource.Action("edit-triggers"), workspaceID))
+		@MenuItem("SSH Key", path.Resource(resource.Action("edit-ssh-key"), workspaceID))
+		@MenuItem("Advanced", path.Resource(resource.Action("edit-advanced"), workspaceID))
 	</ul>
 }
 

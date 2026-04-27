@@ -12,7 +12,7 @@ import (
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/ui/helpers"
-	"github.com/leg100/otf/internal/ui/paths"
+	"github.com/leg100/otf/internal/path"
 	"github.com/leg100/otf/internal/ui/session"
 	"github.com/leg100/otf/internal/user"
 )
@@ -100,7 +100,7 @@ func (h *Handlers) profileHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handlers) site(w http.ResponseWriter, r *http.Request) {
-	http.Redirect(w, r, paths.Organizations(), http.StatusFound)
+	http.Redirect(w, r, path.List(resource.OrganizationKind, nil), http.StatusFound)
 }
 
 // team membership handlers
@@ -122,7 +122,7 @@ func (h *Handlers) addTeamMember(w http.ResponseWriter, r *http.Request) {
 	}
 
 	helpers.FlashSuccess(w, fmt.Sprintf("added team member: %s", *params.Username))
-	http.Redirect(w, r, paths.Team(params.TeamID), http.StatusFound)
+	http.Redirect(w, r, path.Get(params.TeamID), http.StatusFound)
 }
 
 func (h *Handlers) removeTeamMember(w http.ResponseWriter, r *http.Request) {
@@ -142,7 +142,7 @@ func (h *Handlers) removeTeamMember(w http.ResponseWriter, r *http.Request) {
 	}
 
 	helpers.FlashSuccess(w, fmt.Sprintf("removed team member: %s", params.Username))
-	http.Redirect(w, r, paths.Team(params.TeamID), http.StatusFound)
+	http.Redirect(w, r, path.Get(params.TeamID), http.StatusFound)
 }
 
 //
@@ -156,7 +156,7 @@ func (h *Handlers) newUserToken(w http.ResponseWriter, r *http.Request) {
 		w,
 		r,
 		helpers.WithBreadcrumbs(
-			helpers.Breadcrumb{Name: "user tokens", Link: paths.Tokens()},
+			helpers.Breadcrumb{Name: "user tokens", Link: path.Tokens()},
 			helpers.Breadcrumb{Name: "new"},
 		),
 	)
@@ -178,7 +178,7 @@ func (h *Handlers) createUserToken(w http.ResponseWriter, r *http.Request) {
 		helpers.Error(r, w, err.Error())
 		return
 	}
-	http.Redirect(w, r, paths.Tokens(), http.StatusFound)
+	http.Redirect(w, r, path.Tokens(), http.StatusFound)
 }
 
 func (h *Handlers) userTokens(w http.ResponseWriter, r *http.Request) {
@@ -214,7 +214,7 @@ func (h *Handlers) deleteUserToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	helpers.FlashSuccess(w, "Deleted token")
-	http.Redirect(w, r, paths.Tokens(), http.StatusFound)
+	http.Redirect(w, r, path.Tokens(), http.StatusFound)
 }
 
 // diffUsers returns the users from b that are not in a.

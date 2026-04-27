@@ -9,10 +9,10 @@ import (
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/logr"
+	"github.com/leg100/otf/internal/path"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run/trigger"
 	"github.com/leg100/otf/internal/ui/helpers"
-	"github.com/leg100/otf/internal/ui/paths"
 	"github.com/leg100/otf/internal/workspace"
 )
 
@@ -46,7 +46,7 @@ func NewHandlers(
 
 func (h *Handlers) AddHandlers(r *mux.Router) {
 	r.HandleFunc("/workspaces/{workspace_id}/edit-triggers", h.editTriggers).Methods("GET")
-	r.HandleFunc("/workspaces/{workspace_id}/create-trigger", h.createTrigger).Methods("POST")
+	r.HandleFunc("/workspaces/{workspace_id}/triggers/create", h.createTrigger).Methods("POST")
 	r.HandleFunc("/triggers/{trigger_id}/delete", h.deleteTrigger).Methods("POST")
 	r.HandleFunc("/workspaces/{workspace_id}/update-auto-apply-run-trigger", h.updateAutoApply).Methods("POST")
 }
@@ -151,7 +151,7 @@ func (h *Handlers) createTrigger(w http.ResponseWriter, r *http.Request) {
 	}
 
 	helpers.FlashSuccess(w, "created trigger: "+trigger.ID.String())
-	http.Redirect(w, r, paths.EditTriggersWorkspace(params.WorkspaceID), http.StatusFound)
+	http.Redirect(w, r, path.Resource(resource.Action("edit-triggers"), params.WorkspaceID), http.StatusFound)
 }
 
 func (h *Handlers) deleteTrigger(w http.ResponseWriter, r *http.Request) {
@@ -190,5 +190,5 @@ func (h *Handlers) updateAutoApply(w http.ResponseWriter, r *http.Request) {
 	}
 
 	helpers.FlashSuccess(w, fmt.Sprintf("updated auto apply setting: %v", params.AutoApply))
-	http.Redirect(w, r, paths.EditTriggersWorkspace(params.WorkspaceID), http.StatusFound)
+	http.Redirect(w, r, path.Resource(resource.Action("edit-triggers"), params.WorkspaceID), http.StatusFound)
 }

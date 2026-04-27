@@ -5,7 +5,8 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/leg100/otf/internal/ui/paths"
+	"github.com/leg100/otf/internal/path"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/require"
 )
@@ -22,7 +23,7 @@ func TestRunTriggers(t *testing.T) {
 	// Create connection between workspaces using UI.
 	browser.New(t, ctx, func(page playwright.Page) {
 		// navigate to workspace page
-		_, err := page.Goto(daemon.URL(paths.Workspace(triggered.ID)))
+		_, err := page.Goto(daemon.URL(path.Get(triggered.ID)))
 		require.NoError(t, err)
 
 		// navigate to settings page
@@ -55,7 +56,7 @@ func TestRunTriggers(t *testing.T) {
 		triggeringRun := daemon.createRun(t, ctx, triggering, cv1, nil)
 
 		// navigate to run page
-		_, err = page.Goto(daemon.URL(paths.Run(triggeringRun.ID)))
+		_, err = page.Goto(daemon.URL(path.Get(triggeringRun.ID)))
 		require.NoError(t, err)
 
 		// Wait for run to reach planned status
@@ -89,7 +90,7 @@ func TestRunTriggers(t *testing.T) {
 		// Enable auto-apply
 		//
 		// Navigate to triggers page
-		_, err = page.Goto(daemon.URL(paths.EditTriggersWorkspace(triggered.ID)))
+		_, err = page.Goto(daemon.URL(path.Resource(resource.Action("edit-triggers"), triggered.ID)))
 		require.NoError(t, err)
 
 		err = page.Locator(`//input[@id='auto-apply']`).Click()
@@ -110,7 +111,7 @@ func TestRunTriggers(t *testing.T) {
 		// Delete connection via UI.
 		//
 		// Navigate to triggers page
-		_, err = page.Goto(daemon.URL(paths.EditTriggersWorkspace(triggered.ID)))
+		_, err = page.Goto(daemon.URL(path.Resource(resource.Action("edit-triggers"), triggered.ID)))
 		require.NoError(t, err)
 
 		// Now delete the connection to the triggering workspace.

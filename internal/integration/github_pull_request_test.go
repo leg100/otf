@@ -5,7 +5,8 @@ import (
 
 	"github.com/leg100/otf/internal/github/testserver"
 	"github.com/leg100/otf/internal/testutils"
-	"github.com/leg100/otf/internal/ui/paths"
+	"github.com/leg100/otf/internal/path"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/playwright-community/playwright-go"
@@ -59,7 +60,7 @@ func TestGithubPullRequest(t *testing.T) {
 		// commit-triggered run should appear as latest run on workspace
 		browser.New(t, ctx, func(page playwright.Page) {
 			// go to runs
-			_, err = page.Goto(daemon.URL(paths.Runs(ws.ID)))
+			_, err = page.Goto(daemon.URL(path.List(resource.RunKind, ws.ID)))
 			require.NoError(t, err)
 			// should be one run widget with info matching the pull request
 			err = expect.Locator(page.Locator(`//a[@id='pull-request-link']`)).ToHaveText(`#2`)

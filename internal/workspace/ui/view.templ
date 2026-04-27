@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/ui/helpers"
-	"github.com/leg100/otf/internal/ui/paths"
+	"github.com/leg100/otf/internal/path"
+	"github.com/leg100/otf/internal/resource"
 )
 
 templ workspaceNew(organization organization.Name) {
-	<form class="flex flex-col gap-2" action={ paths.CreateWorkspace(organization) } method="POST">
+	<form class="flex flex-col gap-2" action={ path.Create(resource.WorkspaceKind, organization) } method="POST">
 		<div class="field">
 			<label for="name">Name</label>
 			<input class="input w-80" type="text" name="name" id="name" required/>
