@@ -11,13 +11,12 @@ import (
 type (
 	// VariableSet is a set of variables
 	VariableSet struct {
-		ID           resource.TfeID
+		ID           resource.TfeID `db:"variable_set_id"`
 		Name         string
 		Description  string
 		Global       bool
-		Workspaces   []resource.TfeID
-		Organization organization.Name
-		Variables    []*Variable
+		Workspaces   []resource.TfeID  `db:"workspace_ids"`
+		Organization organization.Name `db:"organization_name"`
 	}
 
 	CreateVariableSetOptions struct {
@@ -120,7 +119,7 @@ func (s *VariableSet) GetVariableByID(variableID resource.TfeID) *Variable {
 //
 // (a) set contains more than one variable sharing the same key and category
 // (b) set is global and contains a variable that shares the same key and category as another
-// variable in another global set in the given sets
+// variable in another global set in the organization.
 func (s *VariableSet) checkGlobalConflicts(organizationSets []*VariableSet) error {
 	if !s.Global {
 		// only global sets conflict with one another

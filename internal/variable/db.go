@@ -136,13 +136,7 @@ WHERE variable_set_id = $4
 func (pdb *pgdb) getVariableSet(ctx context.Context, setID resource.TfeID) (*VariableSet, error) {
 	row := pdb.Query(ctx, `
 SELECT
-    vs.variable_set_id, vs.global, vs.name, vs.description, vs.organization_name,
-    (
-        SELECT array_agg(v.*)::variables[]
-        FROM variables v
-        JOIN variable_set_variables vsv USING (variable_id)
-        WHERE vsv.variable_set_id = vs.variable_set_id
-    ) AS variables,
+    vs.*,
     (
         SELECT array_agg(vsw.workspace_id)::text[]
         FROM variable_set_workspaces vsw
@@ -152,19 +146,13 @@ FROM variable_sets vs
 WHERE vs.variable_set_id = $1
 `,
 		setID)
-	return sql.CollectOneRow(row, scanVariableSet)
+	return sql.CollectExactlyOneRow(row, pgx.RowToAddrOfStructByName[VariableSet])
 }
 
 func (pdb *pgdb) getVariableSetByVariableID(ctx context.Context, variableID resource.TfeID) (*VariableSet, error) {
 	row := pdb.Query(ctx, `
 SELECT
-    vs.variable_set_id, vs.global, vs.name, vs.description, vs.organization_name,
-    (
-        SELECT array_agg(v.*)::variables[]
-        FROM variables v
-        JOIN variable_set_variables vsv USING (variable_id)
-        WHERE vsv.variable_set_id = vs.variable_set_id
-    ) AS variables,
+    vs.*,
     (
         SELECT array_agg(vsw.workspace_id)::text[]
         FROM variable_set_workspaces vsw
@@ -174,19 +162,13 @@ FROM variable_sets vs
 JOIN variable_set_variables vsv USING (variable_set_id)
 WHERE vsv.variable_id = $1
 `, variableID)
-	return sql.CollectOneRow(row, scanVariableSet)
+	return sql.CollectExactlyOneRow(row, pgx.RowToAddrOfStructByName[VariableSet])
 }
 
 func (pdb *pgdb) listVariableSets(ctx context.Context, organization organization.Name) ([]*VariableSet, error) {
 	rows := pdb.Query(ctx, `
 SELECT
-    vs.variable_set_id, vs.global, vs.name, vs.description, vs.organization_name,
-    (
-        SELECT array_agg(v.*)::variables[]
-        FROM variables v
-        JOIN variable_set_variables vsv USING (variable_id)
-        WHERE vsv.variable_set_id = vs.variable_set_id
-    ) AS variables,
+    vs.*,
     (
         SELECT array_agg(vsw.workspace_id)::text[]
         FROM variable_set_workspaces vsw
@@ -195,7 +177,7 @@ SELECT
 FROM variable_sets vs
 WHERE organization_name = $1
 `, organization)
-	return sql.CollectRows(rows, scanVariableSet)
+	return sql.CollectRows(rows, pgx.RowToAddrOfStructByName[VariableSet])
 }
 
 func (pdb *pgdb) listVariableSetsByWorkspace(ctx context.Context, workspaceID resource.TfeID) ([]*VariableSet, error) {
@@ -235,7 +217,17 @@ JOIN (organizations o JOIN workspaces w ON o.name = w.organization_name) ON o.na
 WHERE vs.global IS true
 AND w.workspace_id = $1
 `, workspaceID)
-	return sql.CollectRows(rows, scanVariableSet)
+	return sql.CollectRows(rows, pgx.RowToAddrOfStructByName[VariableSet])
+}
+
+func (pdb *pgdb) listVariableSetVariables(ctx context.Context, setID resource.TfeID) ([]*Variable, error) {
+	rows := pdb.Query(ctx, `
+SELECT v.*, vsv.variable_set_id AS parent_id
+FROM variable_set_variables vsv
+JOIN variables v USING (variable_id)
+WHERE vsv.variable_set_id = $1
+`, setID)
+	return sql.CollectRows(rows, pgx.RowToAddrOfStructByName[Variable])
 }
 
 func (pdb *pgdb) deleteVariableSet(ctx context.Context, setID resource.TfeID) error {
@@ -246,33 +238,6 @@ WHERE variable_set_id = $1
 RETURNING *
 `, setID)
 	return err
-}
-
-func scanVariableSet(row pgx.CollectableRow) (*VariableSet, error) {
-	type model struct {
-		ID           resource.TfeID    `db:"variable_set_id"`
-		Workspaces   []resource.TfeID  `db:"workspace_ids"`
-		Organization organization.Name `db:"organization_name"`
-		Name         string
-		Description  string
-		Global       bool
-		Variables    []*Variable
-	}
-	m, err := pgx.RowToStructByName[model](row)
-	if err != nil {
-		return nil, err
-	}
-	vs := &VariableSet{
-		ID:           m.ID,
-		Name:         m.Name,
-		Description:  m.Description,
-		Global:       m.Global,
-		Variables:    m.Variables,
-		Organization: m.Organization,
-		Workspaces:   make([]resource.TfeID, len(m.Workspaces)),
-	}
-	copy(vs.Workspaces, m.Workspaces)
-	return vs, nil
 }
 
 func (pdb *pgdb) addVariableToSet(ctx context.Context, setID resource.TfeID, v *Variable) error {

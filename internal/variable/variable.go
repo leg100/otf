@@ -58,11 +58,6 @@ type (
 		Sensitive   *bool
 		HCL         *bool
 
-		// ParentID is the ID of the variable's parent resource. Must be either
-		// a workspace ID if a workspace variable, or a variable set ID if a
-		// variable set variable.
-		ParentID resource.TfeID
-
 		generateVersion
 	}
 

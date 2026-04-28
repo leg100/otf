@@ -114,6 +114,11 @@ func (s *Service) CreateVariable(ctx context.Context, parentID resource.TfeID, o
 				return err
 			}
 
+			variables, err := s.db.listVariableSetVariables(ctx, set.ID)
+			if err != nil {
+				return err
+			}
+
 			v, err = set.addVariable(organizationSets, opts)
 			if err != nil {
 				return err
