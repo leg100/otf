@@ -24,7 +24,7 @@ type TFEAPI struct {
 }
 
 type tfeClient interface {
-	ListWorkspaceVariables(ctx context.Context, workspaceID resource.TfeID) ([]*Variable, error)
+	ListVariables(ctx context.Context, parentID resource.TfeID) ([]*Variable, error)
 
 	CreateVariable(ctx context.Context, workspaceID resource.TfeID, opts CreateVariableOptions) (*Variable, error)
 	GetVariable(ctx context.Context, variableID resource.TfeID) (*Variable, error)
@@ -299,14 +299,14 @@ func (a *TFEAPI) listVariableSetVariables(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	set, err := a.Client.GetVariableSet(r.Context(), setID)
+	variables, err := a.Client.ListVariables(r.Context(), setID)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
 
-	to := make([]*TFEVariable, len(set.Variables))
-	for i, from := range set.Variables {
+	to := make([]*TFEVariable, len(variables))
+	for i, from := range variables {
 		to[i] = a.convertVariable(from)
 	}
 

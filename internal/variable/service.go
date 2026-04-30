@@ -22,8 +22,9 @@ type (
 		logr.Logger
 		*authz.Authorizer
 
-		db   *pgdb
-		runs runClient
+		db        *pgdb
+		runs      runClient
+		conflicts *conflictChecker
 	}
 
 	Options struct {
@@ -60,6 +61,18 @@ func NewService(opts Options) *Service {
 			return v.ParentID, nil
 		},
 	)
+	// Provide a means of looking up a variable set's organization
+	opts.Authorizer.RegisterParentResolver(resource.VariableSetKind,
+		func(ctx context.Context, setID resource.ID) (resource.ID, error) {
+			// NOTE: we look up directly in the database rather than via
+			// service call to avoid a recursion loop.
+			set, err := db.getVariableSet(ctx, setID)
+			if err != nil {
+				return nil, err
+			}
+			return set.Organization, nil
+		},
+	)
 
 	return &svc
 }
@@ -73,7 +86,7 @@ func (s *Service) ListEffectiveVariables(ctx context.Context, runID resource.Tfe
 	if err != nil {
 		return nil, err
 	}
-	vars, err := s.ListWorkspaceVariables(ctx, run.WorkspaceID)
+	vars, err := s.ListVariables(ctx, run.WorkspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -86,45 +99,33 @@ func (s *Service) CreateVariable(ctx context.Context, parentID resource.TfeID, o
 	if err != nil {
 		return nil, err
 	}
+	v, err := s.createVariable(ctx, parentID, opts)
+	if err != nil {
+		s.Error(err, "creating variable", "subject", subject, "variable", v)
+		return nil, err
+	}
+	s.V(1).Info("created variable", "subject", subject, "variable", v)
 
-	var v *Variable
-	err = s.db.Lock(ctx, "variables", func(ctx context.Context) (err error) {
+	return v, nil
+}
+
+func (s *Service) createVariable(ctx context.Context, parentID resource.TfeID, opts CreateVariableOptions) (*Variable, error) {
+	v, err := newVariable(opts)
+	if err != nil {
+		return nil, err
+	}
+	err = s.db.Lock(ctx, "variables", func(ctx context.Context) error {
+		if err := s.conflicts.checkVariable(ctx, v); err != nil {
+			return err
+		}
 		switch parentID.Kind() {
 		case resource.WorkspaceKind:
-			workspaceVariables, err := s.db.listWorkspaceVariables(ctx, parentID)
-			if err != nil {
-				return err
-			}
-			v, err = newVariable(workspaceVariables, opts)
-			if err != nil {
-				return err
-			}
 			err = s.db.createWorkspaceVariable(ctx, parentID, v)
 			if err != nil {
 				return err
 			}
 		case resource.VariableSetKind:
-			set, err := s.db.getVariableSet(ctx, parentID)
-			if err != nil {
-				return err
-			}
-
-			organizationSets, err := s.db.listVariableSets(ctx, set.Organization)
-			if err != nil {
-				return err
-			}
-
-			variables, err := s.db.listVariableSetVariables(ctx, set.ID)
-			if err != nil {
-				return err
-			}
-
-			v, err = set.addVariable(organizationSets, opts)
-			if err != nil {
-				return err
-			}
-
-			if err := s.db.addVariableToSet(ctx, set.ID, v); err != nil {
+			if err := s.db.createVariableSetVariable(ctx, parentID, v); err != nil {
 				return err
 			}
 		default:
@@ -132,14 +133,7 @@ func (s *Service) CreateVariable(ctx context.Context, parentID resource.TfeID, o
 		}
 		return nil
 	})
-	if err != nil {
-		s.Error(err, "creating variable", "subject", subject, "variable", v)
-		return nil, err
-	}
-
-	s.V(1).Info("created variable", "subject", subject, "variable", v)
-
-	return v, nil
+	return v, err
 }
 
 func (s *Service) UpdateVariable(ctx context.Context, variableID resource.TfeID, opts UpdateVariableOptions) (*Variable, error) {
@@ -149,51 +143,7 @@ func (s *Service) UpdateVariable(ctx context.Context, variableID resource.TfeID,
 		return nil, err
 	}
 
-	var (
-		before *Variable
-		after  *Variable
-	)
-	// Lock variables table because the update first needs to check there are no
-	// conflicts with other variables in the table.
-	err = s.db.Lock(ctx, "variables", func(ctx context.Context) (err error) {
-		before, err = s.db.getVariable(ctx, variableID)
-		if err != nil {
-			return err
-		}
-		// update a copy of v
-		after = new(*before)
-
-		switch before.ParentID.Kind() {
-		case resource.WorkspaceKind:
-			workspaceVariables, err := s.db.listWorkspaceVariables(ctx, before.ParentID)
-			if err != nil {
-				return err
-			}
-			if err := after.update(workspaceVariables, opts); err != nil {
-				return err
-			}
-		case resource.VariableSetKind:
-			set, err := s.db.getVariableSetByVariableID(ctx, variableID)
-			if err != nil {
-				return err
-			}
-			organizationSets, err := s.db.listVariableSets(ctx, set.Organization)
-			if err != nil {
-				return err
-			}
-			after, err = set.updateVariable(organizationSets, variableID, opts)
-			if err != nil {
-				return err
-			}
-		default:
-			return fmt.Errorf("invalid variable parent kind: %s", before.ParentID.Kind())
-		}
-
-		if err := s.db.updateVariable(ctx, after); err != nil {
-			return err
-		}
-		return nil
-	})
+	before, after, err := s.updateVariable(ctx, variableID, opts)
 	if err != nil {
 		s.Error(err, "updating variable", "subject", subject, "variable_id", variableID)
 		return nil, err
@@ -203,19 +153,52 @@ func (s *Service) UpdateVariable(ctx context.Context, variableID resource.TfeID,
 	return after, nil
 }
 
-func (s *Service) ListWorkspaceVariables(ctx context.Context, workspaceID resource.TfeID) ([]*Variable, error) {
-	subject, err := s.Authorize(ctx, authz.ListWorkspaceVariablesAction, workspaceID)
+func (s *Service) updateVariable(ctx context.Context, variableID resource.TfeID, opts UpdateVariableOptions) (*Variable, *Variable, error) {
+	var (
+		after  Variable
+		before *Variable
+	)
+	// Lock variables table because the update first needs to check there are no
+	// conflicts with other variables in the table.
+	err := s.db.Lock(ctx, "variables", func(ctx context.Context) (err error) {
+		before, err = s.db.getVariable(ctx, variableID)
+		if err != nil {
+			return err
+		}
+		// Update a copy of v
+		after = *before
+
+		if err := after.update(opts); err != nil {
+			return err
+		}
+
+		// Check if any of the updates have resulted in any conflicts
+		if err := s.conflicts.checkVariable(ctx, &after); err != nil {
+			return err
+		}
+
+		if err := s.db.updateVariable(ctx, &after); err != nil {
+			return err
+		}
+		return nil
+	})
+	return before, &after, err
+}
+
+func (s *Service) ListVariables(ctx context.Context, parentID resource.TfeID) ([]*Variable, error) {
+	// TODO: update action
+	subject, err := s.Authorize(ctx, authz.ListWorkspaceVariablesAction, parentID)
 	if err != nil {
 		return nil, err
 	}
 
-	vars, err := s.db.listWorkspaceVariables(ctx, workspaceID)
+	vars, err := s.db.listVariables(ctx, parentID)
 	if err != nil {
-		s.Error(err, "listing workspace variables", "subject", subject, "workspace_id", workspaceID)
+		s.Error(err, "listing variables", "subject", subject, "parent_id", parentID)
 		return nil, err
 	}
 
-	s.V(9).Info("listed workspace variables", "subject", subject, "workspace_id", workspaceID, "count", len(vars))
+	s.V(9).Info("listed variables", "subject", subject, "parent_id", parentID, "count", len(vars))
 
 	return vars, nil
 }
@@ -290,25 +273,23 @@ func (s *Service) UpdateVariableSet(ctx context.Context, setID resource.TfeID, o
 		before  *VariableSet
 		after   VariableSet
 	)
-	err := s.db.Lock(ctx, "variables, variable_sets", func(ctx context.Context) (err error) {
+	subject, err := s.Authorize(ctx, authz.UpdateVariableSetAction, setID)
+	if err != nil {
+		return nil, err
+	}
+	err = s.db.Lock(ctx, "variables, variable_sets", func(ctx context.Context) (err error) {
 		before, err = s.db.getVariableSet(ctx, setID)
 		if err != nil {
 			return fmt.Errorf("retrieving variable set: %w", err)
 		}
 
-		subject, err = s.Authorize(ctx, authz.UpdateVariableSetAction, &before.Organization)
-		if err != nil {
+		// update copy of set
+		after = *before
+		if err := after.updateProperties(opts); err != nil {
 			return err
 		}
 
-		organizationSets, err := s.db.listVariableSets(ctx, before.Organization)
-		if err != nil {
-			return fmt.Errorf("listing variable sets: %w", err)
-		}
-
-		// update copy of set
-		after = *before
-		if err := after.updateProperties(organizationSets, opts); err != nil {
+		if err := s.conflicts.checkSet(ctx, &after); err != nil {
 			return err
 		}
 

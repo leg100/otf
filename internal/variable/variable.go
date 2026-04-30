@@ -76,7 +76,7 @@ type (
 	generateVersion func() string
 )
 
-func newVariable(collection []*Variable, opts CreateVariableOptions) (*Variable, error) {
+func newVariable(opts CreateVariableOptions) (*Variable, error) {
 	v := Variable{
 		ID: resource.NewTfeID(resource.VariableKind),
 	}
@@ -116,9 +116,6 @@ func newVariable(collection []*Variable, opts CreateVariableOptions) (*Variable,
 	if opts.HCL != nil {
 		v.HCL = *opts.HCL
 	}
-	if err := v.checkConflicts(collection); err != nil {
-		return nil, err
-	}
 	return &v, nil
 }
 
@@ -145,7 +142,7 @@ func (v *Variable) LogValue() slog.Value {
 	return slog.GroupValue(attrs...)
 }
 
-func (v *Variable) update(collection []*Variable, opts UpdateVariableOptions) error {
+func (v *Variable) update(opts UpdateVariableOptions) error {
 	if opts.Key != nil {
 		if v.Sensitive {
 			return errors.New("changing the key of a sensitive variable is not allowed")
@@ -180,10 +177,6 @@ func (v *Variable) update(collection []*Variable, opts UpdateVariableOptions) er
 		if err := v.setSensitive(*opts.Sensitive); err != nil {
 			return err
 		}
-	}
-	// check for conflicts with other variables in collection
-	if err := v.checkConflicts(collection); err != nil {
-		return err
 	}
 	// generate new version ID on every update call, even if nothing is actually
 	// updated
@@ -235,7 +228,7 @@ func (v *Variable) setSensitive(sensitive bool) error {
 	return nil
 }
 
-// checkConflicts checks for conflicts with the given variable. i.e. they share
+// checkConflicts checks for conflicts with other variables. i.e. they share
 // same key and category.
 func (v *Variable) checkConflicts(collection []*Variable) error {
 	for _, v2 := range collection {

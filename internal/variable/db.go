@@ -38,13 +38,30 @@ INSERT INTO workspace_variables (
 	})
 }
 
-func (pdb *pgdb) listWorkspaceVariables(ctx context.Context, workspaceID resource.TfeID) ([]*Variable, error) {
+func (pdb *pgdb) listVariables(ctx context.Context, parentID resource.TfeID) ([]*Variable, error) {
 	rows := pdb.Query(ctx, `
-SELECT v.*, wv.workspace_id AS parent_id
-FROM workspace_variables wv
-JOIN variables v USING (variable_id)
-WHERE wv.workspace_id = $1
-`, workspaceID)
+SELECT
+    v.*,
+	COALESCE(wv.workspace_id, vsv.variable_set_id) AS parent_id
+FROM variables v
+LEFT OUTER JOIN workspace_variables wv USING (variable_id)
+LEFT OUTER JOIN variable_sets_variables vsv USING (variable_id)
+WHERE wv.workspace_id = $1 OR vsv.variable_set_id = $1
+`, parentID)
+	return sql.CollectRows(rows, pgx.RowToAddrOfStructByName[Variable])
+}
+
+func (pdb *pgdb) listGlobalVariables(ctx context.Context, organization organization.Name) ([]*Variable, error) {
+	rows := pdb.Query(ctx, `
+SELECT
+    v.*,
+	vsv.variable_set_id AS parent_id
+FROM variables v
+JOIN variable_sets_variables vsv USING (variable_id)
+JOIN variable_sets vs USING (variable_set_id)
+AND vs.global
+AND vs.organization_name = $1
+`, organization)
 	return sql.CollectRows(rows, pgx.RowToAddrOfStructByName[Variable])
 }
 
@@ -52,10 +69,10 @@ func (pdb *pgdb) getVariable(ctx context.Context, variableID resource.ID) (*Vari
 	row := pdb.Query(ctx, `
 SELECT
     v.*,
-	COALESCE(wv.workspace_id, vs.variable_set_id) AS parent_id
+	COALESCE(wv.workspace_id, vsv.variable_set_id) AS parent_id
 FROM variables v
 LEFT OUTER JOIN workspace_variables wv USING (variable_id)
-LEFT OUTER JOIN variable_sets vs USING (variable_id)
+LEFT OUTER JOIN variable_set_variables vsv USING (variable_id)
 WHERE v.variable_id = $1
 `, variableID)
 	return sql.CollectExactlyOneRow(row, pgx.RowToAddrOfStructByName[Variable])
@@ -133,7 +150,7 @@ WHERE variable_set_id = $4
 	})
 }
 
-func (pdb *pgdb) getVariableSet(ctx context.Context, setID resource.TfeID) (*VariableSet, error) {
+func (pdb *pgdb) getVariableSet(ctx context.Context, setID resource.ID) (*VariableSet, error) {
 	row := pdb.Query(ctx, `
 SELECT
     vs.*,
@@ -220,16 +237,6 @@ AND w.workspace_id = $1
 	return sql.CollectRows(rows, pgx.RowToAddrOfStructByName[VariableSet])
 }
 
-func (pdb *pgdb) listVariableSetVariables(ctx context.Context, setID resource.TfeID) ([]*Variable, error) {
-	rows := pdb.Query(ctx, `
-SELECT v.*, vsv.variable_set_id AS parent_id
-FROM variable_set_variables vsv
-JOIN variables v USING (variable_id)
-WHERE vsv.variable_set_id = $1
-`, setID)
-	return sql.CollectRows(rows, pgx.RowToAddrOfStructByName[Variable])
-}
-
 func (pdb *pgdb) deleteVariableSet(ctx context.Context, setID resource.TfeID) error {
 	_, err := pdb.Exec(ctx, `
 DELETE
@@ -240,7 +247,7 @@ RETURNING *
 	return err
 }
 
-func (pdb *pgdb) addVariableToSet(ctx context.Context, setID resource.TfeID, v *Variable) error {
+func (pdb *pgdb) createVariableSetVariable(ctx context.Context, setID resource.TfeID, v *Variable) error {
 	return pdb.Tx(ctx, func(ctx context.Context) error {
 		if err := pdb.createVariable(ctx, v); err != nil {
 			return err
