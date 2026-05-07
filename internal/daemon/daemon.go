@@ -434,6 +434,12 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		DB:         db,
 	})
 
+	// Propagate the public-facing hostname to the kubernetes executor so that
+	// job pods set the correct TF_TOKEN_* credential env var. The ServerURL
+	// on kubeConfig points to an internal Kubernetes service address, which
+	// differs from the hostname Terraform uses to authenticate.
+	cfg.RunnerConfig.KubeConfig.Hostname = hostnameService.Hostname()
+
 	serverRunner, err := runner.New(
 		logger,
 		runnerService,
