@@ -19,50 +19,59 @@ type pgdb struct {
 
 func (pdb *pgdb) createVariable(ctx context.Context, parentID resource.TfeID, v *Variable) error {
 	return pdb.Tx(ctx, func(ctx context.Context) error {
-		var err error
+		_, err := pdb.Exec(ctx, `
+INSERT INTO variables (
+    variable_id,
+    key,
+    value,
+    description,
+    category,
+    sensitive,
+    hcl,
+    version_id
+) VALUES (
+    $1,
+    $2,
+    $3,
+    $4,
+    $5,
+    $6,
+    $7,
+    $8
+)
+`,
+			v.ID,
+			v.Key,
+			v.Value,
+			v.Description,
+			v.Category,
+			v.Sensitive,
+			v.HCL,
+			v.VersionID,
+		)
+
 		switch parentID.Kind() {
 		case resource.WorkspaceKind:
-				_, err := pdb.Exec(ctx, `
-		INSERT INTO variable_set_variables (
-			variable_set_id,
-			variable_id
-		) VALUES (
-			$1,
-			$2
-		)`, parentID, v.ID)
-		case resource.VariableSetKind:
-				_, err := pdb.Exec(ctx, `
-		INSERT INTO variable_set_variables (
-			variable_set_id,
-			variable_id
-		) VALUES (
-			$1,
-			$2
-		)`, parentID, v.ID)
-		if err := pdb.createVariable(ctx, v); err != nil {
-			return err
-		}
-		if err != nil {
-			return err
-		}
-		return nil
-	})
-}
-
-func (pdb *pgdb) createWorkspaceVariable(ctx context.Context, workspaceID resource.TfeID, v *Variable) error {
-	return pdb.Tx(ctx, func(ctx context.Context) error {
-		if err := pdb.createVariable(ctx, v); err != nil {
-			return err
-		}
-		_, err := pdb.Exec(ctx, `
+			_, err = pdb.Exec(ctx, `
 INSERT INTO workspace_variables (
     variable_id,
     workspace_id
 ) VALUES (
     $1,
     $2
-)
-`, v.ID, workspaceID)
+)`, parentID, v.ID)
+		case resource.VariableSetKind:
+			_, err = pdb.Exec(ctx, `
+INSERT INTO variable_set_variables (
+	variable_set_id,
+	variable_id
+) VALUES (
+	$1,
+	$2
+)`, parentID, v.ID)
+		default:
+			return fmt.Errorf("invalid variable parent kind: %s", parentID.Kind())
+		}
 		if err != nil {
 			return err
 		}
@@ -370,40 +379,6 @@ AND workspace_id = $2
 		}
 		return nil
 	})
-	return err
-}
-
-func (pdb *pgdb) createVariable(ctx context.Context, v *Variable) error {
-	_, err := pdb.Exec(ctx, `
-INSERT INTO variables (
-    variable_id,
-    key,
-    value,
-    description,
-    category,
-    sensitive,
-    hcl,
-    version_id
-) VALUES (
-    $1,
-    $2,
-    $3,
-    $4,
-    $5,
-    $6,
-    $7,
-    $8
-)
-`,
-		v.ID,
-		v.Key,
-		v.Value,
-		v.Description,
-		v.Category,
-		v.Sensitive,
-		v.HCL,
-		v.VersionID,
-	)
 	return err
 }
 

@@ -118,18 +118,9 @@ func (s *Service) createVariable(ctx context.Context, parentID resource.TfeID, o
 		if err := s.conflicts.checkVariable(ctx, v); err != nil {
 			return err
 		}
-		switch parentID.Kind() {
-		case resource.WorkspaceKind:
-			err = s.db.createWorkspaceVariable(ctx, parentID, v)
-			if err != nil {
-				return err
-			}
-		case resource.VariableSetKind:
-			if err := s.db.createVariableSetVariable(ctx, parentID, v); err != nil {
-				return err
-			}
-		default:
-			return fmt.Errorf("invalid variable parent kind: %s", parentID.Kind())
+		err = s.db.createVariable(ctx, parentID, v)
+		if err != nil {
+			return err
 		}
 		return nil
 	})

@@ -114,7 +114,7 @@ func (a *TFEAPI) listVariables(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	variables, err := a.Client.ListWorkspaceVariables(r.Context(), workspaceID)
+	variables, err := a.Client.ListVariables(r.Context(), workspaceID)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
