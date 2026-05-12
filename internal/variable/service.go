@@ -353,23 +353,6 @@ func (s *Service) GetVariableSet(ctx context.Context, setID resource.TfeID) (*Va
 	return set, nil
 }
 
-func (s *Service) GetVariableSetByVariableID(ctx context.Context, variableID resource.TfeID) (*VariableSet, error) {
-	set, err := s.db.getVariableSetByVariableID(ctx, variableID)
-	if err != nil {
-		s.Error(err, "retrieving variable set", "variable_id", variableID)
-		return nil, err
-	}
-
-	subject, err := s.Authorize(ctx, authz.GetVariableSetVariableAction, &set.Organization)
-	if err != nil {
-		return nil, err
-	}
-
-	s.V(1).Info("retrieved variable set", "subject", subject, "set", set, "variable")
-
-	return set, nil
-}
-
 func (s *Service) DeleteVariableSet(ctx context.Context, setID resource.TfeID) (*VariableSet, error) {
 	set, err := s.db.getVariableSet(ctx, setID)
 	if err != nil {
