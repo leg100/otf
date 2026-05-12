@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/path"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/variable"
 	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/require"
@@ -121,7 +121,7 @@ func TestIntegration_VariableSetUI_VariableDelete(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	_, err = daemon.Variables.CreateVariableSetVariable(ctx, set.ID, variable.CreateVariableOptions{
+	_, err = daemon.Variables.CreateVariable(ctx, set.ID, variable.CreateVariableOptions{
 		Key:      new("varset-var-1"),
 		Value:    new("foo"),
 		Category: internal.Ptr(variable.CategoryTerraform),
@@ -237,7 +237,7 @@ func TestIntegration_VariableSetUI_WorkspaceVariables(t *testing.T) {
 	require.NoError(t, err)
 
 	// create variable for global set
-	_, err = daemon.Variables.CreateVariableSetVariable(ctx, globalSet.ID, variable.CreateVariableOptions{
+	_, err = daemon.Variables.CreateVariable(ctx, globalSet.ID, variable.CreateVariableOptions{
 		Key:      new("foo"),
 		Value:    new("bar"),
 		Category: internal.Ptr(variable.CategoryTerraform),
@@ -252,7 +252,7 @@ func TestIntegration_VariableSetUI_WorkspaceVariables(t *testing.T) {
 	require.NoError(t, err)
 
 	// create variable for workspace-scoped set
-	_, err = daemon.Variables.CreateVariableSetVariable(ctx, workspaceScopedSet.ID, variable.CreateVariableOptions{
+	_, err = daemon.Variables.CreateVariable(ctx, workspaceScopedSet.ID, variable.CreateVariableOptions{
 		Key:      new("foo"),
 		Value:    new("bar"),
 		Category: internal.Ptr(variable.CategoryTerraform),

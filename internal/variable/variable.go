@@ -76,9 +76,10 @@ type (
 	generateVersion func() string
 )
 
-func newVariable(opts CreateVariableOptions) (*Variable, error) {
+func newVariable(parentID resource.TfeID, opts CreateVariableOptions) (*Variable, error) {
 	v := Variable{
-		ID: resource.NewTfeID(resource.VariableKind),
+		ID:       resource.NewTfeID(resource.VariableKind),
+		ParentID: parentID,
 	}
 	if opts.generateVersion == nil {
 		opts.generateVersion = versionGenerator

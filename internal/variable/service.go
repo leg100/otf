@@ -95,8 +95,7 @@ func (s *Service) ListEffectiveVariables(ctx context.Context, runID resource.Tfe
 }
 
 func (s *Service) CreateVariable(ctx context.Context, parentID resource.TfeID, opts CreateVariableOptions) (*Variable, error) {
-	// TODO: introduce CreateVariableAction
-	subject, err := s.Authorize(ctx, authz.CreateWorkspaceVariableAction, parentID)
+	subject, err := s.Authorize(ctx, authz.CreateVariableAction, parentID)
 	if err != nil {
 		return nil, err
 	}
@@ -111,7 +110,7 @@ func (s *Service) CreateVariable(ctx context.Context, parentID resource.TfeID, o
 }
 
 func (s *Service) createVariable(ctx context.Context, parentID resource.TfeID, opts CreateVariableOptions) (*Variable, error) {
-	v, err := newVariable(opts)
+	v, err := newVariable(parentID, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -129,8 +128,7 @@ func (s *Service) createVariable(ctx context.Context, parentID resource.TfeID, o
 }
 
 func (s *Service) UpdateVariable(ctx context.Context, variableID resource.TfeID, opts UpdateVariableOptions) (*Variable, error) {
-	// TODO: introduce UpdateVariableAction
-	subject, err := s.Authorize(ctx, authz.UpdateWorkspaceVariableAction, variableID)
+	subject, err := s.Authorize(ctx, authz.UpdateVariableAction, variableID)
 	if err != nil {
 		return nil, err
 	}
@@ -178,8 +176,7 @@ func (s *Service) updateVariable(ctx context.Context, variableID resource.TfeID,
 }
 
 func (s *Service) ListVariables(ctx context.Context, parentID resource.TfeID) ([]*Variable, error) {
-	// TODO: update action
-	subject, err := s.Authorize(ctx, authz.ListWorkspaceVariablesAction, parentID)
+	subject, err := s.Authorize(ctx, authz.ListVariablesAction, parentID)
 	if err != nil {
 		return nil, err
 	}
@@ -196,7 +193,7 @@ func (s *Service) ListVariables(ctx context.Context, parentID resource.TfeID) ([
 }
 
 func (s *Service) GetVariable(ctx context.Context, variableID resource.TfeID) (*Variable, error) {
-	subject, err := s.Authorize(ctx, authz.GetWorkspaceVariableAction, variableID)
+	subject, err := s.Authorize(ctx, authz.GetVariableAction, variableID)
 	if err != nil {
 		return nil, err
 	}
@@ -213,8 +210,7 @@ func (s *Service) GetVariable(ctx context.Context, variableID resource.TfeID) (*
 }
 
 func (s *Service) DeleteVariable(ctx context.Context, variableID resource.TfeID) (*Variable, error) {
-	// TODO: replace with DeleteVariableAction
-	subject, err := s.Authorize(ctx, authz.DeleteWorkspaceVariableAction, variableID)
+	subject, err := s.Authorize(ctx, authz.DeleteVariableAction, variableID)
 	if err != nil {
 		return nil, err
 	}

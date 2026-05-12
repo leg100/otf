@@ -93,7 +93,7 @@ func (j *Job) CanAccess(action authz.Action, req authz.Request) bool {
 	if req.Workspace() == j.WorkspaceID {
 		// Allow actions on same workspace as job depending on run phase
 		switch action {
-		case authz.DownloadStateAction, authz.GetStateVersionAction, authz.GetWorkspaceAction, authz.GetRunAction, authz.ListVariableSetsAction, authz.ListWorkspaceVariablesAction, authz.PutChunkAction, authz.DownloadConfigurationVersionAction, authz.GetPlanFileAction, authz.CancelRunAction:
+		case authz.DownloadStateAction, authz.GetStateVersionAction, authz.GetWorkspaceAction, authz.GetRunAction, authz.ListVariableSetsAction, authz.ListVariablesAction, authz.PutChunkAction, authz.DownloadConfigurationVersionAction, authz.GetPlanFileAction, authz.CancelRunAction:
 			// any phase
 			return true
 		case authz.UploadLockFileAction, authz.UploadPlanFileAction, authz.ApplyRunAction:

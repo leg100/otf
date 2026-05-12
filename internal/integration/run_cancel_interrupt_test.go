@@ -63,7 +63,7 @@ func TestIntegration_RunCancelInterrupt(t *testing.T) {
 
 	// create a variable so that the fake bin knows the url of the temp http
 	// server
-	_, err = daemon.Variables.CreateWorkspaceVariable(ctx, ws.ID, variable.CreateVariableOptions{
+	_, err = daemon.Variables.CreateVariable(ctx, ws.ID, variable.CreateVariableOptions{
 		Key:      new("URL"),
 		Value:    new(srv.URL),
 		Category: internal.Ptr(variable.CategoryEnv),

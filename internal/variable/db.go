@@ -54,8 +54,8 @@ INSERT INTO variables (
 		case resource.WorkspaceKind:
 			_, err = pdb.Exec(ctx, `
 INSERT INTO workspace_variables (
-    variable_id,
-    workspace_id
+    workspace_id,
+    variable_id
 ) VALUES (
     $1,
     $2
@@ -86,7 +86,7 @@ SELECT
 	COALESCE(wv.workspace_id, vsv.variable_set_id) AS parent_id
 FROM variables v
 LEFT OUTER JOIN workspace_variables wv USING (variable_id)
-LEFT OUTER JOIN variable_sets_variables vsv USING (variable_id)
+LEFT OUTER JOIN variable_set_variables vsv USING (variable_id)
 WHERE wv.workspace_id = $1 OR vsv.variable_set_id = $1
 `, parentID)
 	return sql.CollectRows(rows, pgx.RowToAddrOfStructByName[Variable])
@@ -98,7 +98,7 @@ SELECT
     v.*,
 	vsv.variable_set_id AS parent_id
 FROM variables v
-JOIN variable_sets_variables vsv USING (variable_id)
+JOIN variable_set_variables vsv USING (variable_id)
 JOIN variable_sets vs USING (variable_set_id)
 AND vs.global
 AND vs.organization_name = $1
@@ -120,16 +120,17 @@ WHERE v.variable_id = $1
 }
 
 func (pdb *pgdb) deleteVariable(ctx context.Context, variableID resource.TfeID) (*Variable, error) {
-	row := pdb.Query(ctx, `
+	v, err := pdb.getVariable(ctx, variableID)
+	if err != nil {
+		return nil, err
+	}
+	_, err = pdb.Exec(ctx, `
 DELETE
 FROM variables v
-LEFT OUTER JOIN workspace_variables wv USING (variable_id)
-LEFT OUTER JOIN variable_sets vs USING (variable_id)
 WHERE v.variable_id = $1
-RETURNING v.*, COALESCE(wv.workspace_id, vs.variable_set_id) AS parent_id
 `,
 		variableID)
-	return sql.CollectExactlyOneRow(row, pgx.RowToAddrOfStructByName[Variable])
+	return v, err
 }
 
 func (pdb *pgdb) createVariableSet(ctx context.Context, set *VariableSet) error {
@@ -210,7 +211,7 @@ FROM variable_sets vs
 WHERE vs.variable_set_id = $1
 `,
 		setID)
-	return sql.CollectExactlyOneRow(row, pgx.RowToAddrOfStructByName[VariableSet])
+	return sql.CollectExactlyOneRow(row, scanVariableSet)
 }
 
 func (pdb *pgdb) listVariableSets(ctx context.Context, organization organization.Name) ([]*VariableSet, error) {
@@ -296,6 +297,7 @@ func scanVariableSet(row pgx.CollectableRow) (*VariableSet, error) {
 		Category    VariableCategory `db:"category"`
 		Sensitive   bool             `db:"sensitive"`
 		HCL         bool             `db:"hcl"`
+		VersionID   string           `db:"version_id"`
 	}
 	type setModel struct {
 		ID           resource.TfeID    `db:"variable_set_id"`

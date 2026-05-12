@@ -167,8 +167,8 @@ func (h *Handlers) listWorkspaceVariables(w http.ResponseWriter, r *http.Request
 	props := listWorkspaceVariablesProps{
 		ws:                 ws,
 		rows:               rows,
-		canCreateVariable:  h.authorizer.CanAccess(r.Context(), authz.CreateWorkspaceVariableAction, ws.ID),
-		canDeleteVariable:  h.authorizer.CanAccess(r.Context(), authz.DeleteWorkspaceVariableAction, ws.ID),
+		canCreateVariable:  h.authorizer.CanAccess(r.Context(), authz.CreateVariableAction, ws.ID),
+		canDeleteVariable:  h.authorizer.CanAccess(r.Context(), authz.DeleteVariableAction, ws.ID),
 		canUpdateWorkspace: h.authorizer.CanAccess(r.Context(), authz.UpdateWorkspaceAction, ws.ID),
 	}
 	helpers.RenderPage(
@@ -332,7 +332,7 @@ func (h *Handlers) editVariableSet(w http.ResponseWriter, r *http.Request) {
 		rows:                rows,
 		availableWorkspaces: availableWorkspaces,
 		existingWorkspaces:  existingWorkspaces,
-		canDeleteVariable:   h.authorizer.CanAccess(r.Context(), authz.DeleteWorkspaceVariableAction, set.Organization),
+		canDeleteVariable:   h.authorizer.CanAccess(r.Context(), authz.DeleteVariableAction, set.Organization),
 	}
 	helpers.RenderPage(
 		h.templates.editVariableSet(props),
@@ -591,7 +591,7 @@ func (h *Handlers) updateVariable(w http.ResponseWriter, r *http.Request) {
 	}
 
 	helpers.FlashSuccess(w, "updated variable: "+v.Key)
-	http.Redirect(w, r, path.Get(params.VariableID), http.StatusFound)
+	http.Redirect(w, r, path.Edit(params.VariableID), http.StatusFound)
 }
 
 func (h *Handlers) deleteVariable(w http.ResponseWriter, r *http.Request) {

@@ -370,7 +370,7 @@ func (s *testDaemon) createVariable(t *testing.T, ctx context.Context, ws *works
 			Category: internal.Ptr(variable.CategoryTerraform),
 		}
 	}
-	v, err := s.Variables.CreateWorkspaceVariable(ctx, ws.ID, *opts)
+	v, err := s.Variables.CreateVariable(ctx, ws.ID, *opts)
 	require.NoError(t, err)
 	return v
 }
