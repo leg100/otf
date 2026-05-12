@@ -228,21 +228,6 @@ func (v *Variable) setSensitive(sensitive bool) error {
 	return nil
 }
 
-// checkConflicts checks for conflicts with other variables. i.e. they share
-// same key and category.
-func (v *Variable) checkConflicts(collection []*Variable) error {
-	for _, v2 := range collection {
-		if v.ID == v2.ID {
-			// cannot conflict with self
-			continue
-		}
-		if v.Key == v2.Key && v.Category == v2.Category {
-			return ErrVariableConflict
-		}
-	}
-	return nil
-}
-
 // Matches determines whether variable is contained in vars, i.e. shares the
 // same ID.
 func (v *Variable) Matches(vars []*Variable) bool {

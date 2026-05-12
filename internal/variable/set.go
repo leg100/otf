@@ -60,7 +60,7 @@ func (s *VariableSet) LogValue() slog.Value {
 	return slog.GroupValue(attrs...)
 }
 
-func (s *VariableSet) updateProperties(opts UpdateVariableSetOptions) error {
+func (s *VariableSet) update(opts UpdateVariableSetOptions) error {
 	if opts.Name != nil {
 		s.Name = *opts.Name
 	}

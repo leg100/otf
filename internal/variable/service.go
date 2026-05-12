@@ -47,6 +47,7 @@ func NewService(opts Options) *Service {
 		Authorizer: opts.Authorizer,
 		db:         db,
 		runs:       opts.RunClient,
+		conflicts:  &conflictChecker{client: db},
 	}
 
 	// Provide a means of looking up a variables's parent resource ID.
@@ -276,7 +277,7 @@ func (s *Service) UpdateVariableSet(ctx context.Context, setID resource.TfeID, o
 
 		// update copy of set
 		after = *before
-		if err := after.updateProperties(opts); err != nil {
+		if err := after.update(opts); err != nil {
 			return err
 		}
 
