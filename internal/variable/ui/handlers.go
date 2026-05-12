@@ -30,7 +30,7 @@ type Client interface {
 	UpdateVariable(ctx context.Context, variableID resource.TfeID, opts variable.UpdateVariableOptions) (*variable.Variable, error)
 	DeleteVariable(ctx context.Context, variableID resource.TfeID) (*variable.Variable, error)
 
-	ListWorkspaceVariables(ctx context.Context, workspaceID resource.TfeID) ([]*variable.Variable, error)
+	ListVariables(ctx context.Context, parentID resource.TfeID) ([]*variable.Variable, error)
 	ListWorkspaceVariableSets(ctx context.Context, workspaceID resource.TfeID) ([]*variable.VariableSet, error)
 
 	CreateVariableSet(ctx context.Context, org organization.Name, opts variable.CreateVariableSetOptions) (*variable.VariableSet, error)
@@ -111,7 +111,7 @@ func (h *Handlers) listWorkspaceVariables(w http.ResponseWriter, r *http.Request
 		helpers.Error(r, w, err.Error())
 		return
 	}
-	variables, err := h.client.ListWorkspaceVariables(r.Context(), workspaceID)
+	variables, err := h.client.ListVariables(r.Context(), workspaceID)
 	if err != nil {
 		helpers.Error(r, w, err.Error())
 		return
