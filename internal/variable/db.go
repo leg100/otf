@@ -100,7 +100,7 @@ SELECT
 FROM variables v
 JOIN variable_set_variables vsv USING (variable_id)
 JOIN variable_sets vs USING (variable_set_id)
-AND vs.global
+WHERE vs.global IS true
 AND vs.organization_name = $1
 `, organization)
 	return sql.CollectRows(rows, pgx.RowToAddrOfStructByName[Variable])
