@@ -506,7 +506,8 @@ func (h *Handlers) createVariable(w http.ResponseWriter, r *http.Request) {
 	}
 
 	helpers.FlashSuccess(w, "added variable: "+variable.Key)
-	http.Redirect(w, r, path.List(resource.VariableKind, params.ParentID), http.StatusFound)
+
+	redirectToVariableParent(w, r, params.ParentID)
 }
 
 func (h *Handlers) editVariable(w http.ResponseWriter, r *http.Request) {
@@ -591,7 +592,8 @@ func (h *Handlers) updateVariable(w http.ResponseWriter, r *http.Request) {
 	}
 
 	helpers.FlashSuccess(w, "updated variable: "+v.Key)
-	http.Redirect(w, r, path.Edit(params.VariableID), http.StatusFound)
+
+	redirectToVariableParent(w, r, v.ParentID)
 }
 
 func (h *Handlers) deleteVariable(w http.ResponseWriter, r *http.Request) {
@@ -608,7 +610,19 @@ func (h *Handlers) deleteVariable(w http.ResponseWriter, r *http.Request) {
 	}
 
 	helpers.FlashSuccess(w, "deleted variable: "+v.Key)
-	http.Redirect(w, r, path.List(resource.VariableKind, v.ParentID), http.StatusFound)
+
+	redirectToVariableParent(w, r, v.ParentID)
+}
+
+func redirectToVariableParent(w http.ResponseWriter, r *http.Request, parentID resource.ID) {
+	switch parentID.Kind() {
+	case resource.WorkspaceKind:
+		http.Redirect(w, r, path.List(resource.VariableKind, parentID), http.StatusFound)
+	case resource.VariableSetKind:
+		http.Redirect(w, r, path.Edit(parentID), http.StatusFound)
+	default:
+		helpers.Error(r, w, "invalid variable parent kind: "+parentID.Kind().Full())
+	}
 }
 
 func toJSON(v any) string {
