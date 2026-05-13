@@ -24,21 +24,19 @@ type TFEAPI struct {
 }
 
 type tfeClient interface {
-	CreateWorkspaceVariable(ctx context.Context, workspaceID resource.TfeID, opts CreateVariableOptions) (*Variable, error)
-	ListWorkspaceVariables(ctx context.Context, workspaceID resource.TfeID) ([]*Variable, error)
-	GetWorkspaceVariable(ctx context.Context, variableID resource.TfeID) (*WorkspaceVariable, error)
-	UpdateWorkspaceVariable(ctx context.Context, variableID resource.TfeID, opts UpdateVariableOptions) (*WorkspaceVariable, error)
-	DeleteWorkspaceVariable(ctx context.Context, variableID resource.TfeID) (*WorkspaceVariable, error)
+	ListVariables(ctx context.Context, parentID resource.TfeID) ([]*Variable, error)
+
+	CreateVariable(ctx context.Context, workspaceID resource.TfeID, opts CreateVariableOptions) (*Variable, error)
+	GetVariable(ctx context.Context, variableID resource.TfeID) (*Variable, error)
+	UpdateVariable(ctx context.Context, variableID resource.TfeID, opts UpdateVariableOptions) (*Variable, error)
+	DeleteVariable(ctx context.Context, variableID resource.TfeID) (*Variable, error)
+
 	ListWorkspaceVariableSets(ctx context.Context, workspaceID resource.TfeID) ([]*VariableSet, error)
 	ListVariableSets(ctx context.Context, organization organization.Name) ([]*VariableSet, error)
 	GetVariableSet(ctx context.Context, setID resource.TfeID) (*VariableSet, error)
 	CreateVariableSet(ctx context.Context, org organization.Name, opts CreateVariableSetOptions) (*VariableSet, error)
 	UpdateVariableSet(ctx context.Context, setID resource.TfeID, opts UpdateVariableSetOptions) (*VariableSet, error)
 	DeleteVariableSet(ctx context.Context, setID resource.TfeID) (*VariableSet, error)
-	GetVariableSetByVariableID(ctx context.Context, variableID resource.TfeID) (*VariableSet, error)
-	CreateVariableSetVariable(ctx context.Context, setID resource.TfeID, opts CreateVariableOptions) (*Variable, error)
-	UpdateVariableSetVariable(ctx context.Context, variableID resource.TfeID, opts UpdateVariableOptions) (*VariableSet, error)
-	DeleteVariableSetVariable(ctx context.Context, variableID resource.TfeID) (*VariableSet, error)
 	GetWorkspace(context.Context, resource.TfeID) (*workspace.Workspace, error)
 	ListWorkspaces(ctx context.Context, opts workspace.ListOptions) (*resource.Page[*workspace.Workspace], error)
 
@@ -47,11 +45,11 @@ type tfeClient interface {
 }
 
 func (a *TFEAPI) AddHandlers(r *mux.Router) {
-	r.HandleFunc("/workspaces/{workspace_id}/vars", a.createWorkspaceVariable).Methods("POST")
-	r.HandleFunc("/workspaces/{workspace_id}/vars", a.list).Methods("GET")
-	r.HandleFunc("/workspaces/{workspace_id}/vars/{variable_id}", a.get).Methods("GET")
-	r.HandleFunc("/workspaces/{workspace_id}/vars/{variable_id}", a.update).Methods("PATCH")
-	r.HandleFunc("/workspaces/{workspace_id}/vars/{variable_id}", a.delete).Methods("DELETE")
+	r.HandleFunc("/workspaces/{parent_id}/vars", a.createVariable).Methods("POST")
+	r.HandleFunc("/workspaces/{workspace_id}/vars", a.listVariables).Methods("GET")
+	r.HandleFunc("/workspaces/{workspace_id}/vars/{variable_id}", a.getVariable).Methods("GET")
+	r.HandleFunc("/workspaces/{workspace_id}/vars/{variable_id}", a.updateVariable).Methods("PATCH")
+	r.HandleFunc("/workspaces/{workspace_id}/vars/{variable_id}", a.deleteVariable).Methods("DELETE")
 
 	r.HandleFunc("/organizations/{organization_name}/varsets", a.createVariableSet).Methods("POST")
 	r.HandleFunc("/organizations/{organization_name}/varsets", a.listVariableSets).Methods("GET")
@@ -61,16 +59,16 @@ func (a *TFEAPI) AddHandlers(r *mux.Router) {
 	r.HandleFunc("/varsets/{varset_id}", a.deleteVariableSet).Methods("DELETE")
 
 	r.HandleFunc("/varsets/{varset_id}/relationships/vars", a.listVariableSetVariables).Methods("GET")
-	r.HandleFunc("/varsets/{varset_id}/relationships/vars", a.addVariableToSet).Methods("POST")
-	r.HandleFunc("/varsets/{varset_id}/relationships/vars/{variable_id}", a.getVariableSetVariable).Methods("GET")
-	r.HandleFunc("/varsets/{varset_id}/relationships/vars/{variable_id}", a.updateVariableSetVariable).Methods("PATCH")
-	r.HandleFunc("/varsets/{varset_id}/relationships/vars/{variable_id}", a.deleteVariableFromSet).Methods("DELETE")
+	r.HandleFunc("/varsets/{parent_id}/relationships/vars", a.createVariable).Methods("POST")
+	r.HandleFunc("/varsets/{varset_id}/relationships/vars/{variable_id}", a.getVariable).Methods("GET")
+	r.HandleFunc("/varsets/{varset_id}/relationships/vars/{variable_id}", a.updateVariable).Methods("PATCH")
+	r.HandleFunc("/varsets/{varset_id}/relationships/vars/{variable_id}", a.deleteVariable).Methods("DELETE")
 	r.HandleFunc("/varsets/{varset_id}/relationships/workspaces", a.applySetToWorkspaces).Methods("POST")
 	r.HandleFunc("/varsets/{varset_id}/relationships/workspaces", a.deleteSetFromWorkspaces).Methods("DELETE")
 }
 
-func (a *TFEAPI) createWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
-	workspaceID, err := decode.ID("workspace_id", r)
+func (a *TFEAPI) createVariable(w http.ResponseWriter, r *http.Request) {
+	parentID, err := decode.ID("parent_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -80,7 +78,7 @@ func (a *TFEAPI) createWorkspaceVariable(w http.ResponseWriter, r *http.Request)
 		tfeapi.Error(w, err)
 		return
 	}
-	v, err := a.Client.CreateWorkspaceVariable(r.Context(), workspaceID, CreateVariableOptions{
+	v, err := a.Client.CreateVariable(r.Context(), parentID, CreateVariableOptions{
 		Key:         opts.Key,
 		Value:       opts.Value,
 		Description: opts.Description,
@@ -92,45 +90,45 @@ func (a *TFEAPI) createWorkspaceVariable(w http.ResponseWriter, r *http.Request)
 		variableError(w, err)
 		return
 	}
-	a.Respond(w, r, a.convertWorkspaceVariable(v, workspaceID), http.StatusCreated)
+	a.Respond(w, r, a.convertVariable(v), http.StatusCreated)
 }
 
-func (a *TFEAPI) get(w http.ResponseWriter, r *http.Request) {
+func (a *TFEAPI) getVariable(w http.ResponseWriter, r *http.Request) {
 	variableID, err := decode.ID("variable_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
-	wv, err := a.Client.GetWorkspaceVariable(r.Context(), variableID)
+	v, err := a.Client.GetVariable(r.Context(), variableID)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
 
-	a.Respond(w, r, a.convertWorkspaceVariable(wv.Variable, wv.WorkspaceID), http.StatusOK)
+	a.Respond(w, r, a.convertVariable(v), http.StatusOK)
 }
 
-func (a *TFEAPI) list(w http.ResponseWriter, r *http.Request) {
+func (a *TFEAPI) listVariables(w http.ResponseWriter, r *http.Request) {
 	workspaceID, err := decode.ID("workspace_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
-	variables, err := a.Client.ListWorkspaceVariables(r.Context(), workspaceID)
+	variables, err := a.Client.ListVariables(r.Context(), workspaceID)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
 
-	to := make([]*TFEWorkspaceVariable, len(variables))
+	to := make([]*TFEVariable, len(variables))
 	for i, from := range variables {
-		to[i] = a.convertWorkspaceVariable(from, workspaceID)
+		to[i] = a.convertVariable(from)
 	}
 
 	a.Respond(w, r, to, http.StatusOK)
 }
 
-func (a *TFEAPI) update(w http.ResponseWriter, r *http.Request) {
+func (a *TFEAPI) updateVariable(w http.ResponseWriter, r *http.Request) {
 	variableID, err := decode.ID("variable_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
@@ -138,10 +136,11 @@ func (a *TFEAPI) update(w http.ResponseWriter, r *http.Request) {
 	}
 	var opts TFEVariableUpdateOptions
 	if err := tfeapi.Unmarshal(r.Body, &opts); err != nil {
-		variableError(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
-	updated, err := a.Client.UpdateWorkspaceVariable(r.Context(), variableID, UpdateVariableOptions{
+
+	v, err := a.Client.UpdateVariable(r.Context(), variableID, UpdateVariableOptions{
 		Key:         opts.Key,
 		Value:       opts.Value,
 		Description: opts.Description,
@@ -150,20 +149,20 @@ func (a *TFEAPI) update(w http.ResponseWriter, r *http.Request) {
 		HCL:         opts.HCL,
 	})
 	if err != nil {
-		tfeapi.Error(w, err)
+		variableError(w, err)
 		return
 	}
 
-	a.Respond(w, r, a.convertWorkspaceVariable(updated.Variable, updated.WorkspaceID), http.StatusOK)
+	a.Respond(w, r, a.convertVariable(v), http.StatusOK)
 }
 
-func (a *TFEAPI) delete(w http.ResponseWriter, r *http.Request) {
+func (a *TFEAPI) deleteVariable(w http.ResponseWriter, r *http.Request) {
 	variableID, err := decode.ID("variable_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
-	_, err = a.Client.DeleteWorkspaceVariable(r.Context(), variableID)
+	_, err = a.Client.DeleteVariable(r.Context(), variableID)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -300,106 +299,18 @@ func (a *TFEAPI) listVariableSetVariables(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	set, err := a.Client.GetVariableSet(r.Context(), setID)
+	variables, err := a.Client.ListVariables(r.Context(), setID)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
 
-	to := make([]*TFEVariableSetVariable, len(set.Variables))
-	for i, from := range set.Variables {
-		to[i] = a.convertVariableSetVariable(from, setID)
+	to := make([]*TFEVariable, len(variables))
+	for i, from := range variables {
+		to[i] = a.convertVariable(from)
 	}
 
 	a.Respond(w, r, to, http.StatusOK)
-}
-
-func (a *TFEAPI) addVariableToSet(w http.ResponseWriter, r *http.Request) {
-	setID, err := decode.ID("varset_id", r)
-	if err != nil {
-		tfeapi.Error(w, err)
-		return
-	}
-	var opts TFEVariableCreateOptions
-	if err := tfeapi.Unmarshal(r.Body, &opts); err != nil {
-		tfeapi.Error(w, err)
-		return
-	}
-
-	v, err := a.Client.CreateVariableSetVariable(r.Context(), setID, CreateVariableOptions{
-		Key:         opts.Key,
-		Value:       opts.Value,
-		Description: opts.Description,
-		Category:    (*VariableCategory)(opts.Category),
-		Sensitive:   opts.Sensitive,
-		HCL:         opts.HCL,
-	})
-	if err != nil {
-		variableError(w, err)
-		return
-	}
-
-	a.Respond(w, r, a.convertVariableSetVariable(v, setID), http.StatusOK)
-}
-
-func (a *TFEAPI) updateVariableSetVariable(w http.ResponseWriter, r *http.Request) {
-	variableID, err := decode.ID("variable_id", r)
-	if err != nil {
-		tfeapi.Error(w, err)
-		return
-	}
-	var opts TFEVariableUpdateOptions
-	if err := tfeapi.Unmarshal(r.Body, &opts); err != nil {
-		tfeapi.Error(w, err)
-		return
-	}
-
-	set, err := a.Client.UpdateVariableSetVariable(r.Context(), variableID, UpdateVariableOptions{
-		Key:         opts.Key,
-		Value:       opts.Value,
-		Description: opts.Description,
-		Category:    (*VariableCategory)(opts.Category),
-		Sensitive:   opts.Sensitive,
-		HCL:         opts.HCL,
-	})
-	if err != nil {
-		variableError(w, err)
-		return
-	}
-
-	v := set.GetVariableByID(variableID)
-	a.Respond(w, r, a.convertVariableSetVariable(v, set.ID), http.StatusOK)
-}
-
-func (a *TFEAPI) getVariableSetVariable(w http.ResponseWriter, r *http.Request) {
-	variableID, err := decode.ID("variable_id", r)
-	if err != nil {
-		tfeapi.Error(w, err)
-		return
-	}
-
-	set, err := a.Client.GetVariableSetByVariableID(r.Context(), variableID)
-	if err != nil {
-		variableError(w, err)
-		return
-	}
-
-	v := set.GetVariableByID(variableID)
-	a.Respond(w, r, a.convertVariableSetVariable(v, set.ID), http.StatusOK)
-}
-
-func (a *TFEAPI) deleteVariableFromSet(w http.ResponseWriter, r *http.Request) {
-	variableID, err := decode.ID("variable_id", r)
-	if err != nil {
-		tfeapi.Error(w, err)
-		return
-	}
-
-	_, err = a.Client.DeleteVariableSetVariable(r.Context(), variableID)
-	if err != nil {
-		tfeapi.Error(w, err)
-		return
-	}
 }
 
 func (a *TFEAPI) applySetToWorkspaces(w http.ResponseWriter, r *http.Request) {
@@ -452,15 +363,6 @@ func (a *TFEAPI) deleteSetFromWorkspaces(w http.ResponseWriter, r *http.Request)
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (a *TFEAPI) convertWorkspaceVariable(from *Variable, workspaceID resource.TfeID) *TFEWorkspaceVariable {
-	return &TFEWorkspaceVariable{
-		TFEVariable: a.convertVariable(from, true),
-		Workspace: &workspace.TFEWorkspace{
-			ID: workspaceID,
-		},
-	}
-}
-
 func (a *TFEAPI) convertVariableSet(from *VariableSet) *TFEVariableSet {
 	to := &TFEVariableSet{
 		ID:          from.ID,
@@ -471,14 +373,9 @@ func (a *TFEAPI) convertVariableSet(from *VariableSet) *TFEVariableSet {
 			Name: from.Organization,
 		},
 	}
-	to.Variables = make([]*TFEVariableSetVariable, len(from.Variables))
+	to.Variables = make([]*TFEVariable, len(from.Variables))
 	for i, v := range from.Variables {
-		to.Variables[i] = &TFEVariableSetVariable{
-			TFEVariable: a.convertVariable(v, true),
-			VariableSet: &TFEVariableSet{
-				ID: v.ID,
-			},
-		}
+		to.Variables[i] = a.convertVariable(v)
 	}
 	to.Workspaces = make([]*workspace.TFEWorkspace, len(from.Workspaces))
 	for i, workspaceID := range from.Workspaces {
@@ -489,14 +386,7 @@ func (a *TFEAPI) convertVariableSet(from *VariableSet) *TFEVariableSet {
 	return to
 }
 
-func (a *TFEAPI) convertVariableSetVariable(from *Variable, setID resource.TfeID) *TFEVariableSetVariable {
-	return &TFEVariableSetVariable{
-		TFEVariable: a.convertVariable(from, true),
-		VariableSet: &TFEVariableSet{ID: setID},
-	}
-}
-
-func (a *TFEAPI) convertVariable(from *Variable, scrubSensitiveValue bool) *TFEVariable {
+func (a *TFEAPI) convertVariable(from *Variable) *TFEVariable {
 	to := &TFEVariable{
 		ID:          from.ID,
 		Key:         from.Key,
@@ -507,8 +397,16 @@ func (a *TFEAPI) convertVariable(from *Variable, scrubSensitiveValue bool) *TFEV
 		HCL:         from.HCL,
 		VersionID:   from.VersionID,
 	}
-	if to.Sensitive && scrubSensitiveValue {
+	if to.Sensitive {
 		to.Value = "" // scrub sensitive values
+	}
+	switch from.ParentID.Kind() {
+	case resource.WorkspaceKind:
+		to.Workspace = &workspace.TFEWorkspace{
+			ID: from.ParentID,
+		}
+	case resource.VariableSetKind:
+		to.VariableSet = &TFEVariableSet{ID: from.ParentID}
 	}
 	return to
 }

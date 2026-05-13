@@ -40,14 +40,14 @@ type (
 		Sensitive   bool             `jsonapi:"attribute" json:"sensitive"`
 		HCL         bool             `jsonapi:"attribute" json:"hcl"`
 
+		// ParentID is the ID of the variable's parent resource. Must be either
+		// a workspace ID if a workspace variable, or a variable set ID if a
+		// variable set variable.
+		ParentID resource.TfeID `jsonapi:"attribute" json:"parent_id" db:"parent_id"`
+
 		// OTF doesn't use this internally but the go-tfe integration tests
 		// expect it to be a random value that changes on every update.
 		VersionID string
-	}
-
-	WorkspaceVariable struct {
-		*Variable
-		WorkspaceID resource.TfeID
 	}
 
 	CreateVariableOptions struct {
@@ -76,9 +76,10 @@ type (
 	generateVersion func() string
 )
 
-func newVariable(collection []*Variable, opts CreateVariableOptions) (*Variable, error) {
+func newVariable(parentID resource.TfeID, opts CreateVariableOptions) (*Variable, error) {
 	v := Variable{
-		ID: resource.NewTfeID(resource.VariableKind),
+		ID:       resource.NewTfeID(resource.VariableKind),
+		ParentID: parentID,
 	}
 	if opts.generateVersion == nil {
 		opts.generateVersion = versionGenerator
@@ -116,9 +117,6 @@ func newVariable(collection []*Variable, opts CreateVariableOptions) (*Variable,
 	if opts.HCL != nil {
 		v.HCL = *opts.HCL
 	}
-	if err := v.checkConflicts(collection); err != nil {
-		return nil, err
-	}
 	return &v, nil
 }
 
@@ -135,6 +133,7 @@ func (v *Variable) LogValue() slog.Value {
 		slog.String("id", v.ID.String()),
 		slog.String("key", v.Key),
 		slog.Bool("sensitive", v.Sensitive),
+		slog.String("parent_id", v.ParentID.String()),
 	}
 	if v.Sensitive {
 		attrs = append(attrs, slog.String("value", "*****"))
@@ -144,7 +143,7 @@ func (v *Variable) LogValue() slog.Value {
 	return slog.GroupValue(attrs...)
 }
 
-func (v *Variable) update(collection []*Variable, opts UpdateVariableOptions) error {
+func (v *Variable) update(opts UpdateVariableOptions) error {
 	if opts.Key != nil {
 		if v.Sensitive {
 			return errors.New("changing the key of a sensitive variable is not allowed")
@@ -179,10 +178,6 @@ func (v *Variable) update(collection []*Variable, opts UpdateVariableOptions) er
 		if err := v.setSensitive(*opts.Sensitive); err != nil {
 			return err
 		}
-	}
-	// check for conflicts with other variables in collection
-	if err := v.checkConflicts(collection); err != nil {
-		return err
 	}
 	// generate new version ID on every update call, even if nothing is actually
 	// updated
@@ -231,21 +226,6 @@ func (v *Variable) setSensitive(sensitive bool) error {
 		return errors.New("cannot change a sensitive variable to a non-sensitive variable")
 	}
 	v.Sensitive = sensitive
-	return nil
-}
-
-// checkConflicts checks for conflicts with the given variable. i.e. they share
-// same key and category.
-func (v *Variable) checkConflicts(collection []*Variable) error {
-	for _, v2 := range collection {
-		if v.ID == v2.ID {
-			// cannot conflict with self
-			continue
-		}
-		if v.Key == v2.Key && v.Category == v2.Category {
-			return ErrVariableConflict
-		}
-	}
 	return nil
 }
 

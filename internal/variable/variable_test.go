@@ -108,7 +108,7 @@ func TestVariable_Update(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.opts.generateVersion = func() string { return "" }
 			got := tt.before
-			err := got.update(nil, tt.opts)
+			err := got.update(tt.opts)
 			if tt.err {
 				assert.Error(t, err)
 			} else {
@@ -120,15 +120,16 @@ func TestVariable_Update(t *testing.T) {
 
 func TestWriteTerraformVariables(t *testing.T) {
 	dir := t.TempDir()
+	parentID := resource.NewTfeID(resource.WorkspaceKind)
 
-	v1, err := newVariable(nil, CreateVariableOptions{
+	v1, err := newVariable(parentID, CreateVariableOptions{
 		Key:      new("foo"),
 		Value:    new("bar"),
 		Category: new(CategoryTerraform),
 	})
 	require.NoError(t, err)
 
-	v2, err := newVariable(nil, CreateVariableOptions{
+	v2, err := newVariable(parentID, CreateVariableOptions{
 		Key: new("images"),
 		Value: new(`{
     us-east-1 = "image-1234"
@@ -140,14 +141,14 @@ func TestWriteTerraformVariables(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	v3, err := newVariable(nil, CreateVariableOptions{
+	v3, err := newVariable(parentID, CreateVariableOptions{
 		Key:      new("multiline-foo"),
 		Value:    new("foo\nbar\nbaz"),
 		Category: new(CategoryTerraform),
 	})
 	require.NoError(t, err)
 
-	v4, err := newVariable(nil, CreateVariableOptions{
+	v4, err := newVariable(parentID, CreateVariableOptions{
 		Key:      new("multiline-foo-with-delimiter"),
 		Value:    new("EOTfoo\nbar\nbaz"),
 		Category: new(CategoryTerraform),

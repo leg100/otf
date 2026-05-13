@@ -7,15 +7,7 @@ import (
 	"github.com/leg100/otf/internal/workspace"
 )
 
-// TFEWorkspaceVariable is a workspace variable.
-type TFEWorkspaceVariable struct {
-	*TFEVariable
-
-	// Relations
-	Workspace *workspace.TFEWorkspace `jsonapi:"relationship" json:"configurable"`
-}
-
-// TFEVariable is a workspace variable.
+// TFEVariable is a terraform enterprise variable.
 type TFEVariable struct {
 	ID          resource.TfeID `jsonapi:"primary,vars"`
 	Key         string         `jsonapi:"attribute" json:"key"`
@@ -25,6 +17,10 @@ type TFEVariable struct {
 	HCL         bool           `jsonapi:"attribute" json:"hcl"`
 	Sensitive   bool           `jsonapi:"attribute" json:"sensitive"`
 	VersionID   string         `jsonapi:"attribute" json:"version-id"`
+
+	// Relations
+	Workspace   *workspace.TFEWorkspace `jsonapi:"relationship" json:"configurable,omitempty"`
+	VariableSet *TFEVariableSet         `jsonapi:"relationship" json:"varset,omitempty"`
 }
 
 // TFEVariableList is a list of workspace variables
@@ -97,16 +93,9 @@ type TFEVariableSet struct {
 	// Relations
 	Organization *organization.TFEOrganization `jsonapi:"relationship" json:"organization"`
 	Workspaces   []*workspace.TFEWorkspace     `jsonapi:"relationship" json:"workspaces,omitempty"`
-	Variables    []*TFEVariableSetVariable     `jsonapi:"relationship" json:"vars,omitempty"`
+	Variables    []*TFEVariable                `jsonapi:"relationship" json:"vars,omitempty"`
 
 	// Projects     []*Project             `jsonapi:"relationship" json:"projects,omitempty"`
-}
-
-type TFEVariableSetVariable struct {
-	*TFEVariable
-
-	// Relations
-	VariableSet *TFEVariableSet `jsonapi:"relationship" json:"varset"`
 }
 
 // TFEVariableSetCreateOptions represents the options for creating a new variable set within in a organization.

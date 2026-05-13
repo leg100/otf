@@ -17,20 +17,61 @@ type pgdb struct {
 	*sql.DB // provides access to generated SQL queries
 }
 
-func (pdb *pgdb) createWorkspaceVariable(ctx context.Context, workspaceID resource.TfeID, v *Variable) error {
+func (pdb *pgdb) createVariable(ctx context.Context, parentID resource.TfeID, v *Variable) error {
 	return pdb.Tx(ctx, func(ctx context.Context) error {
-		if err := pdb.createVariable(ctx, v); err != nil {
-			return err
-		}
 		_, err := pdb.Exec(ctx, `
-INSERT INTO workspace_variables (
+INSERT INTO variables (
     variable_id,
-    workspace_id
+    key,
+    value,
+    description,
+    category,
+    sensitive,
+    hcl,
+    version_id
+) VALUES (
+    $1,
+    $2,
+    $3,
+    $4,
+    $5,
+    $6,
+    $7,
+    $8
+)
+`,
+			v.ID,
+			v.Key,
+			v.Value,
+			v.Description,
+			v.Category,
+			v.Sensitive,
+			v.HCL,
+			v.VersionID,
+		)
+
+		switch parentID.Kind() {
+		case resource.WorkspaceKind:
+			_, err = pdb.Exec(ctx, `
+INSERT INTO workspace_variables (
+    workspace_id,
+    variable_id
 ) VALUES (
     $1,
     $2
-)
-`, v.ID, workspaceID)
+)`, parentID, v.ID)
+		case resource.VariableSetKind:
+			_, err = pdb.Exec(ctx, `
+INSERT INTO variable_set_variables (
+	variable_set_id,
+	variable_id
+) VALUES (
+	$1,
+	$2
+)`, parentID, v.ID)
+		default:
+			return fmt.Errorf("invalid variable parent kind: %s", parentID.Kind())
+		}
 		if err != nil {
 			return err
 		}
@@ -38,53 +79,58 @@ INSERT INTO workspace_variables (
 	})
 }
 
-func (pdb *pgdb) listWorkspaceVariables(ctx context.Context, workspaceID resource.TfeID) ([]*Variable, error) {
+func (pdb *pgdb) listVariables(ctx context.Context, parentID resource.TfeID) ([]*Variable, error) {
 	rows := pdb.Query(ctx, `
-SELECT v.variable_id, v.key, v.value, v.description, v.category, v.sensitive, v.hcl, v.version_id
-FROM workspace_variables
-JOIN variables v USING (variable_id)
-WHERE workspace_id = $1
-`, workspaceID)
+SELECT
+    v.*,
+	COALESCE(wv.workspace_id, vsv.variable_set_id) AS parent_id
+FROM variables v
+LEFT OUTER JOIN workspace_variables wv USING (variable_id)
+LEFT OUTER JOIN variable_set_variables vsv USING (variable_id)
+WHERE wv.workspace_id = $1 OR vsv.variable_set_id = $1
+`, parentID)
 	return sql.CollectRows(rows, pgx.RowToAddrOfStructByName[Variable])
 }
 
-func (pdb *pgdb) getWorkspaceVariable(ctx context.Context, variableID resource.TfeID) (*WorkspaceVariable, error) {
+func (pdb *pgdb) listGlobalVariables(ctx context.Context, organization organization.Name) ([]*Variable, error) {
+	rows := pdb.Query(ctx, `
+SELECT
+    v.*,
+	vsv.variable_set_id AS parent_id
+FROM variables v
+JOIN variable_set_variables vsv USING (variable_id)
+JOIN variable_sets vs USING (variable_set_id)
+WHERE vs.global IS true
+AND vs.organization_name = $1
+`, organization)
+	return sql.CollectRows(rows, pgx.RowToAddrOfStructByName[Variable])
+}
+
+func (pdb *pgdb) getVariable(ctx context.Context, variableID resource.ID) (*Variable, error) {
 	row := pdb.Query(ctx, `
 SELECT
-    workspace_id,
-    v::"variables" AS variable
-FROM workspace_variables
-JOIN variables v USING (variable_id)
+    v.*,
+	COALESCE(wv.workspace_id, vsv.variable_set_id) AS parent_id
+FROM variables v
+LEFT OUTER JOIN workspace_variables wv USING (variable_id)
+LEFT OUTER JOIN variable_set_variables vsv USING (variable_id)
 WHERE v.variable_id = $1
 `, variableID)
-	return sql.CollectOneRow(row, scanWorkspaceVariable)
+	return sql.CollectExactlyOneRow(row, pgx.RowToAddrOfStructByName[Variable])
 }
 
-func (pdb *pgdb) deleteWorkspaceVariable(ctx context.Context, variableID resource.TfeID) (*WorkspaceVariable, error) {
-	row := pdb.Query(ctx, `
-DELETE
-FROM workspace_variables wv USING variables v
-WHERE wv.variable_id = $1
-RETURNING wv.workspace_id, (v.*)::"variables" AS variable
-`,
-		variableID)
-	return sql.CollectOneRow(row, scanWorkspaceVariable)
-}
-
-func scanWorkspaceVariable(row pgx.CollectableRow) (*WorkspaceVariable, error) {
-	type model struct {
-		*Variable
-		WorkspaceID resource.TfeID `db:"workspace_id"`
-	}
-	m, err := pgx.RowToStructByName[model](row)
+func (pdb *pgdb) deleteVariable(ctx context.Context, variableID resource.TfeID) (*Variable, error) {
+	v, err := pdb.getVariable(ctx, variableID)
 	if err != nil {
 		return nil, err
 	}
-	wv := &WorkspaceVariable{
-		Variable:    m.Variable,
-		WorkspaceID: m.WorkspaceID,
-	}
-	return wv, nil
+	_, err = pdb.Exec(ctx, `
+DELETE
+FROM variables v
+WHERE v.variable_id = $1
+`,
+		variableID)
+	return v, err
 }
 
 func (pdb *pgdb) createVariableSet(ctx context.Context, set *VariableSet) error {
@@ -146,10 +192,10 @@ WHERE variable_set_id = $4
 	})
 }
 
-func (pdb *pgdb) getVariableSet(ctx context.Context, setID resource.TfeID) (*VariableSet, error) {
+func (pdb *pgdb) getVariableSet(ctx context.Context, setID resource.ID) (*VariableSet, error) {
 	row := pdb.Query(ctx, `
 SELECT
-    vs.variable_set_id, vs.global, vs.name, vs.description, vs.organization_name,
+    vs.*,
     (
         SELECT array_agg(v.*)::variables[]
         FROM variables v
@@ -165,35 +211,13 @@ FROM variable_sets vs
 WHERE vs.variable_set_id = $1
 `,
 		setID)
-	return sql.CollectOneRow(row, scanVariableSet)
-}
-
-func (pdb *pgdb) getVariableSetByVariableID(ctx context.Context, variableID resource.TfeID) (*VariableSet, error) {
-	row := pdb.Query(ctx, `
-SELECT
-    vs.variable_set_id, vs.global, vs.name, vs.description, vs.organization_name,
-    (
-        SELECT array_agg(v.*)::variables[]
-        FROM variables v
-        JOIN variable_set_variables vsv USING (variable_id)
-        WHERE vsv.variable_set_id = vs.variable_set_id
-    ) AS variables,
-    (
-        SELECT array_agg(vsw.workspace_id)::text[]
-        FROM variable_set_workspaces vsw
-        WHERE vsw.variable_set_id = vs.variable_set_id
-    ) AS workspace_ids
-FROM variable_sets vs
-JOIN variable_set_variables vsv USING (variable_set_id)
-WHERE vsv.variable_id = $1
-`, variableID)
-	return sql.CollectOneRow(row, scanVariableSet)
+	return sql.CollectExactlyOneRow(row, scanVariableSet)
 }
 
 func (pdb *pgdb) listVariableSets(ctx context.Context, organization organization.Name) ([]*VariableSet, error) {
 	rows := pdb.Query(ctx, `
 SELECT
-    vs.variable_set_id, vs.global, vs.name, vs.description, vs.organization_name,
+    vs.*,
     (
         SELECT array_agg(v.*)::variables[]
         FROM variables v
@@ -262,16 +286,29 @@ RETURNING variable_set_id, global, name, description, organization_name
 }
 
 func scanVariableSet(row pgx.CollectableRow) (*VariableSet, error) {
-	type model struct {
+	// We have to scan a variable set's variables into a model first otherwise
+	// pgx complains that the table is missing a column for the variable's
+	// ParentID field.
+	type variableModel struct {
+		ID          resource.TfeID   `db:"variable_id"`
+		Key         string           `db:"key"`
+		Value       string           `db:"value"`
+		Description string           `db:"description"`
+		Category    VariableCategory `db:"category"`
+		Sensitive   bool             `db:"sensitive"`
+		HCL         bool             `db:"hcl"`
+		VersionID   string           `db:"version_id"`
+	}
+	type setModel struct {
 		ID           resource.TfeID    `db:"variable_set_id"`
 		Workspaces   []resource.TfeID  `db:"workspace_ids"`
 		Organization organization.Name `db:"organization_name"`
 		Name         string
 		Description  string
 		Global       bool
-		Variables    []*Variable
+		Variables    []variableModel
 	}
-	m, err := pgx.RowToStructByName[model](row)
+	m, err := pgx.RowToStructByName[setModel](row)
 	if err != nil {
 		return nil, err
 	}
@@ -280,32 +317,23 @@ func scanVariableSet(row pgx.CollectableRow) (*VariableSet, error) {
 		Name:         m.Name,
 		Description:  m.Description,
 		Global:       m.Global,
-		Variables:    m.Variables,
 		Organization: m.Organization,
-		Workspaces:   make([]resource.TfeID, len(m.Workspaces)),
+		Workspaces:   m.Workspaces,
+		Variables:    make([]*Variable, len(m.Variables)),
 	}
-	copy(vs.Workspaces, m.Workspaces)
+	for i, varModel := range m.Variables {
+		vs.Variables[i] = &Variable{
+			ID:          varModel.ID,
+			Key:         varModel.Key,
+			Value:       varModel.Value,
+			Description: varModel.Description,
+			Category:    varModel.Category,
+			Sensitive:   varModel.Sensitive,
+			HCL:         varModel.HCL,
+			ParentID:    vs.ID,
+		}
+	}
 	return vs, nil
-}
-
-func (pdb *pgdb) addVariableToSet(ctx context.Context, setID resource.TfeID, v *Variable) error {
-	return pdb.Tx(ctx, func(ctx context.Context) error {
-		if err := pdb.createVariable(ctx, v); err != nil {
-			return err
-		}
-		_, err := pdb.Exec(ctx, `
-INSERT INTO variable_set_variables (
-    variable_set_id,
-    variable_id
-) VALUES (
-    $1,
-    $2
-)`, setID, v.ID)
-		if err != nil {
-			return err
-		}
-		return nil
-	})
 }
 
 func (pdb *pgdb) createVariableSetWorkspaces(ctx context.Context, setID resource.TfeID, workspaceIDs []resource.TfeID) error {
@@ -356,40 +384,6 @@ AND workspace_id = $2
 	return err
 }
 
-func (pdb *pgdb) createVariable(ctx context.Context, v *Variable) error {
-	_, err := pdb.Exec(ctx, `
-INSERT INTO variables (
-    variable_id,
-    key,
-    value,
-    description,
-    category,
-    sensitive,
-    hcl,
-    version_id
-) VALUES (
-    $1,
-    $2,
-    $3,
-    $4,
-    $5,
-    $6,
-    $7,
-    $8
-)
-`,
-		v.ID,
-		v.Key,
-		v.Value,
-		v.Description,
-		v.Category,
-		v.Sensitive,
-		v.HCL,
-		v.VersionID,
-	)
-	return err
-}
-
 func (pdb *pgdb) updateVariable(ctx context.Context, v *Variable) error {
 	_, err := pdb.Exec(ctx, `
 UPDATE variables
@@ -412,10 +406,5 @@ WHERE variable_id = $8
 		v.VersionID,
 		v.ID,
 	)
-	return err
-}
-
-func (pdb *pgdb) deleteVariable(ctx context.Context, variableID resource.TfeID) error {
-	_, err := pdb.Exec(ctx, ` DELETE FROM variables WHERE variable_id = $1 `, variableID)
 	return err
 }
