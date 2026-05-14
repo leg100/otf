@@ -11,6 +11,12 @@ import (
 	"github.com/leg100/otf/internal/workspace"
 )
 
+type renderer struct {
+}
+
+func (r *renderer) Render(c templ.Component, res resource.Resource, w http.ResponseWriter, req *http.Request, opts ...RenderPageOption) {
+}
+
 // RenderPage renders a component within a layout, e.g. header, footer, menus
 // etc.
 func RenderPage(c templ.Component, title string, w http.ResponseWriter, r *http.Request, opts ...RenderPageOption) {

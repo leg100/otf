@@ -20,3 +20,10 @@ func ValidateName(name *string) error {
 	}
 	return nil
 }
+
+type Resource interface {
+	// String returns a human meaningful name for the resource.
+	String() string
+	// GetID returns the unique ID for the resource.
+	GetID() ID
+}
