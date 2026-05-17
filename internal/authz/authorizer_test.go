@@ -14,7 +14,7 @@ func TestAuthorizer(t *testing.T) {
 	user := &Superuser{}
 	ctx := AddSubjectToContext(t.Context(), user)
 
-	got, err := authorizer.Authorize(ctx, ListUsersAction, resource.SiteID)
+	got, err := authorizer.Authorize(ctx, resource.List, resource.UserKind, resource.SiteID)
 	require.NoError(t, err)
 
 	assert.Equal(t, user, got)

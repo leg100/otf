@@ -120,22 +120,41 @@ func (u *User) IsSiteAdmin() bool {
 	return u.SiteAdmin || u.ID == SiteAdminID
 }
 
-func (u *User) CanAccess(action authz.Action, req authz.Request) bool {
+func (u *User) CanAccess(action resource.Action, kind resource.Kind, req authz.Request) bool {
 	// Site admin can do whatever it wants
 	if u.IsSiteAdmin() {
 		return true
 	}
-	switch action {
-	case authz.CreateOrganizationAction, authz.GetGithubAppAction, authz.GetUserAction:
-		// These actions are available to any user at any level.
-		return true
-	case authz.CreateUserAction, authz.ListUsersAction:
-		// A user can perform these actions only if they are an owner of at
-		// least one organization. This permits an owner to search users or create
-		// a user before adding them to a team.
-		for _, team := range u.Teams {
-			if team.IsOwners() {
-				return true
+
+	// These actions are available to any user at any level.
+	switch kind {
+	case resource.OrganizationKind:
+		switch action {
+		case resource.Create:
+			return true
+		}
+	case resource.UserKind:
+		switch action {
+		case resource.Get:
+			return true
+		}
+	case resource.GithubAppKind:
+		switch action {
+		case resource.Get:
+			return true
+		}
+	}
+	// A user can perform these actions only if they are an owner of at
+	// least one organization. This permits an owner to search users or create
+	// a user before adding them to a team.
+	switch kind {
+	case resource.UserKind:
+		switch action {
+		case resource.Create, resource.List:
+			for _, team := range u.Teams {
+				if team.IsOwners() {
+					return true
+				}
 			}
 		}
 	}
@@ -146,7 +165,7 @@ func (u *User) CanAccess(action authz.Action, req authz.Request) bool {
 	}
 	// All other user perms are inherited from team memberships.
 	for _, team := range u.Teams {
-		if team.CanAccess(action, req) {
+		if team.CanAccess(action, kind, req) {
 			return true
 		}
 	}

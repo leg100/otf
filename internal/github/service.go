@@ -73,7 +73,7 @@ func NewService(opts Options) *Service {
 }
 
 func (a *Service) CreateApp(ctx context.Context, opts CreateAppOptions) (*App, error) {
-	subject, err := a.Authorize(ctx, authz.CreateGithubAppAction, resource.SiteID)
+	subject, err := a.Authorize(ctx, resource.Create, resource.GithubAppKind, resource.SiteID)
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +93,7 @@ func (a *Service) CreateApp(ctx context.Context, opts CreateAppOptions) (*App, e
 }
 
 func (a *Service) GetApp(ctx context.Context) (*App, error) {
-	subject, err := a.Authorize(ctx, authz.GetGithubAppAction, resource.SiteID)
+	subject, err := a.Authorize(ctx, resource.Get, resource.GithubAppKind, resource.SiteID)
 	if err != nil {
 		return nil, err
 	}
@@ -108,7 +108,7 @@ func (a *Service) GetApp(ctx context.Context) (*App, error) {
 }
 
 func (a *Service) DeleteApp(ctx context.Context) error {
-	subject, err := a.Authorize(ctx, authz.DeleteGithubAppAction, resource.SiteID)
+	subject, err := a.Authorize(ctx, resource.Delete, resource.GithubAppKind, resource.SiteID)
 	if err != nil {
 		return err
 	}

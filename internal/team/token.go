@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tokens"
 )
@@ -66,7 +65,7 @@ func (t *Token) LogValue() slog.Value {
 }
 
 func (a *Service) CreateTeamToken(ctx context.Context, opts CreateTokenOptions) (*Token, []byte, error) {
-	_, err := a.Authorize(ctx, authz.CreateTeamTokenAction, opts.TeamID)
+	_, err := a.Authorize(ctx, resource.Create, resource.TeamTokenKind, opts.TeamID)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -88,7 +87,7 @@ func (a *Service) CreateTeamToken(ctx context.Context, opts CreateTokenOptions) 
 }
 
 func (a *Service) GetTeamToken(ctx context.Context, teamID resource.TfeID) (*Token, error) {
-	_, err := a.Authorize(ctx, authz.GetTeamTokenAction, teamID)
+	_, err := a.Authorize(ctx, resource.Get, resource.TeamTokenKind, teamID)
 	if err != nil {
 		return nil, err
 	}
@@ -101,7 +100,7 @@ func (a *Service) GetTeamToken(ctx context.Context, teamID resource.TfeID) (*Tok
 }
 
 func (a *Service) DeleteTeamToken(ctx context.Context, teamID resource.TfeID) error {
-	_, err := a.Authorize(ctx, authz.DeleteTeamTokenAction, teamID)
+	_, err := a.Authorize(ctx, resource.Delete, resource.TeamTokenKind, teamID)
 	if err != nil {
 		return err
 	}

@@ -70,11 +70,11 @@ func NewService(opts Options) *Service {
 func (s *Service) CreateRunTrigger(ctx context.Context, workspaceID, triggeringWorkspaceID resource.TfeID) (*Trigger, error) {
 	// User must have appropriate perm on the specified workspace and permission
 	// to read runs for the triggering workspace.
-	subject, err := s.authorizer.Authorize(ctx, authz.CreateRunTriggerAction, workspaceID)
+	subject, err := s.authorizer.Authorize(ctx, resource.Create, resource.RunTriggerKind, workspaceID)
 	if err != nil {
 		return nil, err
 	}
-	_, err = s.authorizer.Authorize(ctx, authz.GetRunAction, triggeringWorkspaceID)
+	_, err = s.authorizer.Authorize(ctx, resource.Get, resource.RunKind, triggeringWorkspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +93,7 @@ func (s *Service) CreateRunTrigger(ctx context.Context, workspaceID, triggeringW
 }
 
 func (s *Service) ListRunTriggers(ctx context.Context, opts ListOptions) ([]*Trigger, error) {
-	subject, err := s.authorizer.Authorize(ctx, authz.ListRunTriggersAction, opts.WorkspaceID)
+	subject, err := s.authorizer.Authorize(ctx, resource.List, resource.RunTriggersKind, opts.WorkspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -115,7 +115,7 @@ func (s *Service) ListRunTriggers(ctx context.Context, opts ListOptions) ([]*Tri
 }
 
 func (s *Service) GetRunTrigger(ctx context.Context, triggerID resource.TfeID) (*Trigger, error) {
-	subject, err := s.authorizer.Authorize(ctx, authz.GetRunTriggerAction, triggerID)
+	subject, err := s.authorizer.Authorize(ctx, resource.Get, resource.RunTriggerKind, triggerID)
 	if err != nil {
 		return nil, err
 	}
@@ -129,7 +129,7 @@ func (s *Service) GetRunTrigger(ctx context.Context, triggerID resource.TfeID) (
 }
 
 func (s *Service) DeleteRunTrigger(ctx context.Context, triggerID resource.TfeID) error {
-	subject, err := s.authorizer.Authorize(ctx, authz.DeleteRunTriggerAction, triggerID)
+	subject, err := s.authorizer.Authorize(ctx, resource.Delete, resource.RunTriggerKind, triggerID)
 	if err != nil {
 		return err
 	}

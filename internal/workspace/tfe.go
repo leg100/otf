@@ -538,16 +538,16 @@ func (a *tfe) convert(from *Workspace, r *http.Request) (*TFEWorkspace, error) {
 func ToTFE(a *authz.Authorizer, from *Workspace, r *http.Request) (*TFEWorkspace, error) {
 	ctx := r.Context()
 	perms := &TFEWorkspacePermissions{
-		CanLock:           a.CanAccess(ctx, authz.LockWorkspaceAction, &from.ID),
-		CanUnlock:         a.CanAccess(ctx, authz.UnlockWorkspaceAction, &from.ID),
-		CanForceUnlock:    a.CanAccess(ctx, authz.UnlockWorkspaceAction, &from.ID),
-		CanQueueApply:     a.CanAccess(ctx, authz.ApplyRunAction, &from.ID),
-		CanQueueDestroy:   a.CanAccess(ctx, authz.ApplyRunAction, &from.ID),
-		CanQueueRun:       a.CanAccess(ctx, authz.CreateRunAction, &from.ID),
-		CanDestroy:        a.CanAccess(ctx, authz.DeleteWorkspaceAction, &from.ID),
-		CanReadSettings:   a.CanAccess(ctx, authz.GetWorkspaceAction, &from.ID),
-		CanUpdate:         a.CanAccess(ctx, authz.UpdateWorkspaceAction, &from.ID),
-		CanUpdateVariable: a.CanAccess(ctx, authz.UpdateWorkspaceAction, &from.ID),
+		CanLock:           a.CanAccess(ctx, resource.Lock, resource.WorkspaceKind, &from.ID),
+		CanUnlock:         a.CanAccess(ctx, resource.Unlock, resource.WorkspaceKind, &from.ID),
+		CanForceUnlock:    a.CanAccess(ctx, resource.ForceUnlock, resource.WorkspaceKind, &from.ID),
+		CanQueueApply:     a.CanAccess(ctx, resource.Apply, resource.RunKind, &from.ID),
+		CanQueueDestroy:   a.CanAccess(ctx, resource.Apply, resource.RunKind, &from.ID),
+		CanQueueRun:       a.CanAccess(ctx, resource.Create, resource.RunKind, &from.ID),
+		CanDestroy:        a.CanAccess(ctx, resource.Delete, resource.WorkspaceKind, &from.ID),
+		CanReadSettings:   a.CanAccess(ctx, resource.Get, resource.WorkspaceKind, &from.ID),
+		CanUpdate:         a.CanAccess(ctx, resource.Update, resource.WorkspaceKind, &from.ID),
+		CanUpdateVariable: a.CanAccess(ctx, resource.Update, resource.WorkspaceKind, &from.ID),
 	}
 
 	to := &TFEWorkspace{

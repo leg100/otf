@@ -5,6 +5,7 @@ import (
 
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/organization"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/team"
 	"github.com/stretchr/testify/assert"
 )
@@ -14,7 +15,7 @@ func TestSiteAdminCanAccessOrganization(t *testing.T) {
 	u := User{
 		ID: SiteAdminID,
 	}
-	assert.True(t, u.CanAccess(authz.ListRunsAction, authz.Request{ID: org}))
+	assert.True(t, u.CanAccess(resource.List, resource.RunKind, authz.Request{ID: org}))
 }
 
 func TestOwnerCanAccessOrganization(t *testing.T) {
@@ -27,7 +28,7 @@ func TestOwnerCanAccessOrganization(t *testing.T) {
 			},
 		},
 	}
-	assert.True(t, u.CanAccess(authz.ListRunsAction, authz.Request{ID: org}))
+	assert.True(t, u.CanAccess(resource.List, resource.RunKind, authz.Request{ID: org}))
 }
 
 func TestUser_Organizations(t *testing.T) {

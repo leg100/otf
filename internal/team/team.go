@@ -127,7 +127,7 @@ func (t *Team) IsOwner(organization resource.ID) bool {
 	return t.Organization == organization && t.IsOwners()
 }
 
-func (t *Team) CanAccess(action authz.Action, req authz.Request) bool {
+func (t *Team) CanAccess(action resource.Action, kind resource.Kind, req authz.Request) bool {
 	if req.ID == resource.SiteID {
 		// Deny all site-level access
 		return false
@@ -140,21 +140,21 @@ func (t *Team) CanAccess(action authz.Action, req authz.Request) bool {
 		// owner team can perform all actions on organization
 		return true
 	}
-	if authz.OrganizationMinPermissions.IsAllowed(action) {
+	if authz.OrganizationMinPermissions.IsAllowed(action, kind) {
 		return true
 	}
 	if t.ManageWorkspaces {
-		if authz.WorkspaceManagerRole.IsAllowed(action) {
+		if authz.WorkspaceManagerRole.IsAllowed(action, kind) {
 			return true
 		}
 	}
 	if t.ManageVCS {
-		if authz.VCSManagerRole.IsAllowed(action) {
+		if authz.VCSManagerRole.IsAllowed(action, kind) {
 			return true
 		}
 	}
 	if t.ManageModules {
-		if authz.RegistryManagerRole.IsAllowed(action) {
+		if authz.RegistryManagerRole.IsAllowed(action, kind) {
 			return true
 		}
 	}
@@ -163,7 +163,7 @@ func (t *Team) CanAccess(action authz.Action, req authz.Request) bool {
 		return t.ID == req.ID
 	}
 	if req.WorkspacePolicy != nil {
-		return req.WorkspacePolicy.Check(t.ID, action)
+		return req.WorkspacePolicy.Check(t.ID, action, kind)
 	}
 	return false
 }

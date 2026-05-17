@@ -32,7 +32,12 @@ const (
 	TeamTokenKind                 Kind = "tt"
 	AgentTokenKind                Kind = "at"
 	SSHKeyKind                    Kind = "sshkey"
+	PrivateKeyKind                Kind = "privkey"
 	RunTriggerKind                Kind = "rt"
+	GithubAppKind                 Kind = "ghapp"
+	PlanFileKind                  Kind = "pf"
+	TagKind                       Kind = "tag"
+	EntitlementKind               Kind = "ent"
 )
 
 var fullKinds = map[Kind]string{
@@ -56,8 +61,13 @@ var fullKinds = map[Kind]string{
 	TeamTokenKind:                 "team-token",
 	AgentTokenKind:                "agent-token",
 	SSHKeyKind:                    "ssh-key",
+	PrivateKeyKind:                "private-key",
 	RunTriggerKind:                "trigger",
 	VCSProviderKind:               "vcs-provider",
+	GithubAppKind:                 "github-app",
+	PlanFileKind:                  "plan-file",
+	TagKind:                       "tag",
+	EntitlementKind:               "entitlement",
 }
 
 // Full returns the unabbreviated name for the kind.

@@ -20,22 +20,30 @@ type Permission struct {
 
 // Check whether the subject is allowed to carry out the given action on the
 // workspace belonging to the policy.
-func (p Policy) Check(subject resource.ID, action authz.Action) bool {
+func (p Policy) Check(subject resource.ID, action resource.Action, kind resource.Kind) bool {
 	switch subject.Kind() {
 	case resource.TeamKind:
 		// Team can only access workspace if a specific permission has been
 		// assigned to the team.
 		for _, perm := range p.Permissions {
 			if subject == perm.TeamID {
-				return perm.Role.IsAllowed(action)
+				return perm.Role.IsAllowed(action, kind)
 			}
 		}
 	case resource.JobKind:
 		// Job is allowed to retrieve the state of this workspace if the
 		// workspace has allowed global remote state sharing.
-		switch action {
-		case authz.GetStateVersionAction, authz.GetWorkspaceAction, authz.DownloadStateAction:
-			return p.globalRemoteState
+		switch kind {
+		case resource.StateVersionKind:
+			switch action {
+			case resource.Download, resource.Get:
+				return p.globalRemoteState
+			}
+		case resource.WorkspaceKind:
+			switch action {
+			case resource.Get:
+				return p.globalRemoteState
+			}
 		}
 	}
 	return false

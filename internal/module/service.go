@@ -71,7 +71,7 @@ func (s *Service) PublishModule(ctx context.Context, opts PublishOptions) (*Modu
 		return nil, err
 	}
 
-	subject, err := s.Authorize(ctx, authz.CreateModuleAction, &vcsprov.Organization)
+	subject, err := s.Authorize(ctx, resource.Create, resource.ModuleKind, &vcsprov.Organization)
 	if err != nil {
 		return nil, err
 	}
@@ -191,7 +191,7 @@ func (s *Service) PublishVersion(ctx context.Context, opts PublishVersionOptions
 }
 
 func (s *Service) CreateModule(ctx context.Context, opts CreateOptions) (*Module, error) {
-	subject, err := s.Authorize(ctx, authz.CreateModuleAction, &opts.Organization)
+	subject, err := s.Authorize(ctx, resource.Create, resource.ModuleKind, &opts.Organization)
 	if err != nil {
 		return nil, err
 	}
@@ -207,7 +207,7 @@ func (s *Service) CreateModule(ctx context.Context, opts CreateOptions) (*Module
 }
 
 func (s *Service) ListModules(ctx context.Context, opts ListOptions) ([]*Module, error) {
-	subject, err := s.Authorize(ctx, authz.ListModulesAction, &opts.Organization)
+	subject, err := s.Authorize(ctx, resource.List, resource.ModuleKind, &opts.Organization)
 	if err != nil {
 		return nil, err
 	}
@@ -226,7 +226,7 @@ func (s *Service) ListProviders(ctx context.Context, organization organization.N
 }
 
 func (s *Service) GetModule(ctx context.Context, opts GetModuleOptions) (*Module, error) {
-	subject, err := s.Authorize(ctx, authz.GetModuleAction, &opts.Organization)
+	subject, err := s.Authorize(ctx, resource.Get, resource.ModuleKind, &opts.Organization)
 	if err != nil {
 		return nil, err
 	}
@@ -248,7 +248,7 @@ func (s *Service) GetModuleByID(ctx context.Context, id resource.TfeID) (*Module
 		return nil, err
 	}
 
-	subject, err := s.Authorize(ctx, authz.GetModuleAction, &module.Organization)
+	subject, err := s.Authorize(ctx, resource.Get, resource.ModuleKind, &module.Organization)
 	if err != nil {
 		return nil, err
 	}
@@ -268,7 +268,7 @@ func (s *Service) DeleteModule(ctx context.Context, id resource.TfeID) (*Module,
 		return nil, err
 	}
 
-	subject, err := s.Authorize(ctx, authz.DeleteModuleAction, &module.Organization)
+	subject, err := s.Authorize(ctx, resource.Delete, resource.ModuleKind, &module.Organization)
 	if err != nil {
 		return nil, err
 	}
@@ -299,7 +299,7 @@ func (s *Service) CreateVersion(ctx context.Context, opts CreateModuleVersionOpt
 		return nil, err
 	}
 
-	subject, err := s.Authorize(ctx, authz.CreateModuleVersionAction, &module.Organization)
+	subject, err := s.Authorize(ctx, resource.Create, resource.ModuleVersionKind, &module.Organization)
 	if err != nil {
 		return nil, err
 	}
@@ -397,7 +397,7 @@ func (s *Service) deleteVersion(ctx context.Context, versionID resource.TfeID) (
 		return nil, err
 	}
 
-	subject, err := s.Authorize(ctx, authz.DeleteModuleVersionAction, &module.Organization)
+	subject, err := s.Authorize(ctx, resource.Delete, resource.ModuleVersionKind, &module.Organization)
 	if err != nil {
 		return nil, err
 	}

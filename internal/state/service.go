@@ -60,7 +60,7 @@ func NewService(opts Options) *Service {
 }
 
 func (a *Service) CreateStateVersion(ctx context.Context, opts CreateStateVersionOptions) (*Version, error) {
-	subject, err := a.Authorize(ctx, authz.CreateStateVersionAction, opts.WorkspaceID)
+	subject, err := a.Authorize(ctx, resource.Create, resource.StateVersionKind, opts.WorkspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +84,7 @@ func (a *Service) DownloadCurrentState(ctx context.Context, workspaceID resource
 }
 
 func (a *Service) ListStateVersions(ctx context.Context, workspaceID resource.TfeID, opts resource.PageOptions) (*resource.Page[*Version], error) {
-	subject, err := a.Authorize(ctx, authz.ListStateVersionsAction, workspaceID)
+	subject, err := a.Authorize(ctx, resource.List, resource.StateVersionKind, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +99,7 @@ func (a *Service) ListStateVersions(ctx context.Context, workspaceID resource.Tf
 }
 
 func (a *Service) GetCurrentStateVersion(ctx context.Context, workspaceID resource.TfeID) (*Version, error) {
-	subject, err := a.Authorize(ctx, authz.GetStateVersionAction, workspaceID)
+	subject, err := a.Authorize(ctx, resource.Get, resource.StateVersionKind, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -122,7 +122,7 @@ func (a *Service) GetCurrentStateVersion(ctx context.Context, workspaceID resour
 // (by serial) in the same workspace. Returns ErrResourceNotFound when sv is
 // the first version.
 func (a *Service) GetPreviousStateVersion(ctx context.Context, sv *Version) (*Version, error) {
-	if _, err := a.Authorize(ctx, authz.GetStateVersionAction, sv.WorkspaceID); err != nil {
+	if _, err := a.Authorize(ctx, resource.Get, resource.StateVersionKind, sv.WorkspaceID); err != nil {
 		return nil, err
 	}
 	prev, err := a.db.getPreviousVersion(ctx, sv)
@@ -134,7 +134,7 @@ func (a *Service) GetPreviousStateVersion(ctx context.Context, sv *Version) (*Ve
 }
 
 func (a *Service) GetStateVersion(ctx context.Context, versionID resource.TfeID) (*Version, error) {
-	subject, err := a.Authorize(ctx, authz.GetStateVersionAction, versionID)
+	subject, err := a.Authorize(ctx, resource.Get, resource.StateVersionKind, versionID)
 	if err != nil {
 		return nil, err
 	}
@@ -149,7 +149,7 @@ func (a *Service) GetStateVersion(ctx context.Context, versionID resource.TfeID)
 }
 
 func (a *Service) DeleteStateVersion(ctx context.Context, versionID resource.TfeID) error {
-	subject, err := a.Authorize(ctx, authz.DeleteStateVersionAction, versionID)
+	subject, err := a.Authorize(ctx, resource.Delete, resource.StateVersionKind, versionID)
 	if err != nil {
 		return err
 	}
@@ -163,7 +163,7 @@ func (a *Service) DeleteStateVersion(ctx context.Context, versionID resource.Tfe
 }
 
 func (a *Service) RollbackStateVersion(ctx context.Context, versionID resource.TfeID) (*Version, error) {
-	subject, err := a.Authorize(ctx, authz.RollbackStateVersionAction, versionID)
+	subject, err := a.Authorize(ctx, resource.Rollback, resource.StateVersionKind, versionID)
 	if err != nil {
 		return nil, err
 	}
@@ -200,7 +200,7 @@ func (a *Service) UploadState(ctx context.Context, svID resource.TfeID, state []
 }
 
 func (a *Service) DownloadState(ctx context.Context, svID resource.TfeID) ([]byte, error) {
-	subject, err := a.Authorize(ctx, authz.DownloadStateAction, svID)
+	subject, err := a.Authorize(ctx, resource.Download, resource.StateVersionKind, svID)
 	if err != nil {
 		return nil, err
 	}
@@ -220,7 +220,7 @@ func (a *Service) GetStateOutput(ctx context.Context, outputID resource.TfeID) (
 		return nil, err
 	}
 
-	subject, err := a.Authorize(ctx, authz.GetStateVersionOutputAction, out.StateVersionID)
+	subject, err := a.Authorize(ctx, resource.Get, resource.StateVersionOutputKind, out.StateVersionID)
 	if err != nil {
 		return nil, err
 	}

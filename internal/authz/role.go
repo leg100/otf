@@ -1,31 +1,59 @@
 package authz
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/leg100/otf/internal/resource"
+)
 
 var (
 	// OrganizationMinPermissions are permissions granted to all team
 	// members within an organization.
 	OrganizationMinPermissions = Role{
 		name: "minimum",
-		permissions: map[Action]bool{
-			GetOrganizationAction:  true,
-			GetEntitlementsAction:  true,
-			ListModulesAction:      true,
-			GetModuleAction:        true,
-			GetTeamAction:          true,
-			ListTeamsAction:        true,
-			GetUserAction:          true,
-			ListUsersAction:        true,
-			ListTagsAction:         true,
-			ListVCSProvidersAction: true,
-			GetVCSProviderAction:   true,
-			ListVariableSetsAction: true,
-			GetVariableSetAction:   true,
-			WatchRunnersAction:     true,
-			ListRunnersAction:      true,
-			GetSSHKeyAction:        true,
-			ListSSHKeysAction:      true,
-			ListRunTriggersAction:  true,
+		permissions: map[resource.Kind]map[resource.Action]bool{
+			resource.OrganizationKind: map[resource.Action]bool{
+				resource.Get: true,
+			},
+			resource.UserKind: map[resource.Action]bool{
+				resource.Get:  true,
+				resource.List: true,
+			},
+			resource.ModuleKind: map[resource.Action]bool{
+				resource.Get:  true,
+				resource.List: true,
+			},
+			resource.TeamKind: map[resource.Action]bool{
+				resource.Get:  true,
+				resource.List: true,
+			},
+			resource.VCSProviderKind: map[resource.Action]bool{
+				resource.Get:  true,
+				resource.List: true,
+			},
+			resource.VariableSetKind: map[resource.Action]bool{
+				resource.Get:  true,
+				resource.List: true,
+			},
+			resource.SSHKeyKind: map[resource.Action]bool{
+				resource.Get:  true,
+				resource.List: true,
+			},
+			resource.RunTriggerKind: map[resource.Action]bool{
+				resource.Get:  true,
+				resource.List: true,
+			},
+			resource.RunnerKind: map[resource.Action]bool{
+				resource.Get:   true,
+				resource.List:  true,
+				resource.Watch: true,
+			},
+			resource.EntitlementKind: map[resource.Action]bool{
+				resource.Get: true,
+			},
+			resource.TagKind: map[resource.Action]bool{
+				resource.List: true,
+			},
 		},
 	}
 
@@ -33,23 +61,40 @@ var (
 	// on the workspace.
 	WorkspaceReadRole = Role{
 		name: "read",
-		permissions: map[Action]bool{
-			ListRunsAction:                       true,
-			GetPlanFileAction:                    true,
-			GetWorkspaceAction:                   true,
-			GetStateVersionAction:                true,
-			GetStateVersionOutputAction:          true,
-			DownloadStateAction:                  true,
-			DownloadConfigurationVersionAction:   true,
-			GetRunAction:                         true,
-			GetConfigurationVersionAction:        true,
-			ListVariablesAction:                  true,
-			GetVariableAction:                    true,
-			WatchAction:                          true,
-			ListWorkspaceTags:                    true,
-			TailLogsAction:                       true,
-			ListNotificationConfigurationsAction: true,
-			GetNotificationConfigurationAction:   true,
+		permissions: map[resource.Kind]map[resource.Action]bool{
+			resource.RunKind: map[resource.Action]bool{
+				resource.Get:   true,
+				resource.List:  true,
+				resource.Watch: true,
+			},
+			resource.PlanFileKind: map[resource.Action]bool{
+				resource.Get: true,
+			},
+			resource.WorkspaceKind: map[resource.Action]bool{
+				resource.Get: true,
+			},
+			resource.StateVersionKind: map[resource.Action]bool{
+				resource.Get:      true,
+				resource.Download: true,
+			},
+			resource.StateVersionOutputKind: map[resource.Action]bool{
+				resource.Get: true,
+			},
+			resource.ConfigVersionKind: map[resource.Action]bool{
+				resource.Download: true,
+				resource.Get:      true,
+			},
+			resource.NotificationConfigurationKind: map[resource.Action]bool{
+				resource.Get:  true,
+				resource.List: true,
+			},
+			resource.VariableKind: map[resource.Action]bool{
+				resource.Get:  true,
+				resource.List: true,
+			},
+			resource.ChunkKind: map[resource.Action]bool{
+				resource.Get: true,
+			},
 		},
 	}
 
@@ -57,9 +102,13 @@ var (
 	// the workspace.
 	WorkspacePlanRole = Role{
 		name: "plan",
-		permissions: map[Action]bool{
-			CreateRunAction:                  true,
-			CreateConfigurationVersionAction: true,
+		permissions: map[resource.Kind]map[resource.Action]bool{
+			resource.RunKind: map[resource.Action]bool{
+				resource.Create: true,
+			},
+			resource.ConfigVersionKind: map[resource.Action]bool{
+				resource.Create: true,
+			},
 		},
 		inherits: &WorkspaceReadRole,
 	}
@@ -68,17 +117,25 @@ var (
 	// the workspace.
 	WorkspaceWriteRole = Role{
 		name: "write",
-		permissions: map[Action]bool{
-			ApplyRunAction:                        true,
-			CancelRunAction:                       true,
-			LockWorkspaceAction:                   true,
-			UnlockWorkspaceAction:                 true,
-			CreateVariableAction:                  true,
-			UpdateVariableAction:                  true,
-			DeleteVariableAction:                  true,
-			CreateNotificationConfigurationAction: true,
-			UpdateNotificationConfigurationAction: true,
-			DeleteNotificationConfigurationAction: true,
+		permissions: map[resource.Kind]map[resource.Action]bool{
+			resource.RunKind: map[resource.Action]bool{
+				resource.Apply:  true,
+				resource.Cancel: true,
+			},
+			resource.WorkspaceKind: map[resource.Action]bool{
+				resource.Lock:   true,
+				resource.Unlock: true,
+			},
+			resource.NotificationConfigurationKind: map[resource.Action]bool{
+				resource.Create: true,
+				resource.Update: true,
+				resource.Delete: true,
+			},
+			resource.VariableKind: map[resource.Action]bool{
+				resource.Create: true,
+				resource.Update: true,
+				resource.Delete: true,
+			},
 		},
 		inherits: &WorkspacePlanRole,
 	}
@@ -87,14 +144,18 @@ var (
 	// workspace.
 	WorkspaceAdminRole = Role{
 		name: "admin",
-		permissions: map[Action]bool{
-			SetWorkspacePermissionAction:   true,
-			UnsetWorkspacePermissionAction: true,
-			DeleteWorkspaceAction:          true,
-			ForceUnlockWorkspaceAction:     true,
-			UpdateWorkspaceAction:          true,
-			CreateRunTriggerAction:         true,
-			DeleteRunTriggerAction:         true,
+		permissions: map[resource.Kind]map[resource.Action]bool{
+			resource.WorkspaceKind: map[resource.Action]bool{
+				resource.Update:          true,
+				resource.Delete:          true,
+				resource.ForceUnlock:     true,
+				resource.SetPermission:   true,
+				resource.UnsetPermission: true,
+			},
+			resource.RunTriggerKind: map[resource.Action]bool{
+				resource.Create: true,
+				resource.Delete: true,
+			},
 		},
 		inherits: &WorkspaceWriteRole,
 	}
@@ -103,12 +164,16 @@ var (
 	// of workspaces.
 	WorkspaceManagerRole = Role{
 		name: "workspace-manager",
-		permissions: map[Action]bool{
-			CreateWorkspaceAction: true,
-			ListWorkspacesAction:  true,
-			UpdateWorkspaceAction: true,
-			AddTagsAction:         true,
-			RemoveTagsAction:      true,
+		permissions: map[resource.Kind]map[resource.Action]bool{
+			resource.WorkspaceKind: map[resource.Action]bool{
+				resource.Create: true,
+				resource.List:   true,
+				resource.Update: true,
+			},
+			resource.TagKind: map[resource.Action]bool{
+				resource.Add:    true,
+				resource.Remove: true,
+			},
 		},
 		inherits: &WorkspaceAdminRole,
 	}
@@ -117,9 +182,11 @@ var (
 	// providers.
 	VCSManagerRole = Role{
 		name: "vcs-manager",
-		permissions: map[Action]bool{
-			CreateVCSProviderAction: true,
-			DeleteVCSProviderAction: true,
+		permissions: map[resource.Kind]map[resource.Action]bool{
+			resource.VCSProviderKind: map[resource.Action]bool{
+				resource.Create: true,
+				resource.Delete: true,
+			},
 		},
 	}
 
@@ -127,11 +194,15 @@ var (
 	// of registry of modules and providers
 	RegistryManagerRole = Role{
 		name: "registry-manager",
-		permissions: map[Action]bool{
-			CreateModuleAction:        true,
-			CreateModuleVersionAction: true,
-			UpdateModuleAction:        true,
-			DeleteModuleAction:        true,
+		permissions: map[resource.Kind]map[resource.Action]bool{
+			resource.ModuleKind: map[resource.Action]bool{
+				resource.Create: true,
+				resource.Update: true,
+				resource.Delete: true,
+			},
+			resource.ModuleVersionKind: map[resource.Action]bool{
+				resource.Create: true,
+			},
 		},
 	}
 )
@@ -139,16 +210,16 @@ var (
 // Role is a set of permitted actions
 type Role struct {
 	name        string
-	permissions map[Action]bool
+	permissions map[resource.Kind]map[resource.Action]bool
 	inherits    *Role // inherit perms from this role too
 }
 
-func (r Role) IsAllowed(action Action) bool {
-	if r.permissions[action] {
+func (r Role) IsAllowed(action resource.Action, kind resource.Kind) bool {
+	if r.permissions[kind][action] {
 		return true
 	}
 	if r.inherits != nil {
-		if r.inherits.IsAllowed(action) {
+		if r.inherits.IsAllowed(action, kind) {
 			return true
 		}
 	}

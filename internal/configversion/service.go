@@ -56,7 +56,7 @@ func NewService(opts Options) *Service {
 }
 
 func (s *Service) CreateConfigVersion(ctx context.Context, workspaceID resource.TfeID, opts CreateOptions) (*ConfigurationVersion, error) {
-	subject, err := s.Authorize(ctx, authz.CreateConfigurationVersionAction, workspaceID)
+	subject, err := s.Authorize(ctx, resource.Create, resource.ConfigVersionKind, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -71,7 +71,7 @@ func (s *Service) CreateConfigVersion(ctx context.Context, workspaceID resource.
 }
 
 func (s *Service) ListConfigVersions(ctx context.Context, workspaceID resource.TfeID, opts ListOptions) (*resource.Page[*ConfigurationVersion], error) {
-	subject, err := s.Authorize(ctx, authz.ListConfigurationVersionsAction, workspaceID)
+	subject, err := s.Authorize(ctx, resource.List, resource.ConfigVersionKind, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +92,7 @@ func (s *Service) ListConfigVersionsOlderThan(ctx context.Context, t time.Time) 
 }
 
 func (s *Service) GetConfigVersion(ctx context.Context, id resource.TfeID) (*ConfigurationVersion, error) {
-	subject, err := s.Authorize(ctx, authz.GetConfigurationVersionAction, id)
+	subject, err := s.Authorize(ctx, resource.Get, resource.ConfigVersionKind, id)
 	if err != nil {
 		return nil, err
 	}
@@ -107,7 +107,7 @@ func (s *Service) GetConfigVersion(ctx context.Context, id resource.TfeID) (*Con
 }
 
 func (s *Service) GetLatestConfigVersion(ctx context.Context, workspaceID resource.TfeID) (*ConfigurationVersion, error) {
-	subject, err := s.Authorize(ctx, authz.GetConfigurationVersionAction, workspaceID)
+	subject, err := s.Authorize(ctx, resource.Get, resource.ConfigVersionKind, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -122,7 +122,7 @@ func (s *Service) GetLatestConfigVersion(ctx context.Context, workspaceID resour
 }
 
 func (s *Service) DeleteConfigVersion(ctx context.Context, cvID resource.TfeID) error {
-	subject, err := s.Authorize(ctx, authz.DeleteConfigurationVersionAction, cvID)
+	subject, err := s.Authorize(ctx, resource.Delete, resource.ConfigVersionKind, cvID)
 	if err != nil {
 		return err
 	}

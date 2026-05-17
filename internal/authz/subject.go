@@ -3,6 +3,8 @@ package authz
 import (
 	"context"
 	"fmt"
+
+	"github.com/leg100/otf/internal/resource"
 )
 
 // unexported key types prevents collisions
@@ -16,7 +18,7 @@ const (
 
 // Subject is an entity that carries out actions on resources.
 type Subject interface {
-	CanAccess(action Action, req Request) bool
+	CanAccess(action resource.Action, kind resource.Kind, req Request) bool
 	String() string
 }
 
