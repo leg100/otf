@@ -109,14 +109,12 @@ func (j *Job) CanAccess(action resource.Action, kind resource.Kind, req authz.Re
 	}
 	// Permissible workspace actions on same workspace.
 	if req.Workspace() == j.WorkspaceID {
-		// any phase
 		switch kind {
 		case resource.StateVersionKind:
 			switch action {
 			case resource.Get, resource.Download:
 				return true
 			case resource.Create:
-				// apply phase
 				if j.Phase == otfrun.ApplyPhase {
 					return true
 				}
@@ -166,8 +164,12 @@ func (j *Job) CanAccess(action resource.Action, kind resource.Kind, req authz.Re
 			}
 		case resource.LockFileKind:
 			switch action {
-			case resource.Get:
+			case resource.Upload:
 				if j.Phase == otfrun.PlanPhase {
+					return true
+				}
+			case resource.Get:
+				if j.Phase == otfrun.ApplyPhase {
 					return true
 				}
 			}
