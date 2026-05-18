@@ -167,9 +167,9 @@ func (h *Handlers) listWorkspaceVariables(w http.ResponseWriter, r *http.Request
 	props := listWorkspaceVariablesProps{
 		ws:                 ws,
 		rows:               rows,
-		canCreateVariable:  h.authorizer.CanAccess(r.Context(), authz.CreateVariableAction, ws.ID),
-		canDeleteVariable:  h.authorizer.CanAccess(r.Context(), authz.DeleteVariableAction, ws.ID),
-		canUpdateWorkspace: h.authorizer.CanAccess(r.Context(), authz.UpdateWorkspaceAction, ws.ID),
+		canCreateVariable:  h.authorizer.CanAccess(r.Context(), resource.Create, resource.VariableKind, ws.ID),
+		canDeleteVariable:  h.authorizer.CanAccess(r.Context(), resource.Delete, resource.VariableKind, ws.ID),
+		canUpdateWorkspace: h.authorizer.CanAccess(r.Context(), resource.Update, resource.WorkspaceKind, ws.ID),
 	}
 	helpers.RenderPage(
 		h.templates.listWorkspaceVariables(props),
@@ -200,7 +200,7 @@ func (h *Handlers) listVariableSets(w http.ResponseWriter, r *http.Request) {
 	props := listVariableSetsProps{
 		organization:         params.Organization,
 		sets:                 resource.NewPage(sets, params.PageOptions, nil),
-		canCreateVariableSet: h.authorizer.CanAccess(r.Context(), authz.CreateVariableSetAction, params.Organization),
+		canCreateVariableSet: h.authorizer.CanAccess(r.Context(), resource.Create, resource.VariableSetKind, params.Organization),
 	}
 	helpers.RenderPage(
 		h.templates.listVariableSets(props),
@@ -332,7 +332,7 @@ func (h *Handlers) editVariableSet(w http.ResponseWriter, r *http.Request) {
 		rows:                rows,
 		availableWorkspaces: availableWorkspaces,
 		existingWorkspaces:  existingWorkspaces,
-		canDeleteVariable:   h.authorizer.CanAccess(r.Context(), authz.DeleteVariableAction, set.Organization),
+		canDeleteVariable:   h.authorizer.CanAccess(r.Context(), resource.Delete, resource.VariableKind, set.Organization),
 	}
 	helpers.RenderPage(
 		h.templates.editVariableSet(props),

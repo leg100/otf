@@ -494,13 +494,13 @@ func getPostContent(props getRunProps) templ.Component {
 		}
 		ctx = templ.ClearChildren(ctx)
 		if !props.planLogs.IsEnd() {
-			templ_7745c5c3_Err = templ.JSFuncCall("setupTail", path.Resource(runpkg.Tail, props.run.ID), "plan", props.planLogs.NextOffset()).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = templ.JSFuncCall("setupTail", path.Resource(resource.Tail, props.run.ID), "plan", props.planLogs.NextOffset()).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
 		if !props.applyLogs.IsEnd() {
-			templ_7745c5c3_Err = templ.JSFuncCall("setupTail", path.Resource(runpkg.Tail, props.run.ID), "apply", props.applyLogs.NextOffset()).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = templ.JSFuncCall("setupTail", path.Resource(resource.Tail, props.run.ID), "apply", props.applyLogs.NextOffset()).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

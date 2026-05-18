@@ -37,8 +37,8 @@ func newManager(s *Service) *manager {
 	}
 }
 
-func (m *manager) String() string                                 { return "runner-manager" }
-func (m *manager) CanAccess(_ authz.Action, _ authz.Request) bool { return true }
+func (m *manager) String() string                                                     { return "runner-manager" }
+func (m *manager) CanAccess(_ resource.Action, _ resource.Kind, _ authz.Request) bool { return true }
 
 // Start the manager. Every interval the status of runners is checked,
 // updating their status as necessary.

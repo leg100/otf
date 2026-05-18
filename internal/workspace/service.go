@@ -93,7 +93,7 @@ func (s *Service) CreateWorkspace(ctx context.Context, opts CreateOptions) (*Wor
 		return nil, err
 	}
 
-	subject, err := s.Authorize(ctx, authz.CreateWorkspaceAction, &ws.Organization)
+	subject, err := s.Authorize(ctx, resource.Create, resource.WorkspaceKind, &ws.Organization)
 	if err != nil {
 		return nil, err
 	}
@@ -147,7 +147,7 @@ func (s *Service) AfterCreateWorkspace(hook func(context.Context, *Workspace) er
 }
 
 func (s *Service) GetWorkspace(ctx context.Context, workspaceID resource.TfeID) (*Workspace, error) {
-	subject, err := s.Authorize(ctx, authz.GetWorkspaceAction, workspaceID)
+	subject, err := s.Authorize(ctx, resource.Get, resource.WorkspaceKind, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -170,7 +170,7 @@ func (s *Service) GetWorkspaceByName(ctx context.Context, organization organizat
 		return nil, err
 	}
 
-	subject, err := s.Authorize(ctx, authz.GetWorkspaceAction, ws.ID)
+	subject, err := s.Authorize(ctx, resource.Get, resource.WorkspaceKind, ws.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -183,13 +183,13 @@ func (s *Service) GetWorkspaceByName(ctx context.Context, organization organizat
 func (s *Service) ListWorkspaces(ctx context.Context, opts ListOptions) (*resource.Page[*Workspace], error) {
 	if opts.Organization == nil {
 		// subject needs perms on site to list workspaces across site
-		_, err := s.Authorize(ctx, authz.ListWorkspacesAction, resource.SiteID)
+		_, err := s.Authorize(ctx, resource.List, resource.WorkspaceKind, resource.SiteID)
 		if err != nil {
 			return nil, err
 		}
 	} else {
 		// check if subject has perms to list workspaces in organization
-		_, err := s.Authorize(ctx, authz.ListWorkspacesAction, opts.Organization)
+		_, err := s.Authorize(ctx, resource.List, resource.WorkspaceKind, opts.Organization)
 		if err == internal.ErrAccessNotPermitted {
 			// user does not have org-wide perms; fallback to listing workspaces
 			// for which they have workspace-level perms.
@@ -217,7 +217,7 @@ func (s *Service) BeforeUpdateWorkspace(hook func(context.Context, *Workspace) e
 }
 
 func (s *Service) UpdateWorkspace(ctx context.Context, workspaceID resource.TfeID, opts UpdateOptions) (*Workspace, error) {
-	subject, err := s.Authorize(ctx, authz.UpdateWorkspaceAction, workspaceID)
+	subject, err := s.Authorize(ctx, resource.Update, resource.WorkspaceKind, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -262,7 +262,7 @@ func (s *Service) UpdateWorkspace(ctx context.Context, workspaceID resource.TfeI
 }
 
 func (s *Service) DeleteWorkspace(ctx context.Context, workspaceID resource.TfeID) (*Workspace, error) {
-	subject, err := s.Authorize(ctx, authz.DeleteWorkspaceAction, workspaceID)
+	subject, err := s.Authorize(ctx, resource.Delete, resource.WorkspaceKind, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -290,7 +290,7 @@ func (s *Service) DeleteWorkspace(ctx context.Context, workspaceID resource.TfeI
 }
 
 func (s *Service) SetWorkspacePermission(ctx context.Context, workspaceID, teamID resource.TfeID, role authz.Role) error {
-	subject, err := s.Authorize(ctx, authz.SetWorkspacePermissionAction, workspaceID)
+	subject, err := s.Authorize(ctx, resource.SetPermission, resource.WorkspaceKind, workspaceID)
 	if err != nil {
 		return err
 	}
@@ -308,7 +308,7 @@ func (s *Service) SetWorkspacePermission(ctx context.Context, workspaceID, teamI
 }
 
 func (s *Service) UnsetWorkspacePermission(ctx context.Context, workspaceID, teamID resource.TfeID) error {
-	subject, err := s.Authorize(ctx, authz.UnsetWorkspacePermissionAction, workspaceID)
+	subject, err := s.Authorize(ctx, resource.UnsetPermission, resource.WorkspaceKind, workspaceID)
 	if err != nil {
 		s.Error(err, "unsetting workspace permission", "team_id", teamID, "subject", subject, "workspace", workspaceID)
 		return err

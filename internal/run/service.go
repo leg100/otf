@@ -130,7 +130,7 @@ func NewService(opts Options) *Service {
 }
 
 func (s *Service) CreateRun(ctx context.Context, workspaceID resource.TfeID, opts CreateOptions) (*Run, error) {
-	subject, err := s.Authorize(ctx, authz.CreateRunAction, workspaceID)
+	subject, err := s.Authorize(ctx, resource.Create, resource.RunKind, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -152,7 +152,7 @@ func (s *Service) CreateRun(ctx context.Context, workspaceID resource.TfeID, opt
 
 // GetRun retrieves a run from the db.
 func (s *Service) GetRun(ctx context.Context, runID resource.TfeID) (*Run, error) {
-	subject, err := s.Authorize(ctx, authz.GetRunAction, runID)
+	subject, err := s.Authorize(ctx, resource.Get, resource.RunKind, runID)
 	if err != nil {
 		return nil, err
 	}
@@ -180,16 +180,16 @@ func (s *Service) ListRuns(ctx context.Context, opts ListOptions) (*resource.Pag
 			return nil, err
 		}
 		// subject needs perms on workspace to list runs in workspace
-		subject, authErr = s.Authorize(ctx, authz.GetWorkspaceAction, workspace.ID)
+		subject, authErr = s.Authorize(ctx, resource.Get, resource.WorkspaceKind, workspace.ID)
 	} else if opts.WorkspaceID != nil {
 		// subject needs perms on workspace to list runs in workspace
-		subject, authErr = s.Authorize(ctx, authz.GetWorkspaceAction, *opts.WorkspaceID)
+		subject, authErr = s.Authorize(ctx, resource.Get, resource.WorkspaceKind, *opts.WorkspaceID)
 	} else if opts.Organization != nil {
 		// subject needs perms on org to list runs in org
-		subject, authErr = s.Authorize(ctx, authz.ListRunsAction, *opts.Organization)
+		subject, authErr = s.Authorize(ctx, resource.List, resource.RunKind, *opts.Organization)
 	} else {
 		// subject needs to be site admin to list runs across site
-		subject, authErr = s.Authorize(ctx, authz.ListRunsAction, resource.SiteID)
+		subject, authErr = s.Authorize(ctx, resource.List, resource.RunKind, resource.SiteID)
 	}
 	if authErr != nil {
 		return nil, authErr
@@ -264,7 +264,7 @@ func (s *Service) AfterEnqueuePlan(hook func(context.Context, *Run) error) {
 }
 
 func (s *Service) DeleteRun(ctx context.Context, runID resource.TfeID) error {
-	subject, err := s.Authorize(ctx, authz.DeleteRunAction, runID)
+	subject, err := s.Authorize(ctx, resource.Delete, resource.RunKind, runID)
 	if err != nil {
 		return err
 	}
@@ -338,7 +338,7 @@ func (s *Service) WatchRuns(ctx context.Context) (<-chan pubsub.Event[*Event], f
 
 // ApplyRun enqueues an apply for the run.
 func (s *Service) ApplyRun(ctx context.Context, runID resource.TfeID) error {
-	subject, err := s.Authorize(ctx, authz.ApplyRunAction, runID)
+	subject, err := s.Authorize(ctx, resource.Apply, resource.RunKind, runID)
 	if err != nil {
 		return err
 	}
@@ -369,7 +369,7 @@ func (s *Service) AfterEnqueueApply(hook func(context.Context, *Run) error) {
 
 // DiscardRun discards the run.
 func (s *Service) DiscardRun(ctx context.Context, runID resource.TfeID) error {
-	subject, err := s.Authorize(ctx, authz.DiscardRunAction, runID)
+	subject, err := s.Authorize(ctx, resource.Discard, resource.RunKind, runID)
 	if err != nil {
 		return err
 	}
@@ -388,7 +388,7 @@ func (s *Service) DiscardRun(ctx context.Context, runID resource.TfeID) error {
 }
 
 func (s *Service) CancelRun(ctx context.Context, runID resource.TfeID) error {
-	subject, err := s.Authorize(ctx, authz.CancelRunAction, runID)
+	subject, err := s.Authorize(ctx, resource.Cancel, resource.RunKind, runID)
 	if err != nil {
 		return err
 	}
@@ -442,7 +442,7 @@ func (s *Service) AfterCancelRun(hook func(context.Context, *Run) error) {
 
 // ForceCancelRun forcefully cancels a run.
 func (s *Service) ForceCancelRun(ctx context.Context, runID resource.TfeID) error {
-	subject, err := s.Authorize(ctx, authz.ForceCancelRunAction, runID)
+	subject, err := s.Authorize(ctx, resource.ForceCancel, resource.RunKind, runID)
 	if err != nil {
 		return err
 	}
@@ -472,7 +472,7 @@ func (s *Service) AfterForceCancelRun(hook func(context.Context, *Run) error) {
 
 // GetRunPlanFile returns the plan file for the run.
 func (s *Service) GetRunPlanFile(ctx context.Context, runID resource.TfeID, format PlanFormat) ([]byte, error) {
-	subject, err := s.Authorize(ctx, authz.GetPlanFileAction, runID)
+	subject, err := s.Authorize(ctx, resource.Get, resource.PlanFileKind, runID)
 	if err != nil {
 		return nil, err
 	}
@@ -488,7 +488,7 @@ func (s *Service) GetRunPlanFile(ctx context.Context, runID resource.TfeID, form
 // UploadRunPlanFile persists a run's plan file. The plan format should be either
 // be binary or json.
 func (s *Service) UploadRunPlanFile(ctx context.Context, runID resource.TfeID, plan []byte, format PlanFormat) error {
-	subject, err := s.Authorize(ctx, authz.UploadPlanFileAction, runID)
+	subject, err := s.Authorize(ctx, resource.Upload, resource.PlanFileKind, runID)
 	if err != nil {
 		return err
 	}
@@ -578,7 +578,7 @@ func (s *Service) GetChunk(ctx context.Context, opts GetChunkOptions) (Chunk, er
 
 // PutChunk writes a chunk of logs for a run phase
 func (s *Service) PutChunk(ctx context.Context, opts PutChunkOptions) error {
-	_, err := s.Authorize(ctx, authz.PutChunkAction, opts.RunID)
+	_, err := s.Authorize(ctx, resource.Upload, resource.ChunkKind, opts.RunID)
 	if err != nil {
 		return err
 	}
@@ -600,7 +600,7 @@ func (s *Service) PutChunk(ctx context.Context, opts PutChunkOptions) error {
 // TailRun tails logs for a phase. Offset specifies the number of bytes into the logs
 // from which to start tailing.
 func (s *Service) TailRun(ctx context.Context, opts TailOptions) (<-chan Chunk, error) {
-	subject, err := s.Authorize(ctx, authz.TailLogsAction, opts.RunID)
+	subject, err := s.Authorize(ctx, resource.Tail, resource.ChunkKind, opts.RunID)
 	if err != nil {
 		return nil, err
 	}

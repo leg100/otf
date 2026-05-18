@@ -47,7 +47,7 @@ func (s *Service) WatchNotificationConfigs(ctx context.Context) (<-chan pubsub.E
 }
 
 func (s *Service) CreateNotificationConfig(ctx context.Context, workspaceID resource.TfeID, opts CreateConfigOptions) (*Config, error) {
-	subject, err := s.Authorize(ctx, authz.CreateNotificationConfigurationAction, workspaceID)
+	subject, err := s.Authorize(ctx, resource.Create, resource.NotificationConfigurationKind, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -67,7 +67,7 @@ func (s *Service) CreateNotificationConfig(ctx context.Context, workspaceID reso
 func (s *Service) UpdateNotificationConfig(ctx context.Context, id resource.TfeID, opts UpdateConfigOptions) (*Config, error) {
 	var subject authz.Subject
 	updated, err := s.db.update(ctx, id, func(ctx context.Context, nc *Config) (err error) {
-		subject, err = s.Authorize(ctx, authz.UpdateNotificationConfigurationAction, nc.WorkspaceID)
+		subject, err = s.Authorize(ctx, resource.Update, resource.NotificationConfigurationKind, nc.WorkspaceID)
 		if err != nil {
 			return err
 		}
@@ -87,7 +87,7 @@ func (s *Service) GetNotificationConfig(ctx context.Context, id resource.TfeID) 
 		s.Error(err, "retrieving notification config", "id", id)
 		return nil, err
 	}
-	subject, err := s.Authorize(ctx, authz.GetNotificationConfigurationAction, nc.WorkspaceID)
+	subject, err := s.Authorize(ctx, resource.Get, resource.NotificationConfigurationKind, nc.WorkspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -96,7 +96,7 @@ func (s *Service) GetNotificationConfig(ctx context.Context, id resource.TfeID) 
 }
 
 func (s *Service) ListNotificationConfigs(ctx context.Context, workspaceID resource.TfeID) ([]*Config, error) {
-	subject, err := s.Authorize(ctx, authz.ListNotificationConfigurationsAction, workspaceID)
+	subject, err := s.Authorize(ctx, resource.List, resource.NotificationConfigurationKind, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -115,7 +115,7 @@ func (s *Service) DeleteNotificationConfig(ctx context.Context, id resource.TfeI
 		s.Error(err, "retrieving notification config", "id", id)
 		return err
 	}
-	subject, err := s.Authorize(ctx, authz.DeleteNotificationConfigurationAction, nc.WorkspaceID)
+	subject, err := s.Authorize(ctx, resource.Delete, resource.NotificationConfigurationKind, nc.WorkspaceID)
 	if err != nil {
 		return err
 	}

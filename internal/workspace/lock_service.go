@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/user"
 )
@@ -17,7 +16,7 @@ func (s *Service) Lock(ctx context.Context, workspaceID resource.TfeID, runID *r
 	if runID != nil {
 		id = *runID
 	} else {
-		subject, err := s.Authorize(ctx, authz.LockWorkspaceAction, workspaceID)
+		subject, err := s.Authorize(ctx, resource.Lock, resource.WorkspaceKind, workspaceID)
 		if err != nil {
 			return nil, err
 		}
@@ -47,13 +46,13 @@ func (s *Service) Unlock(ctx context.Context, workspaceID resource.TfeID, runID 
 	if runID != nil {
 		id = *runID
 	} else {
-		var action authz.Action
+		var action resource.Action
 		if force {
-			action = authz.ForceUnlockWorkspaceAction
+			action = resource.ForceUnlock
 		} else {
-			action = authz.UnlockWorkspaceAction
+			action = resource.Unlock
 		}
-		subject, err := s.Authorize(ctx, action, workspaceID)
+		subject, err := s.Authorize(ctx, action, resource.WorkspaceKind, workspaceID)
 		if err != nil {
 			return nil, err
 		}

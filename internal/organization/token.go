@@ -51,7 +51,7 @@ func (u *OrganizationToken) String() string {
 	return u.ID.String()
 }
 
-func (u *OrganizationToken) CanAccess(action authz.Action, req authz.Request) bool {
+func (u *OrganizationToken) CanAccess(action resource.Action, kind resource.Kind, req authz.Request) bool {
 	if req.ID == resource.SiteID {
 		// Organization token cannot take action on site-level resources
 		return false
@@ -62,9 +62,22 @@ func (u *OrganizationToken) CanAccess(action authz.Action, req authz.Request) bo
 	}
 	// can perform most actions in an organization, so it is easier to first refuse
 	// access to those actions it CANNOT perform.
-	switch action {
-	case authz.GetRunAction, authz.ListRunsAction, authz.ApplyRunAction, authz.CreateRunAction, authz.DiscardRunAction, authz.CancelRunAction, authz.ForceCancelRunAction, authz.EnqueuePlanAction, authz.PutChunkAction, authz.TailLogsAction, authz.CreateStateVersionAction, authz.RollbackStateVersionAction:
-		return false
+	switch kind {
+	case resource.RunKind:
+		switch action {
+		case resource.EnqueuePlan, resource.Apply, resource.Cancel, resource.ForceCancel, resource.Discard, resource.Create, resource.Get, resource.List:
+			return false
+		}
+	case resource.StateVersionKind:
+		switch action {
+		case resource.Create, resource.Rollback:
+			return false
+		}
+	case resource.ChunkKind:
+		switch action {
+		case resource.Get, resource.Upload:
+			return false
+		}
 	}
 	return true
 }

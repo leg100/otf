@@ -75,6 +75,6 @@ func (f *fakeOrganizationService) ListOrganizations(ctx context.Context, opts or
 	return resource.NewPage(f.orgs, opts.PageOptions, nil), nil
 }
 
-func (s *unprivilegedSubject) CanAccess(authz.Action, authz.Request) bool {
+func (s *unprivilegedSubject) CanAccess(resource.Action, resource.Kind, authz.Request) bool {
 	return false
 }

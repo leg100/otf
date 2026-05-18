@@ -125,11 +125,6 @@ doc-screenshots: # update documentation screenshots
 tunnel:
 	cloudflared tunnel run otf
 
-# Re-generate RBAC action strings
-.PHONY: actions
-actions:
-	go tool stringer -type Action ./internal/authz
-
 .PHONY: debug
 debug:
 	dlv debug --headless --api-version=2 --listen=127.0.0.1:4300 ./cmd/otfd/main.go
@@ -178,7 +173,7 @@ live:
 generate-templates:
 	go tool templ generate
 
-check-no-diff: actions generate-templates helm-docs
+check-no-diff: generate-templates helm-docs
 	git diff --exit-code
 
 .PHONY: deploy-otfd

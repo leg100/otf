@@ -52,7 +52,7 @@ func NewService(opts Options) *Service {
 }
 
 func (a *Service) CreateVCSProvider(ctx context.Context, opts CreateOptions) (*Provider, error) {
-	subject, err := a.Authorize(ctx, authz.CreateVCSProviderAction, &opts.Organization)
+	subject, err := a.Authorize(ctx, resource.Create, resource.VCSProviderKind, &opts.Organization)
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +77,7 @@ func (a *Service) UpdateVCSProvider(ctx context.Context, id resource.TfeID, opts
 		after   *Provider
 	)
 	err := a.db.update(ctx, id, func(ctx context.Context, provider *Provider) (err error) {
-		subject, err = a.Authorize(ctx, authz.UpdateVCSProviderAction, &provider.Organization)
+		subject, err = a.Authorize(ctx, resource.Update, resource.VCSProviderKind, &provider.Organization)
 		if err != nil {
 			return err
 		}
@@ -98,7 +98,7 @@ func (a *Service) UpdateVCSProvider(ctx context.Context, id resource.TfeID, opts
 }
 
 func (a *Service) ListVCSProviders(ctx context.Context, organization organization.Name) ([]*Provider, error) {
-	subject, err := a.Authorize(ctx, authz.ListVCSProvidersAction, organization)
+	subject, err := a.Authorize(ctx, resource.List, resource.VCSProviderKind, organization)
 	if err != nil {
 		return nil, err
 	}
@@ -135,7 +135,7 @@ func (a *Service) GetVCSProvider(ctx context.Context, id resource.TfeID) (*Provi
 		return nil, err
 	}
 
-	subject, err := a.Authorize(ctx, authz.GetVCSProviderAction, &provider.Organization)
+	subject, err := a.Authorize(ctx, resource.Get, resource.VCSProviderKind, &provider.Organization)
 	if err != nil {
 		return nil, err
 	}
@@ -157,7 +157,7 @@ func (a *Service) DeleteVCSProvider(ctx context.Context, id resource.TfeID) (*Pr
 			return err
 		}
 
-		subject, err = a.Authorize(ctx, authz.DeleteVCSProviderAction, &provider.Organization)
+		subject, err = a.Authorize(ctx, resource.Delete, resource.VCSProviderKind, &provider.Organization)
 		if err != nil {
 			return err
 		}

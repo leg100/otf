@@ -86,7 +86,7 @@ func NewService(opts Options) *Service {
 }
 
 func (a *Service) CreateTeam(ctx context.Context, organization organization.Name, opts CreateTeamOptions) (*Team, error) {
-	subject, err := a.Authorize(ctx, authz.CreateTeamAction, organization)
+	subject, err := a.Authorize(ctx, resource.Create, resource.TeamKind, organization)
 	if err != nil {
 		return nil, err
 	}
@@ -126,7 +126,7 @@ func (a *Service) UpdateTeam(ctx context.Context, teamID resource.TfeID, opts Up
 		a.Error(err, "retrieving team", "team_id", teamID)
 		return nil, err
 	}
-	subject, err := a.Authorize(ctx, authz.UpdateTeamAction, &team.Organization)
+	subject, err := a.Authorize(ctx, resource.Update, resource.TeamKind, &team.Organization)
 	if err != nil {
 		return nil, err
 	}
@@ -146,7 +146,7 @@ func (a *Service) UpdateTeam(ctx context.Context, teamID resource.TfeID, opts Up
 
 // ListTeams lists teams in the organization.
 func (a *Service) ListTeams(ctx context.Context, organization organization.Name) ([]*Team, error) {
-	subject, err := a.Authorize(ctx, authz.ListTeamsAction, organization)
+	subject, err := a.Authorize(ctx, resource.List, resource.TeamKind, organization)
 	if err != nil {
 		return nil, err
 	}
@@ -162,7 +162,7 @@ func (a *Service) ListTeams(ctx context.Context, organization organization.Name)
 }
 
 func (a *Service) GetTeam(ctx context.Context, organization organization.Name, name string) (*Team, error) {
-	subject, err := a.Authorize(ctx, authz.GetTeamAction, organization)
+	subject, err := a.Authorize(ctx, resource.Get, resource.TeamKind, organization)
 	if err != nil {
 		return nil, err
 	}
@@ -185,7 +185,7 @@ func (a *Service) GetTeamByID(ctx context.Context, teamID resource.TfeID) (*Team
 		return nil, err
 	}
 
-	subject, err := a.Authorize(ctx, authz.GetTeamAction, &team.Organization)
+	subject, err := a.Authorize(ctx, resource.Get, resource.TeamKind, &team.Organization)
 	if err != nil {
 		return nil, err
 	}
@@ -202,7 +202,7 @@ func (a *Service) DeleteTeam(ctx context.Context, teamID resource.TfeID) error {
 		return err
 	}
 
-	subject, err := a.Authorize(ctx, authz.DeleteTeamAction, &team.Organization)
+	subject, err := a.Authorize(ctx, resource.Delete, resource.TeamKind, &team.Organization)
 	if err != nil {
 		return err
 	}
@@ -229,7 +229,7 @@ func (a *Service) GetTeamByTokenID(ctx context.Context, tokenID resource.TfeID) 
 		return nil, err
 	}
 
-	subject, err := a.Authorize(ctx, authz.GetTeamAction, &team.Organization)
+	subject, err := a.Authorize(ctx, resource.Get, resource.TeamKind, &team.Organization)
 	if err != nil {
 		return nil, err
 	}

@@ -147,10 +147,10 @@ templ getPreContent() {
 
 templ getPostContent(props getRunProps) {
 	if !props.planLogs.IsEnd() {
-		@templ.JSFuncCall("setupTail", path.Resource(runpkg.Tail, props.run.ID), "plan", props.planLogs.NextOffset())
+		@templ.JSFuncCall("setupTail", path.Resource(resource.Tail, props.run.ID), "plan", props.planLogs.NextOffset())
 	}
 	if !props.applyLogs.IsEnd() {
-		@templ.JSFuncCall("setupTail", path.Resource(runpkg.Tail, props.run.ID), "apply", props.applyLogs.NextOffset())
+		@templ.JSFuncCall("setupTail", path.Resource(resource.Tail, props.run.ID), "apply", props.applyLogs.NextOffset())
 	}
 }
 

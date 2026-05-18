@@ -52,7 +52,7 @@ func editAdvanced(workspaceID resource.ID, authorizer authz.Interface) templ.Com
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if authorizer.CanAccess(ctx, authz.DeleteWorkspaceAction, workspaceID) {
+		if authorizer.CanAccess(ctx, resource.Delete, resource.WorkspaceKind, workspaceID) {
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<form action=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err

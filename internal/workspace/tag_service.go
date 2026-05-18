@@ -26,7 +26,7 @@ type (
 )
 
 func (s *Service) ListTags(ctx context.Context, organization organization.Name, opts ListTagsOptions) (*resource.Page[*Tag], error) {
-	subject, err := s.Authorize(ctx, authz.ListTagsAction, organization)
+	subject, err := s.Authorize(ctx, resource.List, resource.TagKind, organization)
 	if err != nil {
 		return nil, err
 	}
@@ -40,7 +40,7 @@ func (s *Service) ListTags(ctx context.Context, organization organization.Name, 
 }
 
 func (s *Service) DeleteTags(ctx context.Context, organization organization.Name, tagIDs []resource.TfeID) error {
-	subject, err := s.Authorize(ctx, authz.DeleteTagsAction, organization)
+	subject, err := s.Authorize(ctx, resource.Delete, resource.TagKind, organization)
 	if err != nil {
 		return err
 	}
@@ -61,7 +61,7 @@ func (s *Service) TagWorkspaces(ctx context.Context, tagID resource.TfeID, works
 
 	err = s.db.Tx(ctx, func(ctx context.Context) error {
 		for _, wid := range workspaceIDs {
-			_, err := s.Authorize(ctx, authz.TagWorkspacesAction, wid)
+			_, err := s.Authorize(ctx, resource.Add, resource.TagKind, wid)
 			if err != nil {
 				return err
 			}
@@ -80,7 +80,7 @@ func (s *Service) TagWorkspaces(ctx context.Context, tagID resource.TfeID, works
 }
 
 func (s *Service) AddTags(ctx context.Context, workspaceID resource.TfeID, tags []TagSpec) error {
-	subject, err := s.Authorize(ctx, authz.AddTagsAction, workspaceID)
+	subject, err := s.Authorize(ctx, resource.Add, resource.TagKind, workspaceID)
 	if err != nil {
 		return err
 	}
@@ -100,7 +100,7 @@ func (s *Service) AddTags(ctx context.Context, workspaceID resource.TfeID, tags 
 }
 
 func (s *Service) RemoveTags(ctx context.Context, workspaceID resource.TfeID, tags []TagSpec) error {
-	subject, err := s.Authorize(ctx, authz.RemoveTagsAction, workspaceID)
+	subject, err := s.Authorize(ctx, resource.Remove, resource.TagKind, workspaceID)
 	if err != nil {
 		return err
 	}
@@ -149,7 +149,7 @@ func (s *Service) RemoveTags(ctx context.Context, workspaceID resource.TfeID, ta
 }
 
 func (s *Service) ListWorkspaceTags(ctx context.Context, workspaceID resource.TfeID, opts ListWorkspaceTagsOptions) (*resource.Page[*Tag], error) {
-	subject, err := s.Authorize(ctx, authz.ListWorkspaceTags, workspaceID)
+	subject, err := s.Authorize(ctx, resource.List, resource.TagKind, workspaceID)
 	if err != nil {
 		return nil, err
 	}

@@ -3,13 +3,12 @@ package run
 import (
 	"context"
 
-	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/resource"
 )
 
 // GetLockFile returns the lock file for the run.
 func (s *Service) GetLockFile(ctx context.Context, runID resource.TfeID) ([]byte, error) {
-	subject, err := s.Authorize(ctx, authz.GetLockFileAction, runID)
+	subject, err := s.Authorize(ctx, resource.Get, resource.LockFileKind, runID)
 	if err != nil {
 		return nil, err
 	}
@@ -25,7 +24,7 @@ func (s *Service) GetLockFile(ctx context.Context, runID resource.TfeID) ([]byte
 
 // UploadLockFile persists the lock file for a run.
 func (s *Service) UploadLockFile(ctx context.Context, runID resource.TfeID, file []byte) error {
-	subject, err := s.Authorize(ctx, authz.UploadLockFileAction, runID)
+	subject, err := s.Authorize(ctx, resource.Upload, resource.LockFileKind, runID)
 	if err != nil {
 		return err
 	}

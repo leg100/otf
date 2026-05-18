@@ -429,11 +429,11 @@ func (a *tfe) includeWorkspace(ctx context.Context, v any) ([]any, error) {
 func (a *tfe) toRun(from *Run, ctx context.Context) (*TFERun, error) {
 	accessRequest := &authz.Request{ID: &from.ID}
 	perms := &TFERunPermissions{
-		CanDiscard:      a.authorizer.CanAccess(ctx, authz.DiscardRunAction, accessRequest),
-		CanForceExecute: a.authorizer.CanAccess(ctx, authz.ApplyRunAction, accessRequest),
-		CanForceCancel:  a.authorizer.CanAccess(ctx, authz.ForceCancelRunAction, accessRequest),
-		CanCancel:       a.authorizer.CanAccess(ctx, authz.CancelRunAction, accessRequest),
-		CanApply:        a.authorizer.CanAccess(ctx, authz.ApplyRunAction, accessRequest),
+		CanDiscard:      a.authorizer.CanAccess(ctx, resource.Discard, resource.RunKind, accessRequest),
+		CanForceExecute: a.authorizer.CanAccess(ctx, resource.Apply, resource.RunKind, accessRequest),
+		CanForceCancel:  a.authorizer.CanAccess(ctx, resource.ForceCancel, resource.RunKind, accessRequest),
+		CanCancel:       a.authorizer.CanAccess(ctx, resource.Cancel, resource.RunKind, accessRequest),
+		CanApply:        a.authorizer.CanAccess(ctx, resource.Apply, resource.RunKind, accessRequest),
 	}
 
 	var timestamps TFERunStatusTimestamps

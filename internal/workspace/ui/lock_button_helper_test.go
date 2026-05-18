@@ -22,14 +22,14 @@ func TestWorkspace_LockButtonHelper(t *testing.T) {
 		name                   string
 		lockedBy               *user.User
 		currentUser            *user.User
-		currentUserPermissions []authz.Action
+		currentUserPermissions []resource.Action
 		want                   workspaceLockInfo
 	}{
 		{
 			"unlocked state",
 			nil,
 			nil,
-			[]authz.Action{authz.LockWorkspaceAction},
+			[]resource.Action{resource.Lock},
 			workspaceLockInfo{
 				Text:   "Lock",
 				Action: "/app/workspaces/ws-123/lock",
@@ -39,7 +39,7 @@ func TestWorkspace_LockButtonHelper(t *testing.T) {
 			"insufficient permissions to lock",
 			nil,
 			nil,
-			[]authz.Action{},
+			[]resource.Action{},
 			workspaceLockInfo{
 				Text:     "Lock",
 				Tooltip:  "insufficient permissions",
@@ -51,7 +51,7 @@ func TestWorkspace_LockButtonHelper(t *testing.T) {
 			"insufficient permissions to unlock",
 			bobby,
 			nil,
-			[]authz.Action{},
+			[]resource.Action{},
 			workspaceLockInfo{
 				Text:     "Unlock",
 				Tooltip:  "insufficient permissions",
@@ -63,7 +63,7 @@ func TestWorkspace_LockButtonHelper(t *testing.T) {
 			"user can unlock their own lock",
 			bobby,
 			bobby,
-			[]authz.Action{authz.UnlockWorkspaceAction},
+			[]resource.Action{resource.Unlock},
 			workspaceLockInfo{
 				Text:    "Unlock",
 				Message: "locked by: " + bobby.String(),
@@ -75,7 +75,7 @@ func TestWorkspace_LockButtonHelper(t *testing.T) {
 			"user without force-unlock permission cannot force-unlock lock held by different user",
 			bobby,
 			annie,
-			[]authz.Action{authz.UnlockWorkspaceAction},
+			[]resource.Action{resource.Unlock},
 			workspaceLockInfo{
 				Text:     "Unlock",
 				Message:  "locked by: " + bobby.String(),
@@ -88,7 +88,7 @@ func TestWorkspace_LockButtonHelper(t *testing.T) {
 			"user with force-unlock permission can force-unlock lock held by different user",
 			bobby,
 			annie,
-			[]authz.Action{authz.UnlockWorkspaceAction, authz.ForceUnlockWorkspaceAction},
+			[]resource.Action{resource.Unlock, resource.ForceUnlock},
 			workspaceLockInfo{
 				Text:    "Force unlock",
 				Action:  "/app/workspaces/ws-123/force-unlock",
@@ -115,9 +115,9 @@ func TestWorkspace_LockButtonHelper(t *testing.T) {
 
 type fakeLockButtonAuthorizer struct {
 	authz.Interface
-	perms []authz.Action
+	perms []resource.Action
 }
 
-func (f *fakeLockButtonAuthorizer) CanAccess(ctx context.Context, action authz.Action, _ resource.ID) bool {
+func (f *fakeLockButtonAuthorizer) CanAccess(ctx context.Context, action resource.Action, _ resource.Kind, _ resource.ID) bool {
 	return slices.Contains(f.perms, action)
 }

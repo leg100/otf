@@ -66,7 +66,7 @@ func NewService(opts Options) *Service {
 // site admin can create organizations. Creating an organization automatically
 // creates an owners team and adds creator as an owner.
 func (s *Service) CreateOrganization(ctx context.Context, opts CreateOptions) (*Organization, error) {
-	subject, err := s.Authorize(ctx, authz.CreateOrganizationAction, resource.SiteID)
+	subject, err := s.Authorize(ctx, resource.Create, resource.OrganizationKind, resource.SiteID)
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +102,7 @@ func (s *Service) restrictOrganizationCreation(subject authz.Subject) error {
 			IsSiteAdmin() bool
 		}
 		if user, ok := subject.(user); !ok || !user.IsSiteAdmin() {
-			s.Error(internal.ErrAccessNotPermitted, "cannot create organization because creation is restricted to site admins", "action", authz.CreateOrganizationAction, "subject", subject)
+			s.Error(internal.ErrAccessNotPermitted, "cannot create organization because creation is restricted to site admins", "subject", subject)
 			return internal.ErrAccessNotPermitted
 		}
 	}
@@ -114,7 +114,7 @@ func (s *Service) AfterCreateOrganization(hook func(context.Context, *Organizati
 }
 
 func (s *Service) UpdateOrganization(ctx context.Context, name Name, opts UpdateOptions) (*Organization, error) {
-	subject, err := s.Authorize(ctx, authz.UpdateOrganizationAction, &name)
+	subject, err := s.Authorize(ctx, resource.Update, resource.OrganizationKind, &name)
 	if err != nil {
 		return nil, err
 	}
@@ -135,7 +135,7 @@ func (s *Service) UpdateOrganization(ctx context.Context, name Name, opts Update
 func (s *Service) ListOrganizations(ctx context.Context, opts ListOptions) (*resource.Page[*Organization], error) {
 	orgs, subject, err := func() (*resource.Page[*Organization], authz.Subject, error) {
 		var names []Name
-		subject, err := s.Authorize(ctx, authz.ListOrganizationsAction, resource.SiteID, authz.WithoutErrorLogging())
+		subject, err := s.Authorize(ctx, resource.List, resource.OrganizationKind, resource.SiteID, authz.WithoutErrorLogging())
 		if errors.Is(err, internal.ErrAccessNotPermitted) {
 			// List subject's organization memberships instead.
 			type memberships interface {
@@ -160,7 +160,7 @@ func (s *Service) ListOrganizations(ctx context.Context, opts ListOptions) (*res
 }
 
 func (s *Service) GetOrganization(ctx context.Context, name Name) (*Organization, error) {
-	subject, err := s.Authorize(ctx, authz.GetOrganizationAction, &name)
+	subject, err := s.Authorize(ctx, resource.Get, resource.OrganizationKind, &name)
 	if err != nil {
 		return nil, err
 	}
@@ -177,7 +177,7 @@ func (s *Service) GetOrganization(ctx context.Context, name Name) (*Organization
 }
 
 func (s *Service) DeleteOrganization(ctx context.Context, name Name) error {
-	subject, err := s.Authorize(ctx, authz.DeleteOrganizationAction, &name)
+	subject, err := s.Authorize(ctx, resource.Delete, resource.OrganizationKind, &name)
 	if err != nil {
 		return err
 	}
@@ -208,7 +208,7 @@ func (s *Service) BeforeDeleteOrganization(hook func(context.Context, *Organizat
 }
 
 func (s *Service) GetOrganizationEntitlements(ctx context.Context, organization Name) (Entitlements, error) {
-	_, err := s.Authorize(ctx, authz.GetEntitlementsAction, organization)
+	_, err := s.Authorize(ctx, resource.Get, resource.EntitlementKind, organization)
 	if err != nil {
 		return Entitlements{}, err
 	}
@@ -223,7 +223,7 @@ func (s *Service) GetOrganizationEntitlements(ctx context.Context, organization 
 // CreateOrganizationToken creates an organization token. If an organization
 // token already exists it is replaced.
 func (s *Service) CreateOrganizationToken(ctx context.Context, opts CreateOrganizationTokenOptions) (*OrganizationToken, []byte, error) {
-	_, err := s.Authorize(ctx, authz.CreateOrganizationTokenAction, &opts.Organization)
+	_, err := s.Authorize(ctx, resource.Create, resource.OrganizationTokenKind, &opts.Organization)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -275,7 +275,7 @@ func (s *Service) ListOrganizationTokens(ctx context.Context, organization Name)
 }
 
 func (s *Service) DeleteOrganizationToken(ctx context.Context, organization Name) error {
-	_, err := s.Authorize(ctx, authz.CreateOrganizationTokenAction, organization)
+	_, err := s.Authorize(ctx, resource.Delete, resource.OrganizationKind, organization)
 	if err != nil {
 		return err
 	}

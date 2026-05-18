@@ -22,8 +22,8 @@ type Authorizer struct {
 // Interface provides an interface for services to use to permit swapping out
 // the authorizer for tests.
 type Interface interface {
-	Authorize(ctx context.Context, action Action, id resource.ID, opts ...CanAccessOption) (Subject, error)
-	CanAccess(ctx context.Context, action Action, id resource.ID) bool
+	Authorize(ctx context.Context, action resource.Action, kind resource.Kind, id resource.ID, opts ...CanAccessOption) (Subject, error)
+	CanAccess(ctx context.Context, action resource.Action, kind resource.Kind, id resource.ID) bool
 }
 
 func NewAuthorizer(logger logr.Logger) *Authorizer {
@@ -47,7 +47,7 @@ type WorkspacePolicyGetter func(ctx context.Context, workspaceID resource.ID) (W
 // WorkspacePolicy checks whether a subject is permitted to carry out an action
 // on a workspace.
 type WorkspacePolicy interface {
-	Check(subject resource.ID, action Action) bool
+	Check(subject resource.ID, action resource.Action, kind resource.Kind) bool
 }
 
 // Options for configuring the individual calls of CanAccess.
@@ -70,7 +70,7 @@ type canAccessConfig struct {
 // resource. The subject is expected to be contained within the context. If the
 // access request is nil then it's assumed the request is for access to the
 // entire site (the highest level).
-func (a *Authorizer) Authorize(ctx context.Context, action Action, resourceID resource.ID, opts ...CanAccessOption) (Subject, error) {
+func (a *Authorizer) Authorize(ctx context.Context, action resource.Action, kind resource.Kind, resourceID resource.ID, opts ...CanAccessOption) (Subject, error) {
 	if resourceID == nil {
 		return nil, errors.New("authorization request resourceID parameter cannot be nil")
 	}
@@ -91,7 +91,7 @@ func (a *Authorizer) Authorize(ctx context.Context, action Action, resourceID re
 	ar, err := a.generateRequest(ctx, resourceID)
 	if err == nil {
 		// Subject determines whether it is allowed to access resource.
-		if !subj.CanAccess(action, ar) {
+		if !subj.CanAccess(action, kind, ar) {
 			err = internal.ErrAccessNotPermitted
 		}
 	}
@@ -147,7 +147,7 @@ func (a *Authorizer) generateRequest(ctx context.Context, resourceID resource.ID
 
 // CanAccess is a helper to boil down an access request to a true/false
 // decision, with any error encountered interpreted as false.
-func (a *Authorizer) CanAccess(ctx context.Context, action Action, id resource.ID) bool {
-	_, err := a.Authorize(ctx, action, id, WithoutErrorLogging())
+func (a *Authorizer) CanAccess(ctx context.Context, action resource.Action, kind resource.Kind, id resource.ID) bool {
+	_, err := a.Authorize(ctx, action, kind, id, WithoutErrorLogging())
 	return err == nil
 }
