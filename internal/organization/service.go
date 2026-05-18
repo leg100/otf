@@ -102,7 +102,7 @@ func (s *Service) restrictOrganizationCreation(subject authz.Subject) error {
 			IsSiteAdmin() bool
 		}
 		if user, ok := subject.(user); !ok || !user.IsSiteAdmin() {
-			s.Error(internal.ErrAccessNotPermitted, "cannot create organization because creation is restricted to site admins", "action", authz.CreateOrganizationAction, "subject", subject)
+			s.Error(internal.ErrAccessNotPermitted, "cannot create organization because creation is restricted to site admins", "subject", subject)
 			return internal.ErrAccessNotPermitted
 		}
 	}

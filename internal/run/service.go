@@ -600,7 +600,7 @@ func (s *Service) PutChunk(ctx context.Context, opts PutChunkOptions) error {
 // TailRun tails logs for a phase. Offset specifies the number of bytes into the logs
 // from which to start tailing.
 func (s *Service) TailRun(ctx context.Context, opts TailOptions) (<-chan Chunk, error) {
-	subject, err := s.Authorize(ctx, resource.Get, resource.ChunkKind, opts.RunID)
+	subject, err := s.Authorize(ctx, resource.Tail, resource.ChunkKind, opts.RunID)
 	if err != nil {
 		return nil, err
 	}

@@ -93,7 +93,7 @@ var (
 				resource.List: true,
 			},
 			resource.ChunkKind: map[resource.Action]bool{
-				resource.Get: true,
+				resource.Tail: true,
 			},
 		},
 	}
