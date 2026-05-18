@@ -16,6 +16,7 @@ import (
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/vcs"
+	"github.com/leg100/otf/internal/workspace/mode"
 )
 
 const Table sql.Table = "workspaces"
@@ -560,7 +561,7 @@ func scan(row pgx.CollectableRow) (*Workspace, error) {
 		CanQueueDestroyPlan        bool              `db:"can_queue_destroy_plan"`
 		Description                string            `db:"description"`
 		Environment                string            `db:"environment"`
-		ExecutionMode              ExecutionMode     `db:"execution_mode"`
+		ExecutionMode              mode.Mode         `db:"execution_mode"`
 		GlobalRemoteState          bool              `db:"global_remote_state"`
 		MigrationEnvironment       string            `db:"migration_environment"`
 		Name                       string            `db:"name"`

@@ -15,10 +15,11 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/configversion"
+	"github.com/leg100/otf/internal/path"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runstatus"
-	"github.com/leg100/otf/internal/path"
 	"github.com/leg100/otf/internal/workspace"
+	"github.com/leg100/otf/internal/workspace/mode"
 	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/ssh"
@@ -96,14 +97,14 @@ func TestSSHKeyPrivateModule(t *testing.T) {
 	// two tests: one run on the daemon, one via the agent.
 	tests := []struct {
 		name   string
-		mode   workspace.ExecutionMode
+		mode   mode.Mode
 		poolID *resource.TfeID
 	}{
 		{
-			"execute run via daemon", workspace.RemoteExecutionMode, nil,
+			"execute run via daemon", mode.Remote, nil,
 		},
 		{
-			"execute run via agent", workspace.AgentExecutionMode, &agent.AgentPool.ID,
+			"execute run via agent", mode.Agent, &agent.AgentPool.ID,
 		},
 	}
 	for _, tt := range tests {
