@@ -16,15 +16,10 @@ import (
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/vcs"
+	"github.com/leg100/otf/internal/workspace/mode"
 )
 
-const (
-	RemoteExecutionMode ExecutionMode = "remote"
-	LocalExecutionMode  ExecutionMode = "local"
-	AgentExecutionMode  ExecutionMode = "agent"
-
-	DefaultAllowDestroyPlan = true
-)
+const DefaultAllowDestroyPlan = true
 
 type (
 	// Workspace is a terraform workspace.
@@ -39,7 +34,7 @@ type (
 		CanQueueDestroyPlan        bool              `jsonapi:"attribute" json:"can_queue_destroy_plan"`
 		Description                string            `jsonapi:"attribute" json:"description"`
 		Environment                string            `jsonapi:"attribute" json:"environment"`
-		ExecutionMode              ExecutionMode     `jsonapi:"attribute" json:"execution_mode"`
+		ExecutionMode              mode.Mode         `jsonapi:"attribute" json:"execution_mode"`
 		GlobalRemoteState          bool              `jsonapi:"attribute" json:"global_remote_state"`
 		MigrationEnvironment       string            `jsonapi:"attribute" json:"migration_environment"`
 		Name                       string            `jsonapi:"attribute" json:"name"`
@@ -110,7 +105,7 @@ type (
 		AutoApply                  *bool
 		AutoApplyRunTrigger        *bool
 		Description                *string
-		ExecutionMode              *ExecutionMode
+		ExecutionMode              *mode.Mode
 		GlobalRemoteState          *bool
 		MigrationEnvironment       *string
 		Name                       *string
@@ -142,7 +137,7 @@ type (
 		AutoApplyRunTrigger        *bool
 		Name                       *string
 		Description                *string
-		ExecutionMode              *ExecutionMode `json:"execution-mode,omitempty"`
+		ExecutionMode              *mode.Mode `json:"execution-mode,omitempty"`
 		GlobalRemoteState          *bool
 		Operations                 *bool
 		QueueAllRuns               *bool
@@ -217,7 +212,7 @@ func (f *factory) NewWorkspace(ctx context.Context, opts CreateOptions) (*Worksp
 		CreatedAt:          internal.CurrentTimestamp(nil),
 		UpdatedAt:          internal.CurrentTimestamp(nil),
 		AllowDestroyPlan:   DefaultAllowDestroyPlan,
-		ExecutionMode:      RemoteExecutionMode,
+		ExecutionMode:      mode.Remote,
 		Engine:             f.defaultEngine,
 		SpeculativeEnabled: true,
 		Organization:       *opts.Organization,
@@ -573,20 +568,20 @@ func (ws *Workspace) setName(name string) error {
 // setExecutionModeAndAgentPoolID sets the execution mode and/or the agent pool
 // ID. The two parameters are intimately related, hence the validation and
 // setting of the parameters is handled in tandem.
-func (ws *Workspace) setExecutionModeAndAgentPoolID(m *ExecutionMode, agentPoolID *resource.TfeID) (bool, error) {
+func (ws *Workspace) setExecutionModeAndAgentPoolID(m *mode.Mode, agentPoolID *resource.TfeID) (bool, error) {
 	if m == nil {
 		if agentPoolID == nil {
 			// neither specified; nothing more to be done
 			return false, nil
 		} else {
 			// agent pool ID can be set without specifying execution mode as long as
-			// existing execution mode is AgentExecutionMode
-			if ws.ExecutionMode != AgentExecutionMode {
+			// existing execution mode is mode.AgentMode
+			if ws.ExecutionMode != mode.Agent {
 				return false, ErrNonAgentExecutionModeWithPool
 			}
 		}
 	} else {
-		if *m == AgentExecutionMode {
+		if *m == mode.Agent {
 			if agentPoolID == nil {
 				return false, ErrAgentExecutionModeWithoutPool
 			}

@@ -14,6 +14,7 @@ import (
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/variable"
 	"github.com/leg100/otf/internal/workspace"
+	"github.com/leg100/otf/internal/workspace/mode"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -137,7 +138,7 @@ data "google_project" "my-project" {}
 		require.NoError(t, err)
 
 		_, err = daemon.Workspaces.UpdateWorkspace(ctx, ws1.ID, workspace.UpdateOptions{
-			ExecutionMode: internal.Ptr(workspace.AgentExecutionMode),
+			ExecutionMode: internal.Ptr(mode.Agent),
 			AgentPoolID:   &pool1.ID,
 		})
 		require.NoError(t, err)

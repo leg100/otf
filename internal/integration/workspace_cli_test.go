@@ -6,6 +6,7 @@ import (
 
 	"github.com/leg100/otf/internal/runner"
 	"github.com/leg100/otf/internal/workspace"
+	"github.com/leg100/otf/internal/workspace/mode"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -46,7 +47,7 @@ func TestIntegration_WorkspaceCLI(t *testing.T) {
 	out = daemon.otfCLI(t, ctx, "workspaces", "edit", "--organization", org.Name.String(),
 		ws1.Name, "--execution-mode", "agent", "--agent-pool-id", pool.ID.String())
 	assert.Equal(t, "updated workspace\n", out)
-	assert.Equal(t, workspace.AgentExecutionMode, daemon.getWorkspace(t, ctx, ws1.ID).ExecutionMode)
+	assert.Equal(t, mode.Agent, daemon.getWorkspace(t, ctx, ws1.ID).ExecutionMode)
 
 	// lock/unlock/force-unlock workspace
 	daemon.otfCLI(t, ctx, "workspaces", "lock", ws1.Name, "--organization", org.Name.String())

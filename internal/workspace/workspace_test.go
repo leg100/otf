@@ -11,6 +11,7 @@ import (
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/vcs"
+	"github.com/leg100/otf/internal/workspace/mode"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -145,7 +146,7 @@ func TestNewWorkspace(t *testing.T) {
 			opts: CreateOptions{
 				Name:          new("my-workspace"),
 				Organization:  &org1,
-				ExecutionMode: new(AgentExecutionMode),
+				ExecutionMode: new(mode.Agent),
 				AgentPoolID:   &agentPoolID,
 			},
 			wantError: nil,
@@ -155,7 +156,7 @@ func TestNewWorkspace(t *testing.T) {
 			opts: CreateOptions{
 				Name:          new("my-workspace"),
 				Organization:  &org1,
-				ExecutionMode: new(AgentExecutionMode),
+				ExecutionMode: new(mode.Agent),
 			},
 			wantError: ErrAgentExecutionModeWithoutPool,
 		},
@@ -173,7 +174,7 @@ func TestNewWorkspace(t *testing.T) {
 			opts: CreateOptions{
 				Name:          new("my-workspace"),
 				Organization:  &org1,
-				ExecutionMode: new(LocalExecutionMode),
+				ExecutionMode: new(mode.Local),
 				AgentPoolID:   &agentPoolID,
 			},
 			wantError: ErrNonAgentExecutionModeWithPool,
@@ -285,7 +286,7 @@ func TestWorkspace_UpdateError(t *testing.T) {
 			name: "agent execution mode with agent pool ID",
 			ws:   &Workspace{Name: "dev", Organization: org1},
 			opts: UpdateOptions{
-				ExecutionMode: new(AgentExecutionMode),
+				ExecutionMode: new(mode.Agent),
 				AgentPoolID:   &agentPoolID,
 			},
 			want: nil,
@@ -294,13 +295,13 @@ func TestWorkspace_UpdateError(t *testing.T) {
 			name: "agent execution mode without agent pool ID",
 			ws:   &Workspace{Name: "dev", Organization: org1},
 			opts: UpdateOptions{
-				ExecutionMode: new(AgentExecutionMode),
+				ExecutionMode: new(mode.Agent),
 			},
 			want: ErrAgentExecutionModeWithoutPool,
 		},
 		{
 			name: "existing agent execution mode with updated agent pool ID",
-			ws:   &Workspace{Name: "dev", Organization: org1, ExecutionMode: AgentExecutionMode, AgentPoolID: &agentPoolID},
+			ws:   &Workspace{Name: "dev", Organization: org1, ExecutionMode: mode.Agent, AgentPoolID: &agentPoolID},
 			opts: UpdateOptions{
 				AgentPoolID: &agentPoolID,
 			},
@@ -308,7 +309,7 @@ func TestWorkspace_UpdateError(t *testing.T) {
 		},
 		{
 			name: "existing remote execution mode with updated agent pool ID",
-			ws:   &Workspace{Name: "dev", Organization: org1, ExecutionMode: RemoteExecutionMode},
+			ws:   &Workspace{Name: "dev", Organization: org1, ExecutionMode: mode.Remote},
 			opts: UpdateOptions{
 				AgentPoolID: &agentPoolID,
 			},
@@ -316,9 +317,9 @@ func TestWorkspace_UpdateError(t *testing.T) {
 		},
 		{
 			name: "set local execution mode with agent pool ID",
-			ws:   &Workspace{Name: "dev", Organization: org1, ExecutionMode: RemoteExecutionMode},
+			ws:   &Workspace{Name: "dev", Organization: org1, ExecutionMode: mode.Remote},
 			opts: UpdateOptions{
-				ExecutionMode: new(LocalExecutionMode),
+				ExecutionMode: new(mode.Local),
 				AgentPoolID:   &agentPoolID,
 			},
 			want: ErrNonAgentExecutionModeWithPool,
