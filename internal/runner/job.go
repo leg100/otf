@@ -75,7 +75,7 @@ func (j *Job) LogValue() slog.Value {
 
 func (j *Job) String() string { return j.ID.String() }
 
-func (j *Job) CanAccess(action authz.Action, req authz.Request) bool {
+func (j *Job) CanAccess(action resource.Action, kind resource.Kind, req authz.Request) bool {
 	if req.Kind() == resource.SiteKind {
 		// Job cannot carry out site-wide actions
 		return false
@@ -84,27 +84,92 @@ func (j *Job) CanAccess(action authz.Action, req authz.Request) bool {
 		// Job cannot carry out actions on other organizations
 		return false
 	}
-	// Permissible organization actions on same organization
-	switch action {
-	case authz.GetOrganizationAction, authz.GetEntitlementsAction, authz.GetModuleAction, authz.ListModulesAction, authz.GetPrivateKeySSHKeyAction:
-		return true
+	// Permissible actions on same organization
+	switch kind {
+	case resource.OrganizationKind:
+		switch action {
+		case resource.Get:
+			return true
+		}
+	case resource.EntitlementKind:
+		switch action {
+		case resource.Get:
+			return true
+		}
+	case resource.ModuleKind:
+		switch action {
+		case resource.Get, resource.List:
+			return true
+		}
+	case resource.PrivateKeyKind:
+		switch action {
+		case resource.Get:
+			return true
+		}
 	}
 	// Permissible workspace actions on same workspace.
 	if req.Workspace() == j.WorkspaceID {
-		// Allow actions on same workspace as job depending on run phase
-		switch action {
-		case authz.DownloadStateAction, authz.GetStateVersionAction, authz.GetWorkspaceAction, authz.GetRunAction, authz.ListVariableSetsAction, authz.ListVariablesAction, authz.PutChunkAction, authz.DownloadConfigurationVersionAction, authz.GetPlanFileAction, authz.CancelRunAction:
-			// any phase
-			return true
-		case authz.UploadLockFileAction, authz.UploadPlanFileAction, authz.ApplyRunAction:
-			// plan phase
-			if j.Phase == otfrun.PlanPhase {
+		// any phase
+		switch kind {
+		case resource.StateVersionKind:
+			switch action {
+			case resource.Get, resource.Download:
+				return true
+			case resource.Create:
+				// apply phase
+				if j.Phase == otfrun.ApplyPhase {
+					return true
+				}
+			}
+		case resource.WorkspaceKind:
+			switch action {
+			case resource.Get:
 				return true
 			}
-		case authz.GetLockFileAction, authz.CreateStateVersionAction:
-			// apply phase
-			if j.Phase == otfrun.ApplyPhase {
+		case resource.RunKind:
+			switch action {
+			case resource.Get, resource.Cancel:
 				return true
+			case resource.Apply:
+				if j.Phase == otfrun.PlanPhase {
+					return true
+				}
+			}
+		case resource.VariableSetKind:
+			switch action {
+			case resource.List:
+				return true
+			}
+		case resource.VariableKind:
+			switch action {
+			case resource.List:
+				return true
+			}
+		case resource.ChunkKind:
+			switch action {
+			case resource.Upload:
+				return true
+			}
+		case resource.ConfigVersionKind:
+			switch action {
+			case resource.Download:
+				return true
+			}
+		case resource.PlanFileKind:
+			switch action {
+			case resource.Get:
+				return true
+			case resource.Upload:
+				if j.Phase == otfrun.PlanPhase {
+					return true
+				}
+			}
+		case resource.LockFileKind:
+			switch action {
+			case resource.Get:
+				if j.Phase == otfrun.PlanPhase {
+					return true
+				}
 			}
 		}
 		return false
@@ -113,7 +178,7 @@ func (j *Job) CanAccess(action authz.Action, req authz.Request) bool {
 	// access the state of another workspace then the policy determines whether
 	// it's allowed to do so.
 	if req.WorkspacePolicy != nil {
-		return req.WorkspacePolicy.Check(j.ID, action)
+		return req.WorkspacePolicy.Check(j.ID, action, kind)
 	}
 	return false
 }

@@ -33,4 +33,5 @@ const (
 	UnsetPermission Action = "unset-permission"
 	EnqueuePlan     Action = "enqueue-plan"
 	Rollback        Action = "rollback"
+	Tail            Action = "tail"
 )

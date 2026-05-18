@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/path"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/user"
@@ -32,7 +31,7 @@ func (h *Handlers) lockButtonHelper(
 		btn.Text = "Unlock"
 		btn.Action = path.Resource(resource.Action("unlock"), ws.ID)
 		// A user needs at least the unlock permission
-		if !h.Authorizer.CanAccess(ctx, authz.UnlockWorkspaceAction, ws.ID) {
+		if !h.Authorizer.CanAccess(ctx, resource.Unlock, resource.WorkspaceKind, ws.ID) {
 			btn.Tooltip = "insufficient permissions"
 			btn.Disabled = true
 			return btn, nil
@@ -46,7 +45,7 @@ func (h *Handlers) lockButtonHelper(
 			return btn, nil
 		}
 		// User is going to need the force unlock permission
-		if h.Authorizer.CanAccess(ctx, authz.ForceUnlockWorkspaceAction, ws.ID) {
+		if h.Authorizer.CanAccess(ctx, resource.ForceUnlock, resource.WorkspaceKind, ws.ID) {
 			btn.Text = "Force unlock"
 			btn.Action = path.Resource(resource.Action("force-unlock"), ws.ID)
 			return btn, nil
@@ -58,7 +57,7 @@ func (h *Handlers) lockButtonHelper(
 		btn.Text = "Lock"
 		btn.Action = path.Resource(resource.Action("lock"), ws.ID)
 		// User needs at least the lock permission
-		if !h.Authorizer.CanAccess(ctx, authz.LockWorkspaceAction, ws.ID) {
+		if !h.Authorizer.CanAccess(ctx, resource.Lock, resource.WorkspaceKind, ws.ID) {
 			btn.Disabled = true
 			btn.Tooltip = "insufficient permissions"
 		}

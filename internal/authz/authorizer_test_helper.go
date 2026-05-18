@@ -16,10 +16,10 @@ func NewAllowAllAuthorizer() *allowAllAuthorizer {
 	}
 }
 
-func (a *allowAllAuthorizer) Authorize(context.Context, Action, resource.ID, ...CanAccessOption) (Subject, error) {
+func (a *allowAllAuthorizer) Authorize(context.Context, resource.Action, resource.Kind, resource.ID, ...CanAccessOption) (Subject, error) {
 	return a.User, nil
 }
 
-func (a *allowAllAuthorizer) CanAccess(context.Context, Action, resource.ID) bool {
+func (a *allowAllAuthorizer) CanAccess(context.Context, resource.Action, resource.Kind, resource.ID) bool {
 	return true
 }

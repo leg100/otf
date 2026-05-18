@@ -10,10 +10,10 @@ import (
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/organization"
+	"github.com/leg100/otf/internal/path"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/ui/helpers"
-	"github.com/leg100/otf/internal/path"
 	"github.com/leg100/otf/internal/user"
 )
 
@@ -141,7 +141,7 @@ func (h *Handlers) getTeam(w http.ResponseWriter, r *http.Request) {
 	// team members can be chosen. Only do this if the subject has perms to
 	// retrieve the list.
 	var nonMemberUsernames []user.Username
-	if h.Authorizer.CanAccess(r.Context(), authz.ListUsersAction, resource.SiteID) {
+	if h.Authorizer.CanAccess(r.Context(), resource.List, resource.UserKind, resource.SiteID) {
 		users, err := h.Client.List(r.Context())
 		if err != nil {
 			helpers.Error(r, w, err.Error())
@@ -157,10 +157,10 @@ func (h *Handlers) getTeam(w http.ResponseWriter, r *http.Request) {
 	props := getTeamProps{
 		team:            team,
 		members:         members,
-		canUpdateTeam:   h.Authorizer.CanAccess(r.Context(), authz.UpdateTeamAction, team.Organization),
-		canDeleteTeam:   h.Authorizer.CanAccess(r.Context(), authz.DeleteTeamAction, team.Organization),
-		canAddMember:    h.Authorizer.CanAccess(r.Context(), authz.AddTeamMembershipAction, team.Organization),
-		canRemoveMember: h.Authorizer.CanAccess(r.Context(), authz.RemoveTeamMembershipAction, team.Organization),
+		canUpdateTeam:   h.Authorizer.CanAccess(r.Context(), resource.Update, resource.TeamKind, team.Organization),
+		canDeleteTeam:   h.Authorizer.CanAccess(r.Context(), resource.Delete, resource.TeamKind, team.Organization),
+		canAddMember:    h.Authorizer.CanAccess(r.Context(), resource.Add, resource.TeamKind, team.Organization),
+		canRemoveMember: h.Authorizer.CanAccess(r.Context(), resource.Remove, resource.TeamKind, team.Organization),
 		dropdown: helpers.SearchDropdownProps{
 			Name:        "username",
 			Available:   internal.ConvertSliceToString(nonMemberUsernames),
@@ -199,7 +199,7 @@ func (h *Handlers) listTeams(w http.ResponseWriter, r *http.Request) {
 	props := listTeamsProps{
 		organization:  params.Organization,
 		teams:         resource.NewPage(teams, params.PageOptions, nil),
-		canCreateTeam: h.Authorizer.CanAccess(r.Context(), authz.CreateTeamAction, params.Organization),
+		canCreateTeam: h.Authorizer.CanAccess(r.Context(), resource.Create, resource.TeamKind, params.Organization),
 	}
 	helpers.RenderPage(
 		listTeams(props),

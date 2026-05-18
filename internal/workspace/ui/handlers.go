@@ -145,7 +145,7 @@ func (h *Handlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 		helpers.WithOrganization(*params.Organization),
 		helpers.WithContentActions(workspaceListActions(
 			*params.Organization,
-			h.Authorizer.CanAccess(r.Context(), authz.CreateWorkspaceAction, *params.Organization),
+			h.Authorizer.CanAccess(r.Context(), resource.Create, resource.WorkspaceKind, *params.Organization),
 		)),
 	)
 }
@@ -260,13 +260,13 @@ func (h *Handlers) getWorkspace(w http.ResponseWriter, r *http.Request) {
 		ws:                 ws,
 		workspaceLockInfo:  lockInfo,
 		vcsProvider:        provider,
-		canApply:           h.Authorizer.CanAccess(r.Context(), authz.ApplyRunAction, ws.ID),
-		canAddTags:         h.Authorizer.CanAccess(r.Context(), authz.AddTagsAction, ws.ID),
-		canRemoveTags:      h.Authorizer.CanAccess(r.Context(), authz.RemoveTagsAction, ws.ID),
-		canCreateRun:       h.Authorizer.CanAccess(r.Context(), authz.CreateRunAction, ws.ID),
-		canLockWorkspace:   h.Authorizer.CanAccess(r.Context(), authz.LockWorkspaceAction, ws.ID),
-		canUnlockWorkspace: h.Authorizer.CanAccess(r.Context(), authz.UnlockWorkspaceAction, ws.ID),
-		canUpdateWorkspace: h.Authorizer.CanAccess(r.Context(), authz.UpdateWorkspaceAction, ws.ID),
+		canApply:           h.Authorizer.CanAccess(r.Context(), resource.Apply, resource.RunKind, ws.ID),
+		canAddTags:         h.Authorizer.CanAccess(r.Context(), resource.Add, resource.WorkspaceKind, ws.ID),
+		canRemoveTags:      h.Authorizer.CanAccess(r.Context(), resource.Remove, resource.TagKind, ws.ID),
+		canCreateRun:       h.Authorizer.CanAccess(r.Context(), resource.Create, resource.RunKind, ws.ID),
+		canLockWorkspace:   h.Authorizer.CanAccess(r.Context(), resource.Lock, resource.WorkspaceKind, ws.ID),
+		canUnlockWorkspace: h.Authorizer.CanAccess(r.Context(), resource.Unlock, resource.WorkspaceKind, ws.ID),
+		canUpdateWorkspace: h.Authorizer.CanAccess(r.Context(), resource.Update, resource.WorkspaceKind, ws.ID),
 		tagsDropdown: helpers.SearchDropdownProps{
 			Name:        "tag_name",
 			Available:   availableTags,
@@ -862,8 +862,8 @@ func (h *Handlers) editVCS(w http.ResponseWriter, r *http.Request) {
 	props := editVCSProps{
 		ws:                 ws,
 		vcsProvider:        provider,
-		canUpdateWorkspace: h.Authorizer.CanAccess(r.Context(), authz.UpdateWorkspaceAction, ws.ID),
-		canDeleteWorkspace: h.Authorizer.CanAccess(r.Context(), authz.DeleteWorkspaceAction, ws.ID),
+		canUpdateWorkspace: h.Authorizer.CanAccess(r.Context(), resource.Update, resource.WorkspaceKind, ws.ID),
+		canDeleteWorkspace: h.Authorizer.CanAccess(r.Context(), resource.Delete, resource.WorkspaceKind, ws.ID),
 	}
 	helpers.RenderPage(
 		editVCS(props),

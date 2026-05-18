@@ -8,9 +8,9 @@ import (
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/organization"
+	"github.com/leg100/otf/internal/path"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/ui/helpers"
-	"github.com/leg100/otf/internal/path"
 )
 
 type Handlers struct {
@@ -103,7 +103,7 @@ func (h *Handlers) listOrganizations(w http.ResponseWriter, r *http.Request) {
 		helpers.Error(r, w, err.Error())
 		return
 	}
-	canCreate := !h.RestrictOrganizationCreation || subject.CanAccess(authz.CreateOrganizationAction, authz.Request{ID: resource.SiteID})
+	canCreate := !h.RestrictOrganizationCreation || subject.CanAccess(resource.Create, resource.OrganizationKind, authz.Request{ID: resource.SiteID})
 
 	helpers.RenderPage(
 		organizationList(organizationListProps{

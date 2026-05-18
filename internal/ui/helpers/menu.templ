@@ -56,17 +56,17 @@ templ WorkspaceMenu(workspace resource.Info, organization resource.ID, authorize
 			@MenuItem("Runs", path.List(resource.RunKind, workspace.ID), "/app/runs")
 			@MenuItem("State", path.List(resource.StateVersionKind, workspace.ID), "/app/state-versions")
 			@MenuItem("Variables", path.List(resource.VariableKind, workspace.ID), "/app/variables", path.List(resource.VariableKind, workspace.ID))
-			if authorizer.CanAccess(ctx, authz.UpdateWorkspaceAction, workspace.ID) {
+			if authorizer.CanAccess(ctx, resource.Update, resource.WorkspaceKind,  workspace.ID) {
 				@MenuItem("Settings", path.Edit(workspace.ID), path.Get(workspace.ID)+"/setup-connection", path.Resource(resource.Action("edit-permissions"), workspace.ID), path.Resource(resource.Action("edit-ssh-key"), workspace.ID), path.Resource(resource.Action("edit-engine"), workspace.ID), path.Resource(resource.Action("edit-vcs"), workspace.ID), path.Resource(resource.Action("edit-advanced"), workspace.ID), path.Resource(resource.Action("edit-triggers"), workspace.ID))
 			}
 		</ul>
 		<div class="">
 			<form id="workspace-start-run-form" action={ path.Resource(resource.Action("start-run"), workspace.ID) } method="POST">
-				if authorizer.CanAccess(ctx, authz.CreateRunAction, workspace.ID) {
+				if authorizer.CanAccess(ctx, resource.Create, resource.RunKind, workspace.ID) {
 					<select class="select select-sm" name="operation" id="start-run-operation" onchange="this.form.submit()">
 						<option disabled selected>-- start run --</option>
 						<option value="plan-only">plan only</option>
-						if authorizer.CanAccess(ctx, authz.ApplyRunAction, workspace.ID) {
+						if authorizer.CanAccess(ctx, resource.Apply, resource.RunKind,  workspace.ID) {
 							<option value="plan-and-apply">plan and apply</option>
 						}
 					</select>

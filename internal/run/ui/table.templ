@@ -3,6 +3,7 @@ package ui
 import (
 	"context"
 	"github.com/leg100/otf/internal/path"
+	"github.com/leg100/otf/internal/resource"
 	runpkg "github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/ui/helpers"
@@ -125,14 +126,14 @@ templ (t *runsTable) Row(run *runpkg.Run) {
 		<td class="align-top">
 			<div class="flex gap-2">
 				if run.Status == runstatus.Planned {
-					<form action={ path.Resource(runpkg.Apply, run.ID) } method="POST">
+					<form action={ path.Resource(resource.Apply, run.ID) } method="POST">
 						<button id="apply-button" class="btn btn-sm">Apply</button>
 					</form>
 				}
 				if run.Cancelable() {
 					<button
 						class="btn btn-sm btn-error btn-outline"
-						hx-post={ path.Resource(runpkg.Cancel, run.ID) }
+						hx-post={ path.Resource(resource.Cancel, run.ID) }
 						hx-confirm="Are you sure you want to cancel?"
 					>
 						Cancel
@@ -140,7 +141,7 @@ templ (t *runsTable) Row(run *runpkg.Run) {
 				} else if run.ForceCancelable() {
 					<button
 						class="btn btn-sm btn-error btn-outline"
-						hx-post={ path.Resource(runpkg.ForceCancel, run.ID) }
+						hx-post={ path.Resource(resource.ForceCancel, run.ID) }
 						hx-confirm="Are you sure you want to force cancel?"
 					>
 						Force cancel
@@ -149,13 +150,13 @@ templ (t *runsTable) Row(run *runpkg.Run) {
 					<button
 						id="run-discard-button"
 						class="btn btn-sm btn-error btn-outline"
-						hx-post={ path.Resource(runpkg.Discard, run.ID) }
+						hx-post={ path.Resource(resource.Discard, run.ID) }
 						hx-confirm="Are you sure you want to discard?"
 					>
 						Discard
 					</button>
 				} else if run.Done() {
-					<form action={ path.Resource(runpkg.Retry, run.ID) } method="POST">
+					<form action={ path.Resource(resource.Retry, run.ID) } method="POST">
 						<button id="retry-button" class="btn btn-sm btn-soft btn-info">Retry</button>
 					</form>
 				} else if run.CancelSignaledAt != nil {

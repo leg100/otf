@@ -38,6 +38,7 @@ const (
 	PlanFileKind                  Kind = "pf"
 	TagKind                       Kind = "tag"
 	EntitlementKind               Kind = "ent"
+	LockFileKind                  Kind = "lock"
 )
 
 var fullKinds = map[Kind]string{
@@ -68,6 +69,7 @@ var fullKinds = map[Kind]string{
 	PlanFileKind:                  "plan-file",
 	TagKind:                       "tag",
 	EntitlementKind:               "entitlement",
+	LockFileKind:                  "lock-file",
 }
 
 // Full returns the unabbreviated name for the kind.

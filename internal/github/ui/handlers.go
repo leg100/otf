@@ -13,9 +13,9 @@ import (
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/http/decode"
+	"github.com/leg100/otf/internal/path"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/ui/helpers"
-	"github.com/leg100/otf/internal/path"
 	"github.com/leg100/otf/internal/vcs"
 )
 
@@ -140,8 +140,8 @@ func (h *Handlers) getGithubApp(w http.ResponseWriter, r *http.Request) {
 		app:            app,
 		installations:  installs,
 		githubHostname: h.GithubHostname.Host,
-		canCreateApp:   h.Authorizer.CanAccess(r.Context(), authz.CreateGithubAppAction, resource.SiteID),
-		canDeleteApp:   h.Authorizer.CanAccess(r.Context(), authz.DeleteGithubAppAction, resource.SiteID),
+		canCreateApp:   h.Authorizer.CanAccess(r.Context(), resource.Create, resource.GithubAppKind, resource.SiteID),
+		canDeleteApp:   h.Authorizer.CanAccess(r.Context(), resource.Delete, resource.GithubAppKind, resource.SiteID),
 	}
 	helpers.RenderPage(
 		getApps(props),

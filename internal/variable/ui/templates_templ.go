@@ -9,7 +9,6 @@ import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
 import (
-	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/path"
 	"github.com/leg100/otf/internal/resource"
@@ -212,7 +211,7 @@ func (t *templates) newWorkspaceVariableButton(workspaceID resource.ID) templ.Co
 			templ_7745c5c3_Var5 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		if t.CanAccess(ctx, authz.CreateVariableAction, workspaceID) {
+		if t.CanAccess(ctx, resource.Create, resource.VariableKind, workspaceID) {
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<form class=\"mt-2\" action=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -220,7 +219,7 @@ func (t *templates) newWorkspaceVariableButton(workspaceID resource.ID) templ.Co
 			var templ_7745c5c3_Var6 templ.SafeURL
 			templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinURLErrs(path.New(resource.VariableKind, workspaceID))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/ui/templates.templ`, Line: 73, Col: 74}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/ui/templates.templ`, Line: 72, Col: 74}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 			if templ_7745c5c3_Err != nil {
@@ -307,7 +306,7 @@ func listVariableSetsActions(props listVariableSetsProps) templ.Component {
 			var templ_7745c5c3_Var9 templ.SafeURL
 			templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinURLErrs(path.New(resource.VariableSetKind, props.organization))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/ui/templates.templ`, Line: 93, Col: 71}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/ui/templates.templ`, Line: 92, Col: 71}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 			if templ_7745c5c3_Err != nil {
@@ -381,7 +380,7 @@ func (t listVariableSetsTable) Row(vs *variable.VariableSet) templ.Component {
 		var templ_7745c5c3_Var12 string
 		templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs("item-variable-set-" + vs.Name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/ui/templates.templ`, Line: 110, Col: 40}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/ui/templates.templ`, Line: 109, Col: 40}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 		if templ_7745c5c3_Err != nil {
@@ -394,7 +393,7 @@ func (t listVariableSetsTable) Row(vs *variable.VariableSet) templ.Component {
 		var templ_7745c5c3_Var13 templ.SafeURL
 		templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinURLErrs(path.Edit(vs.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/ui/templates.templ`, Line: 112, Col: 42}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/ui/templates.templ`, Line: 111, Col: 42}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 		if templ_7745c5c3_Err != nil {
@@ -407,7 +406,7 @@ func (t listVariableSetsTable) Row(vs *variable.VariableSet) templ.Component {
 		var templ_7745c5c3_Var14 string
 		templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(vs.Name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/ui/templates.templ`, Line: 113, Col: 13}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/ui/templates.templ`, Line: 112, Col: 13}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 		if templ_7745c5c3_Err != nil {
@@ -434,7 +433,7 @@ func (t listVariableSetsTable) Row(vs *variable.VariableSet) templ.Component {
 			var templ_7745c5c3_Var15 string
 			templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(len(vs.Workspaces))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/ui/templates.templ`, Line: 123, Col: 24}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/ui/templates.templ`, Line: 122, Col: 24}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 			if templ_7745c5c3_Err != nil {
@@ -558,7 +557,7 @@ func (t *templates) editVariableSet(props editVariableSetProps) templ.Component 
 		var templ_7745c5c3_Var18 templ.SafeURL
 		templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinURLErrs(path.New(resource.VariableKind, props.set.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/ui/templates.templ`, Line: 168, Col: 74}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/ui/templates.templ`, Line: 167, Col: 74}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
 		if templ_7745c5c3_Err != nil {
@@ -649,7 +648,7 @@ func variableForm(props variableFormProps) templ.Component {
 		var templ_7745c5c3_Var21 templ.SafeURL
 		templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinURLErrs(props.action)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/ui/templates.templ`, Line: 195, Col: 56}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/ui/templates.templ`, Line: 194, Col: 56}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
 		if templ_7745c5c3_Err != nil {
@@ -662,7 +661,7 @@ func variableForm(props variableFormProps) templ.Component {
 		var templ_7745c5c3_Var22 string
 		templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.JoinStringErrs(props.variable.Key)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/ui/templates.templ`, Line: 198, Col: 82}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/ui/templates.templ`, Line: 197, Col: 82}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var22))
 		if templ_7745c5c3_Err != nil {
@@ -696,7 +695,7 @@ func variableForm(props variableFormProps) templ.Component {
 			var templ_7745c5c3_Var23 string
 			templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinStringErrs(props.variable.Value)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/ui/templates.templ`, Line: 212, Col: 27}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/ui/templates.templ`, Line: 211, Col: 27}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var23))
 			if templ_7745c5c3_Err != nil {
@@ -774,7 +773,7 @@ func variableForm(props variableFormProps) templ.Component {
 		var templ_7745c5c3_Var24 string
 		templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinStringErrs(props.variable.Description)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/ui/templates.templ`, Line: 241, Col: 123}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/ui/templates.templ`, Line: 240, Col: 123}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var24))
 		if templ_7745c5c3_Err != nil {
@@ -824,7 +823,7 @@ func variableSetForm(props variableSetFormProps) templ.Component {
 		var templ_7745c5c3_Var26 templ.SafeURL
 		templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.JoinURLErrs(props.action)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/ui/templates.templ`, Line: 265, Col: 56}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/ui/templates.templ`, Line: 264, Col: 56}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var26))
 		if templ_7745c5c3_Err != nil {
@@ -842,7 +841,7 @@ func variableSetForm(props variableSetFormProps) templ.Component {
 			var templ_7745c5c3_Var27 string
 			templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinStringErrs(props.set.Name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/ui/templates.templ`, Line: 269, Col: 81}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/ui/templates.templ`, Line: 268, Col: 81}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var27))
 			if templ_7745c5c3_Err != nil {
@@ -855,7 +854,7 @@ func variableSetForm(props variableSetFormProps) templ.Component {
 			var templ_7745c5c3_Var28 string
 			templ_7745c5c3_Var28, templ_7745c5c3_Err = templ.JoinStringErrs(props.set.Description)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/ui/templates.templ`, Line: 273, Col: 102}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/ui/templates.templ`, Line: 272, Col: 102}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var28))
 			if templ_7745c5c3_Err != nil {
@@ -888,7 +887,7 @@ func variableSetForm(props variableSetFormProps) templ.Component {
 			var templ_7745c5c3_Var29 string
 			templ_7745c5c3_Var29, templ_7745c5c3_Err = templ.JoinStringErrs(helpers.AssetPath(ctx, "/js/dropdown.js"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/ui/templates.templ`, Line: 286, Col: 60}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/ui/templates.templ`, Line: 285, Col: 60}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var29))
 			if templ_7745c5c3_Err != nil {
@@ -901,7 +900,7 @@ func variableSetForm(props variableSetFormProps) templ.Component {
 			var templ_7745c5c3_Var30 string
 			templ_7745c5c3_Var30, templ_7745c5c3_Err = templ.JoinStringErrs("dropdown(" + toJSON(props.existingWorkspaces) + ", " + toJSON(props.availableWorkspaces) + ")")
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/ui/templates.templ`, Line: 289, Col: 110}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/ui/templates.templ`, Line: 288, Col: 110}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var30))
 			if templ_7745c5c3_Err != nil {
@@ -996,7 +995,7 @@ func (t variablesTable) Row(v variableRow) templ.Component {
 		var templ_7745c5c3_Var33 string
 		templ_7745c5c3_Var33, templ_7745c5c3_Err = templ.JoinStringErrs("item-variable-" + v.Key)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/ui/templates.templ`, Line: 363, Col: 34}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/ui/templates.templ`, Line: 362, Col: 34}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var33))
 		if templ_7745c5c3_Err != nil {
@@ -1019,7 +1018,7 @@ func (t variablesTable) Row(v variableRow) templ.Component {
 				var templ_7745c5c3_Var34 templ.SafeURL
 				templ_7745c5c3_Var34, templ_7745c5c3_Err = templ.JoinURLErrs(path.Edit(v.set.ID))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/ui/templates.templ`, Line: 367, Col: 47}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/ui/templates.templ`, Line: 366, Col: 47}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var34))
 				if templ_7745c5c3_Err != nil {
@@ -1032,7 +1031,7 @@ func (t variablesTable) Row(v variableRow) templ.Component {
 				var templ_7745c5c3_Var35 string
 				templ_7745c5c3_Var35, templ_7745c5c3_Err = templ.JoinStringErrs(v.set.Name)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/ui/templates.templ`, Line: 368, Col: 18}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/ui/templates.templ`, Line: 367, Col: 18}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var35))
 				if templ_7745c5c3_Err != nil {
@@ -1078,7 +1077,7 @@ func (t variablesTable) Row(v variableRow) templ.Component {
 			var templ_7745c5c3_Var37 string
 			templ_7745c5c3_Var37, templ_7745c5c3_Err = templ.JoinStringErrs(v.Key)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/ui/templates.templ`, Line: 380, Col: 11}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/ui/templates.templ`, Line: 379, Col: 11}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var37))
 			if templ_7745c5c3_Err != nil {
@@ -1103,7 +1102,7 @@ func (t variablesTable) Row(v variableRow) templ.Component {
 			var templ_7745c5c3_Var38 string
 			templ_7745c5c3_Var38, templ_7745c5c3_Err = templ.JoinStringErrs(v.Value)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/ui/templates.templ`, Line: 387, Col: 13}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/ui/templates.templ`, Line: 386, Col: 13}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var38))
 			if templ_7745c5c3_Err != nil {
@@ -1117,7 +1116,7 @@ func (t variablesTable) Row(v variableRow) templ.Component {
 		var templ_7745c5c3_Var39 string
 		templ_7745c5c3_Var39, templ_7745c5c3_Err = templ.JoinStringErrs(string(v.Category))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/ui/templates.templ`, Line: 390, Col: 26}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/ui/templates.templ`, Line: 389, Col: 26}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var39))
 		if templ_7745c5c3_Err != nil {
@@ -1130,7 +1129,7 @@ func (t variablesTable) Row(v variableRow) templ.Component {
 		var templ_7745c5c3_Var40 templ.SafeURL
 		templ_7745c5c3_Var40, templ_7745c5c3_Err = templ.JoinURLErrs(path.Edit(v.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/ui/templates.templ`, Line: 392, Col: 55}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/ui/templates.templ`, Line: 391, Col: 55}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var40))
 		if templ_7745c5c3_Err != nil {
@@ -1156,7 +1155,7 @@ func (t variablesTable) Row(v variableRow) templ.Component {
 			var templ_7745c5c3_Var41 templ.SafeURL
 			templ_7745c5c3_Var41, templ_7745c5c3_Err = templ.JoinURLErrs(path.Delete(v.ID))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/ui/templates.templ`, Line: 399, Col: 60}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/ui/templates.templ`, Line: 398, Col: 60}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var41))
 			if templ_7745c5c3_Err != nil {

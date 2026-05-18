@@ -93,7 +93,7 @@ func (s *Service) CreateRunTrigger(ctx context.Context, workspaceID, triggeringW
 }
 
 func (s *Service) ListRunTriggers(ctx context.Context, opts ListOptions) ([]*Trigger, error) {
-	subject, err := s.authorizer.Authorize(ctx, resource.List, resource.RunTriggersKind, opts.WorkspaceID)
+	subject, err := s.authorizer.Authorize(ctx, resource.List, resource.RunTriggerKind, opts.WorkspaceID)
 	if err != nil {
 		return nil, err
 	}

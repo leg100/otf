@@ -254,7 +254,7 @@ func WorkspaceMenu(workspace resource.Info, organization resource.ID, authorizer
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if authorizer.CanAccess(ctx, authz.UpdateWorkspaceAction, workspace.ID) {
+		if authorizer.CanAccess(ctx, resource.Update, resource.WorkspaceKind, workspace.ID) {
 			templ_7745c5c3_Err = MenuItem("Settings", path.Edit(workspace.ID), path.Get(workspace.ID)+"/setup-connection", path.Resource(resource.Action("edit-permissions"), workspace.ID), path.Resource(resource.Action("edit-ssh-key"), workspace.ID), path.Resource(resource.Action("edit-engine"), workspace.ID), path.Resource(resource.Action("edit-vcs"), workspace.ID), path.Resource(resource.Action("edit-advanced"), workspace.ID), path.Resource(resource.Action("edit-triggers"), workspace.ID)).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -277,12 +277,12 @@ func WorkspaceMenu(workspace resource.Info, organization resource.ID, authorizer
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if authorizer.CanAccess(ctx, authz.CreateRunAction, workspace.ID) {
+		if authorizer.CanAccess(ctx, resource.Create, resource.RunKind, workspace.ID) {
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "<select class=\"select select-sm\" name=\"operation\" id=\"start-run-operation\" onchange=\"this.form.submit()\"><option disabled selected>-- start run --</option> <option value=\"plan-only\">plan only</option> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			if authorizer.CanAccess(ctx, authz.ApplyRunAction, workspace.ID) {
+			if authorizer.CanAccess(ctx, resource.Apply, resource.RunKind, workspace.ID) {
 				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "<option value=\"plan-and-apply\">plan and apply</option>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err

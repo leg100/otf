@@ -11,10 +11,10 @@ import (
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/organization"
+	"github.com/leg100/otf/internal/path"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runner"
 	"github.com/leg100/otf/internal/ui/helpers"
-	"github.com/leg100/otf/internal/path"
 	"github.com/leg100/otf/internal/workspace"
 )
 
@@ -266,7 +266,7 @@ func (h *Handlers) getAgentPool(w http.ResponseWriter, r *http.Request) {
 		availableWorkspaces:            availableWorkspaces,
 		tokens:                         tokens,
 		agents:                         resource.NewPage(agents, resource.PageOptions{}, nil),
-		canDeleteAgentPool:             h.Authorizer.CanAccess(r.Context(), authz.DeleteAgentPoolAction, pool.Organization),
+		canDeleteAgentPool:             h.Authorizer.CanAccess(r.Context(), resource.Delete, resource.AgentPoolKind, pool.Organization),
 	}
 	helpers.RenderPage(
 		getAgentPool(props),

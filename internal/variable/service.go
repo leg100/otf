@@ -176,7 +176,7 @@ func (s *Service) updateVariable(ctx context.Context, variableID resource.TfeID,
 }
 
 func (s *Service) ListVariables(ctx context.Context, parentID resource.TfeID) ([]*Variable, error) {
-	subject, err := s.Authorize(ctx, resource.List, resource.VariablesKind, parentID)
+	subject, err := s.Authorize(ctx, resource.List, resource.VariableKind, parentID)
 	if err != nil {
 		return nil, err
 	}
@@ -293,7 +293,7 @@ func (s *Service) UpdateVariableSet(ctx context.Context, setID resource.TfeID, o
 }
 
 func (s *Service) ListVariableSets(ctx context.Context, organization organization.Name) ([]*VariableSet, error) {
-	subject, err := s.Authorize(ctx, resource.List, resource.VariableSetsKind, organization)
+	subject, err := s.Authorize(ctx, resource.List, resource.VariableSetKind, organization)
 	if err != nil {
 		return nil, err
 	}
@@ -309,7 +309,7 @@ func (s *Service) ListVariableSets(ctx context.Context, organization organizatio
 }
 
 func (s *Service) ListWorkspaceVariableSets(ctx context.Context, workspaceID resource.TfeID) ([]*VariableSet, error) {
-	subject, err := s.Authorize(ctx, resource.List, resource.VariableSetsKind, workspaceID)
+	subject, err := s.Authorize(ctx, resource.List, resource.VariableSetKind, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -369,7 +369,7 @@ func (s *Service) ApplySetToWorkspaces(ctx context.Context, setID resource.TfeID
 		return err
 	}
 
-	subject, err := s.Authorize(ctx, resource.Apply, resource.VariableSetToWorkspacesKind, &set.Organization)
+	subject, err := s.Authorize(ctx, resource.Add, resource.VariableSetKind, &set.Organization)
 	if err != nil {
 		return err
 	}
@@ -390,7 +390,7 @@ func (s *Service) DeleteSetFromWorkspaces(ctx context.Context, setID resource.Tf
 		return err
 	}
 
-	subject, err := s.Authorize(ctx, resource.Delete, resource.VariableSetFromWorkspacesKind, &set.Organization)
+	subject, err := s.Authorize(ctx, resource.Remove, resource.VariableSetKind, &set.Organization)
 	if err != nil {
 		return err
 	}

@@ -11,12 +11,12 @@ import (
 	"github.com/leg100/otf/internal/configversion/source"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/logr"
+	"github.com/leg100/otf/internal/path"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
 	runpkg "github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/ui/helpers"
-	"github.com/leg100/otf/internal/path"
 	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/workspace"
 )
@@ -140,7 +140,7 @@ func (h *Handlers) listRuns(w http.ResponseWriter, r *http.Request) {
 		}
 		renderOptions = append(renderOptions, helpers.WithWorkspace(ws, h.authorizer))
 		props.filterByWorkspace = true
-		props.canUpdateWorkspace = h.authorizer.CanAccess(r.Context(), authz.UpdateWorkspaceAction, ws.ID)
+		props.canUpdateWorkspace = h.authorizer.CanAccess(r.Context(), resource.Update, resource.WorkspaceKind, ws.ID)
 	} else if opts.ListOptions.Organization != nil {
 		renderOptions = append(
 			renderOptions,

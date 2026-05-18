@@ -75,7 +75,7 @@ func (h *Handlers) listModules(w http.ResponseWriter, r *http.Request) {
 	props := moduleListProps{
 		organization:          params.Organization,
 		page:                  resource.NewPage(modules, params.PageOptions, nil),
-		canPublishModule:      h.authorizer.CanAccess(r.Context(), authz.CreateModuleAction, params.Organization),
+		canPublishModule:      h.authorizer.CanAccess(r.Context(), resource.Create, resource.ModuleKind, params.Organization),
 		providerFilterVisible: params.ProviderFilterVisible,
 		allProviders:          providers,
 		selectedProviders:     params.Providers,

@@ -255,7 +255,7 @@ func (s *Service) ListRunners(ctx context.Context, opts ListOptions) ([]*RunnerM
 		scope = resource.SiteID
 	}
 	// Check if caller has perms to list runners in that scope.
-	if _, err := s.Authorize(ctx, resource.List, resource.RunnersKind, scope); err != nil {
+	if _, err := s.Authorize(ctx, resource.List, resource.RunnerKind, scope); err != nil {
 		return nil, err
 	}
 	return s.db.list(ctx, opts)
@@ -578,7 +578,7 @@ func (s *Service) ListAgentTokens(ctx context.Context, poolID resource.TfeID) ([
 	if err != nil {
 		return nil, err
 	}
-	subject, err := s.Authorize(ctx, resource.List, resource.AgentTokensKind, &pool.Organization)
+	subject, err := s.Authorize(ctx, resource.List, resource.AgentTokenKind, &pool.Organization)
 	if err != nil {
 		return nil, err
 	}
@@ -727,7 +727,7 @@ func (s *Service) GetAgentPool(ctx context.Context, poolID resource.TfeID) (*Poo
 }
 
 func (s *Service) ListAgentPoolsByOrganization(ctx context.Context, organization organization.Name, opts ListPoolOptions) ([]*Pool, error) {
-	subject, err := s.Authorize(ctx, resource.List, resource.AgentPoolsKind, organization)
+	subject, err := s.Authorize(ctx, resource.List, resource.AgentPoolKind, organization)
 	if err != nil {
 		return nil, err
 	}
