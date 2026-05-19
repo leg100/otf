@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/workspace/mode"
 )
 
 var DefaultOrganizationPermissions = TFEOrganizationPermissions{
@@ -19,6 +20,7 @@ type TFEOrganization struct {
 	CollaboratorAuthPolicy                            TFEAuthPolicyType           `jsonapi:"attribute" json:"collaborator-auth-policy"`
 	CostEstimationEnabled                             bool                        `jsonapi:"attribute" json:"cost-estimation-enabled"`
 	CreatedAt                                         time.Time                   `jsonapi:"attribute" json:"created-at"`
+	DefaultExecutionMode                              mode.Mode                   `jsonapi:"attribute" json:"default-execution-mode"`
 	Email                                             string                      `jsonapi:"attribute" json:"email"`
 	ExternalID                                        resource.TfeID              `jsonapi:"attribute" json:"external-id"`
 	OwnersTeamSAMLRoleID                              resource.TfeID              `jsonapi:"attribute" json:"owners-team-saml-role-id"`
@@ -37,6 +39,7 @@ type TFEOrganization struct {
 
 	// Relations
 	// DefaultProject *Project `jsonapi:"relation,default-project"`
+	DefaultAgentPool *TFEAgentPool `jsonapi:"relationship" json:"default-agent-pool"`
 }
 
 // TFEOrganizationPermissions represents the organization permissions.
@@ -89,6 +92,9 @@ type TFEOrganizationCreateOptions struct {
 
 	// Optional: AllowForceDeleteWorkspaces toggles behavior of allowing workspace admins to delete workspaces with resources under management.
 	AllowForceDeleteWorkspaces *bool `jsonapi:"attribute" json:"allow-force-delete-workspaces,omitempty"`
+
+	// Optional: DefaultExecutionMode the default execution mode for workspaces
+	DefaultExecutionMode *mode.Mode `jsonapi:"attribute" json:"default-execution-mode,omitempty"`
 }
 
 // TFEOrganizationUpdateOptions represents the options for updating an organization.
@@ -128,6 +134,12 @@ type TFEOrganizationUpdateOptions struct {
 
 	// Optional: AllowForceDeleteWorkspaces toggles behavior of allowing workspace admins to delete workspaces with resources under management.
 	AllowForceDeleteWorkspaces *bool `jsonapi:"attribute" json:"allow-force-delete-workspaces,omitempty"`
+
+	// Optional: DefaultExecutionMode the default execution mode for workspaces
+	DefaultExecutionMode *mode.Mode `jsonapi:"attribute" json:"default-execution-mode,omitempty"`
+
+	// Optional: DefaultAgentPoolId default agent pool for workspaces, requires DefaultExecutionMode to be set to `agent`
+	DefaultAgentPool *TFEAgentPool `jsonapi:"relationship" json:"default-agent-pool,omitempty"`
 }
 
 // Entitlements represents the entitlements of an organization. Unlike TFE/TFC,
@@ -169,4 +181,10 @@ type TFEOrganizationTokenCreateOptions struct {
 	// Optional: The token's expiration date.
 	// This feature is available in TFE release v202305-1 and later
 	ExpiredAt *time.Time `jsonapi:"attribute" json:"expired-at,omitempty"`
+}
+
+// TFEAgentPool is the Terraform Enterprise agent pool. Duplicated here to avoid
+// import cycle.
+type TFEAgentPool struct {
+	ID resource.TfeID `jsonapi:"primary,agent-pools"`
 }

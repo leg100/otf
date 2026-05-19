@@ -190,11 +190,12 @@ type (
 	// factory makes workspaces
 	factory struct {
 		defaultEngine *engine.Engine
-		engines       engineClient
+		client        factoryClient
 	}
 
-	engineClient interface {
+	factoryClient interface {
 		GetLatest(ctx context.Context, engine *engine.Engine) (string, time.Time, error)
+		GetOrganization(ctx context.Context, name organization.Name) (*organization.Organization, error)
 	}
 )
 
@@ -206,21 +207,39 @@ func (f *factory) NewWorkspace(ctx context.Context, opts CreateOptions) (*Worksp
 	if opts.Organization == nil {
 		return nil, internal.ErrRequiredOrg
 	}
+	org, err := f.client.GetOrganization(ctx, *opts.Organization)
+	if err != nil {
+		return nil, err
+	}
+
+	// If execution mode isn't specified use organization default.
+	var executionMode mode.Mode
+	if opts.ExecutionMode != nil {
+		executionMode = *opts.ExecutionMode
+	} else {
+		executionMode = org.DefaultExecutionMode
+		// If organization default is agent mode then use organization
+		// default agent pool ID.
+		if org.DefaultExecutionMode == mode.Agent {
+			opts.AgentPoolID = org.DefaultAgentPoolID
+		}
+	}
+	if err := mode.Validate(executionMode, opts.AgentPoolID); err != nil {
+		return nil, err
+	}
 
 	ws := Workspace{
 		ID:                 resource.NewTfeID("ws"),
 		CreatedAt:          internal.CurrentTimestamp(nil),
 		UpdatedAt:          internal.CurrentTimestamp(nil),
 		AllowDestroyPlan:   DefaultAllowDestroyPlan,
-		ExecutionMode:      mode.Remote,
 		Engine:             f.defaultEngine,
 		SpeculativeEnabled: true,
-		Organization:       *opts.Organization,
+		Organization:       org.Name,
+		ExecutionMode:      executionMode,
+		AgentPoolID:        opts.AgentPoolID,
 	}
 	if err := ws.setName(*opts.Name); err != nil {
-		return nil, err
-	}
-	if _, err := ws.setExecutionModeAndAgentPoolID(opts.ExecutionMode, opts.AgentPoolID); err != nil {
 		return nil, err
 	}
 	if opts.AllowDestroyPlan != nil {
@@ -260,7 +279,7 @@ func (f *factory) NewWorkspace(ctx context.Context, opts CreateOptions) (*Worksp
 		ws.EngineVersion = opts.EngineVersion
 	} else {
 		// default to the current latest version of the engine.
-		latest, _, err := f.engines.GetLatest(ctx, ws.Engine)
+		latest, _, err := f.client.GetLatest(ctx, ws.Engine)
 		if err != nil {
 			return nil, fmt.Errorf("retrieving latest engine version: %w", err)
 		}
@@ -405,10 +424,16 @@ func (ws *Workspace) Update(opts UpdateOptions) (*bool, error) {
 		ws.Description = *opts.Description
 		updated = true
 	}
-	if changed, err := ws.setExecutionModeAndAgentPoolID(opts.ExecutionMode, opts.AgentPoolID); err != nil {
-		return nil, err
-	} else if changed {
+	if opts.ExecutionMode != nil {
+		ws.ExecutionMode = *opts.ExecutionMode
 		updated = true
+	}
+	if opts.AgentPoolID != nil {
+		ws.AgentPoolID = opts.AgentPoolID
+		updated = true
+	}
+	if err := mode.Validate(ws.ExecutionMode, ws.AgentPoolID); err != nil {
+		return nil, err
 	}
 	if opts.Operations != nil {
 		if *opts.Operations {
@@ -563,41 +588,6 @@ func (ws *Workspace) setName(name string) error {
 	}
 	ws.Name = name
 	return nil
-}
-
-// setExecutionModeAndAgentPoolID sets the execution mode and/or the agent pool
-// ID. The two parameters are intimately related, hence the validation and
-// setting of the parameters is handled in tandem.
-func (ws *Workspace) setExecutionModeAndAgentPoolID(m *mode.Mode, agentPoolID *resource.TfeID) (bool, error) {
-	if m == nil {
-		if agentPoolID == nil {
-			// neither specified; nothing more to be done
-			return false, nil
-		} else {
-			// agent pool ID can be set without specifying execution mode as long as
-			// existing execution mode is mode.AgentMode
-			if ws.ExecutionMode != mode.Agent {
-				return false, ErrNonAgentExecutionModeWithPool
-			}
-		}
-	} else {
-		if *m == mode.Agent {
-			if agentPoolID == nil {
-				return false, ErrAgentExecutionModeWithoutPool
-			}
-		} else {
-			// mode is either remote or local; in either case no pool ID should be
-			// provided
-			if agentPoolID != nil {
-				return false, ErrNonAgentExecutionModeWithPool
-			}
-		}
-	}
-	ws.AgentPoolID = agentPoolID
-	if m != nil {
-		ws.ExecutionMode = *m
-	}
-	return true, nil
 }
 
 func (ws *Workspace) setTagsRegex(regex string) error {

@@ -29,7 +29,7 @@ func NewTestWorkspace(t *testing.T, opts *CreateOptions) *Workspace {
 
 	factory := &factory{
 		defaultEngine: engine.Default,
-		engines: &fakeReleasesService{
+		client: &fakeClient{
 			latestVersion: "1.9.0",
 		},
 	}
@@ -108,10 +108,15 @@ func (f *FakeService) UnsetWorkspacePermission(ctx context.Context, workspaceID,
 	return nil
 }
 
-type fakeReleasesService struct {
+type fakeClient struct {
 	latestVersion string
+	org           *organization.Organization
 }
 
-func (f *fakeReleasesService) GetLatest(ctx context.Context, engine *engine.Engine) (string, time.Time, error) {
+func (f *fakeClient) GetOrganization(ctx context.Context, name organization.Name) (*organization.Organization, error) {
+	return f.org, nil
+}
+
+func (f *fakeClient) GetLatest(ctx context.Context, engine *engine.Engine) (string, time.Time, error) {
 	return f.latestVersion, time.Time{}, nil
 }

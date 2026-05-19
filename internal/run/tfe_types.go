@@ -32,6 +32,7 @@ type TFERun struct {
 	Refresh                bool                    `jsonapi:"attribute" json:"refresh"`
 	RefreshOnly            bool                    `jsonapi:"attribute" json:"refresh-only"`
 	ReplaceAddrs           []string                `jsonapi:"attribute" json:"replace-addrs,omitempty"`
+	SavePlan               bool                    `jsonapi:"attribute" json:"save-plan,omitempty"`
 	Source                 string                  `jsonapi:"attribute" json:"source"`
 	Status                 string                  `jsonapi:"attribute" json:"status"`
 	StatusTimestamps       *TFERunStatusTimestamps `jsonapi:"attribute" json:"status-timestamps"`
@@ -163,6 +164,11 @@ type TFERunCreateOptions struct {
 	// Variables allows you to specify terraform input variables for
 	// a particular run, prioritized over variables defined on the workspace.
 	Variables []*TFERunVariable `jsonapi:"attribute" json:"variables,omitempty"`
+
+	// SavePlan determines whether this should be a saved-plan run. Saved-plan
+	// runs perform their plan and checks immediately, but won't lock the
+	// workspace and become its current run until they are confirmed for apply.
+	SavePlan *bool `jsonapi:"attribute" json:"save-plan,omitempty"`
 }
 
 // TFERunListOptions represents the options for listing runs.

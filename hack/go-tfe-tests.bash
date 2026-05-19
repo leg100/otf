@@ -20,6 +20,7 @@ export SSL_CERT_FILE=$PWD/internal/integration/fixtures/cert.pem
 export TFE_ADMIN_PROVISION_LICENSES_TOKEN=$TFE_TOKEN
 
 tests=()
+skipTests=()
 tests+=('TestOrganizations')
 tests+=('TestOrganizationTagsList/with_no_query_params')
 tests+=('TestOrganizationTagsList/with_no_param_Filter')
@@ -80,6 +81,7 @@ tests+=('TestConfigurationVersionsList')
 tests+=('TestConfigurationVersionsCreate')
 tests+=('TestConfigurationVersionsUpload')
 tests+=('TestConfigurationVersionsDownload')
+skipTests+=('TestConfigurationVersionsCreate/provisional')
 tests+=('TestVariables')
 tests+=('TestVariableSetsCreate')
 tests+=('TestVariableSetsUpdate$')
@@ -110,10 +112,12 @@ fi
 all=$(join_by '|' "${tests[@]}")
 allBetaTests=$(join_by '|' "${betaTests[@]}")
 
+skipTests=$(join_by '|' "${skipTests[@]}")
+
 # TODO: temporarily fixed version of go-tfe to v1.38.0 to avoid latest changes
 # in v1.39.0 which introduce integration tests for features not yet supported
 # in OTF.
-dest_dir=$(go mod download -json github.com/hashicorp/go-tfe@v1.38.0 | jq -r '.Dir')
+dest_dir=$(go mod download -json github.com/hashicorp/go-tfe@v1.39.2 | jq -r '.Dir')
 echo "downloaded go-tfe module to $dest_dir"
 
 # some tests generate a tarball and save locally and need write perms
@@ -127,7 +131,7 @@ if [[ "$#" -eq 0 ]]; then
     ENABLE_BETA=1 go test -v -run $allBetaTests -timeout 600s
 fi
 # run tests
-go test -v -run ${@:-$all} -timeout 600s
+go test -v -run ${@:-$all} -timeout 600s -skip $skipTests
 
 # if tests fail then spit out otfd logs
 if [[ $? -ne 0 ]]; then

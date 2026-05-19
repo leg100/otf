@@ -5,6 +5,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sshkey"
@@ -19,48 +20,55 @@ var (
 
 // TFEWorkspace represents a Terraform Enterprise workspace.
 type TFEWorkspace struct {
-	ID                         resource.TfeID           `jsonapi:"primary,workspaces"`
-	Actions                    *TFEWorkspaceActions     `jsonapi:"attribute" json:"actions"`
-	AgentPoolID                *resource.TfeID          `jsonapi:"attribute" json:"agent-pool-id"`
-	AllowDestroyPlan           bool                     `jsonapi:"attribute" json:"allow-destroy-plan"`
-	AutoApply                  bool                     `jsonapi:"attribute" json:"auto-apply"`
-	AutoApplyRunTrigger        bool                     `jsonapi:"attribute" json:"auto-apply-run-trigger"`
-	CanQueueDestroyPlan        bool                     `jsonapi:"attribute" json:"can-queue-destroy-plan"`
-	CreatedAt                  time.Time                `jsonapi:"attribute" json:"created-at"`
-	Description                string                   `jsonapi:"attribute" json:"description"`
-	Environment                string                   `jsonapi:"attribute" json:"environment"`
-	ExecutionMode              string                   `jsonapi:"attribute" json:"execution-mode"`
-	FileTriggersEnabled        bool                     `jsonapi:"attribute" json:"file-triggers-enabled"`
-	GlobalRemoteState          bool                     `jsonapi:"attribute" json:"global-remote-state"`
-	Locked                     bool                     `jsonapi:"attribute" json:"locked"`
-	MigrationEnvironment       string                   `jsonapi:"attribute" json:"migration-environment"`
-	Name                       string                   `jsonapi:"attribute" json:"name"`
-	Operations                 bool                     `jsonapi:"attribute" json:"operations"`
-	Permissions                *TFEWorkspacePermissions `jsonapi:"attribute" json:"permissions"`
-	QueueAllRuns               bool                     `jsonapi:"attribute" json:"queue-all-runs"`
-	SpeculativeEnabled         bool                     `jsonapi:"attribute" json:"speculative-enabled"`
-	SourceName                 string                   `jsonapi:"attribute" json:"source-name"`
-	SourceURL                  string                   `jsonapi:"attribute" json:"source-url"`
-	StructuredRunOutputEnabled bool                     `jsonapi:"attribute" json:"structured-run-output-enabled"`
-	TerraformVersion           *Version                 `jsonapi:"attribute" json:"terraform-version"`
-	TriggerPrefixes            []string                 `jsonapi:"attribute" json:"trigger-prefixes"`
-	TriggerPatterns            []string                 `jsonapi:"attribute" json:"trigger-patterns"`
-	VCSRepo                    *TFEVCSRepo              `jsonapi:"attribute" json:"vcs-repo"`
-	WorkingDirectory           string                   `jsonapi:"attribute" json:"working-directory"`
-	UpdatedAt                  time.Time                `jsonapi:"attribute" json:"updated-at"`
-	ResourceCount              int                      `jsonapi:"attribute" json:"resource-count"`
-	ApplyDurationAverage       time.Duration            `jsonapi:"attribute" json:"apply-duration-average"`
-	PlanDurationAverage        time.Duration            `jsonapi:"attribute" json:"plan-duration-average"`
-	PolicyCheckFailures        int                      `jsonapi:"attribute" json:"policy-check-failures"`
-	RunFailures                int                      `jsonapi:"attribute" json:"run-failures"`
-	RunsCount                  int                      `jsonapi:"attribute" json:"workspace-kpis-runs-count"`
-	TagNames                   []string                 `jsonapi:"attribute" json:"tag-names"`
+	ID                         resource.TfeID                 `jsonapi:"primary,workspaces"`
+	Actions                    *TFEWorkspaceActions           `jsonapi:"attribute" json:"actions"`
+	AgentPoolID                *resource.TfeID                `jsonapi:"attribute" json:"agent-pool-id"`
+	AllowDestroyPlan           bool                           `jsonapi:"attribute" json:"allow-destroy-plan"`
+	AutoApply                  bool                           `jsonapi:"attribute" json:"auto-apply"`
+	AutoApplyRunTrigger        bool                           `jsonapi:"attribute" json:"auto-apply-run-trigger"`
+	CanQueueDestroyPlan        bool                           `jsonapi:"attribute" json:"can-queue-destroy-plan"`
+	CreatedAt                  time.Time                      `jsonapi:"attribute" json:"created-at"`
+	Description                string                         `jsonapi:"attribute" json:"description"`
+	Environment                string                         `jsonapi:"attribute" json:"environment"`
+	ExecutionMode              string                         `jsonapi:"attribute" json:"execution-mode"`
+	FileTriggersEnabled        bool                           `jsonapi:"attribute" json:"file-triggers-enabled"`
+	GlobalRemoteState          bool                           `jsonapi:"attribute" json:"global-remote-state"`
+	Locked                     bool                           `jsonapi:"attribute" json:"locked"`
+	MigrationEnvironment       string                         `jsonapi:"attribute" json:"migration-environment"`
+	Name                       string                         `jsonapi:"attribute" json:"name"`
+	Operations                 bool                           `jsonapi:"attribute" json:"operations"`
+	Permissions                *TFEWorkspacePermissions       `jsonapi:"attribute" json:"permissions"`
+	QueueAllRuns               bool                           `jsonapi:"attribute" json:"queue-all-runs"`
+	SpeculativeEnabled         bool                           `jsonapi:"attribute" json:"speculative-enabled"`
+	SourceName                 string                         `jsonapi:"attribute" json:"source-name"`
+	SourceURL                  string                         `jsonapi:"attribute" json:"source-url"`
+	StructuredRunOutputEnabled bool                           `jsonapi:"attribute" json:"structured-run-output-enabled"`
+	TerraformVersion           *Version                       `jsonapi:"attribute" json:"terraform-version"`
+	TriggerPrefixes            []string                       `jsonapi:"attribute" json:"trigger-prefixes"`
+	TriggerPatterns            []string                       `jsonapi:"attribute" json:"trigger-patterns"`
+	VCSRepo                    *TFEVCSRepo                    `jsonapi:"attribute" json:"vcs-repo"`
+	WorkingDirectory           string                         `jsonapi:"attribute" json:"working-directory"`
+	UpdatedAt                  time.Time                      `jsonapi:"attribute" json:"updated-at"`
+	ResourceCount              int                            `jsonapi:"attribute" json:"resource-count"`
+	ApplyDurationAverage       time.Duration                  `jsonapi:"attribute" json:"apply-duration-average"`
+	PlanDurationAverage        time.Duration                  `jsonapi:"attribute" json:"plan-duration-average"`
+	PolicyCheckFailures        int                            `jsonapi:"attribute" json:"policy-check-failures"`
+	RunFailures                int                            `jsonapi:"attribute" json:"run-failures"`
+	RunsCount                  int                            `jsonapi:"attribute" json:"workspace-kpis-runs-count"`
+	TagNames                   []string                       `jsonapi:"attribute" json:"tag-names"`
+	SettingOverwrites          *TFEWorkspaceSettingOverwrites `jsonapi:"attribute" json:"setting-overwrites"`
 
 	// Relations
-	CurrentRun   *TFERun                       `jsonapi:"relationship" json:"current-run"`
-	Organization *organization.TFEOrganization `jsonapi:"relationship" json:"organization"`
-	Outputs      []*TFEWorkspaceOutput         `jsonapi:"relationship" json:"outputs"`
-	SSHKey       *sshkey.TFESSHKey             `jsonapi:"relationship" json:"ssh-key"`
+	CurrentRun                  *TFERun                                `jsonapi:"relationship" json:"current-run"`
+	CurrentConfigurationVersion *configversion.TFEConfigurationVersion `jsonapi:"relationship" json:"current-configuration-version,omitempty"`
+	Organization                *organization.TFEOrganization          `jsonapi:"relationship" json:"organization"`
+	Outputs                     []*TFEWorkspaceOutput                  `jsonapi:"relationship" json:"outputs"`
+	SSHKey                      *sshkey.TFESSHKey                      `jsonapi:"relationship" json:"ssh-key"`
+}
+
+type TFEWorkspaceSettingOverwrites struct {
+	ExecutionMode *bool `jsonapi:"attribute" json:"execution-mode"`
+	AgentPool     *bool `jsonapi:"attribute" json:"agent-pool"`
 }
 
 type TFERun struct {

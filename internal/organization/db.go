@@ -25,8 +25,9 @@ func (db *pgdb) create(ctx context.Context, org *Organization) error {
 			cost_estimation_enabled,
 			session_remember,
 			session_timeout,
-			allow_force_delete_workspaces
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+			allow_force_delete_workspaces,
+			default_execution_mode
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
 		org.ID,
 		org.CreatedAt,
 		org.UpdatedAt,
@@ -37,6 +38,7 @@ func (db *pgdb) create(ctx context.Context, org *Organization) error {
 		org.SessionRemember,
 		org.SessionTimeout,
 		org.AllowForceDeleteWorkspaces,
+		org.DefaultExecutionMode,
 	)
 	return err
 }
@@ -66,8 +68,10 @@ SET
 	session_remember = $5,
 	session_timeout = $6,
 	allow_force_delete_workspaces = $7,
-	updated_at = $8
-WHERE name = $9`,
+	default_execution_mode = $8,
+	default_agent_pool_id = $9,
+	updated_at = $10
+WHERE name = $11`,
 				org.Name,
 				org.Email,
 				org.CollaboratorAuthPolicy,
@@ -75,6 +79,8 @@ WHERE name = $9`,
 				org.SessionRemember,
 				org.SessionTimeout,
 				org.AllowForceDeleteWorkspaces,
+				org.DefaultExecutionMode,
+				org.DefaultAgentPoolID,
 				org.UpdatedAt,
 				name,
 			)

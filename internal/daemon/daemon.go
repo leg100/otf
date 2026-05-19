@@ -302,8 +302,14 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Listener:          sqlListener,
 		ConnectionService: connectionService,
 		DefaultEngine:     cfg.DefaultEngine,
-		EngineService:     engineService,
-		Broker:            workspaceBroker,
+		Client: struct {
+			*engine.EngineService
+			*organization.OrganizationService
+		}{
+			EngineService:       engineService,
+			OrganizationService: orgService,
+		},
+		Broker: workspaceBroker,
 	})
 
 	runTriggerService := trigger.NewService(trigger.Options{

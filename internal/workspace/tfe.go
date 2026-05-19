@@ -584,6 +584,10 @@ func ToTFE(a *authz.Authorizer, from *Workspace, r *http.Request) (*TFEWorkspace
 		TagNames:                   from.Tags,
 		UpdatedAt:                  from.UpdatedAt,
 		Organization:               &organization.TFEOrganization{Name: from.Organization},
+		SettingOverwrites: &TFEWorkspaceSettingOverwrites{
+			ExecutionMode: new(false),
+			AgentPool:     new(false),
+		},
 	}
 	if len(from.TriggerPrefixes) > 0 || len(from.TriggerPatterns) > 0 {
 		to.FileTriggersEnabled = true

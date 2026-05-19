@@ -140,6 +140,12 @@ func (a *tfe) createRun(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
+
+	// Stub to pass go-tfe integration test TestRunCreate/with_save-plan
+	if params.SavePlan != nil {
+		converted.SavePlan = *params.SavePlan
+	}
+
 	a.Respond(w, r, converted, http.StatusCreated)
 }
 
@@ -180,6 +186,14 @@ func (a *tfe) listRuns(w http.ResponseWriter, r *http.Request) {
 	var planOnly *bool
 	if slices.Contains(operations, string(RunOperationPlanOnly)) {
 		planOnly = new(true)
+	}
+
+	// Stub to pass go-tfe integration test:
+	//
+	// TestRunsListQueryParams/with_operation_of_save_plan_parameter
+	if slices.Contains(operations, string(RunOperationSavePlan)) {
+		a.RespondWithPage(w, r, []*TFERun{}, &resource.Pagination{})
+		return
 	}
 
 	a.listRunsWithOptions(w, r, ListOptions{

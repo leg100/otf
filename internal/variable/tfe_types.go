@@ -89,6 +89,7 @@ type TFEVariableSet struct {
 	Name        string         `jsonapi:"attribute" json:"name"`
 	Description string         `jsonapi:"attribute" json:"description"`
 	Global      bool           `jsonapi:"attribute" json:"global"`
+	Priority    bool           `jsonapi:"attribute" json:"priority"`
 
 	// Relations
 	Organization *organization.TFEOrganization `jsonapi:"relationship" json:"organization"`
@@ -136,6 +137,10 @@ type TFEVariableSetUpdateOptions struct {
 
 	// If true the variable set is considered in all runs in the organization.
 	Global *bool `jsonapi:"attribute" json:"global,omitempty"`
+
+	// If true the variables in the set override any other variable values set
+	// in a more specific scope including values set on the command line.
+	Priority *bool `jsonapi:"attribute" json:"priority,omitempty"`
 }
 
 // TFEVariableSetVariableCreatOptions represents the options for creating a new

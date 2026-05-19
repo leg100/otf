@@ -2,6 +2,7 @@ package workspace
 
 import (
 	"context"
+	"time"
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
@@ -42,8 +43,13 @@ type (
 		Logger            logr.Logger
 		ConnectionService *connections.Service
 		DefaultEngine     *engine.Engine
-		EngineService     *engine.Service
 		Broker            pubsub.SubscriptionService[*Event]
+		Client            serviceClient
+	}
+
+	serviceClient interface {
+		GetOrganization(ctx context.Context, name organization.Name) (*organization.Organization, error)
+		GetLatest(ctx context.Context, engine *engine.Engine) (string, time.Time, error)
 	}
 )
 
@@ -56,7 +62,7 @@ func NewService(opts Options) *Service {
 		connections: opts.ConnectionService,
 		factory: &factory{
 			defaultEngine: opts.DefaultEngine,
-			engines:       opts.EngineService,
+			client:        opts.Client,
 		},
 		broker: opts.Broker,
 	}

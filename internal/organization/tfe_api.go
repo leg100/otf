@@ -2,6 +2,7 @@ package organization
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"reflect"
 
@@ -10,7 +11,11 @@ import (
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tfeapi"
+	"github.com/leg100/otf/internal/workspace/mode"
 )
+
+//lint:ignore ST1005 go-tfe integration tests expect capitalized error string
+var errTFEAgentPoolSpecifiedWithNonAgentExecutionMode = errors.New("Default agent pool must not be specified unless using 'agent' execution mode")
 
 // Implements TFC organizations API:
 //
@@ -80,6 +85,7 @@ func (a *tfe) createOrganization(w http.ResponseWriter, r *http.Request) {
 		SessionRemember:            opts.SessionRemember,
 		SessionTimeout:             opts.SessionTimeout,
 		AllowForceDeleteWorkspaces: opts.AllowForceDeleteWorkspaces,
+		DefaultExecutionMode:       opts.DefaultExecutionMode,
 	})
 	if err != nil {
 		tfeapi.Error(w, err)
@@ -136,22 +142,32 @@ func (a *tfe) updateOrganization(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	var opts TFEOrganizationUpdateOptions
-	if err := tfeapi.Unmarshal(r.Body, &opts); err != nil {
+	var tfeOpts TFEOrganizationUpdateOptions
+	if err := tfeapi.Unmarshal(r.Body, &tfeOpts); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
 
-	org, err := a.client.UpdateOrganization(r.Context(), params.Name, UpdateOptions{
-		Name:                       opts.Name,
-		Email:                      opts.Email,
-		CollaboratorAuthPolicy:     (*string)(opts.CollaboratorAuthPolicy),
-		CostEstimationEnabled:      opts.CostEstimationEnabled,
-		SessionRemember:            opts.SessionRemember,
-		SessionTimeout:             opts.SessionTimeout,
-		AllowForceDeleteWorkspaces: opts.AllowForceDeleteWorkspaces,
-	})
+	opts := UpdateOptions{
+		Name:                       tfeOpts.Name,
+		Email:                      tfeOpts.Email,
+		CollaboratorAuthPolicy:     (*string)(tfeOpts.CollaboratorAuthPolicy),
+		CostEstimationEnabled:      tfeOpts.CostEstimationEnabled,
+		SessionRemember:            tfeOpts.SessionRemember,
+		SessionTimeout:             tfeOpts.SessionTimeout,
+		AllowForceDeleteWorkspaces: tfeOpts.AllowForceDeleteWorkspaces,
+		DefaultExecutionMode:       tfeOpts.DefaultExecutionMode,
+	}
+	if tfeOpts.DefaultAgentPool != nil {
+		opts.DefaultAgentPoolID = &tfeOpts.DefaultAgentPool.ID
+	}
+	org, err := a.client.UpdateOrganization(r.Context(), params.Name, opts)
 	if err != nil {
+		if errors.Is(err, mode.ErrNonAgentExecutionModeWithPool) {
+			// Return TFE specific error message to satisfy go-tfe integration tests.
+			tfeapi.Error(w, errTFEAgentPoolSpecifiedWithNonAgentExecutionMode, tfeapi.WithStatus(http.StatusUnprocessableEntity))
+			return
+		}
 		tfeapi.Error(w, err)
 		return
 	}
@@ -306,12 +322,18 @@ func (a *tfe) toOrganization(from *Organization) *TFEOrganization {
 		CostEstimationEnabled:      from.CostEstimationEnabled,
 		// go-tfe tests expect this attribute to be equal to 5
 		RemainingTestableCount: 5,
+		DefaultExecutionMode:   from.DefaultExecutionMode,
 	}
 	if from.Email != nil {
 		to.Email = *from.Email
 	}
 	if from.CollaboratorAuthPolicy != nil {
 		to.CollaboratorAuthPolicy = TFEAuthPolicyType(*from.CollaboratorAuthPolicy)
+	}
+	if from.DefaultAgentPoolID != nil {
+		to.DefaultAgentPool = &TFEAgentPool{
+			ID: *from.DefaultAgentPoolID,
+		}
 	}
 	return to
 }
