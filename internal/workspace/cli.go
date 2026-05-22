@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	otfhttp "github.com/leg100/otf/internal/http"
-	"github.com/leg100/otf/internal/workspace/mode"
+	"github.com/leg100/otf/internal/workspace/execution"
 
 	"github.com/leg100/otf/internal/organization"
 
@@ -118,7 +118,7 @@ func (a *CLI) workspaceEditCommand() *cobra.Command {
 	var (
 		organization  organization.Name
 		opts          UpdateOptions
-		executionMode string
+		executionKind string
 		poolID        resource.TfeID
 		poolIDFlag    = "agent-pool-id"
 	)
@@ -131,8 +131,8 @@ func (a *CLI) workspaceEditCommand() *cobra.Command {
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			name := args[0]
-			if executionMode != "" {
-				opts.ExecutionMode = (*mode.Mode)(&executionMode)
+			if executionKind != "" {
+				opts.ExecutionKind = new(execution.Kind(executionKind))
 			}
 			// Set agent pool ID if user set it.
 			if cmd.Flags().Changed(poolIDFlag) {
@@ -151,7 +151,7 @@ func (a *CLI) workspaceEditCommand() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVarP(&executionMode, "execution-mode", "m", "", "Which execution mode to use. Valid values are remote, local, and agent")
+	cmd.Flags().StringVarP(&executionKind, "execution-mode", "m", "", "Which execution mode to use. Valid values are remote, local, and agent")
 	cmd.Flags().Var(&poolID, poolIDFlag, "ID of the agent pool to use for runs. Required if execution-mode is set to agent.")
 
 	cmd.Flags().Var(&organization, "organization", "Organization workspace belongs to")

@@ -491,7 +491,7 @@ func (a *tfe) toRun(from *Run, ctx context.Context) (*TFERun, error) {
 		AllowEmptyApply:  from.AllowEmptyApply,
 		AutoApply:        from.AutoApply,
 		CreatedAt:        from.CreatedAt,
-		ExecutionMode:    string(from.ExecutionMode),
+		ExecutionMode:    string(from.ExecutionKind),
 		HasChanges:       from.Plan.HasChanges(),
 		IsDestroy:        from.IsDestroy,
 		Message:          from.Message,

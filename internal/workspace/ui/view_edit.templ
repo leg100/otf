@@ -4,6 +4,7 @@ import (
 	"github.com/leg100/otf/internal/path"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/workspace"
+	"github.com/leg100/otf/internal/workspace/execution"
 )
 
 type workspaceEditProps struct {
@@ -24,19 +25,19 @@ templ workspaceEdit(props workspaceEditProps) {
 		<fieldset class="border border-base-content/60 p-3 flex flex-col gap-2">
 			<legend>Execution mode</legend>
 			<div class="form-checkbox">
-				<input type="radio" name="execution_mode" id="remote" value="remote" checked?={ props.ws.ExecutionMode == "remote" }/>
+				<input type="radio" name="execution_kind" id="remote" value={ execution.RemoteKind } checked?={ props.ws.Mode.Kind() == execution.RemoteKind }/>
 				<label for="remote">Remote</label>
 				<span class="description">Your plans and applies occur on the OTF servers.</span>
 			</div>
 			<div class="form-checkbox">
-				<input type="radio" name="execution_mode" id="local" value="local" checked?={ props.ws.ExecutionMode == "local" }/>
+				<input type="radio" name="execution_kind" id="local" value={ execution.LocalKind } checked?={ props.ws.Mode.Kind() == execution.LocalKind }/>
 				<label for="local">Local</label>
 				<span class="description">
 					Your plans and applies occur on your local machines. OTF is only used to store and synchronize state.
 				</span>
 			</div>
 			<div class="form-checkbox">
-				<input class="peer" type="radio" name="execution_mode" id="agent" value="agent" checked?={ props.ws.ExecutionMode == "agent" }/>
+				<input class="peer" type="radio" name="execution_kind" id="agent" value={ execution.AgentKind } checked?={ props.ws.Mode.Kind() == execution.AgentKind }/>
 				<label for="agent">Agent</label>
 				<span class="description">Your plans and applies occur on OTF agents.</span>
 				<div class="col-start-2 hidden peer-checked:flex flex-col mt-2 bg-base-300 p-2 gap-2">

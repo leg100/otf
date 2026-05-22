@@ -270,7 +270,7 @@ func assertEqualRuns(t *testing.T, want *otfrun.Run, got *otfrun.Run) {
 	assert.Equal(t, want.Status, got.Status)
 	assert.Equal(t, want.WorkspaceID, got.WorkspaceID)
 	assert.Equal(t, want.ConfigurationVersionID, got.ConfigurationVersionID)
-	assert.Equal(t, want.ExecutionMode, got.ExecutionMode)
+	assert.Equal(t, want.ExecutionKind, got.ExecutionKind)
 	assert.Equal(t, want.Variables, got.Variables)
 	assert.Equal(t, want.Plan, got.Plan)
 	assert.Equal(t, want.Apply, got.Apply)

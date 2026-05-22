@@ -7,7 +7,7 @@ import (
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/runner"
 	"github.com/leg100/otf/internal/workspace"
-	"github.com/leg100/otf/internal/workspace/mode"
+	"github.com/leg100/otf/internal/workspace/execution"
 	"github.com/stretchr/testify/require"
 )
 
@@ -33,7 +33,7 @@ func TestIntegration_Agents(t *testing.T) {
 	ws1, err := daemon.Workspaces.CreateWorkspace(ctx, workspace.CreateOptions{
 		Name:          new("ws-1"),
 		Organization:  &org.Name,
-		ExecutionMode: internal.Ptr(mode.Agent),
+		ExecutionKind: internal.Ptr(execution.AgentKind),
 		AgentPoolID:   &pool1.ID,
 	})
 	require.NoError(t, err)
@@ -42,7 +42,7 @@ func TestIntegration_Agents(t *testing.T) {
 	ws2, err := daemon.Workspaces.CreateWorkspace(ctx, workspace.CreateOptions{
 		Name:          new("ws-2"),
 		Organization:  &org.Name,
-		ExecutionMode: internal.Ptr(mode.Agent),
+		ExecutionKind: internal.Ptr(execution.AgentKind),
 		AgentPoolID:   &pool2.ID,
 	})
 	require.NoError(t, err)

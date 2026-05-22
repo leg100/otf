@@ -11,11 +11,7 @@ import (
 	"github.com/leg100/otf/internal/sshkey"
 	"github.com/leg100/otf/internal/tfeapi/types"
 	"github.com/leg100/otf/internal/vcs"
-)
-
-var (
-	remoteExecutionMode = "remote"
-	localExecutionMode  = "local"
+	"github.com/leg100/otf/internal/workspace/execution"
 )
 
 // TFEWorkspace represents a Terraform Enterprise workspace.
@@ -30,7 +26,7 @@ type TFEWorkspace struct {
 	CreatedAt                  time.Time                      `jsonapi:"attribute" json:"created-at"`
 	Description                string                         `jsonapi:"attribute" json:"description"`
 	Environment                string                         `jsonapi:"attribute" json:"environment"`
-	ExecutionMode              string                         `jsonapi:"attribute" json:"execution-mode"`
+	ExecutionMode              execution.Kind                 `jsonapi:"attribute" json:"execution-mode"`
 	FileTriggersEnabled        bool                           `jsonapi:"attribute" json:"file-triggers-enabled"`
 	GlobalRemoteState          bool                           `jsonapi:"attribute" json:"global-remote-state"`
 	Locked                     bool                           `jsonapi:"attribute" json:"locked"`
@@ -173,7 +169,7 @@ type TFEWorkspaceCreateOptions struct {
 	// When set to local, the workspace will be used for state storage only.
 	// This value must not be specified if operations is specified.
 	// 'agent' execution mode is not available in Terraform Enterprise.
-	ExecutionMode *string `jsonapi:"attribute" json:"execution-mode,omitempty"`
+	ExecutionMode *execution.Kind `jsonapi:"attribute" json:"execution-mode,omitempty"`
 
 	// Whether to filter runs based on the changed files in a VCS push. If
 	// enabled, the working directory and trigger prefixes describe a set of
@@ -289,7 +285,7 @@ type TFEWorkspaceUpdateOptions struct {
 	// When set to local, the workspace will be used for state storage only.
 	// This value must not be specified if operations is specified.
 	// 'agent' execution mode is not available in Terraform Enterprise.
-	ExecutionMode *string `jsonapi:"attribute" json:"execution-mode,omitempty" schema:"execution_mode"`
+	ExecutionMode *execution.Kind `jsonapi:"attribute" json:"execution-mode,omitempty" schema:"execution_mode"`
 
 	// Whether to filter runs based on the changed files in a VCS push. If
 	// enabled, the working directory and trigger prefixes describe a set of
@@ -350,9 +346,9 @@ func (opts *TFEWorkspaceUpdateOptions) Validate() error {
 	}
 	if opts.Operations != nil {
 		if *opts.Operations {
-			opts.ExecutionMode = &remoteExecutionMode
+			opts.ExecutionMode = new(execution.RemoteKind)
 		} else {
-			opts.ExecutionMode = &localExecutionMode
+			opts.ExecutionMode = new(execution.LocalKind)
 		}
 	}
 	return nil

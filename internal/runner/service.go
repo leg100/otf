@@ -627,11 +627,11 @@ func (s *Service) DeleteAgentToken(ctx context.Context, tokenID resource.TfeID) 
 // pool is organization-scoped then the workspace automatically has access;
 // otherwise access must already have been granted explicity.
 func (s *Service) checkWorkspacePoolAccess(ctx context.Context, ws *workspace.Workspace) error {
-	if ws.AgentPoolID == nil {
+	if ws.Mode.AgentPoolID() == nil {
 		// workspace is not using any pool
 		return nil
 	}
-	pool, err := s.GetAgentPool(ctx, *ws.AgentPoolID)
+	pool, err := s.GetAgentPool(ctx, *ws.Mode.AgentPoolID())
 	if err != nil {
 		return err
 	}

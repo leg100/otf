@@ -16,7 +16,7 @@ import (
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sshkey"
 	"github.com/leg100/otf/internal/tfeapi"
-	"github.com/leg100/otf/internal/workspace/mode"
+	"github.com/leg100/otf/internal/workspace/execution"
 )
 
 type (
@@ -112,7 +112,7 @@ func (a *tfe) createWorkspace(w http.ResponseWriter, r *http.Request) {
 		AutoApply:                  params.AutoApply,
 		AutoApplyRunTrigger:        params.AutoApplyRunTrigger,
 		Description:                params.Description,
-		ExecutionMode:              (*mode.Mode)(params.ExecutionMode),
+		ExecutionKind:              params.ExecutionMode,
 		GlobalRemoteState:          params.GlobalRemoteState,
 		MigrationEnvironment:       params.MigrationEnvironment,
 		Name:                       params.Name,
@@ -143,9 +143,9 @@ func (a *tfe) createWorkspace(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if *params.Operations {
-			opts.ExecutionMode = new(mode.Remote)
+			opts.ExecutionKind = new(execution.RemoteKind)
 		} else {
-			opts.ExecutionMode = new(mode.Local)
+			opts.ExecutionKind = new(execution.LocalKind)
 		}
 	}
 	if params.VCSRepo != nil {
@@ -414,7 +414,7 @@ func (a *tfe) updateWorkspace(w http.ResponseWriter, r *http.Request, workspaceI
 		AutoApply:                  params.AutoApply,
 		AutoApplyRunTrigger:        params.AutoApplyRunTrigger,
 		Description:                params.Description,
-		ExecutionMode:              (*mode.Mode)(params.ExecutionMode),
+		ExecutionKind:              params.ExecutionMode,
 		GlobalRemoteState:          params.GlobalRemoteState,
 		Name:                       params.Name,
 		QueueAllRuns:               params.QueueAllRuns,
@@ -557,20 +557,20 @@ func ToTFE(a *authz.Authorizer, from *Workspace, r *http.Request) (*TFEWorkspace
 			IsDestroyable: true,
 		},
 		AllowDestroyPlan:     from.AllowDestroyPlan,
-		AgentPoolID:          from.AgentPoolID,
+		AgentPoolID:          from.Mode.AgentPoolID(),
 		AutoApply:            from.AutoApply,
 		AutoApplyRunTrigger:  from.AutoApplyRunTrigger,
 		CanQueueDestroyPlan:  from.CanQueueDestroyPlan,
 		CreatedAt:            from.CreatedAt,
 		Description:          from.Description,
 		Environment:          from.Environment,
-		ExecutionMode:        string(from.ExecutionMode),
+		ExecutionMode:        from.Mode.Kind(),
 		GlobalRemoteState:    from.GlobalRemoteState,
 		Locked:               from.Locked(),
 		MigrationEnvironment: from.MigrationEnvironment,
 		Name:                 from.Name,
 		// Operations is deprecated but clients and go-tfe tests still use it
-		Operations:                 from.ExecutionMode == "remote",
+		Operations:                 from.Mode.Kind() == execution.RemoteKind,
 		Permissions:                perms,
 		QueueAllRuns:               from.QueueAllRuns,
 		SpeculativeEnabled:         from.SpeculativeEnabled,

@@ -5,7 +5,7 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/workspace"
-	"github.com/leg100/otf/internal/workspace/mode"
+	"github.com/leg100/otf/internal/workspace/execution"
 	"github.com/stretchr/testify/require"
 )
 
@@ -20,7 +20,7 @@ func TestLocal(t *testing.T) {
 	_, err := daemon.Workspaces.CreateWorkspace(ctx, workspace.CreateOptions{
 		Name:          new("local-ws"),
 		Organization:  &org.Name,
-		ExecutionMode: internal.Ptr(mode.Local),
+		ExecutionKind: internal.Ptr(execution.LocalKind),
 	})
 	require.NoError(t, err)
 

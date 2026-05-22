@@ -2,10 +2,12 @@ package organization
 
 import (
 	"context"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
+	"github.com/leg100/otf/internal/workspace/execution"
 )
 
 // pgdb is a database of organizations on postgres
@@ -26,7 +28,7 @@ func (db *pgdb) create(ctx context.Context, org *Organization) error {
 			session_remember,
 			session_timeout,
 			allow_force_delete_workspaces,
-			default_execution_mode
+			default_execution_kind
 		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
 		org.ID,
 		org.CreatedAt,
@@ -38,7 +40,7 @@ func (db *pgdb) create(ctx context.Context, org *Organization) error {
 		org.SessionRemember,
 		org.SessionTimeout,
 		org.AllowForceDeleteWorkspaces,
-		org.DefaultExecutionMode,
+		org.DefaultMode.Kind(),
 	)
 	return err
 }
@@ -54,7 +56,7 @@ FROM organizations
 WHERE name = $1
 FOR UPDATE`,
 				name)
-			return sql.CollectOneRow(row, db.scan)
+			return sql.CollectOneRow(row, scan)
 		},
 		fn,
 		func(ctx context.Context, org *Organization) error {
@@ -68,7 +70,7 @@ SET
 	session_remember = $5,
 	session_timeout = $6,
 	allow_force_delete_workspaces = $7,
-	default_execution_mode = $8,
+	default_execution_kind = $8,
 	default_agent_pool_id = $9,
 	updated_at = $10
 WHERE name = $11`,
@@ -79,8 +81,8 @@ WHERE name = $11`,
 				org.SessionRemember,
 				org.SessionTimeout,
 				org.AllowForceDeleteWorkspaces,
-				org.DefaultExecutionMode,
-				org.DefaultAgentPoolID,
+				org.DefaultMode.Kind(),
+				org.DefaultMode.AgentPoolID(),
 				org.UpdatedAt,
 				name,
 			)
@@ -118,7 +120,7 @@ LIMIT $2::int OFFSET $3::int
 		sql.GetLimit(opts.PageOptions),
 		sql.GetOffset(opts.PageOptions),
 	)
-	items, err := sql.CollectRows(rows, db.scan)
+	items, err := sql.CollectRows(rows, scan)
 	if err != nil {
 		return nil, err
 	}
@@ -138,7 +140,7 @@ WHERE name LIKE ANY($1::text[])
 
 func (db *pgdb) get(ctx context.Context, name Name) (*Organization, error) {
 	row := db.Query(ctx, ` SELECT * FROM organizations WHERE name = $1 `, name)
-	return sql.CollectOneRow(row, db.scan)
+	return sql.CollectOneRow(row, scan)
 }
 
 func (db *pgdb) delete(ctx context.Context, name Name) error {
@@ -210,10 +212,46 @@ WHERE organization_name = $1
 	return err
 }
 
-func (db *pgdb) scan(row pgx.CollectableRow) (*Organization, error) {
-	return pgx.RowToAddrOfStructByName[Organization](row)
-}
-
 func (db *pgdb) scanToken(row pgx.CollectableRow) (*OrganizationToken, error) {
 	return pgx.RowToAddrOfStructByName[OrganizationToken](row)
+}
+
+func scan(row pgx.CollectableRow) (*Organization, error) {
+	type model struct {
+		ID                         resource.TfeID  `db:"organization_id"`
+		CreatedAt                  time.Time       `db:"created_at"`
+		UpdatedAt                  time.Time       `db:"updated_at"`
+		Name                       Name            `db:"name"`
+		Email                      *string         `db:"email"`
+		CollaboratorAuthPolicy     *string         `db:"collaborator_auth_policy"`
+		SessionRemember            *int            `db:"session_remember"`
+		SessionTimeout             *int            `db:"session_timeout"`
+		AllowForceDeleteWorkspaces bool            `db:"allow_force_delete_workspaces"`
+		CostEstimationEnabled      bool            `db:"cost_estimation_enabled"`
+		DefaultAgentPoolID         *resource.TfeID `db:"default_agent_pool_id"`
+		DefaultExecutionKind       execution.Kind  `db:"default_execution_kind"`
+	}
+	m, err := pgx.RowToStructByName[model](row)
+	if err != nil {
+		return nil, err
+	}
+	org := &Organization{
+		ID:                         m.ID,
+		CreatedAt:                  m.CreatedAt,
+		UpdatedAt:                  m.UpdatedAt,
+		Name:                       m.Name,
+		Email:                      m.Email,
+		CollaboratorAuthPolicy:     m.CollaboratorAuthPolicy,
+		SessionRemember:            m.SessionRemember,
+		SessionTimeout:             m.SessionTimeout,
+		AllowForceDeleteWorkspaces: m.AllowForceDeleteWorkspaces,
+		CostEstimationEnabled:      m.CostEstimationEnabled,
+	}
+	mode, err := execution.NewMode(m.DefaultExecutionKind, m.DefaultAgentPoolID)
+	if err != nil {
+		return nil, err
+	}
+	org.DefaultMode = mode
+
+	return org, err
 }

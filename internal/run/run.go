@@ -17,7 +17,7 @@ import (
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/workspace"
-	"github.com/leg100/otf/internal/workspace/mode"
+	"github.com/leg100/otf/internal/workspace/execution"
 )
 
 const (
@@ -64,7 +64,7 @@ type (
 		Status                 runstatus.Status  `jsonapi:"attribute" json:"status"`
 		WorkspaceID            resource.TfeID    `jsonapi:"attribute" json:"workspace_id"`
 		ConfigurationVersionID resource.TfeID    `jsonapi:"attribute" json:"configuration_version_id"`
-		ExecutionMode          mode.Mode         `jsonapi:"attribute" json:"execution_mode"`
+		ExecutionKind          execution.Kind    `jsonapi:"attribute" json:"execution_mode"`
 		Variables              []Variable        `jsonapi:"attribute" json:"variables"`
 		Plan                   Phase             `jsonapi:"attribute" json:"plan"`
 		Apply                  Phase             `jsonapi:"attribute" json:"apply"`
@@ -189,7 +189,7 @@ func NewRun(
 		PlanOnly:               cv.Speculative,
 		ReplaceAddrs:           opts.ReplaceAddrs,
 		TargetAddrs:            opts.TargetAddrs,
-		ExecutionMode:          ws.ExecutionMode,
+		ExecutionKind:          ws.Mode.Kind(),
 		IngressAttributes:      cv.IngressAttributes,
 		Source:                 opts.Source,
 		Engine:                 ws.Engine,

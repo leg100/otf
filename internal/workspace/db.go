@@ -16,7 +16,7 @@ import (
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/vcs"
-	"github.com/leg100/otf/internal/workspace/mode"
+	"github.com/leg100/otf/internal/workspace/execution"
 )
 
 const Table sql.Table = "workspaces"
@@ -51,7 +51,7 @@ INSERT INTO workspaces (
     can_queue_destroy_plan,
     description,
     environment,
-    execution_mode,
+    execution_kind,
     global_remote_state,
     migration_environment,
     name,
@@ -101,7 +101,7 @@ INSERT INTO workspaces (
 		ws.ID,
 		ws.CreatedAt,
 		ws.UpdatedAt,
-		ws.AgentPoolID,
+		ws.Mode.AgentPoolID(),
 		allowCLIApply,
 		ws.AllowDestroyPlan,
 		ws.AutoApply,
@@ -110,7 +110,7 @@ INSERT INTO workspaces (
 		ws.CanQueueDestroyPlan,
 		ws.Description,
 		ws.Environment,
-		ws.ExecutionMode,
+		ws.Mode.Kind(),
 		ws.GlobalRemoteState,
 		ws.MigrationEnvironment,
 		ws.Name,
@@ -159,7 +159,7 @@ func (db *pgdb) update(ctx context.Context, workspaceID resource.TfeID, fn func(
 					auto_apply_run_trigger        = $5,
 					branch                        = $6,
 					description                   = $7,
-					execution_mode                = $8,
+					execution_kind                = $8,
 					global_remote_state           = $9,
 					name                          = $10,
 					queue_all_runs                = $11,
@@ -175,14 +175,14 @@ func (db *pgdb) update(ctx context.Context, workspaceID resource.TfeID, fn func(
 					ssh_key_id                    = $21
 				WHERE workspace_id = $22
 			`,
-				ws.AgentPoolID,
+				ws.Mode.AgentPoolID(),
 				ws.AllowDestroyPlan,
 				allowCLIApply,
 				ws.AutoApply,
 				ws.AutoApplyRunTrigger,
 				branch,
 				ws.Description,
-				ws.ExecutionMode,
+				ws.Mode.Kind(),
 				ws.GlobalRemoteState,
 				ws.Name,
 				ws.QueueAllRuns,
@@ -561,7 +561,7 @@ func scan(row pgx.CollectableRow) (*Workspace, error) {
 		CanQueueDestroyPlan        bool              `db:"can_queue_destroy_plan"`
 		Description                string            `db:"description"`
 		Environment                string            `db:"environment"`
-		ExecutionMode              mode.Mode         `db:"execution_mode"`
+		ExecutionKind              execution.Kind    `db:"execution_kind"`
 		GlobalRemoteState          bool              `db:"global_remote_state"`
 		MigrationEnvironment       string            `db:"migration_environment"`
 		Name                       string            `db:"name"`
@@ -594,14 +594,12 @@ func scan(row pgx.CollectableRow) (*Workspace, error) {
 		ID:                         m.ID,
 		CreatedAt:                  m.CreatedAt,
 		UpdatedAt:                  m.UpdatedAt,
-		AgentPoolID:                m.AgentPoolID,
 		AllowDestroyPlan:           m.AllowDestroyPlan,
 		AutoApply:                  m.AutoApply,
 		AutoApplyRunTrigger:        m.AutoApplyRunTrigger,
 		CanQueueDestroyPlan:        m.CanQueueDestroyPlan,
 		Description:                m.Description,
 		Environment:                m.Environment,
-		ExecutionMode:              m.ExecutionMode,
 		GlobalRemoteState:          m.GlobalRemoteState,
 		MigrationEnvironment:       m.MigrationEnvironment,
 		Name:                       m.Name,
@@ -619,6 +617,13 @@ func scan(row pgx.CollectableRow) (*Workspace, error) {
 		Engine:                     m.Engine,
 		SSHKeyID:                   m.SSHKeyID,
 	}
+
+	mode, err := execution.NewMode(m.ExecutionKind, m.AgentPoolID)
+	if err != nil {
+		return nil, err
+	}
+	ws.Mode = mode
+
 	if m.Connection != nil {
 		ws.Connection = &Connection{
 			AllowCLIApply: m.AllowCLIApply,

@@ -22,7 +22,7 @@ import (
 	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/workspace"
-	"github.com/leg100/otf/internal/workspace/mode"
+	"github.com/leg100/otf/internal/workspace/execution"
 )
 
 type Handlers struct {
@@ -323,8 +323,8 @@ func (h *Handlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 	}
 
 	poolsURL := path.Resource(resource.Action("pools"), workspaceID)
-	if ws.AgentPoolID != nil {
-		poolsURL += "?agent_pool_id=" + ws.AgentPoolID.String()
+	if ws.Mode.AgentPoolID() != nil {
+		poolsURL += "?agent_pool_id=" + ws.Mode.AgentPoolID().String()
 	}
 
 	props := workspaceEditProps{
@@ -350,7 +350,7 @@ func (h *Handlers) updateWorkspace(w http.ResponseWriter, r *http.Request) {
 		AutoApply             bool            `schema:"auto_apply"`
 		Name                  string
 		Description           string
-		ExecutionMode         mode.Mode          `schema:"execution_mode"`
+		ExecutionKind         execution.Kind     `schema:"execution_kind"`
 		Engine                *enginepkg.Engine  `schema:"engine"`
 		LatestEngineVersion   bool               `schema:"latest_engine_version"`
 		SpecificEngineVersion *workspace.Version `schema:"specific_engine_version"`
@@ -367,7 +367,7 @@ func (h *Handlers) updateWorkspace(w http.ResponseWriter, r *http.Request) {
 		AutoApply:         &params.AutoApply,
 		Name:              &params.Name,
 		Description:       &params.Description,
-		ExecutionMode:     &params.ExecutionMode,
+		ExecutionKind:     &params.ExecutionKind,
 		Engine:            params.Engine,
 		WorkingDirectory:  &params.WorkingDirectory,
 		GlobalRemoteState: &params.GlobalRemoteState,
@@ -377,8 +377,8 @@ func (h *Handlers) updateWorkspace(w http.ResponseWriter, r *http.Request) {
 	} else {
 		opts.EngineVersion = params.SpecificEngineVersion
 	}
-	// only set agent pool ID if execution mode is set to agent
-	if params.ExecutionMode == mode.Agent {
+	// only set agent pool ID if execution kind is set to agent
+	if params.ExecutionKind == execution.AgentKind {
 		opts.AgentPoolID = params.AgentPoolID
 	}
 

@@ -11,7 +11,7 @@ import (
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tfeapi"
-	"github.com/leg100/otf/internal/workspace/mode"
+	"github.com/leg100/otf/internal/workspace/execution"
 )
 
 //lint:ignore ST1005 go-tfe integration tests expect capitalized error string
@@ -163,7 +163,7 @@ func (a *tfe) updateOrganization(w http.ResponseWriter, r *http.Request) {
 	}
 	org, err := a.client.UpdateOrganization(r.Context(), params.Name, opts)
 	if err != nil {
-		if errors.Is(err, mode.ErrNonAgentExecutionModeWithPool) {
+		if errors.Is(err, execution.ErrNonAgentExecutionModeWithPool) {
 			// Return TFE specific error message to satisfy go-tfe integration tests.
 			tfeapi.Error(w, errTFEAgentPoolSpecifiedWithNonAgentExecutionMode, tfeapi.WithStatus(http.StatusUnprocessableEntity))
 			return
@@ -322,7 +322,7 @@ func (a *tfe) toOrganization(from *Organization) *TFEOrganization {
 		CostEstimationEnabled:      from.CostEstimationEnabled,
 		// go-tfe tests expect this attribute to be equal to 5
 		RemainingTestableCount: 5,
-		DefaultExecutionMode:   from.DefaultExecutionMode,
+		DefaultExecutionMode:   from.DefaultMode.Kind(),
 	}
 	if from.Email != nil {
 		to.Email = *from.Email
@@ -330,9 +330,9 @@ func (a *tfe) toOrganization(from *Organization) *TFEOrganization {
 	if from.CollaboratorAuthPolicy != nil {
 		to.CollaboratorAuthPolicy = TFEAuthPolicyType(*from.CollaboratorAuthPolicy)
 	}
-	if from.DefaultAgentPoolID != nil {
+	if from.DefaultMode.AgentPoolID() != nil {
 		to.DefaultAgentPool = &TFEAgentPool{
-			ID: *from.DefaultAgentPoolID,
+			ID: *from.DefaultMode.AgentPoolID(),
 		}
 	}
 	return to

@@ -12,6 +12,7 @@ import (
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/vcs"
+	"github.com/leg100/otf/internal/workspace/execution"
 	"github.com/stretchr/testify/require"
 )
 
@@ -31,6 +32,10 @@ func NewTestWorkspace(t *testing.T, opts *CreateOptions) *Workspace {
 		defaultEngine: engine.Default,
 		client: &fakeClient{
 			latestVersion: "1.9.0",
+			org: &organization.Organization{
+				Name:        *opts.Organization,
+				DefaultMode: execution.RemoteMode(),
+			},
 		},
 	}
 	ws, err := factory.NewWorkspace(t.Context(), *opts)

@@ -6,7 +6,7 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/resource"
-	"github.com/leg100/otf/internal/workspace/mode"
+	"github.com/leg100/otf/internal/workspace/execution"
 )
 
 const (
@@ -24,14 +24,13 @@ type (
 
 		// TFE fields that OTF does not support but persists merely to pass the
 		// go-tfe integration tests
-		Email                      *string         `db:"email"`
-		CollaboratorAuthPolicy     *string         `db:"collaborator_auth_policy"`
-		SessionRemember            *int            `db:"session_remember"`
-		SessionTimeout             *int            `db:"session_timeout"`
-		AllowForceDeleteWorkspaces bool            `db:"allow_force_delete_workspaces"`
-		CostEstimationEnabled      bool            `db:"cost_estimation_enabled"`
-		DefaultExecutionMode       mode.Mode       `db:"default_execution_mode"`
-		DefaultAgentPoolID         *resource.TfeID `db:"default_agent_pool_id"`
+		Email                      *string `db:"email"`
+		CollaboratorAuthPolicy     *string `db:"collaborator_auth_policy"`
+		SessionRemember            *int    `db:"session_remember"`
+		SessionTimeout             *int    `db:"session_timeout"`
+		AllowForceDeleteWorkspaces bool    `db:"allow_force_delete_workspaces"`
+		CostEstimationEnabled      bool    `db:"cost_estimation_enabled"`
+		DefaultMode                execution.Mode
 	}
 
 	// UpdateOptions represents the options for updating an organization.
@@ -46,7 +45,7 @@ type (
 		CollaboratorAuthPolicy     *string
 		CostEstimationEnabled      *bool
 		AllowForceDeleteWorkspaces *bool
-		DefaultExecutionMode       *mode.Mode
+		DefaultExecutionMode       *execution.Kind
 		DefaultAgentPoolID         *resource.TfeID
 	}
 
@@ -63,7 +62,7 @@ type (
 		SessionRemember            *int
 		SessionTimeout             *int
 		AllowForceDeleteWorkspaces *bool
-		DefaultExecutionMode       *mode.Mode
+		DefaultExecutionMode       *execution.Kind
 		DefaultAgentPoolID         *resource.TfeID
 	}
 )
@@ -77,18 +76,14 @@ func NewOrganization(opts CreateOptions) (*Organization, error) {
 		return nil, err
 	}
 
-	// Set default execution mode and validate it along with default agent pool
-	// ID.
-	var defaultExecutionMode mode.Mode
-	if opts.DefaultExecutionMode != nil {
-		defaultExecutionMode = *opts.DefaultExecutionMode
-	} else {
-		// If no default specified then default to remote execution.
-		defaultExecutionMode = mode.Remote
-	}
-	if err := mode.Validate(defaultExecutionMode, opts.DefaultAgentPoolID); err != nil {
-		return nil, err
-	}
+	// Set default execution mode along with optional default agent pool ID,
+	// defaulting to remote execution mode.
+	modeWithPoolID, err := execution.NewModeWithDefaults(
+		opts.DefaultExecutionMode,
+		execution.RemoteKind,
+		opts.DefaultAgentPoolID,
+		nil,
+	)
 
 	org := Organization{
 		Name:                   name,
@@ -97,8 +92,7 @@ func NewOrganization(opts CreateOptions) (*Organization, error) {
 		ID:                     resource.NewTfeID(resource.OrganizationKind),
 		Email:                  opts.Email,
 		CollaboratorAuthPolicy: opts.CollaboratorAuthPolicy,
-		DefaultExecutionMode:   defaultExecutionMode,
-		DefaultAgentPoolID:     opts.DefaultAgentPoolID,
+		DefaultMode:            modeWithPoolID,
 	}
 	if opts.SessionTimeout != nil {
 		org.SessionTimeout = opts.SessionTimeout
@@ -141,18 +135,7 @@ func (org *Organization) Update(opts UpdateOptions) error {
 	if opts.AllowForceDeleteWorkspaces != nil {
 		org.AllowForceDeleteWorkspaces = *opts.AllowForceDeleteWorkspaces
 	}
-	if opts.DefaultExecutionMode != nil {
-		// If updating to a non-agent mode then the go-tfe integration tests
-		// implicitly expect the agent-pool ID to be unset.
-		if *opts.DefaultExecutionMode != mode.Agent {
-			org.DefaultAgentPoolID = nil
-		}
-		org.DefaultExecutionMode = *opts.DefaultExecutionMode
-	}
-	if opts.DefaultAgentPoolID != nil {
-		org.DefaultAgentPoolID = opts.DefaultAgentPoolID
-	}
-	if err := mode.Validate(org.DefaultExecutionMode, opts.DefaultAgentPoolID); err != nil {
+	if err := org.DefaultMode.Update(opts.DefaultExecutionMode, opts.DefaultAgentPoolID); err != nil {
 		return err
 	}
 	org.UpdatedAt = internal.CurrentTimestamp(nil)

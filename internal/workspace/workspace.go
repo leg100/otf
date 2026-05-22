@@ -16,7 +16,7 @@ import (
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/vcs"
-	"github.com/leg100/otf/internal/workspace/mode"
+	"github.com/leg100/otf/internal/workspace/execution"
 )
 
 const DefaultAllowDestroyPlan = true
@@ -27,14 +27,12 @@ type (
 		ID                         resource.TfeID    `jsonapi:"primary,workspaces"`
 		CreatedAt                  time.Time         `jsonapi:"attribute" json:"created_at"`
 		UpdatedAt                  time.Time         `jsonapi:"attribute" json:"updated_at"`
-		AgentPoolID                *resource.TfeID   `jsonapi:"attribute" json:"agent-pool-id"`
 		AllowDestroyPlan           bool              `jsonapi:"attribute" json:"allow_destroy_plan"`
 		AutoApply                  bool              `jsonapi:"attribute" json:"auto_apply"`
 		AutoApplyRunTrigger        bool              `jsonapi:"attribute" json:"auto_apply_run_trigger"`
 		CanQueueDestroyPlan        bool              `jsonapi:"attribute" json:"can_queue_destroy_plan"`
 		Description                string            `jsonapi:"attribute" json:"description"`
 		Environment                string            `jsonapi:"attribute" json:"environment"`
-		ExecutionMode              mode.Mode         `jsonapi:"attribute" json:"execution_mode"`
 		GlobalRemoteState          bool              `jsonapi:"attribute" json:"global_remote_state"`
 		MigrationEnvironment       string            `jsonapi:"attribute" json:"migration_environment"`
 		Name                       string            `jsonapi:"attribute" json:"name"`
@@ -50,6 +48,7 @@ type (
 		Lock                       resource.ID       `json:"-"`
 		Engine                     *engine.Engine    `jsonapi:"attribute" json:"engine"`
 		EngineVersion              *Version          `jsonapi:"attribute" json:"engine_version"`
+		Mode                       execution.Mode    `jsonapi:"attribute" json:"mode"`
 
 		// SSHKeyID is the ID of the SSH key assigned to this workspace, if any.
 		SSHKeyID *resource.TfeID `jsonapi:"attribute" json:"ssh_key_id"`
@@ -105,7 +104,7 @@ type (
 		AutoApply                  *bool
 		AutoApplyRunTrigger        *bool
 		Description                *string
-		ExecutionMode              *mode.Mode
+		ExecutionKind              *execution.Kind
 		GlobalRemoteState          *bool
 		MigrationEnvironment       *string
 		Name                       *string
@@ -137,7 +136,7 @@ type (
 		AutoApplyRunTrigger        *bool
 		Name                       *string
 		Description                *string
-		ExecutionMode              *mode.Mode `json:"execution-mode,omitempty"`
+		ExecutionKind              *execution.Kind `json:"execution-mode,omitempty"`
 		GlobalRemoteState          *bool
 		Operations                 *bool
 		QueueAllRuns               *bool
@@ -213,18 +212,13 @@ func (f *factory) NewWorkspace(ctx context.Context, opts CreateOptions) (*Worksp
 	}
 
 	// If execution mode isn't specified use organization default.
-	var executionMode mode.Mode
-	if opts.ExecutionMode != nil {
-		executionMode = *opts.ExecutionMode
-	} else {
-		executionMode = org.DefaultExecutionMode
-		// If organization default is agent mode then use organization
-		// default agent pool ID.
-		if org.DefaultExecutionMode == mode.Agent {
-			opts.AgentPoolID = org.DefaultAgentPoolID
-		}
-	}
-	if err := mode.Validate(executionMode, opts.AgentPoolID); err != nil {
+	modeWithPoolID, err := execution.NewModeWithDefaults(
+		opts.ExecutionKind,
+		org.DefaultMode.Kind(),
+		opts.AgentPoolID,
+		org.DefaultMode.AgentPoolID(),
+	)
+	if err != nil {
 		return nil, err
 	}
 
@@ -236,8 +230,7 @@ func (f *factory) NewWorkspace(ctx context.Context, opts CreateOptions) (*Worksp
 		Engine:             f.defaultEngine,
 		SpeculativeEnabled: true,
 		Organization:       org.Name,
-		ExecutionMode:      executionMode,
-		AgentPoolID:        opts.AgentPoolID,
+		Mode:               modeWithPoolID,
 	}
 	if err := ws.setName(*opts.Name); err != nil {
 		return nil, err
@@ -424,22 +417,17 @@ func (ws *Workspace) Update(opts UpdateOptions) (*bool, error) {
 		ws.Description = *opts.Description
 		updated = true
 	}
-	if opts.ExecutionMode != nil {
-		ws.ExecutionMode = *opts.ExecutionMode
+	if opts.ExecutionKind != nil || opts.AgentPoolID != nil {
 		updated = true
 	}
-	if opts.AgentPoolID != nil {
-		ws.AgentPoolID = opts.AgentPoolID
-		updated = true
-	}
-	if err := mode.Validate(ws.ExecutionMode, ws.AgentPoolID); err != nil {
+	if err := ws.Mode.Update(opts.ExecutionKind, opts.AgentPoolID); err != nil {
 		return nil, err
 	}
 	if opts.Operations != nil {
 		if *opts.Operations {
-			ws.ExecutionMode = "remote"
+			ws.Mode = execution.RemoteMode()
 		} else {
-			ws.ExecutionMode = "local"
+			ws.Mode = execution.LocalMode()
 		}
 		updated = true
 	}

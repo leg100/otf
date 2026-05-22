@@ -12,6 +12,7 @@ import (
 	"github.com/leg100/otf/internal/path"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/workspace"
+	"github.com/leg100/otf/internal/workspace/execution"
 )
 
 type workspaceEditProps struct {
@@ -47,7 +48,7 @@ func workspaceEdit(props workspaceEditProps) templ.Component {
 		var templ_7745c5c3_Var2 templ.SafeURL
 		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinURLErrs(path.Update(props.ws.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/ui/view_edit.templ`, Line: 15, Col: 68}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/ui/view_edit.templ`, Line: 16, Col: 68}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 		if templ_7745c5c3_Err != nil {
@@ -60,7 +61,7 @@ func workspaceEdit(props workspaceEditProps) templ.Component {
 		var templ_7745c5c3_Var3 string
 		templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(props.ws.Name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/ui/view_edit.templ`, Line: 18, Col: 84}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/ui/view_edit.templ`, Line: 19, Col: 84}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 		if templ_7745c5c3_Err != nil {
@@ -73,112 +74,151 @@ func workspaceEdit(props workspaceEditProps) templ.Component {
 		var templ_7745c5c3_Var4 string
 		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(props.ws.Description)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/ui/view_edit.templ`, Line: 22, Col: 102}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/ui/view_edit.templ`, Line: 23, Col: 102}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</textarea></div><fieldset class=\"border border-base-content/60 p-3 flex flex-col gap-2\"><legend>Execution mode</legend><div class=\"form-checkbox\"><input type=\"radio\" name=\"execution_mode\" id=\"remote\" value=\"remote\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		if props.ws.ExecutionMode == "remote" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, " checked")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "> <label for=\"remote\">Remote</label> <span class=\"description\">Your plans and applies occur on the OTF servers.</span></div><div class=\"form-checkbox\"><input type=\"radio\" name=\"execution_mode\" id=\"local\" value=\"local\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		if props.ws.ExecutionMode == "local" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, " checked")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "> <label for=\"local\">Local</label> <span class=\"description\">Your plans and applies occur on your local machines. OTF is only used to store and synchronize state.</span></div><div class=\"form-checkbox\"><input class=\"peer\" type=\"radio\" name=\"execution_mode\" id=\"agent\" value=\"agent\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		if props.ws.ExecutionMode == "agent" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, " checked")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "> <label for=\"agent\">Agent</label> <span class=\"description\">Your plans and applies occur on OTF agents.</span><div class=\"col-start-2 hidden peer-checked:flex flex-col mt-2 bg-base-300 p-2 gap-2\"><div class=\"flex items-center gap-2\"><label class=\"text-md\" for=\"agent-pool-id\">Agent pool</label><div hx-get=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</textarea></div><fieldset class=\"border border-base-content/60 p-3 flex flex-col gap-2\"><legend>Execution mode</legend><div class=\"form-checkbox\"><input type=\"radio\" name=\"execution_kind\" id=\"remote\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var5 string
-		templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(props.poolsURL)
+		templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(execution.RemoteKind)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/ui/view_edit.templ`, Line: 45, Col: 34}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/ui/view_edit.templ`, Line: 28, Col: 86}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "\" hx-trigger=\"load\" hx-swap=\"innerHTML\"></div></div><span class=\"description\">Select an agent pool. If no pools are listed then you either need to create a pool or you need to configure at least one pool to grant access to your workspace. Manage agent pools <a id=\"agent-pools-link\" class=\"underline\" href=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var6 templ.SafeURL
-		templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinURLErrs(path.List(resource.AgentPoolKind, props.ws.Organization))
+		if props.ws.Mode.Kind() == execution.RemoteKind {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, " checked")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "> <label for=\"remote\">Remote</label> <span class=\"description\">Your plans and applies occur on the OTF servers.</span></div><div class=\"form-checkbox\"><input type=\"radio\" name=\"execution_kind\" id=\"local\" value=\"")
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/ui/view_edit.templ`, Line: 47, Col: 317}
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var6 string
+		templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(execution.LocalKind)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/ui/view_edit.templ`, Line: 33, Col: 84}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "\">here</a>.</span></div></div></fieldset><fieldset class=\"border border-base-content/60 px-3 py-3 flex flex-col gap-2\"><legend>Apply method</legend><div class=\"form-checkbox\"><input type=\"radio\" name=\"auto_apply\" id=\"auto-apply\" value=\"true\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if props.ws.AutoApply {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, " checked")
+		if props.ws.Mode.Kind() == execution.LocalKind {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, " checked")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "> <label for=\"auto-apply\">Auto apply</label> <span class=\"description\">Automatically apply changes when a Terraform plan is successful. Plans that have no changes will not be applied. If this workspace is linked to version control, a push to the default branch of the linked repository will trigger a plan and apply. Note: if you're using the <a class=\"underline\" href=\"https://developer.hashicorp.com/terraform/cli/cloud/settings#the-cloud-block\">cloud block</a> as opposed to the <a class=\"underline\" href=\"https://developer.hashicorp.com/terraform/language/settings/backends/remote\">remote backend</a> you still need to use the <span class=\"font-bold\">-auto-approve</span> flag with <span class=\"font-bold\">terraform apply</span>.</span></div><div class=\"form-checkbox\"><input type=\"radio\" name=\"auto_apply\" id=\"manual-apply\" value=\"false\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		if !props.ws.AutoApply {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, " checked")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "> <label for=\"manual-apply\">Manual apply</label> <span class=\"description\">Require an operator to confirm the result of the Terraform plan before applying. If this workspace is linked to version control, a push to the default branch of the linked repository will only trigger a plan and then wait for confirmation.</span></div></fieldset><div class=\"field\"><label for=\"working_directory\">Working directory</label> <input class=\"input w-96\" type=\"text\" name=\"working_directory\" id=\"working_directory\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "> <label for=\"local\">Local</label> <span class=\"description\">Your plans and applies occur on your local machines. OTF is only used to store and synchronize state.</span></div><div class=\"form-checkbox\"><input class=\"peer\" type=\"radio\" name=\"execution_kind\" id=\"agent\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var7 string
-		templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(props.ws.WorkingDirectory)
+		templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(execution.AgentKind)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/ui/view_edit.templ`, Line: 66, Col: 122}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/ui/view_edit.templ`, Line: 40, Col: 97}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "\"> <span class=\"description\">The directory that Terraform will execute within. This defaults to the root of your repository and is typically set to a subdirectory matching the environment when multiple environments exist within the same repository.</span></div><div class=\"form-checkbox\"><input class=\"\" type=\"checkbox\" name=\"global_remote_state\" id=\"global-remote-state\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if props.ws.GlobalRemoteState {
+		if props.ws.Mode.Kind() == execution.AgentKind {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, " checked")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "> <label for=\"agent\">Agent</label> <span class=\"description\">Your plans and applies occur on OTF agents.</span><div class=\"col-start-2 hidden peer-checked:flex flex-col mt-2 bg-base-300 p-2 gap-2\"><div class=\"flex items-center gap-2\"><label class=\"text-md\" for=\"agent-pool-id\">Agent pool</label><div hx-get=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var8 string
+		templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(props.poolsURL)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/ui/view_edit.templ`, Line: 46, Col: 34}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "\" hx-trigger=\"load\" hx-swap=\"innerHTML\"></div></div><span class=\"description\">Select an agent pool. If no pools are listed then you either need to create a pool or you need to configure at least one pool to grant access to your workspace. Manage agent pools <a id=\"agent-pools-link\" class=\"underline\" href=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var9 templ.SafeURL
+		templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinURLErrs(path.List(resource.AgentPoolKind, props.ws.Organization))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/ui/view_edit.templ`, Line: 48, Col: 317}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "\">here</a>.</span></div></div></fieldset><fieldset class=\"border border-base-content/60 px-3 py-3 flex flex-col gap-2\"><legend>Apply method</legend><div class=\"form-checkbox\"><input type=\"radio\" name=\"auto_apply\" id=\"auto-apply\" value=\"true\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if props.ws.AutoApply {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, " checked")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "> <label for=\"auto-apply\">Auto apply</label> <span class=\"description\">Automatically apply changes when a Terraform plan is successful. Plans that have no changes will not be applied. If this workspace is linked to version control, a push to the default branch of the linked repository will trigger a plan and apply. Note: if you're using the <a class=\"underline\" href=\"https://developer.hashicorp.com/terraform/cli/cloud/settings#the-cloud-block\">cloud block</a> as opposed to the <a class=\"underline\" href=\"https://developer.hashicorp.com/terraform/language/settings/backends/remote\">remote backend</a> you still need to use the <span class=\"font-bold\">-auto-approve</span> flag with <span class=\"font-bold\">terraform apply</span>.</span></div><div class=\"form-checkbox\"><input type=\"radio\" name=\"auto_apply\" id=\"manual-apply\" value=\"false\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if !props.ws.AutoApply {
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, " checked")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "> <label class=\"font-semibold\" for=\"global-remote-state\">Remote state sharing</label> <span class=\"description\">Share this workspace's state with all workspaces in this organization. The <span class=\"font-bold font-mono\">terraform_remote_state</span> data source relies on state sharing to access workspace outputs.</span></div><div class=\"field\"><button class=\"btn w-40\">Save changes</button></div></form>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "> <label for=\"manual-apply\">Manual apply</label> <span class=\"description\">Require an operator to confirm the result of the Terraform plan before applying. If this workspace is linked to version control, a push to the default branch of the linked repository will only trigger a plan and then wait for confirmation.</span></div></fieldset><div class=\"field\"><label for=\"working_directory\">Working directory</label> <input class=\"input w-96\" type=\"text\" name=\"working_directory\" id=\"working_directory\" value=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var10 string
+		templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(props.ws.WorkingDirectory)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/ui/view_edit.templ`, Line: 67, Col: 122}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "\"> <span class=\"description\">The directory that Terraform will execute within. This defaults to the root of your repository and is typically set to a subdirectory matching the environment when multiple environments exist within the same repository.</span></div><div class=\"form-checkbox\"><input class=\"\" type=\"checkbox\" name=\"global_remote_state\" id=\"global-remote-state\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if props.ws.GlobalRemoteState {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, " checked")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "> <label class=\"font-semibold\" for=\"global-remote-state\">Remote state sharing</label> <span class=\"description\">Share this workspace's state with all workspaces in this organization. The <span class=\"font-bold font-mono\">terraform_remote_state</span> data source relies on state sharing to access workspace outputs.</span></div><div class=\"field\"><button class=\"btn w-40\">Save changes</button></div></form>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

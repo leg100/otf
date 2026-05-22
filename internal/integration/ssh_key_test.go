@@ -19,7 +19,7 @@ import (
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/workspace"
-	"github.com/leg100/otf/internal/workspace/mode"
+	"github.com/leg100/otf/internal/workspace/execution"
 	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/ssh"
@@ -97,14 +97,14 @@ func TestSSHKeyPrivateModule(t *testing.T) {
 	// two tests: one run on the daemon, one via the agent.
 	tests := []struct {
 		name   string
-		mode   mode.Mode
+		mode   execution.Kind
 		poolID *resource.TfeID
 	}{
 		{
-			"execute run via daemon", mode.Remote, nil,
+			"execute run via daemon", execution.RemoteKind, nil,
 		},
 		{
-			"execute run via agent", mode.Agent, &agent.AgentPool.ID,
+			"execute run via agent", execution.AgentKind, &agent.AgentPool.ID,
 		},
 	}
 	for _, tt := range tests {
@@ -114,7 +114,7 @@ func TestSSHKeyPrivateModule(t *testing.T) {
 			ws, err := daemon.Workspaces.CreateWorkspace(ctx, workspace.CreateOptions{
 				Name:          new("ws-" + string(tt.mode)),
 				Organization:  &org.Name,
-				ExecutionMode: new(tt.mode),
+				ExecutionKind: new(tt.mode),
 				AgentPoolID:   tt.poolID,
 			})
 			require.NoError(t, err)

@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/leg100/otf/internal/resource"
-	"github.com/leg100/otf/internal/workspace/mode"
+	"github.com/leg100/otf/internal/workspace/execution"
 )
 
 var DefaultOrganizationPermissions = TFEOrganizationPermissions{
@@ -20,7 +20,7 @@ type TFEOrganization struct {
 	CollaboratorAuthPolicy                            TFEAuthPolicyType           `jsonapi:"attribute" json:"collaborator-auth-policy"`
 	CostEstimationEnabled                             bool                        `jsonapi:"attribute" json:"cost-estimation-enabled"`
 	CreatedAt                                         time.Time                   `jsonapi:"attribute" json:"created-at"`
-	DefaultExecutionMode                              mode.Mode                   `jsonapi:"attribute" json:"default-execution-mode"`
+	DefaultExecutionMode                              execution.Kind              `jsonapi:"attribute" json:"default-execution-mode"`
 	Email                                             string                      `jsonapi:"attribute" json:"email"`
 	ExternalID                                        resource.TfeID              `jsonapi:"attribute" json:"external-id"`
 	OwnersTeamSAMLRoleID                              resource.TfeID              `jsonapi:"attribute" json:"owners-team-saml-role-id"`
@@ -94,7 +94,7 @@ type TFEOrganizationCreateOptions struct {
 	AllowForceDeleteWorkspaces *bool `jsonapi:"attribute" json:"allow-force-delete-workspaces,omitempty"`
 
 	// Optional: DefaultExecutionMode the default execution mode for workspaces
-	DefaultExecutionMode *mode.Mode `jsonapi:"attribute" json:"default-execution-mode,omitempty"`
+	DefaultExecutionMode *execution.Kind `jsonapi:"attribute" json:"default-execution-mode,omitempty"`
 }
 
 // TFEOrganizationUpdateOptions represents the options for updating an organization.
@@ -136,7 +136,7 @@ type TFEOrganizationUpdateOptions struct {
 	AllowForceDeleteWorkspaces *bool `jsonapi:"attribute" json:"allow-force-delete-workspaces,omitempty"`
 
 	// Optional: DefaultExecutionMode the default execution mode for workspaces
-	DefaultExecutionMode *mode.Mode `jsonapi:"attribute" json:"default-execution-mode,omitempty"`
+	DefaultExecutionMode *execution.Kind `jsonapi:"attribute" json:"default-execution-mode,omitempty"`
 
 	// Optional: DefaultAgentPoolId default agent pool for workspaces, requires DefaultExecutionMode to be set to `agent`
 	DefaultAgentPool *TFEAgentPool `jsonapi:"relationship" json:"default-agent-pool,omitempty"`

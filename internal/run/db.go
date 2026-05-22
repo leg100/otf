@@ -17,7 +17,7 @@ import (
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/user"
-	"github.com/leg100/otf/internal/workspace/mode"
+	"github.com/leg100/otf/internal/workspace/execution"
 	"github.com/pkg/errors"
 )
 
@@ -155,7 +155,7 @@ SELECT
     applies.status      AS apply_status,
     applies.resource_report::"report" AS apply_resource_report,
     workspaces.organization_name,
-    workspaces.execution_mode,
+    workspaces.execution_kind,
     organizations.cost_estimation_enabled,
     rst.run_status_timestamps,
     pst.plan_status_timestamps,
@@ -384,7 +384,7 @@ SELECT
     applies.status      AS apply_status,
     applies.resource_report::"report" AS apply_resource_report,
     workspaces.organization_name,
-    workspaces.execution_mode,
+    workspaces.execution_kind,
     organizations.cost_estimation_enabled,
     rst.run_status_timestamps,
     pst.plan_status_timestamps,
@@ -517,7 +517,7 @@ SELECT
     applies.status      AS apply_status,
     applies.resource_report::"report" AS apply_resource_report,
     workspaces.organization_name,
-    workspaces.execution_mode,
+    workspaces.execution_kind,
     organizations.cost_estimation_enabled,
     rst.run_status_timestamps,
     pst.plan_status_timestamps,
@@ -839,7 +839,7 @@ func (db *pgdb) scan(row pgx.CollectableRow) (*Run, error) {
 			ApplyStatus            PhaseStatus                           `db:"apply_status"`
 			WorkspaceID            resource.TfeID                        `db:"workspace_id"`
 			ConfigurationVersionID resource.TfeID                        `db:"configuration_version_id"`
-			ExecutionMode          mode.Mode                             `db:"execution_mode"`
+			ExecutionKind          execution.Kind                        `db:"execution_kind"`
 			RunVariables           []runVariableModel                    `db:"run_variables"`
 			PlanResourceReport     *Report                               `db:"plan_resource_report"`
 			PlanOutputReport       *Report                               `db:"plan_output_report"`
@@ -879,7 +879,7 @@ func (db *pgdb) scan(row pgx.CollectableRow) (*Run, error) {
 		Status:                 m.Status,
 		WorkspaceID:            m.WorkspaceID,
 		ConfigurationVersionID: m.ConfigurationVersionID,
-		ExecutionMode:          m.ExecutionMode,
+		ExecutionKind:          m.ExecutionKind,
 		Plan: Phase{
 			RunID:            m.ID,
 			PhaseType:        PlanPhase,
