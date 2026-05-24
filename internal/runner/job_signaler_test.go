@@ -38,7 +38,7 @@ func TestJobSignaler(t *testing.T) {
 	// block the job1 signal).
 	got, err := fn()
 	require.NoError(t, err)
-	assert.Equal(t, jobSignal{JobID: job1}, got)
+	assert.Equal(t, JobSignal{JobID: job1}, got)
 
 	// subscribe to job1 again
 	fn = signaler.awaitJobSignal(t.Context(), job1)
@@ -48,5 +48,5 @@ func TestJobSignaler(t *testing.T) {
 
 	got, err = fn()
 	require.NoError(t, err)
-	assert.Equal(t, jobSignal{JobID: job1, Force: true}, got)
+	assert.Equal(t, JobSignal{JobID: job1, Force: true}, got)
 }

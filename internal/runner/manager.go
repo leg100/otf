@@ -26,7 +26,7 @@ type manager struct {
 
 type managerClient interface {
 	ListRunners(ctx context.Context, opts ListOptions) ([]*RunnerMeta, error)
-	updateStatus(ctx context.Context, runnerID resource.TfeID, status RunnerStatus) error
+	UpdateStatus(ctx context.Context, runnerID resource.TfeID, status RunnerStatus) error
 	DeleteRunner(ctx context.Context, runnerID resource.TfeID) error
 }
 
@@ -83,14 +83,14 @@ func (m *manager) update(ctx context.Context, runner *RunnerMeta) error {
 		// update runner status to unknown if the runner has failed to ping within
 		// the timeout.
 		if time.Since(runner.LastPingAt) > pingTimeout {
-			return m.client.updateStatus(ctx, runner.ID, RunnerUnknown)
+			return m.client.UpdateStatus(ctx, runner.ID, RunnerUnknown)
 		}
 	case RunnerUnknown:
 		// update runner status from unknown to errored if a further period of 5
 		// minutes has elapsed.
 		if time.Since(runner.LastStatusAt) > 5*time.Minute {
 			// update runner status to errored.
-			return m.client.updateStatus(ctx, runner.ID, RunnerErrored)
+			return m.client.UpdateStatus(ctx, runner.ID, RunnerErrored)
 		}
 	case RunnerErrored, RunnerExited:
 		// purge runner from database once a further 1 hour has elapsed for

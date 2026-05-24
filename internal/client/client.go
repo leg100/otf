@@ -7,13 +7,13 @@ import (
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/run"
-	"github.com/leg100/otf/internal/runner"
+	runnerapi "github.com/leg100/otf/internal/runner/api"
 	"github.com/leg100/otf/internal/sshkey"
 	"github.com/leg100/otf/internal/state"
 	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/variable"
-	"github.com/leg100/otf/internal/workspace"
+	workspaceapi "github.com/leg100/otf/internal/workspace/api"
 )
 
 type (
@@ -21,14 +21,14 @@ type (
 		*otfhttp.Client
 
 		*organization.OrganizationClient
-		*workspace.WorkspaceClient
+		*workspaceapi.WorkspaceClient
 		*run.RunClient
 		*team.TeamClient
 		*user.UserClient
 		*state.StateClient
 		*configversion.ConfigClient
 		*variable.VariableClient
-		*runner.RunnerClient
+		*runnerapi.RunnerClient
 		*sshkey.SSHKeyClient
 	}
 )

@@ -50,6 +50,11 @@ type Job struct {
 	RunnerID *resource.TfeID `jsonapi:"attribute" json:"runner_id" db:"runner_id"`
 }
 
+type FinishJobOptions struct {
+	Status JobStatus `json:"status"`
+	Error  string    `json:"error,omitempty"`
+}
+
 func newJob(run *otfrun.Run) *Job {
 	return &Job{
 		ID:           resource.NewTfeID(resource.JobKind),

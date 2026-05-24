@@ -3,7 +3,6 @@ package user
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -25,7 +24,7 @@ type (
 		RemoveTeamMembership(ctx context.Context, teamID resource.TfeID, usernames []Username) error
 	}
 
-	modifyTeamMembershipOptions struct {
+	teamMembers struct {
 		Usernames []Username
 	}
 )
@@ -70,38 +69,43 @@ func (a *API) deleteUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *API) addTeamMembers(w http.ResponseWriter, r *http.Request) {
-	if err := a.modifyTeamMembers(r, addTeamMembersAction); err != nil {
+	teamID, err := decode.ID("team_id", r)
+	if err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
+
+	var opts teamMembers
+	if err := json.NewDecoder(r.Body).Decode(&opts); err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+
+	if err := a.Client.AddTeamMembership(r.Context(), teamID, opts.Usernames); err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+
 	w.WriteHeader(http.StatusCreated)
 }
 
 func (a *API) removeTeamMembers(w http.ResponseWriter, r *http.Request) {
-	if err := a.modifyTeamMembers(r, removeTeamMembersAction); err != nil {
+	teamID, err := decode.ID("team_id", r)
+	if err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
-	w.WriteHeader(http.StatusNoContent)
-}
 
-func (a *API) modifyTeamMembers(r *http.Request, action teamMembersAction) error {
-	teamID, err := decode.ID("team_id", r)
-	if err != nil {
-		return err
-	}
-
-	var opts modifyTeamMembershipOptions
+	var opts teamMembers
 	if err := json.NewDecoder(r.Body).Decode(&opts); err != nil {
-		return err
+		tfeapi.Error(w, err)
+		return
 	}
 
-	switch action {
-	case addTeamMembersAction:
-		return a.Client.AddTeamMembership(r.Context(), teamID, opts.Usernames)
-	case removeTeamMembersAction:
-		return a.Client.RemoveTeamMembership(r.Context(), teamID, opts.Usernames)
-	default:
-		return fmt.Errorf("unknown team membership action: %v", action)
+	if err := a.Client.RemoveTeamMembership(r.Context(), teamID, opts.Usernames); err != nil {
+		tfeapi.Error(w, err)
+		return
 	}
+
+	w.WriteHeader(http.StatusNoContent)
 }

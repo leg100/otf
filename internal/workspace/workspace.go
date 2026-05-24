@@ -186,6 +186,13 @@ type (
 	// VCS trigger strategy determines which VCS events trigger runs
 	VCSTriggerStrategy string
 
+	// ByName are parameters used when looking up a workspace by
+	// name
+	ByName struct {
+		Name         string            `schema:"workspace_name,required"`
+		Organization organization.Name `schema:"organization_name,required"`
+	}
+
 	// factory makes workspaces
 	factory struct {
 		defaultEngine *engine.Engine

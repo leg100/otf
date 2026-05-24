@@ -20,11 +20,11 @@ type jobSignaler struct {
 	db     *sql.DB
 	logger logr.Logger
 
-	subscribers map[resource.TfeID]chan jobSignal
+	subscribers map[resource.TfeID]chan JobSignal
 	mu          sync.Mutex // sync access to map
 }
 
-type jobSignal struct {
+type JobSignal struct {
 	JobID resource.TfeID `jsonapi:"primary,signals" json:"job_id"`
 	Force bool           `jsonapi:"attribute" json:"force"`
 }
@@ -33,7 +33,7 @@ func newJobSignaler(logger logr.Logger, db *sql.DB) *jobSignaler {
 	return &jobSignaler{
 		db:          db,
 		logger:      logger.WithValues("component", "job-signaler"),
-		subscribers: make(map[resource.TfeID]chan jobSignal),
+		subscribers: make(map[resource.TfeID]chan JobSignal),
 	}
 }
 
@@ -51,7 +51,7 @@ func (s *jobSignaler) Start(ctx context.Context) error {
 
 func (s *jobSignaler) relay(signals <-chan string) error {
 	for payload := range signals {
-		var signal jobSignal
+		var signal JobSignal
 		if err := json.Unmarshal([]byte(payload), &signal); err != nil {
 			return fmt.Errorf("unmarshaling postgres event: %w", err)
 		}
@@ -69,7 +69,7 @@ func (s *jobSignaler) relay(signals <-chan string) error {
 }
 
 func (s *jobSignaler) publish(ctx context.Context, jobID resource.TfeID, force bool) error {
-	err := s.db.Notify(ctx, jobSignalsChannel, jobSignal{JobID: jobID, Force: force})
+	err := s.db.Notify(ctx, jobSignalsChannel, JobSignal{JobID: jobID, Force: force})
 	if err != nil {
 		return fmt.Errorf("publishing job signal: %w", err)
 	}
@@ -80,8 +80,8 @@ func (s *jobSignaler) publish(ctx context.Context, jobID resource.TfeID, force b
 // itself only returns once a job signal is received for a job with the given
 // ID. If the context is canceled then an error is instead returned giving the
 // reason for the context cancelation.
-func (s *jobSignaler) awaitJobSignal(ctx context.Context, jobID resource.TfeID) func() (jobSignal, error) {
-	ch := make(chan jobSignal, 1)
+func (s *jobSignaler) awaitJobSignal(ctx context.Context, jobID resource.TfeID) func() (JobSignal, error) {
+	ch := make(chan JobSignal, 1)
 
 	s.mu.Lock()
 	s.subscribers[jobID] = ch
@@ -92,12 +92,12 @@ func (s *jobSignaler) awaitJobSignal(ctx context.Context, jobID resource.TfeID) 
 		s.unsubscribe(jobID)
 	}()
 
-	return func() (jobSignal, error) {
+	return func() (JobSignal, error) {
 		signal, ok := <-ch
 		if !ok {
 			// The only reason the channel closes is because the context has been
 			// canceled, so return the reason for context being canceled.
-			return jobSignal{}, ctx.Err()
+			return JobSignal{}, ctx.Err()
 		}
 		return signal, nil
 	}

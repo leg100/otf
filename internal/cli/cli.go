@@ -11,11 +11,11 @@ import (
 	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/run"
-	"github.com/leg100/otf/internal/runner"
-	"github.com/leg100/otf/internal/state"
+	runnercli "github.com/leg100/otf/internal/runner/cli"
+	statecli "github.com/leg100/otf/internal/state/cli"
 	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/user"
-	"github.com/leg100/otf/internal/workspace"
+	workspacecli "github.com/leg100/otf/internal/workspace/cli"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -58,10 +58,10 @@ func (a *CLI) Run(ctx context.Context, args []string, out io.Writer) error {
 	cmd.AddCommand(user.NewUserCommand(a.client))
 	cmd.AddCommand(user.NewTeamMembershipCommand(a.client))
 	cmd.AddCommand(team.NewTeamCommand(a.client))
-	cmd.AddCommand(workspace.NewCommand(a.client))
+	cmd.AddCommand(workspacecli.NewCommand(a.client))
 	cmd.AddCommand(run.NewCommand(a.client))
-	cmd.AddCommand(state.NewCommand(a.client))
-	cmd.AddCommand(runner.NewAgentsCommand(a.client))
+	cmd.AddCommand(statecli.NewCommand(a.client))
+	cmd.AddCommand(runnercli.NewAgentsCommand(a.client))
 
 	if err := cmdutil.SetFlagsFromEnvVariables(cmd.Flags()); err != nil {
 		return errors.Wrap(err, "failed to populate config from environment vars")
