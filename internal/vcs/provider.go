@@ -29,8 +29,8 @@ type (
 		BaseURL *internal.WebURL
 		// NOTE: OTF doesn't use these fields but they're persisted in order to
 		// satisfy the go-tfe integration tests and/or the tfe API.
-		apiURL              *internal.WebURL
-		serviceProviderType TFEServiceProviderType
+		APIURL              *internal.WebURL
+		ServiceProviderType TFEServiceProviderType
 	}
 
 	// factory produces providers
@@ -48,9 +48,9 @@ type (
 		// Optional.
 		BaseURL *internal.WebURL `schema:"base_url,required"`
 		// Optional.
-		tfeServiceProviderType *TFEServiceProviderType
+		TFEServiceProviderType *TFEServiceProviderType
 		// Optional.
-		apiURL *internal.WebURL
+		APIURL *internal.WebURL
 	}
 
 	UpdateOptions struct {
@@ -108,17 +108,17 @@ func (f *factory) newProvider(ctx context.Context, opts CreateOptions) (*Provide
 	}
 	// If caller hasn't specified a TFE service provider type to assign to the
 	// provider then retrieve the first type that the kind supports.
-	if opts.tfeServiceProviderType == nil {
-		provider.serviceProviderType = kind.TFEServiceProviders[0]
+	if opts.TFEServiceProviderType == nil {
+		provider.ServiceProviderType = kind.TFEServiceProviders[0]
 	} else {
-		provider.serviceProviderType = *opts.tfeServiceProviderType
+		provider.ServiceProviderType = *opts.TFEServiceProviderType
 	}
 	// If caller hasn't specified an apiURL then set it to the same value as the
 	// BaseURL
-	if opts.apiURL == nil {
-		provider.apiURL = provider.BaseURL
+	if opts.APIURL == nil {
+		provider.APIURL = provider.BaseURL
 	} else {
-		provider.apiURL = opts.apiURL
+		provider.APIURL = opts.APIURL
 	}
 	client, err := kind.NewClient(ctx, ClientConfig{
 		Token:        provider.Token,

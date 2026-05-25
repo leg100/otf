@@ -91,7 +91,7 @@ func (a *Service) CreateTeam(ctx context.Context, organization organization.Name
 		return nil, err
 	}
 
-	team, err := newTeam(organization, opts)
+	team, err := NewTeam(organization, opts)
 	if err != nil {
 		return nil, err
 	}

@@ -78,7 +78,7 @@ type (
 	}
 )
 
-func newTeam(organization organization.Name, opts CreateTeamOptions) (*Team, error) {
+func NewTeam(organization organization.Name, opts CreateTeamOptions) (*Team, error) {
 	// required parameters
 	if opts.Name == nil {
 		return nil, &internal.ErrMissingParameter{Parameter: "name"}

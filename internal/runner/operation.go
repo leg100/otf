@@ -90,8 +90,8 @@ type (
 		DownloadCurrentState(ctx context.Context, workspaceID resource.TfeID) ([]byte, error)
 		Hostname() string
 		GetSSHKeyPrivateKey(ctx context.Context, id resource.TfeID) ([]byte, error)
-		awaitJobSignal(ctx context.Context, jobID resource.TfeID) func() (jobSignal, error)
-		finishJob(ctx context.Context, jobID resource.TfeID, opts finishJobOptions) error
+		AwaitJobSignal(ctx context.Context, jobID resource.TfeID) func() (JobSignal, error)
+		FinishJob(ctx context.Context, jobID resource.TfeID, opts FinishJobOptions) error
 	}
 
 	OperationConfig struct {
@@ -177,7 +177,7 @@ func (o *operation) doAndFinish() {
 		handleJobSignal := func() error {
 			for {
 				// blocks until signal received
-				signal, err := o.client.awaitJobSignal(o.ctx, o.job.ID)()
+				signal, err := o.client.AwaitJobSignal(o.ctx, o.job.ID)()
 				if err != nil {
 					// If context has closed then the op has finished and we can
 					// exit.
@@ -204,7 +204,7 @@ func (o *operation) doAndFinish() {
 	// update
 	err := o.do()
 
-	var opts finishJobOptions
+	var opts FinishJobOptions
 	switch {
 	case o.canceled:
 		if o.ctx.Err() != nil {
@@ -225,7 +225,7 @@ func (o *operation) doAndFinish() {
 		opts.Status = JobFinished
 		o.V(0).Info("finished job successfully")
 	}
-	if err := o.client.finishJob(o.ctx, o.job.ID, opts); err != nil {
+	if err := o.client.FinishJob(o.ctx, o.job.ID, opts); err != nil {
 		o.Error(err, "sending job status", "status", opts.Status)
 	}
 }

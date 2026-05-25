@@ -2,34 +2,34 @@
 package client
 
 import (
-	"github.com/leg100/otf/internal/configversion"
+	configversionapi "github.com/leg100/otf/internal/configversion/api"
 	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/logr"
-	"github.com/leg100/otf/internal/organization"
-	"github.com/leg100/otf/internal/run"
-	"github.com/leg100/otf/internal/runner"
-	"github.com/leg100/otf/internal/sshkey"
-	"github.com/leg100/otf/internal/state"
-	"github.com/leg100/otf/internal/team"
-	"github.com/leg100/otf/internal/user"
-	"github.com/leg100/otf/internal/variable"
-	"github.com/leg100/otf/internal/workspace"
+	organizationapi "github.com/leg100/otf/internal/organization/api"
+	runapi "github.com/leg100/otf/internal/run/api"
+	runnerapi "github.com/leg100/otf/internal/runner/api"
+	sshkeyapi "github.com/leg100/otf/internal/sshkey/api"
+	stateapi "github.com/leg100/otf/internal/state/api"
+	teamapi "github.com/leg100/otf/internal/team/api"
+	userapi "github.com/leg100/otf/internal/user/api"
+	variableapi "github.com/leg100/otf/internal/variable/api"
+	workspaceapi "github.com/leg100/otf/internal/workspace/api"
 )
 
 type (
 	Client struct {
 		*otfhttp.Client
 
-		*organization.OrganizationClient
-		*workspace.WorkspaceClient
-		*run.RunClient
-		*team.TeamClient
-		*user.UserClient
-		*state.StateClient
-		*configversion.ConfigClient
-		*variable.VariableClient
-		*runner.RunnerClient
-		*sshkey.SSHKeyClient
+		*organizationapi.OrganizationClient
+		*workspaceapi.WorkspaceClient
+		*runapi.RunClient
+		*teamapi.TeamClient
+		*userapi.UserClient
+		*stateapi.StateClient
+		*configversionapi.ConfigClient
+		*variableapi.VariableClient
+		*runnerapi.RunnerClient
+		*sshkeyapi.SSHKeyClient
 	}
 )
 
@@ -60,15 +60,15 @@ func (c *Client) UseToken(token string) *Client {
 func (c *Client) new(httpClient *otfhttp.Client) *Client {
 	return &Client{
 		Client:             httpClient,
-		OrganizationClient: &organization.Client{Client: httpClient},
-		WorkspaceClient:    &workspace.Client{Client: httpClient},
-		RunClient:          &run.Client{Client: httpClient},
-		TeamClient:         &team.Client{Client: httpClient},
-		UserClient:         &user.Client{Client: httpClient},
-		StateClient:        &state.Client{Client: httpClient},
-		ConfigClient:       &configversion.Client{Client: httpClient},
-		VariableClient:     &variable.Client{Client: httpClient},
-		RunnerClient:       &runner.Client{Client: httpClient},
-		SSHKeyClient:       &sshkey.Client{Client: httpClient},
+		OrganizationClient: &organizationapi.Client{Client: httpClient},
+		WorkspaceClient:    &workspaceapi.Client{Client: httpClient},
+		RunClient:          &runapi.Client{Client: httpClient},
+		TeamClient:         &teamapi.Client{Client: httpClient},
+		UserClient:         &userapi.Client{Client: httpClient},
+		StateClient:        &stateapi.Client{Client: httpClient},
+		ConfigClient:       &configversionapi.Client{Client: httpClient},
+		VariableClient:     &variableapi.Client{Client: httpClient},
+		RunnerClient:       &runnerapi.Client{Client: httpClient},
+		SSHKeyClient:       &sshkeyapi.Client{Client: httpClient},
 	}
 }

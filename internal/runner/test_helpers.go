@@ -88,7 +88,7 @@ func (f *fakeService) getRunner(ctx context.Context, runnerID resource.TfeID) (*
 	return nil, nil
 }
 
-func (f *fakeService) updateStatus(ctx context.Context, runnerID resource.TfeID, status RunnerStatus) error {
+func (f *fakeService) UpdateStatus(ctx context.Context, runnerID resource.TfeID, status RunnerStatus) error {
 	f.status = status
 	return nil
 }

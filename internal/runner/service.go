@@ -20,6 +20,8 @@ import (
 	"github.com/leg100/otf/internal/workspace"
 )
 
+const RunnerIDHeaderKey = "otf-agent-id"
+
 var ErrInvalidStateTransition = errors.New("invalid runner state transition")
 
 type (
@@ -98,7 +100,7 @@ func NewService(opts ServiceOptions) *Service {
 		if err != nil {
 			return nil, err
 		}
-		if runnerIDValue := headers.Get(runnerIDHeaderKey); runnerIDValue != "" {
+		if runnerIDValue := headers.Get(RunnerIDHeaderKey); runnerIDValue != "" {
 			runnerID, err := resource.ParseTfeID(runnerIDValue)
 			if err != nil {
 				return nil, err
@@ -194,7 +196,7 @@ func (s *Service) getRunner(ctx context.Context, runnerID resource.TfeID) (*Runn
 	return runner, err
 }
 
-func (s *Service) updateStatus(ctx context.Context, runnerID resource.TfeID, to RunnerStatus) error {
+func (s *Service) UpdateStatus(ctx context.Context, runnerID resource.TfeID, to RunnerStatus) error {
 	// only these subjects may call this endpoint:
 	// (a) the manager, or
 	// (b) an runner with an ID matching runnerID
@@ -318,9 +320,9 @@ func (s *Service) cancelJob(ctx context.Context, run *otfrun.Run) error {
 	return nil
 }
 
-// awaitAllocatedJobs waits until there is at least one allocated job for a
+// AwaitAllocatedJobs waits until there is at least one allocated job for a
 // runner before returning allocated job(s).
-func (s *Service) awaitAllocatedJobs(ctx context.Context, runnerID resource.TfeID) ([]*Job, error) {
+func (s *Service) AwaitAllocatedJobs(ctx context.Context, runnerID resource.TfeID) ([]*Job, error) {
 	// only these subjects may call this endpoint:
 	// (a) a runner with an ID matching runnerID
 	if err := authorizeRunner(ctx, runnerID); err != nil {
@@ -372,7 +374,7 @@ func (s *Service) GetJob(ctx context.Context, jobID resource.TfeID) (*Job, error
 	return s.db.getJob(ctx, jobID)
 }
 
-func (s *Service) awaitJobSignal(ctx context.Context, jobID resource.TfeID) func() (jobSignal, error) {
+func (s *Service) AwaitJobSignal(ctx context.Context, jobID resource.TfeID) func() (JobSignal, error) {
 	return s.Signaler.awaitJobSignal(ctx, jobID)
 }
 
@@ -409,11 +411,11 @@ func (s *Service) reallocateJob(ctx context.Context, jobID resource.TfeID, runne
 	return reallocated, nil
 }
 
-// startJob starts a job and returns a job token with permissions to
+// StartJob starts a job and returns a job token with permissions to
 // carry out the job. Only a runner that has been allocated the job can
 // call this method.
-func (s *Service) startJob(ctx context.Context, jobID resource.TfeID) ([]byte, error) {
-	runner, err := runnerFromContext(ctx)
+func (s *Service) StartJob(ctx context.Context, jobID resource.TfeID) ([]byte, error) {
+	runner, err := RunnerFromContext(ctx)
 	if err != nil {
 		return nil, internal.ErrAccessNotPermitted
 	}
@@ -444,13 +446,8 @@ func (s *Service) startJob(ctx context.Context, jobID resource.TfeID) ([]byte, e
 	return token, nil
 }
 
-type finishJobOptions struct {
-	Status JobStatus `json:"status"`
-	Error  string    `json:"error,omitempty"`
-}
-
-// finishJob finishes a job. Only the job itself may call this endpoint.
-func (s *Service) finishJob(ctx context.Context, jobID resource.TfeID, opts finishJobOptions) error {
+// FinishJob finishes a job. Only the job itself may call this endpoint.
+func (s *Service) FinishJob(ctx context.Context, jobID resource.TfeID, opts FinishJobOptions) error {
 	{
 		subject, err := authz.SubjectFromContext(ctx)
 		if err != nil {

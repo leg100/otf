@@ -1,0 +1,33 @@
+package api
+
+import (
+	"context"
+	"fmt"
+
+	otfhttp "github.com/leg100/otf/internal/http"
+	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/variable"
+)
+
+// Alias client to permit embedding it with other clients in a struct
+// without a name clash.
+type VariableClient = Client
+
+type Client struct {
+	*otfhttp.Client
+}
+
+func (c *Client) ListEffectiveVariables(ctx context.Context, runID resource.TfeID) ([]*variable.Variable, error) {
+	u := fmt.Sprintf("vars/effective/%s", runID)
+	req, err := c.NewRequest("GET", u, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var list []*variable.Variable
+	if err := c.Do(ctx, req, &list); err != nil {
+		return nil, err
+	}
+
+	return list, nil
+}

@@ -13,6 +13,7 @@ import (
 	"github.com/leg100/otf/internal/authenticator"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/configversion"
+	configversionapi "github.com/leg100/otf/internal/configversion/api"
 	"github.com/leg100/otf/internal/connections"
 	"github.com/leg100/otf/internal/disco"
 	"github.com/leg100/otf/internal/dynamiccreds"
@@ -29,35 +30,47 @@ import (
 	"github.com/leg100/otf/internal/module"
 	moduleui "github.com/leg100/otf/internal/module/ui"
 	"github.com/leg100/otf/internal/notifications"
+	notificationsapi "github.com/leg100/otf/internal/notifications/api"
 	"github.com/leg100/otf/internal/organization"
+	orgapi "github.com/leg100/otf/internal/organization/api"
 	orgui "github.com/leg100/otf/internal/organization/ui"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/repohooks"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
+	runapi "github.com/leg100/otf/internal/run/api"
 	"github.com/leg100/otf/internal/run/trigger"
+	triggerapi "github.com/leg100/otf/internal/run/trigger/api"
 	triggerui "github.com/leg100/otf/internal/run/trigger/ui"
 	runui "github.com/leg100/otf/internal/run/ui"
 	"github.com/leg100/otf/internal/runner"
+	runnerapi "github.com/leg100/otf/internal/runner/api"
 	runnerui "github.com/leg100/otf/internal/runner/ui"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sshkey"
+	sshkeyapi "github.com/leg100/otf/internal/sshkey/api"
 	sshkeyui "github.com/leg100/otf/internal/sshkey/ui"
 	"github.com/leg100/otf/internal/state"
+	stateapi "github.com/leg100/otf/internal/state/api"
 	stateui "github.com/leg100/otf/internal/state/ui"
 	"github.com/leg100/otf/internal/team"
+	teamapi "github.com/leg100/otf/internal/team/api"
 	teamui "github.com/leg100/otf/internal/team/ui"
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/tokens"
 	"github.com/leg100/otf/internal/ui"
 	"github.com/leg100/otf/internal/ui/session"
 	"github.com/leg100/otf/internal/user"
+	userapi "github.com/leg100/otf/internal/user/api"
 	userui "github.com/leg100/otf/internal/user/ui"
 	"github.com/leg100/otf/internal/variable"
+	variableapi "github.com/leg100/otf/internal/variable/api"
 	variableui "github.com/leg100/otf/internal/variable/ui"
 	"github.com/leg100/otf/internal/vcs"
+	vcsapi "github.com/leg100/otf/internal/vcs/tfeapi"
 	vcsui "github.com/leg100/otf/internal/vcs/ui"
 	"github.com/leg100/otf/internal/workspace"
+	workspaceapi "github.com/leg100/otf/internal/workspace/api"
 	workspaceui "github.com/leg100/otf/internal/workspace/ui"
 	"golang.org/x/sync/errgroup"
 )
@@ -483,7 +496,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	})
 
 	// Handlers for the TFE API
-	stateTFEAPI := state.NewTFEAPI(
+	stateTFEAPI := stateapi.NewTFEAPI(
 		struct {
 			*state.StateService
 			*workspace.WorkspaceService
@@ -497,7 +510,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	tfeapiHandlers := &tfeapi.Handlers{
 		Verifier: signer,
 		Handlers: []internal.Handlers{
-			&variable.TFEAPI{
+			&variableapi.TFEAPI{
 				Client: struct {
 					*variable.VariableService
 					*workspace.WorkspaceService
@@ -507,46 +520,46 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 				},
 				Responder: responder,
 			},
-			&notifications.TFEAPI{
+			&notificationsapi.TFEAPI{
 				Client:    notificationService,
 				Responder: responder,
 			},
-			&vcs.TFEAPI{
+			&vcsapi.TFEAPI{
 				Client:    vcsService,
 				Responder: responder,
 			},
-			&runner.TFEAPI{
+			&runnerapi.TFEAPI{
 				Client:    runnerService,
 				Responder: responder,
 			},
-			&team.TFEAPI{
+			&teamapi.TFEAPI{
 				Client:    teamService,
 				Responder: responder,
 			},
-			&sshkey.TFEAPI{
+			&sshkeyapi.TFEAPI{
 				Client:    sshkeyService,
 				Responder: responder,
 			},
-			configversion.NewTFEAPI(
+			configversionapi.NewTFEAPI(
 				logger,
 				configService,
 				responder,
 				signer,
 				cfg.MaxConfigSize,
 			),
-			organization.NewTFEAPI(
+			orgapi.NewTFEAPI(
 				orgService,
 				responder,
 			),
-			user.NewTFEAPI(
+			userapi.NewTFEAPI(
 				userService,
 				responder,
 			),
-			user.NewTFEAPI(
+			userapi.NewTFEAPI(
 				userService,
 				responder,
 			),
-			run.NewTFEAPI(
+			runapi.NewTFEAPI(
 				struct {
 					*run.RunService
 					*workspace.WorkspaceService
@@ -558,7 +571,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 				signer,
 				responder,
 			),
-			trigger.NewTFEAPI(
+			triggerapi.NewTFEAPI(
 				struct {
 					*trigger.RunTriggerService
 					*workspace.WorkspaceService
@@ -569,7 +582,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 				authorizer,
 				responder,
 			),
-			workspace.NewTFEAPI(
+			workspaceapi.NewTFEAPI(
 				workspaceService,
 				responder,
 				authorizer,
@@ -580,43 +593,43 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 
 	apihandlers := &api.Handlers{
 		Handlers: []internal.Handlers{
-			&organization.API{
+			&orgapi.API{
 				Responder: responder,
 				Client:    orgService,
 			},
-			&workspace.API{
+			&workspaceapi.API{
 				Responder: responder,
 				Client:    workspaceService,
 			},
-			&run.API{
+			&runapi.API{
 				Responder: responder,
 				Client:    runService,
 			},
-			&configversion.API{
+			&configversionapi.API{
 				Responder: responder,
 				Client:    configService,
 			},
-			&user.API{
+			&userapi.API{
 				Responder: responder,
 				Client:    userService,
 			},
-			&team.API{
+			&teamapi.API{
 				Responder: responder,
 				Client:    teamService,
 			},
-			&state.API{
+			&stateapi.API{
 				Responder: responder,
 				Client:    stateService,
 				TFEAPI:    stateTFEAPI,
 			},
-			&sshkey.API{
+			&sshkeyapi.API{
 				Client: sshkeyService,
 			},
-			&variable.API{
+			&variableapi.API{
 				Client:    variableService,
 				Responder: responder,
 			},
-			&runner.API{
+			&runnerapi.API{
 				Client:    runnerService,
 				Responder: responder,
 			},

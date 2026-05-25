@@ -423,7 +423,7 @@ func (s *Service) CancelRun(ctx context.Context, runID resource.TfeID) error {
 			select {
 			case <-s.daemonCtx.Done():
 				return
-			case <-time.After(forceCancelCoolOff):
+			case <-time.After(ForceCancelCoolOff):
 			}
 			if err := s.db.triggerEvent(s.daemonCtx, run.ID); err != nil {
 				s.Error(err, "updating run after for cancel cool off period", "run", run)

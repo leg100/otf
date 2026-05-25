@@ -10,7 +10,7 @@ import (
 	"github.com/leg100/otf/internal/resource"
 )
 
-var errTriggerLoop = errors.New("workspace cannot trigger itself")
+var ErrTriggerLoop = errors.New("workspace cannot trigger itself")
 
 type Trigger struct {
 	ID                    resource.TfeID `db:"run_trigger_id"`
@@ -21,7 +21,7 @@ type Trigger struct {
 
 func newTrigger(workspaceID, triggeringWorkspaceID resource.TfeID) (*Trigger, error) {
 	if workspaceID == triggeringWorkspaceID {
-		return nil, fmt.Errorf("%w: %s", errTriggerLoop, workspaceID)
+		return nil, fmt.Errorf("%w: %s", ErrTriggerLoop, workspaceID)
 	}
 	return &Trigger{
 		ID:                    resource.NewTfeID(resource.RunTriggerKind),

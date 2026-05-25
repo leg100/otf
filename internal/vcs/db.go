@@ -27,8 +27,8 @@ func (db *pgdb) create(ctx context.Context, provider *Provider) error {
 		"vcs_kind":             provider.Kind.ID,
 		"organization":         provider.Organization,
 		"base_url":             provider.BaseURL,
-		"api_url":              provider.apiURL,
-		"tfe_service_provider": provider.serviceProviderType,
+		"api_url":              provider.APIURL,
+		"tfe_service_provider": provider.ServiceProviderType,
 	}
 	if provider.Installation != nil {
 		args["install_app_id"] = provider.Installation.AppID
@@ -227,8 +227,8 @@ func (db *pgdb) toProvider(ctx context.Context, m model) (*Provider, error) {
 		Token:               m.Token,
 		Installation:        cfg.Installation,
 		BaseURL:             m.BaseURL,
-		apiURL:              m.APIURL,
-		serviceProviderType: m.TFEServiceProvider,
+		APIURL:              m.APIURL,
+		ServiceProviderType: m.TFEServiceProvider,
 	}
 	return &provider, nil
 }

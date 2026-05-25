@@ -1,0 +1,77 @@
+package api
+
+import (
+	"context"
+	"fmt"
+	"net/url"
+
+	otfhttp "github.com/leg100/otf/internal/http"
+	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/user"
+)
+
+// Alias client to permit embedding it with other clients in a struct
+// without a name clash.
+type UserClient = Client
+
+type Client struct {
+	*otfhttp.Client
+}
+
+// Create creates a user via HTTP/JSONAPI. Options are ignored.
+func (c *Client) Create(ctx context.Context, username string, _ ...user.NewUserOption) (*user.User, error) {
+	req, err := c.NewRequest("POST", "admin/users", &user.CreateUserOptions{
+		Username: username,
+	})
+	if err != nil {
+		return nil, err
+	}
+	var user user.User
+	if err := c.Do(ctx, req, &user); err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
+// Delete deletes a user via HTTP/JSONAPI.
+func (c *Client) Delete(ctx context.Context, username user.Username) error {
+	u := fmt.Sprintf("admin/users/%s", url.QueryEscape(username.String()))
+	req, err := c.NewRequest("DELETE", u, nil)
+	if err != nil {
+		return err
+	}
+	if err := c.Do(ctx, req, nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+// AddTeamMembership adds users to a team via HTTP.
+func (c *Client) AddTeamMembership(ctx context.Context, teamID resource.TfeID, usernames []user.Username) error {
+	u := fmt.Sprintf("teams/%s/relationships/users", url.QueryEscape(teamID.String()))
+	req, err := c.NewRequest("POST", u, &teamMembers{
+		Usernames: usernames,
+	})
+	if err != nil {
+		return err
+	}
+	if err := c.Do(ctx, req, nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+// RemoveTeamMembership removes users from a team via HTTP.
+func (c *Client) RemoveTeamMembership(ctx context.Context, teamID resource.TfeID, usernames []user.Username) error {
+	u := fmt.Sprintf("teams/%s/relationships/users", url.QueryEscape(teamID.String()))
+	req, err := c.NewRequest("DELETE", u, &teamMembers{
+		Usernames: usernames,
+	})
+	if err != nil {
+		return err
+	}
+	if err := c.Do(ctx, req, nil); err != nil {
+		return err
+	}
+	return nil
+}

@@ -3,12 +3,15 @@ package workspace
 import (
 	"encoding/json"
 	"errors"
+	"net/http"
 	"time"
 
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sshkey"
+	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/tfeapi/types"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/workspace/execution"
@@ -429,9 +432,9 @@ func (t *TFETag) UnmarshalID(id string) error {
 	return t.ID.UnmarshalText([]byte(id))
 }
 
-// tfeAssignSSHKeyOptions represents the options to assign an SSH key to a
+// TFEAssignSSHKeyOptions represents the options to assign an SSH key to a
 // workspace.
-type tfeAssignSSHKeyOptions struct {
+type TFEAssignSSHKeyOptions struct {
 	// Type is a public field utilized by JSON:API to
 	// set the resource type via the field tag.
 	// It is not a user-defined value and does not need to be set.
@@ -440,4 +443,92 @@ type tfeAssignSSHKeyOptions struct {
 
 	// The SSH key ID to assign.
 	SSHKeyID *resource.TfeID `jsonapi:"attribute" json:"id"`
+}
+
+// ToTFE converts an OTF workspace to a TFE workspace.
+func ToTFE(a *authz.Authorizer, from *Workspace, r *http.Request) (*TFEWorkspace, error) {
+	ctx := r.Context()
+	perms := &TFEWorkspacePermissions{
+		CanLock:           a.CanAccess(ctx, resource.Lock, resource.WorkspaceKind, &from.ID),
+		CanUnlock:         a.CanAccess(ctx, resource.Unlock, resource.WorkspaceKind, &from.ID),
+		CanForceUnlock:    a.CanAccess(ctx, resource.ForceUnlock, resource.WorkspaceKind, &from.ID),
+		CanQueueApply:     a.CanAccess(ctx, resource.Apply, resource.RunKind, &from.ID),
+		CanQueueDestroy:   a.CanAccess(ctx, resource.Apply, resource.RunKind, &from.ID),
+		CanQueueRun:       a.CanAccess(ctx, resource.Create, resource.RunKind, &from.ID),
+		CanDestroy:        a.CanAccess(ctx, resource.Delete, resource.WorkspaceKind, &from.ID),
+		CanReadSettings:   a.CanAccess(ctx, resource.Get, resource.WorkspaceKind, &from.ID),
+		CanUpdate:         a.CanAccess(ctx, resource.Update, resource.WorkspaceKind, &from.ID),
+		CanUpdateVariable: a.CanAccess(ctx, resource.Update, resource.WorkspaceKind, &from.ID),
+	}
+
+	to := &TFEWorkspace{
+		ID: from.ID,
+		Actions: &TFEWorkspaceActions{
+			IsDestroyable: true,
+		},
+		AllowDestroyPlan:     from.AllowDestroyPlan,
+		AgentPoolID:          from.Mode.AgentPoolID(),
+		AutoApply:            from.AutoApply,
+		AutoApplyRunTrigger:  from.AutoApplyRunTrigger,
+		CanQueueDestroyPlan:  from.CanQueueDestroyPlan,
+		CreatedAt:            from.CreatedAt,
+		Description:          from.Description,
+		Environment:          from.Environment,
+		ExecutionMode:        from.Mode.Kind(),
+		GlobalRemoteState:    from.GlobalRemoteState,
+		Locked:               from.Locked(),
+		MigrationEnvironment: from.MigrationEnvironment,
+		Name:                 from.Name,
+		// Operations is deprecated but clients and go-tfe tests still use it
+		Operations:                 from.Mode.Kind() == execution.RemoteKind,
+		Permissions:                perms,
+		QueueAllRuns:               from.QueueAllRuns,
+		SpeculativeEnabled:         from.SpeculativeEnabled,
+		SourceName:                 from.SourceName,
+		SourceURL:                  from.SourceURL,
+		StructuredRunOutputEnabled: from.StructuredRunOutputEnabled,
+		TerraformVersion:           from.EngineVersion,
+		TriggerPrefixes:            from.TriggerPrefixes,
+		TriggerPatterns:            from.TriggerPatterns,
+		WorkingDirectory:           from.WorkingDirectory,
+		TagNames:                   from.Tags,
+		UpdatedAt:                  from.UpdatedAt,
+		Organization:               &organization.TFEOrganization{Name: from.Organization},
+		SettingOverwrites: &TFEWorkspaceSettingOverwrites{
+			ExecutionMode: new(false),
+			AgentPool:     new(false),
+		},
+	}
+	if len(from.TriggerPrefixes) > 0 || len(from.TriggerPatterns) > 0 {
+		to.FileTriggersEnabled = true
+	}
+	if from.LatestRun != nil {
+		to.CurrentRun = &TFERun{ID: from.LatestRun.ID}
+	}
+	if from.SSHKeyID != nil {
+		to.SSHKey = &sshkey.TFESSHKey{ID: *from.SSHKeyID}
+	}
+
+	// Add VCS repo to json:api struct if connected. NOTE: the terraform CLI
+	// uses the presence of VCS repo to determine whether to allow a terraform
+	// apply or not, displaying the following message if not:
+	//
+	//	Apply not allowed for workspaces with a VCS connection
+	//
+	//	A workspace that is connected to a VCS requires the VCS-driven workflow to ensure that the VCS remains the single source of truth.
+	//
+	// OTF permits the user to disable this behaviour by ommiting this info and
+	// fool the terraform CLI into thinking its not a workspace with a VCS
+	// connection.
+	if from.Connection != nil {
+		if !from.Connection.AllowCLIApply || !tfeapi.IsTerraformCLI(r) {
+			to.VCSRepo = &TFEVCSRepo{
+				OAuthTokenID: from.Connection.VCSProviderID,
+				Branch:       from.Connection.Branch,
+				Identifier:   from.Connection.Repo,
+				TagsRegex:    from.Connection.TagsRegex,
+			}
+		}
+	}
+	return to, nil
 }

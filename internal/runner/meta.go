@@ -149,7 +149,7 @@ func (m *RunnerMeta) CanAccess(action resource.Action, kind resource.Kind, req a
 	}
 }
 
-func runnerFromContext(ctx context.Context) (*RunnerMeta, error) {
+func RunnerFromContext(ctx context.Context) (*RunnerMeta, error) {
 	subject, err := authz.SubjectFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -162,7 +162,7 @@ func runnerFromContext(ctx context.Context) (*RunnerMeta, error) {
 }
 
 func authorizeRunner(ctx context.Context, id resource.TfeID) error {
-	runner, err := runnerFromContext(ctx)
+	runner, err := RunnerFromContext(ctx)
 	if err != nil {
 		return err
 	}
