@@ -12,6 +12,7 @@ import (
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tfeapi"
+	tfetypes "github.com/leg100/otf/internal/tfeapi/types"
 	"github.com/leg100/otf/internal/workspace/execution"
 )
 
@@ -234,11 +235,18 @@ func (a *tfe) createOrganizationToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	createdBy, err := tfetypes.NewCreatedBy(r.Context())
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+
 	to := &organization.TFEOrganizationToken{
 		ID:        ot.ID,
 		CreatedAt: ot.CreatedAt,
 		Token:     string(token),
 		ExpiredAt: ot.Expiry,
+		CreatedBy: createdBy,
 	}
 	a.Respond(w, r, to, http.StatusCreated)
 }

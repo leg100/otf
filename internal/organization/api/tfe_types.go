@@ -1,9 +1,11 @@
-package organization
+package api
 
 import (
 	"time"
 
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
+	tfetypes "github.com/leg100/otf/internal/tfeapi/types"
 	"github.com/leg100/otf/internal/workspace/execution"
 )
 
@@ -15,7 +17,7 @@ var DefaultOrganizationPermissions = TFEOrganizationPermissions{
 
 // TFEOrganization represents a Terraform Enterprise organization.
 type TFEOrganization struct {
-	Name                                              Name                        `jsonapi:"primary,organizations"`
+	Name                                              organization.Name           `jsonapi:"primary,organizations"`
 	AssessmentsEnforced                               bool                        `jsonapi:"attribute" json:"assessments-enforced"`
 	CollaboratorAuthPolicy                            TFEAuthPolicyType           `jsonapi:"attribute" json:"collaborator-auth-policy"`
 	CostEstimationEnabled                             bool                        `jsonapi:"attribute" json:"cost-estimation-enabled"`
@@ -170,10 +172,11 @@ const (
 
 // TFEOrganizationToken represents a Terraform Enterprise organization token.
 type TFEOrganizationToken struct {
-	ID        resource.TfeID `jsonapi:"primary,authentication-tokens"`
-	CreatedAt time.Time      `jsonapi:"attribute" json:"created-at"`
-	Token     string         `jsonapi:"attribute" json:"token"`
-	ExpiredAt *time.Time     `jsonapi:"attribute" json:"expired-at"`
+	ID        resource.TfeID      `jsonapi:"primary,authentication-tokens"`
+	CreatedAt time.Time           `jsonapi:"attribute" json:"created-at"`
+	Token     string              `jsonapi:"attribute" json:"token"`
+	ExpiredAt *time.Time          `jsonapi:"attribute" json:"expired-at"`
+	CreatedBy *tfetypes.CreatedBy `jsonapi:"relationship" json:"created-by"`
 }
 
 // TFEOrganizationTokenCreateOptions contains the options for creating an organization token.

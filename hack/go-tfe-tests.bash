@@ -116,7 +116,7 @@ skipTests=$(join_by '|' "${skipTests[@]}")
 
 # Pinned to version to avoid pulling in integration tests for functionality not
 # yet supported in OTF.
-dest_dir=$(go mod download -json github.com/hashicorp/go-tfe@v1.41.0 | jq -r '.Dir')
+dest_dir=$(go mod download -json github.com/hashicorp/go-tfe@v1.43.0 | jq -r '.Dir')
 echo "downloaded go-tfe module to $dest_dir"
 
 # some tests generate a tarball and save locally and need write perms
