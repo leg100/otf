@@ -258,6 +258,40 @@ func (g *Client) ListTags(ctx context.Context, opts vcs.ListTagsOptions) ([]stri
 	return tags, nil
 }
 
+// resolveTagRef takes a ref of the form "tags/<name>" and returns the commit
+// SHA the tag points at. Lightweight tags point directly at a commit;
+// annotated/signed tags point at a tag object that in turn points at a
+// commit (see https://git-scm.com/book/en/v2/Git-Basics-Tagging), and must
+// be peeled. If the remote does not return git-object metadata for the ref
+// (e.g. a test fake) the input ref is returned unchanged so callers can fall
+// back to letting Github resolve it server-side.
+func (g *Client) resolveTagRef(ctx context.Context, repo vcs.Repo, tagRef string) (string, error) {
+	refs, _, err := g.client.Git.ListMatchingRefs(ctx, repo.Owner(), repo.Name(), &github.ReferenceListOptions{
+		Ref: tagRef,
+	})
+	if err != nil {
+		return "", err
+	}
+	for _, ref := range refs {
+		if strings.TrimPrefix(ref.GetRef(), "refs/") != tagRef {
+			continue
+		}
+		obj := ref.GetObject()
+		switch obj.GetType() {
+		case "commit":
+			return obj.GetSHA(), nil
+		case "tag":
+			tag, _, err := g.client.Git.GetTag(ctx, repo.Owner(), repo.Name(), obj.GetSHA())
+			if err != nil {
+				return "", fmt.Errorf("dereferencing annotated tag object %s: %w", obj.GetSHA(), err)
+			}
+			return tag.GetObject().GetSHA(), nil
+		}
+		break
+	}
+	return tagRef, nil
+}
+
 func (g *Client) ExchangeCode(ctx context.Context, code string) (*github.AppConfig, error) {
 	cfg, _, err := g.client.Apps.CompleteAppManifest(ctx, code)
 	if err != nil {
@@ -269,7 +303,20 @@ func (g *Client) ExchangeCode(ctx context.Context, code string) (*github.AppConf
 func (g *Client) GetRepoTarball(ctx context.Context, opts vcs.GetRepoTarballOptions) ([]byte, string, error) {
 	var gopts github.RepositoryContentGetOptions
 	if opts.Ref != nil {
-		gopts.Ref = *opts.Ref
+		ref := *opts.Ref
+		// Annotated (and signed) tags point at a tag object rather than a
+		// commit, and Github's archive endpoint does not reliably dereference
+		// them when given a "tags/<name>" ref. Peel any tag ref to its
+		// underlying commit SHA so that annotated and lightweight tags
+		// behave identically.
+		if strings.HasPrefix(ref, "tags/") {
+			resolved, err := g.resolveTagRef(ctx, opts.Repo, ref)
+			if err != nil {
+				return nil, "", fmt.Errorf("resolving tag %s: %w", ref, err)
+			}
+			ref = resolved
+		}
+		gopts.Ref = ref
 	}
 
 	link, _, err := g.client.Repositories.GetArchiveLink(ctx, opts.Repo.Owner(), opts.Repo.Name(), github.Tarball, &gopts, maxRedirects)
