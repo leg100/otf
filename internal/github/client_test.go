@@ -68,12 +68,27 @@ func TestGetRepoTarball(t *testing.T) {
 	assert.FileExists(t, path.Join(dst, "main.tf"))
 }
 
-// TestGetRepoTarball_AnnotatedTag verifies that when GetRepoTarball is
-// called with an annotated/signed tag ref, the tag is peeled to its
-// underlying commit SHA before the archive endpoint is hit. Without
-// peeling, Github's archive endpoint is handed a ref that points at the
-// tag object rather than a commit, which fails in the wild (see #911).
-func TestGetRepoTarball_AnnotatedTag(t *testing.T) {
+// TestGetRepoTarball_PeelsTagsToCommit verifies that GetRepoTarball
+// resolves tag refs to their underlying commit SHA before calling Github's
+// archive endpoint.
+//
+// Annotated and signed tags are tag *objects* whose SHA is distinct from
+// the commit they point at; Github's archive endpoint does not reliably
+// dereference them, which is the bug reported in #911. The lightweight
+// case is exercised alongside to prove the new code path is symmetric
+// (both tag flavours arrive at the archive endpoint as commit SHAs).
+//
+// Mocked responses follow the documented Github API shapes:
+//
+//   - List matching references:
+//     https://docs.github.com/en/rest/git/refs#list-matching-references
+//   - Get a tag (annotated tag dereferencing):
+//     https://docs.github.com/en/rest/git/tags#get-a-tag
+//
+// Background on lightweight vs annotated/signed tags:
+//
+//   - https://git-scm.com/book/en/v2/Git-Basics-Tagging
+func TestGetRepoTarball_PeelsTagsToCommit(t *testing.T) {
 	tarballBytes, err := os.ReadFile("../testdata/github.tar.gz")
 	require.NoError(t, err)
 
@@ -85,64 +100,109 @@ func TestGetRepoTarball_AnnotatedTag(t *testing.T) {
 		tagName   = "v1.0.0"
 	)
 
-	var capturedTarballRef string
+	for _, tc := range []struct {
+		name string
+		// refObjectType is what `object.type` is set to on the ref returned
+		// by Github's matching-refs endpoint: "commit" for a lightweight
+		// tag, "tag" for an annotated/signed tag.
+		refObjectType string
+		// refObjectSHA is the SHA returned alongside refObjectType.
+		// Lightweight tags point at a commit, so this is the commit SHA.
+		// Annotated tags point at a tag object, so this is the tag-object
+		// SHA, which then has to be peeled via /git/tags/{sha}.
+		refObjectSHA string
+		// wantGetTagCall is true when the implementation is expected to
+		// follow the annotated path and call Git.GetTag.
+		wantGetTagCall bool
+	}{
+		{
+			name:           "lightweight tag",
+			refObjectType:  "commit",
+			refObjectSHA:   commitSHA,
+			wantGetTagCall: false,
+		},
+		{
+			name:           "annotated tag",
+			refObjectType:  "tag",
+			refObjectSHA:   tagObjSHA,
+			wantGetTagCall: true,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var (
+				capturedTarballRef string
+				getTagCalled       bool
+			)
 
-	mux := http.NewServeMux()
-	// Github responds to ListMatchingRefs for an annotated tag with a ref
-	// whose object is itself a tag object (rather than a commit).
-	mux.HandleFunc("/api/v3/repos/"+owner+"/"+repoName+"/git/matching-refs/tags/"+tagName, func(w http.ResponseWriter, r *http.Request) {
-		refs := []*github.Reference{{
-			Ref: new("refs/tags/" + tagName),
-			Object: &github.GitObject{
-				Type: new("tag"),
-				SHA:  new(tagObjSHA),
-			},
-		}}
-		require.NoError(t, json.NewEncoder(w).Encode(refs))
-	})
-	// Github exposes the underlying commit of an annotated tag via the
-	// tag-object endpoint.
-	mux.HandleFunc("/api/v3/repos/"+owner+"/"+repoName+"/git/tags/"+tagObjSHA, func(w http.ResponseWriter, r *http.Request) {
-		tag := &github.Tag{
-			SHA: new(tagObjSHA),
-			Object: &github.GitObject{
-				Type: new("commit"),
-				SHA:  new(commitSHA),
-			},
-		}
-		require.NoError(t, json.NewEncoder(w).Encode(tag))
-	})
-	// Capture whatever ref the archive endpoint is called with, then serve
-	// up a real tarball so GetRepoTarball can complete.
-	tarballPrefix := "/api/v3/repos/" + owner + "/" + repoName + "/tarball/"
-	mux.HandleFunc(tarballPrefix, func(w http.ResponseWriter, r *http.Request) {
-		capturedTarballRef = strings.TrimPrefix(r.URL.Path, tarballPrefix)
-		http.Redirect(w, r, (&url.URL{Scheme: "https", Host: r.Host, Path: "/archive"}).String(), http.StatusFound)
-	})
-	mux.HandleFunc("/archive", func(w http.ResponseWriter, r *http.Request) {
-		w.Write(tarballBytes)
-	})
+			mux := http.NewServeMux()
 
-	server := httptest.NewTLSServer(mux)
-	t.Cleanup(server.Close)
+			// matching-refs: shape per
+			// https://docs.github.com/en/rest/git/refs#list-matching-references
+			// For an annotated tag, object.type is "tag"; for a lightweight
+			// tag, object.type is "commit".
+			mux.HandleFunc("/api/v3/repos/"+owner+"/"+repoName+"/git/matching-refs/tags/"+tagName, func(w http.ResponseWriter, r *http.Request) {
+				refs := []*github.Reference{{
+					Ref: new("refs/tags/" + tagName),
+					Object: &github.GitObject{
+						Type: new(tc.refObjectType),
+						SHA:  new(tc.refObjectSHA),
+					},
+				}}
+				require.NoError(t, json.NewEncoder(w).Encode(refs))
+			})
 
-	u, err := url.Parse(server.URL)
-	require.NoError(t, err)
-	client, err := NewClient(ClientOptions{
-		BaseURL:             &internal.WebURL{URL: *u},
-		SkipTLSVerification: true,
-		OAuthToken:          &oauth2.Token{AccessToken: "fake-token"},
-	})
-	require.NoError(t, err)
+			// get-a-tag: shape per
+			// https://docs.github.com/en/rest/git/tags#get-a-tag
+			// The tag object's `object` field is the commit it annotates.
+			// This handler is only expected to be hit for the annotated case.
+			mux.HandleFunc("/api/v3/repos/"+owner+"/"+repoName+"/git/tags/"+tagObjSHA, func(w http.ResponseWriter, r *http.Request) {
+				getTagCalled = true
+				tag := &github.Tag{
+					SHA: new(tagObjSHA),
+					Object: &github.GitObject{
+						Type: new("commit"),
+						SHA:  new(commitSHA),
+					},
+				}
+				require.NoError(t, json.NewEncoder(w).Encode(tag))
+			})
 
-	ref := "tags/" + tagName
-	_, _, err = client.GetRepoTarball(t.Context(), vcs.GetRepoTarballOptions{
-		Repo: vcs.NewMustRepo(owner, repoName),
-		Ref:  &ref,
-	})
-	require.NoError(t, err)
-	assert.Equal(t, commitSHA, capturedTarballRef,
-		"annotated tag must be peeled to its commit SHA before the archive endpoint is called")
+			// Archive endpoint: record the ref it was called with, then
+			// redirect to a static tarball so GetRepoTarball can complete.
+			tarballPrefix := "/api/v3/repos/" + owner + "/" + repoName + "/tarball/"
+			mux.HandleFunc(tarballPrefix, func(w http.ResponseWriter, r *http.Request) {
+				capturedTarballRef = strings.TrimPrefix(r.URL.Path, tarballPrefix)
+				http.Redirect(w, r, (&url.URL{Scheme: "https", Host: r.Host, Path: "/archive"}).String(), http.StatusFound)
+			})
+			mux.HandleFunc("/archive", func(w http.ResponseWriter, r *http.Request) {
+				w.Write(tarballBytes)
+			})
+
+			server := httptest.NewTLSServer(mux)
+			t.Cleanup(server.Close)
+
+			u, err := url.Parse(server.URL)
+			require.NoError(t, err)
+			client, err := NewClient(ClientOptions{
+				BaseURL:             &internal.WebURL{URL: *u},
+				SkipTLSVerification: true,
+				OAuthToken:          &oauth2.Token{AccessToken: "fake-token"},
+			})
+			require.NoError(t, err)
+
+			ref := "tags/" + tagName
+			_, _, err = client.GetRepoTarball(t.Context(), vcs.GetRepoTarballOptions{
+				Repo: vcs.NewMustRepo(owner, repoName),
+				Ref:  &ref,
+			})
+			require.NoError(t, err)
+
+			assert.Equal(t, commitSHA, capturedTarballRef,
+				"archive endpoint must be called with the peeled commit SHA")
+			assert.Equal(t, tc.wantGetTagCall, getTagCalled,
+				"Git.GetTag should only be called for annotated tags")
+		})
+	}
 }
 
 func TestCreateWebhook(t *testing.T) {
