@@ -258,6 +258,54 @@ func (g *Client) ListTags(ctx context.Context, opts vcs.ListTagsOptions) ([]stri
 	return tags, nil
 }
 
+// resolveTagRef takes a ref of the form "tags/<name>" and returns the commit
+// SHA the tag points at, peeling annotated tag objects as needed.
+//
+// Lightweight tags point directly at a commit: the ref's object SHA is the
+// commit SHA. Annotated and signed tags point at a tag *object* (a distinct
+// git object kind) whose SHA is unrelated to the commit; the tag object must
+// be fetched and its `object` followed to reach the commit. This is the http
+// equivalent of `git rev-parse refs/tags/<name>^{commit}`. See:
+//
+//   - https://git-scm.com/book/en/v2/Git-Basics-Tagging
+//     (annotated vs lightweight tags, signed tags)
+//   - https://git-scm.com/docs/gitrevisions
+//     ("<rev>^{<type>}" peeling syntax)
+//   - https://docs.github.com/en/rest/git/refs#list-matching-references
+//     (object.type field on a ref: "commit" or "tag")
+//   - https://docs.github.com/en/rest/git/tags#get-a-tag
+//     (response shape with the underlying object the tag points at)
+//
+// If the remote does not return git-object metadata for the ref (e.g. a
+// test fake) the input ref is returned unchanged so callers can fall back
+// to letting Github resolve it server-side.
+func (g *Client) resolveTagRef(ctx context.Context, repo vcs.Repo, tagRef string) (string, error) {
+	refs, _, err := g.client.Git.ListMatchingRefs(ctx, repo.Owner(), repo.Name(), &github.ReferenceListOptions{
+		Ref: tagRef,
+	})
+	if err != nil {
+		return "", err
+	}
+	for _, ref := range refs {
+		if strings.TrimPrefix(ref.GetRef(), "refs/") != tagRef {
+			continue
+		}
+		obj := ref.GetObject()
+		switch obj.GetType() {
+		case "commit":
+			return obj.GetSHA(), nil
+		case "tag":
+			tag, _, err := g.client.Git.GetTag(ctx, repo.Owner(), repo.Name(), obj.GetSHA())
+			if err != nil {
+				return "", fmt.Errorf("dereferencing annotated tag object %s: %w", obj.GetSHA(), err)
+			}
+			return tag.GetObject().GetSHA(), nil
+		}
+		break
+	}
+	return tagRef, nil
+}
+
 func (g *Client) ExchangeCode(ctx context.Context, code string) (*github.AppConfig, error) {
 	cfg, _, err := g.client.Apps.CompleteAppManifest(ctx, code)
 	if err != nil {
@@ -269,7 +317,23 @@ func (g *Client) ExchangeCode(ctx context.Context, code string) (*github.AppConf
 func (g *Client) GetRepoTarball(ctx context.Context, opts vcs.GetRepoTarballOptions) ([]byte, string, error) {
 	var gopts github.RepositoryContentGetOptions
 	if opts.Ref != nil {
-		gopts.Ref = *opts.Ref
+		ref := *opts.Ref
+		// Github's archive endpoint accepts a "commit-ish" ref, but its
+		// behaviour for annotated/signed tags - which are tag objects, not
+		// commits - is undocumented and observably unreliable in the wild.
+		// Peel every tag ref to its commit SHA up front so the endpoint is
+		// always handed a commit and resolution is identical for lightweight,
+		// annotated, and signed tags.
+		//   https://docs.github.com/en/rest/repos/contents#download-a-repository-archive-tar
+		//   https://git-scm.com/book/en/v2/Git-Basics-Tagging
+		if strings.HasPrefix(ref, "tags/") {
+			resolved, err := g.resolveTagRef(ctx, opts.Repo, ref)
+			if err != nil {
+				return nil, "", fmt.Errorf("resolving tag %s: %w", ref, err)
+			}
+			ref = resolved
+		}
+		gopts.Ref = ref
 	}
 
 	link, _, err := g.client.Repositories.GetArchiveLink(ctx, opts.Repo.Owner(), opts.Repo.Name(), github.Tarball, &gopts, maxRedirects)
