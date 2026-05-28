@@ -7,11 +7,65 @@ import (
 	"path"
 	"testing"
 
+	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/mitchellh/iochan"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// fakeOperationClientHostname is a minimal OperationClient stub that only
+// satisfies the Hostname() call used in DoOperation.
+type fakeOperationClientHostname struct {
+	OperationClient
+	hostname string
+}
+
+func (f *fakeOperationClientHostname) Hostname() string { return f.hostname }
+
+func TestCredentialEnvs(t *testing.T) {
+	credentialEnvs := func(opts OperationOptions) []string {
+		var envs []string
+		envs = append(envs, internal.CredentialEnv(opts.Client.Hostname(), opts.JobToken))
+		if opts.CredentialHostname != "" && opts.CredentialHostname != opts.Client.Hostname() {
+			envs = append(envs, internal.CredentialEnv(opts.CredentialHostname, opts.JobToken))
+		}
+		return envs
+	}
+
+	t.Run("sets only client hostname env when CredentialHostname is empty", func(t *testing.T) {
+		opts := OperationOptions{
+			Client:   &fakeOperationClientHostname{hostname: "app.otf.example.com"},
+			JobToken: []byte("token"),
+		}
+		envs := credentialEnvs(opts)
+		assert.Len(t, envs, 1)
+		assert.Contains(t, envs, internal.CredentialEnv("app.otf.example.com", []byte("token")))
+	})
+
+	t.Run("sets both env vars when CredentialHostname differs from client hostname", func(t *testing.T) {
+		opts := OperationOptions{
+			Client:             &fakeOperationClientHostname{hostname: "otf.default:8080"},
+			JobToken:           []byte("token"),
+			CredentialHostname: "app.otf.example.com",
+		}
+		envs := credentialEnvs(opts)
+		assert.Len(t, envs, 2)
+		assert.Contains(t, envs, internal.CredentialEnv("otf.default:8080", []byte("token")))
+		assert.Contains(t, envs, internal.CredentialEnv("app.otf.example.com", []byte("token")))
+	})
+
+	t.Run("sets only one env var when CredentialHostname matches client hostname", func(t *testing.T) {
+		opts := OperationOptions{
+			Client:             &fakeOperationClientHostname{hostname: "app.otf.example.com"},
+			JobToken:           []byte("token"),
+			CredentialHostname: "app.otf.example.com",
+		}
+		envs := credentialEnvs(opts)
+		assert.Len(t, envs, 1)
+		assert.Contains(t, envs, internal.CredentialEnv("app.otf.example.com", []byte("token")))
+	})
+}
 
 func TestExecutor_execute(t *testing.T) {
 	t.Run("no options", func(t *testing.T) {

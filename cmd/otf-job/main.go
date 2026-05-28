@@ -39,6 +39,7 @@ func run(ctx context.Context, args []string) error {
 		jobToken        string
 		jobID           resource.TfeID
 		url             string
+		hostname        string
 	)
 
 	cmd := &cobra.Command{
@@ -66,11 +67,12 @@ func run(ctx context.Context, args []string) error {
 			}
 			// blocks until operation completes
 			runner.DoOperation(ctx, nil, runner.OperationOptions{
-				Logger:          logger,
-				OperationConfig: operationConfig,
-				Job:             job,
-				JobToken:        []byte(jobToken),
-				Client:          client,
+				Logger:             logger,
+				OperationConfig:    operationConfig,
+				Job:                job,
+				JobToken:           []byte(jobToken),
+				Client:             client,
+				CredentialHostname: hostname,
 			})
 			return nil
 		},
@@ -82,6 +84,7 @@ func run(ctx context.Context, args []string) error {
 	cmd.Flags().StringVar(&jobToken, "job-token", "", "Job token for authentication")
 	cmd.Flags().Var(&jobID, "job-id", "ID of job to execute")
 	cmd.Flags().StringVar(&url, "url", otfhttp.DefaultURL, "URL of OTF server")
+	cmd.Flags().StringVar(&hostname, "hostname", "", "Public-facing OTF hostname; sets an additional TF_TOKEN_* credential env var alongside the one derived from --url")
 
 	cmd.SetArgs(args)
 
