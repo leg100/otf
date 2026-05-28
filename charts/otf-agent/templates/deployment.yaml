@@ -34,7 +34,7 @@ spec:
           emptyDir: {}
         {{- include "runner.volume" . | nindent 8 }}
         {{- with .Values.volumes }}
-          {{- toYaml . | nindent 10 }}
+          {{- toYaml . | nindent 8 }}
         {{- end }}
       containers:
         {{- with .Values.sidecars }}
@@ -83,7 +83,7 @@ spec:
           volumeMounts:
           {{- include "runner.volume_mounts" . | nindent 10 }}
           {{- with .Values.volumeMounts }}
-            {{- toYaml . | nindent 12 }}
+            {{- toYaml . | nindent 10 }}
           {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}

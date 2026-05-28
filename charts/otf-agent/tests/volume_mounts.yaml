@@ -1,0 +1,14 @@
+volumes:
+  - name: otf-keys
+    secret:
+      secretName: otfd
+      items:
+        - key: public_key
+          path: public_key
+        - key: private_key
+          path: private_key
+
+volumeMounts:
+  - name: otf-keys
+    mountPath: /etc/otf/keys
+    readOnly: true
