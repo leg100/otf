@@ -1,5 +1,32 @@
 # Changelog
 
+## [0.6.0](https://github.com/leg100/otf/compare/v0.5.24...v0.6.0) (2026-05-28)
+
+
+### ⚠ BREAKING CHANGES
+
+* bump default terraform and tofu to latest version
+
+### Features
+
+* bump default terraform and tofu to latest version ([8a67e73](https://github.com/leg100/otf/commit/8a67e7342d3bc3a54aa4d1ab0e66d95b7fbb2d3e))
+
+
+### Bug Fixes
+
+* add support for GitHub annotated tags ([#950](https://github.com/leg100/otf/issues/950)) ([65ac9d2](https://github.com/leg100/otf/commit/65ac9d28b166df22534fc834c0e6e671cf760f74))
+* **otf-agent:** correct indent on .Values.volumes and .Values.volumeMounts ([#951](https://github.com/leg100/otf/issues/951)) ([03c94e9](https://github.com/leg100/otf/commit/03c94e90f439cc1fc94a5647e72637218f07fa9b))
+* **tests:** terraform init test broke with new default version ([fe24f22](https://github.com/leg100/otf/commit/fe24f22f8075b00395ab06730802f125a1a345e4))
+
+
+### Miscellaneous
+
+* **agent:** add further comment on setting k8s server url ([7c48284](https://github.com/leg100/otf/commit/7c482845d4f5f17ca3ea450378ff6670ed2638c7))
+* bump go-tfe support to v1.39.2 ([945adf5](https://github.com/leg100/otf/commit/945adf5eca882bd4178f514e761c80825eb2e71d))
+* bump go-tfe support to v1.41.0 ([7bdbd74](https://github.com/leg100/otf/commit/7bdbd74a7abe739c775eae93686e09507840c28b))
+* bump helm charts with app version v0.5.24 ([2c860c9](https://github.com/leg100/otf/commit/2c860c922d532b89acd1109aa660c8be69551b30))
+* **test:** cover remote-state-sharing disabled case ([2bcafee](https://github.com/leg100/otf/commit/2bcafeeece97e8204a93cdf33e291a7731ba0383))
+
 ## [0.5.24](https://github.com/leg100/otf/compare/v0.5.23...v0.5.24) (2026-04-19)
 
 
