@@ -37,7 +37,7 @@ func TestMiddleware(t *testing.T) {
 		w := httptest.NewRecorder()
 		r.Header.Add("Authorization", "Bearer valid-token")
 		mw := &Middleware{
-			Authenticators: []Authenticator{
+			APIAuthenticators: []Authenticator{
 				&JWTAuthenticator{
 					Client: &fakeBearerAuthenticatorClient{subject: &authz.Superuser{}},
 				},

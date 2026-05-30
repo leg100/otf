@@ -58,6 +58,7 @@ import (
 	teamui "github.com/leg100/otf/internal/team/ui"
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/tokens"
+	tokenmiddleware "github.com/leg100/otf/internal/tokens/middleware"
 	"github.com/leg100/otf/internal/ui"
 	"github.com/leg100/otf/internal/ui/session"
 	"github.com/leg100/otf/internal/user"
@@ -228,22 +229,24 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 
 	sessionService := session.NewService(logger, tokensService)
 
+	// Setup middleware for authenticating tokens in requests
+	tokenMiddleware := &tokenmiddleware.Middleware{Logger: logger}
+
+	// Setup Google IAP authenticator
+	iapAuthenticator := iap.NewAuthenticator(
+		cfg.GoogleIAPAudience,
+		userService,
+	)
+
 	// Authenticate API/UI requests. An authenticated request is one that
 	// has a particular header containing a credential. The token service
 	// middleware checks the request against a series of 'authenticators': each
 	// authenticator checks if the request contains a particular credential; if
 	// there is a successful match then it returns the corresponding subject,
 	// e.g. a user or organization API token, etc.
-	tokensService.Middleware.Authenticators = []tokens.Authenticator{
-		// Authenticate UI session cookies.
-		&session.Authenticator{
-			Client: tokensService,
-		},
-		// Authenticate requests from Google IAP.
-		iap.NewAuthenticator(
-			cfg.GoogleIAPAudience,
-			userService,
-		),
+	tokenMiddleware.APIAuthenticators = []tokenmiddleware.Authenticator{
+		// Allow IAP authenticated users to access API
+		iapAuthenticator,
 		// Authenticate API requests from the site admin using their special
 		// non-JWT token. It's important that this authenticator comes *before*
 		// the JWT authenticator otherwise the JWT authenticator would try to
@@ -256,6 +259,14 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		&tokens.JWTAuthenticator{
 			Client: tokensService,
 		},
+	}
+	tokenMiddleware.UIAuthenticators = []tokenmiddleware.Authenticator{
+		// Authenticate UI session cookies.
+		&session.Authenticator{
+			Client: tokensService,
+		},
+		// Allow IAP authenticated users to access UI.
+		iapAuthenticator,
 	}
 
 	configService := configversion.NewService(configversion.Options{

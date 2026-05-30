@@ -4,12 +4,15 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path"
 	"path/filepath"
 	"testing"
 
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/iap"
 	"github.com/leg100/otf/internal/organization"
+	uipath "github.com/leg100/otf/internal/path"
+	"github.com/leg100/otf/internal/tfeapi"
 	userpkg "github.com/leg100/otf/internal/user"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -42,6 +45,8 @@ func TestAuthenticators(t *testing.T) {
 		setup       func(t *testing.T, r *http.Request)
 		wantCode    int
 		wantSubject any
+		// wantUIAccess is true if access to the UI should be granted.
+		wantUIAccess bool
 	}{
 		{
 			name:     "unauthenticated",
@@ -53,7 +58,8 @@ func TestAuthenticators(t *testing.T) {
 				token := generateIAPToken(t, "https://example.com")
 				r.Header.Add(iap.Header, token)
 			},
-			wantCode: 200,
+			wantCode:     200,
+			wantUIAccess: true,
 		},
 		{
 			name: "org token",
@@ -86,20 +92,29 @@ func TestAuthenticators(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			r := httptest.NewRequest("GET", "/api/v2/protected", nil)
-			if tt.setup != nil {
-				tt.setup(t, r)
+			paths := []string{
+				path.Join(tfeapi.APIPrefixV2, "protected"),
 			}
-			w := httptest.NewRecorder()
-			h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				subj, err := authz.SubjectFromContext(r.Context())
-				require.NoError(t, err)
-				if tt.wantSubject != nil {
-					assert.Equal(t, tt.wantSubject, subj)
+			if tt.wantUIAccess {
+				paths = append(paths, path.Join(uipath.Prefix, "protected"))
+			}
+			for _, path := range paths {
+				apiRequest := httptest.NewRequest("GET", path, nil)
+				if tt.setup != nil {
+					tt.setup(t, apiRequest)
 				}
-			})
-			daemon.Tokens.Middleware.Authenticate(h).ServeHTTP(w, r)
-			assert.Equal(t, tt.wantCode, w.Code)
+				w := httptest.NewRecorder()
+				h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					subj, err := authz.SubjectFromContext(r.Context())
+					require.NoError(t, err)
+					if tt.wantSubject != nil {
+						assert.Equal(t, tt.wantSubject, subj)
+					}
+				})
+				daemon.Tokens.Middleware.Authenticate(h).ServeHTTP(w, apiRequest)
+				assert.Equal(t, tt.wantCode, w.Code, "unexpected response code accessing path %s", path)
+			}
+
 		})
 	}
 }
