@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"path"
 	"path/filepath"
 	"testing"
 
@@ -43,34 +42,52 @@ func TestAuthenticators(t *testing.T) {
 	tests := []struct {
 		name        string
 		setup       func(t *testing.T, r *http.Request)
+		path        string
 		wantCode    int
 		wantSubject any
-		// wantUIAccess is true if access to the UI should be granted.
-		wantUIAccess bool
 	}{
 		{
-			name:     "unauthenticated",
+			name:     "unauthenticated access to API",
+			path:     tfeapi.APIPrefixV2,
 			wantCode: 401,
 		},
 		{
-			name: "iap",
+			name: "iap access to API",
 			setup: func(t *testing.T, r *http.Request) {
 				token := generateIAPToken(t, "https://example.com")
 				r.Header.Add(iap.Header, token)
 			},
-			wantCode:     200,
-			wantUIAccess: true,
+			path:     tfeapi.APIPrefixV2,
+			wantCode: 200,
 		},
 		{
-			name: "org token",
+			name: "iap access to UI",
+			setup: func(t *testing.T, r *http.Request) {
+				token := generateIAPToken(t, "https://example.com")
+				r.Header.Add(iap.Header, token)
+			},
+			path:     uipath.Prefix,
+			wantCode: 200,
+		},
+		{
+			name: "org token access to API",
 			setup: func(t *testing.T, r *http.Request) {
 				r.Header.Add("Authorization", "Bearer "+string(orgToken))
 			},
+			path:        tfeapi.APIPrefixV2,
 			wantCode:    200,
 			wantSubject: ot,
 		},
 		{
-			name: "user token",
+			name: "refuse org token access to UI",
+			setup: func(t *testing.T, r *http.Request) {
+				r.Header.Add("Authorization", "Bearer "+string(orgToken))
+			},
+			path:     uipath.Prefix,
+			wantCode: 302,
+		},
+		{
+			name: "user token access to API",
 			setup: func(t *testing.T, r *http.Request) {
 				_, token, err := daemon.Users.CreateToken(ctx, userpkg.CreateUserTokenOptions{
 					Description: "lorem ipsum...",
@@ -78,42 +95,60 @@ func TestAuthenticators(t *testing.T) {
 				require.NoError(t, err)
 				r.Header.Add("Authorization", "Bearer "+string(token))
 			},
+			path:        tfeapi.APIPrefixV2,
 			wantCode:    200,
 			wantSubject: user,
 		},
 		{
-			name: "site admin token",
+			name: "refuse user token access to UI",
+			setup: func(t *testing.T, r *http.Request) {
+				_, token, err := daemon.Users.CreateToken(ctx, userpkg.CreateUserTokenOptions{
+					Description: "lorem ipsum...",
+				})
+				require.NoError(t, err)
+				r.Header.Add("Authorization", "Bearer "+string(token))
+			},
+			path:     uipath.Prefix,
+			wantCode: 302,
+		},
+		{
+			name: "site admin token access to API",
 			setup: func(t *testing.T, r *http.Request) {
 				r.Header.Add("Authorization", "Bearer "+siteToken)
 			},
+			path:        tfeapi.APIPrefixV2,
+			wantCode:    200,
+			wantSubject: &userpkg.SiteAdmin,
+		},
+		{
+			name: "allow site admin token access to UI",
+			setup: func(t *testing.T, r *http.Request) {
+				r.Header.Add("Authorization", "Bearer "+siteToken)
+			},
+			path:        uipath.Prefix,
 			wantCode:    200,
 			wantSubject: &userpkg.SiteAdmin,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			paths := []string{
-				path.Join(tfeapi.APIPrefixV2, "protected"),
+			apiRequest := httptest.NewRequest("GET", tt.path, nil)
+			if tt.setup != nil {
+				tt.setup(t, apiRequest)
 			}
-			if tt.wantUIAccess {
-				paths = append(paths, path.Join(uipath.Prefix, "protected"))
-			}
-			for _, path := range paths {
-				apiRequest := httptest.NewRequest("GET", path, nil)
-				if tt.setup != nil {
-					tt.setup(t, apiRequest)
+			w := httptest.NewRecorder()
+			var h http.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				subj, err := authz.SubjectFromContext(r.Context())
+				require.NoError(t, err)
+				if tt.wantSubject != nil {
+					assert.Equal(t, tt.wantSubject, subj)
 				}
-				w := httptest.NewRecorder()
-				h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					subj, err := authz.SubjectFromContext(r.Context())
-					require.NoError(t, err)
-					if tt.wantSubject != nil {
-						assert.Equal(t, tt.wantSubject, subj)
-					}
-				})
-				daemon.Tokens.Middleware.Authenticate(h).ServeHTTP(w, apiRequest)
-				assert.Equal(t, tt.wantCode, w.Code, "unexpected response code accessing path %s", path)
+			})
+			for _, mw := range daemon.AuthMiddleware {
+				h = mw(h)
 			}
+			h.ServeHTTP(w, apiRequest)
+			assert.Equal(t, tt.wantCode, w.Code, "unexpected response code accessing path %s", tt.path)
 
 		})
 	}
