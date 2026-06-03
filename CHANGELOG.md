@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.6.1](https://github.com/leg100/otf/compare/v0.6.0...v0.6.1) (2026-06-03)
+
+
+### Bug Fixes
+
+* allow IAP user auth access to UI ([#955](https://github.com/leg100/otf/issues/955)) ([79bd1aa](https://github.com/leg100/otf/commit/79bd1aa5de92161f3833d9ed0e84cc2ec5d4b340))
+
+
+### Miscellaneous
+
+* bump helm charts with app version v0.6.0 ([ffbb960](https://github.com/leg100/otf/commit/ffbb960a65699745dafb17ef5ab1ca12137ed1a7))
+
 ## [0.6.0](https://github.com/leg100/otf/compare/v0.5.24...v0.6.0) (2026-05-28)
 
 
