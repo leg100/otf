@@ -10,7 +10,9 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/api"
+	apiauth "github.com/leg100/otf/internal/api/auth"
 	"github.com/leg100/otf/internal/authenticator"
+	"github.com/leg100/otf/internal/authn"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/configversion"
 	configversionapi "github.com/leg100/otf/internal/configversion/api"
@@ -59,6 +61,7 @@ import (
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/tokens"
 	"github.com/leg100/otf/internal/ui"
+	uiauth "github.com/leg100/otf/internal/ui/auth"
 	"github.com/leg100/otf/internal/ui/session"
 	"github.com/leg100/otf/internal/user"
 	userapi "github.com/leg100/otf/internal/user/api"
@@ -77,27 +80,28 @@ import (
 
 type (
 	Daemon struct {
-		DB            *sql.DB
-		Organizations *organization.Service
-		Runs          *run.Service
-		Workspaces    *workspace.Service
-		Variables     *variable.Service
-		Notifications *notifications.Service
-		State         *state.Service
-		Configs       *configversion.Service
-		Modules       *module.Service
-		VCSProviders  *vcs.Service
-		Tokens        *tokens.Service
-		Sessions      *session.Service
-		Teams         *team.Service
-		Users         *user.Service
-		GithubApp     *github.Service
-		RepoHooks     *repohooks.Service
-		Runners       *runner.Service
-		Connections   *connections.Service
-		System        *internal.HostnameService
-		SSHKeys       *sshkey.Service
-		RunTriggers   *trigger.Service
+		DB             *sql.DB
+		Organizations  *organization.Service
+		Runs           *run.Service
+		Workspaces     *workspace.Service
+		Variables      *variable.Service
+		Notifications  *notifications.Service
+		State          *state.Service
+		Configs        *configversion.Service
+		Modules        *module.Service
+		VCSProviders   *vcs.Service
+		Tokens         *tokens.Service
+		Sessions       *session.Service
+		Teams          *team.Service
+		Users          *user.Service
+		GithubApp      *github.Service
+		RepoHooks      *repohooks.Service
+		Runners        *runner.Service
+		Connections    *connections.Service
+		System         *internal.HostnameService
+		SSHKeys        *sshkey.Service
+		RunTriggers    *trigger.Service
+		AuthMiddleware []mux.MiddlewareFunc
 
 		netListener net.Listener
 		server      *http.Server
@@ -150,7 +154,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Secret: cfg.Secret,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("setting up authentication middleware: %w", err)
+		return nil, fmt.Errorf("setting up token service: %w", err)
 	}
 
 	// Setup event message brokers
@@ -228,34 +232,57 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 
 	sessionService := session.NewService(logger, tokensService)
 
-	// Authenticate API/UI requests. An authenticated request is one that
-	// has a particular header containing a credential. The token service
-	// middleware checks the request against a series of 'authenticators': each
-	// authenticator checks if the request contains a particular credential; if
-	// there is a successful match then it returns the corresponding subject,
-	// e.g. a user or organization API token, etc.
-	tokensService.Middleware.Authenticators = []tokens.Authenticator{
-		// Authenticate UI session cookies.
-		&session.Authenticator{
-			Client: tokensService,
+	// Setup Google IAP authenticator
+	iapAuthenticator := iap.NewAuthenticator(
+		cfg.GoogleIAPAudience,
+		userService,
+	)
+
+	// Setup site admin authenticator
+	siteAdminAuthenticator := &user.SiteAdminAuthenticator{
+		SiteToken: cfg.SiteToken,
+	}
+
+	// Authenticate HTTP requests
+	//
+	// API requests
+	apiAuthMiddleware := &authn.Middleware{
+		Authenticators: []authn.Authenticator{
+			// Authenticate API requests from the site admin using their special
+			// non-JWT token. It's important that this authenticator comes *before*
+			// the JWT authenticator otherwise the JWT authenticator would try to
+			// parse the site token as a JWT and return an error.
+			siteAdminAuthenticator,
+			// Authenticate API requests with an authorization header containing a
+			// JWT token.
+			&tokens.JWTAuthenticator{
+				Client: tokensService,
+			},
+			// Allow IAP authenticated users to access API
+			iapAuthenticator,
 		},
-		// Authenticate requests from Google IAP.
-		iap.NewAuthenticator(
-			cfg.GoogleIAPAudience,
-			userService,
-		),
-		// Authenticate API requests from the site admin using their special
-		// non-JWT token. It's important that this authenticator comes *before*
-		// the JWT authenticator otherwise the JWT authenticator would try to
-		// parse the site token as a JWT and return an error.
-		&user.SiteAdminAuthenticator{
-			SiteToken: cfg.SiteToken,
+		Route:  &apiauth.Route{},
+		Logger: logger,
+	}
+	// UI requests
+	uiAuthMiddleware := &authn.Middleware{
+		Authenticators: []authn.Authenticator{
+			// Authenticate UI session cookies.
+			&session.Authenticator{
+				Client: tokensService,
+			},
+			// Allow IAP authenticated users to access UI.
+			iapAuthenticator,
+			// Authenticate UI requests from the site admin using their bearer
+			// token.
+			siteAdminAuthenticator,
 		},
-		// Authenticate API requests with an authorization header containing a
-		// JWT token.
-		&tokens.JWTAuthenticator{
-			Client: tokensService,
-		},
+		Route:  &uiauth.Route{},
+		Logger: logger,
+	}
+	authMiddleware := []mux.MiddlewareFunc{
+		apiAuthMiddleware.Authenticate,
+		uiAuthMiddleware.Authenticate,
 	}
 
 	configService := configversion.NewService(configversion.Options{
@@ -938,7 +965,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		CertFile:             cfg.CertFile,
 		KeyFile:              cfg.KeyFile,
 		EnableRequestLogging: cfg.EnableRequestLogging,
-		Middleware:           []mux.MiddlewareFunc{tokensService.Middleware.Authenticate},
+		Middleware:           authMiddleware,
 		Handlers:             handlers,
 	})
 	if err != nil {
@@ -946,30 +973,31 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	}
 
 	return &Daemon{
-		Organizations: orgService,
-		System:        hostnameService,
-		Runs:          runService,
-		Workspaces:    workspaceService,
-		Variables:     variableService,
-		Notifications: notificationService,
-		State:         stateService,
-		Configs:       configService,
-		Modules:       moduleService,
-		VCSProviders:  vcsService,
-		Tokens:        tokensService,
-		Sessions:      sessionService,
-		Teams:         teamService,
-		Users:         userService,
-		RepoHooks:     repoService,
-		GithubApp:     githubAppService,
-		Connections:   connectionService,
-		Runners:       runnerService,
-		SSHKeys:       sshkeyService,
-		RunTriggers:   runTriggerService,
-		DB:            db,
-		netListener:   netListener,
-		server:        server,
-		subsystems:    subsystems,
+		Organizations:  orgService,
+		System:         hostnameService,
+		Runs:           runService,
+		Workspaces:     workspaceService,
+		Variables:      variableService,
+		Notifications:  notificationService,
+		State:          stateService,
+		Configs:        configService,
+		Modules:        moduleService,
+		VCSProviders:   vcsService,
+		Tokens:         tokensService,
+		Sessions:       sessionService,
+		Teams:          teamService,
+		Users:          userService,
+		RepoHooks:      repoService,
+		GithubApp:      githubAppService,
+		Connections:    connectionService,
+		Runners:        runnerService,
+		SSHKeys:        sshkeyService,
+		RunTriggers:    runTriggerService,
+		DB:             db,
+		AuthMiddleware: authMiddleware,
+		netListener:    netListener,
+		server:         server,
+		subsystems:     subsystems,
 	}, nil
 }
 

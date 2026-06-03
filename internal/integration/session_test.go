@@ -23,14 +23,19 @@ func TestSession(t *testing.T) {
 		require.Equal(t, 1, len(cookies))
 
 		t.Run("authenticate", func(t *testing.T) {
-			upstream := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			var h http.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				got := userFromContext(t, ctx)
 				assert.Equal(t, want.Username, got.Username)
 			})
+			for _, mw := range daemon.AuthMiddleware {
+				h = mw(h)
+			}
+
 			w := httptest.NewRecorder()
 			r := httptest.NewRequest("GET", "/app/protected", nil)
 			r.AddCookie(cookies[0])
-			daemon.Tokens.Middleware.Authenticate(upstream).ServeHTTP(w, r)
+			h.ServeHTTP(w, r)
+
 			assert.Equal(t, 200, w.Code)
 		})
 	})

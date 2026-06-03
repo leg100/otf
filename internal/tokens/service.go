@@ -14,8 +14,7 @@ type (
 	Service struct {
 		*registry
 		*factory
-		Middleware *Middleware
-		logger     logr.Logger
+		logger logr.Logger
 	}
 
 	Options struct {
@@ -36,9 +35,6 @@ func NewService(opts Options) (*Service, error) {
 	svc.registry = &registry{
 		kinds: make(map[resource.Kind]SubjectGetter),
 		key:   key,
-	}
-	svc.Middleware = &Middleware{
-		logger: opts.Logger,
 	}
 	return &svc, nil
 }
