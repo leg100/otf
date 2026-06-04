@@ -6,14 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/lestrrat-go/jwx/v2/jwt"
 
 	"github.com/leg100/otf/internal/authz"
-	"github.com/leg100/otf/internal/ui/helpers"
-	"github.com/leg100/otf/internal/path"
 )
 
 const (
@@ -32,27 +29,9 @@ type AuthenticatorClient interface {
 }
 
 func (a *Authenticator) Authenticate(w http.ResponseWriter, r *http.Request) (authz.Subject, error) {
-	if !strings.HasPrefix(r.URL.Path, path.Prefix) {
-		// This is a non-UI request; session authenticator only authenticates
-		// access to the UI.
-		return nil, nil
-	}
-	// Any error results in the user being redirected to the login page with a
-	// flash message explaining why.
-	subj, err := a.authWithError(r)
-	if err != nil {
-		helpers.FlashError(w, err.Error())
-		helpers.SendUserToLoginPage(w, r)
-		return nil, nil
-	}
-	// Successfully authenticated.
-	return subj, nil
-}
-
-func (a *Authenticator) authWithError(r *http.Request) (authz.Subject, error) {
 	cookie, err := r.Cookie(SessionCookie)
 	if err == http.ErrNoCookie {
-		return nil, fmt.Errorf("you need to login to access the requested page")
+		return nil, nil
 	}
 	user, err := a.Client.GetSubject(r.Context(), []byte(cookie.Value))
 	if err != nil {

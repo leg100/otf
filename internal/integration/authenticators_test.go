@@ -10,6 +10,8 @@ import (
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/iap"
 	"github.com/leg100/otf/internal/organization"
+	uipath "github.com/leg100/otf/internal/path"
+	"github.com/leg100/otf/internal/tfeapi"
 	userpkg "github.com/leg100/otf/internal/user"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -40,31 +42,52 @@ func TestAuthenticators(t *testing.T) {
 	tests := []struct {
 		name        string
 		setup       func(t *testing.T, r *http.Request)
+		path        string
 		wantCode    int
 		wantSubject any
 	}{
 		{
-			name:     "unauthenticated",
+			name:     "unauthenticated access to API",
+			path:     tfeapi.APIPrefixV2,
 			wantCode: 401,
 		},
 		{
-			name: "iap",
+			name: "iap access to API",
 			setup: func(t *testing.T, r *http.Request) {
 				token := generateIAPToken(t, "https://example.com")
 				r.Header.Add(iap.Header, token)
 			},
+			path:     tfeapi.APIPrefixV2,
 			wantCode: 200,
 		},
 		{
-			name: "org token",
+			name: "iap access to UI",
+			setup: func(t *testing.T, r *http.Request) {
+				token := generateIAPToken(t, "https://example.com")
+				r.Header.Add(iap.Header, token)
+			},
+			path:     uipath.Prefix,
+			wantCode: 200,
+		},
+		{
+			name: "org token access to API",
 			setup: func(t *testing.T, r *http.Request) {
 				r.Header.Add("Authorization", "Bearer "+string(orgToken))
 			},
+			path:        tfeapi.APIPrefixV2,
 			wantCode:    200,
 			wantSubject: ot,
 		},
 		{
-			name: "user token",
+			name: "refuse org token access to UI",
+			setup: func(t *testing.T, r *http.Request) {
+				r.Header.Add("Authorization", "Bearer "+string(orgToken))
+			},
+			path:     uipath.Prefix,
+			wantCode: 302,
+		},
+		{
+			name: "user token access to API",
 			setup: func(t *testing.T, r *http.Request) {
 				_, token, err := daemon.Users.CreateToken(ctx, userpkg.CreateUserTokenOptions{
 					Description: "lorem ipsum...",
@@ -72,34 +95,61 @@ func TestAuthenticators(t *testing.T) {
 				require.NoError(t, err)
 				r.Header.Add("Authorization", "Bearer "+string(token))
 			},
+			path:        tfeapi.APIPrefixV2,
 			wantCode:    200,
 			wantSubject: user,
 		},
 		{
-			name: "site admin token",
+			name: "refuse user token access to UI",
+			setup: func(t *testing.T, r *http.Request) {
+				_, token, err := daemon.Users.CreateToken(ctx, userpkg.CreateUserTokenOptions{
+					Description: "lorem ipsum...",
+				})
+				require.NoError(t, err)
+				r.Header.Add("Authorization", "Bearer "+string(token))
+			},
+			path:     uipath.Prefix,
+			wantCode: 302,
+		},
+		{
+			name: "site admin token access to API",
 			setup: func(t *testing.T, r *http.Request) {
 				r.Header.Add("Authorization", "Bearer "+siteToken)
 			},
+			path:        tfeapi.APIPrefixV2,
+			wantCode:    200,
+			wantSubject: &userpkg.SiteAdmin,
+		},
+		{
+			name: "allow site admin token access to UI",
+			setup: func(t *testing.T, r *http.Request) {
+				r.Header.Add("Authorization", "Bearer "+siteToken)
+			},
+			path:        uipath.Prefix,
 			wantCode:    200,
 			wantSubject: &userpkg.SiteAdmin,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			r := httptest.NewRequest("GET", "/api/v2/protected", nil)
+			apiRequest := httptest.NewRequest("GET", tt.path, nil)
 			if tt.setup != nil {
-				tt.setup(t, r)
+				tt.setup(t, apiRequest)
 			}
 			w := httptest.NewRecorder()
-			h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			var h http.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				subj, err := authz.SubjectFromContext(r.Context())
 				require.NoError(t, err)
 				if tt.wantSubject != nil {
 					assert.Equal(t, tt.wantSubject, subj)
 				}
 			})
-			daemon.Tokens.Middleware.Authenticate(h).ServeHTTP(w, r)
-			assert.Equal(t, tt.wantCode, w.Code)
+			for _, mw := range daemon.AuthMiddleware {
+				h = mw(h)
+			}
+			h.ServeHTTP(w, apiRequest)
+			assert.Equal(t, tt.wantCode, w.Code, "unexpected response code accessing path %s", tt.path)
+
 		})
 	}
 }
