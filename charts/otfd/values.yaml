@@ -184,6 +184,24 @@ resources: {}
   #   cpu: 100m
   #   memory: 128Mi
 
+# -- Liveness probe for the otfd container. Set to `{}` to disable. See [k8s probe docs](https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes).
+livenessProbe:
+  httpGet:
+    path: /healthz
+    port: http
+
+# -- Readiness probe for the otfd container. Set to `{}` to disable.
+readinessProbe:
+  httpGet:
+    path: /healthz
+    port: http
+
+# -- Startup probe for the otfd container. Disabled by default; uncomment the spec below to enable.
+startupProbe: {}
+  # httpGet:
+  #   path: /healthz
+  #   port: http
+
 nodeSelector: {}
 
 tolerations: []
