@@ -29,7 +29,7 @@ WHERE variable_set_variables.variable_id = variables.variable_id;
 ALTER TABLE variables
 ADD CONSTRAINT variables_parent_not_null_check CHECK ((workspace_id IS NULL) <> (variable_set_id IS NULL));
 
--- Drop function tables
+-- Drop junction tables
 DROP TABLE IF EXISTS workspace_variables;
 DROP TABLE IF EXISTS variable_set_variables;
 
