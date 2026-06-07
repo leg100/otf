@@ -67,7 +67,7 @@ Note: you should only use this for testing purposes.
 | ingress.path | string | `"/"` |  |
 | ingress.pathType | string | `"Prefix"` |  |
 | ingress.tls | list | `[]` |  |
-| livenessProbe | object | `{"httpGet":{"path":"/healthz","port":"http"}}` | Liveness probe for the otfd container. Set to `{}` to disable. See [k8s probe docs](https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes). |
+| livenessProbe | object | `{"failureThreshold":5,"httpGet":{"path":"/healthz","port":"http"}}` | Liveness probe for the otfd container. Set to `{}` to disable. See [k8s probe docs](https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes). |
 | logging.format | string | `"default"` | Logging format: default, text, or json. See [docs](https://docs.otf.ninja/config/flags/#-log-format) |
 | logging.http | bool | `false` | Log http requests. |
 | logging.verbosity | int | `0` | Logging verbosity, the higher the number the more verbose the logs. See [docs](https://docs.otf.ninja/config/flags/#-v). |
@@ -101,7 +101,7 @@ Note: you should only use this for testing purposes.
 | sidecars | list | `[]` | Additional sidecar containers to run alongside the main otfd container |
 | siteAdmins | list | `[]` | Site admins - list of user accounts promoted to site admin. See [docs](https://docs.otf.ninja/config/flags/#-site-admins). |
 | siteToken | string | `""` | Site admin token - empty string disables the site admin account. See [docs](https://docs.otf.ninja/config/flags/#-site-token). |
-| startupProbe | object | `{}` | Startup probe for the otfd container. Disabled by default; uncomment the spec below to enable. |
+| startupProbe | object | `{"failureThreshold":120,"httpGet":{"path":"/healthz","port":"http"},"periodSeconds":1}` | Startup probe for the otfd container. Set to `{}` to disable. |
 | tolerations | list | `[]` |  |
 | volumeMounts | list | `[]` | Additional volume mounts for the main otfd container |
 | volumes | list | `[]` | Additional volumes to make available to the pod |
