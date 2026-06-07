@@ -18,8 +18,27 @@ type pgdb struct {
 }
 
 func (pdb *pgdb) createVariable(ctx context.Context, parentID resource.TfeID, v *Variable) error {
-	return pdb.Tx(ctx, func(ctx context.Context) error {
-		_, err := pdb.Exec(ctx, `
+	args := pgx.NamedArgs{
+		"variable_id": v.ID,
+		"key":         v.Key,
+		"value":       v.Value,
+		"description": v.Description,
+		"category":    v.Category,
+		"sensitive":   v.Sensitive,
+		"hcl":         v.HCL,
+		"version_id":  v.VersionID,
+	}
+
+	switch parentID.Kind() {
+	case resource.WorkspaceKind:
+		args["workspace_id"] = &parentID
+	case resource.VariableSetKind:
+		args["variable_set_id"] = &parentID
+	default:
+		return fmt.Errorf("unsupported variable parent kind: %s", parentID.Kind())
+	}
+
+	_, err := pdb.Exec(ctx, `
 INSERT INTO variables (
     variable_id,
     key,
@@ -28,77 +47,78 @@ INSERT INTO variables (
     category,
     sensitive,
     hcl,
-    version_id
+    version_id,
+	workspace_id,
+	variable_set_id
 ) VALUES (
-    $1,
-    $2,
-    $3,
-    $4,
-    $5,
-    $6,
-    $7,
-    $8
+    @variable_id,
+    @key,
+    @value,
+    @description,
+    @category,
+    @sensitive,
+    @hcl,
+    @version_id,
+    @workspace_id,
+    @variable_set_id
 )
-`,
-			v.ID,
-			v.Key,
-			v.Value,
-			v.Description,
-			v.Category,
-			v.Sensitive,
-			v.HCL,
-			v.VersionID,
-		)
-
-		switch parentID.Kind() {
-		case resource.WorkspaceKind:
-			_, err = pdb.Exec(ctx, `
-INSERT INTO workspace_variables (
-    workspace_id,
-    variable_id
-) VALUES (
-    $1,
-    $2
-)`, parentID, v.ID)
-		case resource.VariableSetKind:
-			_, err = pdb.Exec(ctx, `
-INSERT INTO variable_set_variables (
-	variable_set_id,
-	variable_id
-) VALUES (
-	$1,
-	$2
-)`, parentID, v.ID)
-		default:
-			return fmt.Errorf("invalid variable parent kind: %s", parentID.Kind())
-		}
-		if err != nil {
-			return err
-		}
-		return nil
-	})
+`, args)
+	return err
 }
 
 func (pdb *pgdb) listVariables(ctx context.Context, parentID resource.TfeID) ([]*Variable, error) {
-	rows := pdb.Query(ctx, `
+	var q string
+	switch parentID.Kind() {
+	case resource.WorkspaceKind:
+		q = `
 SELECT
-    v.*,
-	COALESCE(wv.workspace_id, vsv.variable_set_id) AS parent_id
+	v.variable_id,
+	v.key,
+	v.value,
+	v.description,
+	v.category,
+	v.sensitive,
+	v.hcl,
+	v.version_id,
+	v.workspace_id AS parent_id
 FROM variables v
-LEFT OUTER JOIN workspace_variables wv USING (variable_id)
-LEFT OUTER JOIN variable_set_variables vsv USING (variable_id)
-WHERE wv.workspace_id = $1 OR vsv.variable_set_id = $1
-`, parentID)
+WHERE v.workspace_id = $1
+`
+	case resource.VariableSetKind:
+		q = `
+SELECT
+	v.variable_id,
+	v.key,
+	v.value,
+	v.description,
+	v.category,
+	v.sensitive,
+	v.hcl,
+	v.version_id,
+	v.variable_set_id AS parent_id
+FROM variables v
+WHERE v.variable_set_id = $1
+`
+	default:
+		return nil, fmt.Errorf("invalid variable parent kind: %s", parentID.Kind())
+	}
+	rows := pdb.Query(ctx, q, parentID)
 	return sql.CollectRows(rows, pgx.RowToAddrOfStructByName[Variable])
 }
 
 func (pdb *pgdb) listGlobalVariables(ctx context.Context, organization organization.Name) ([]*Variable, error) {
 	rows := pdb.Query(ctx, `
 SELECT
-    v.*,
-	vsv.variable_set_id AS parent_id
+	v.variable_id,
+	v.key,
+	v.value,
+	v.description,
+	v.category,
+	v.sensitive,
+	v.hcl,
+	v.version_id,
+	v.variable_set_id AS parent_id
 FROM variables v
-JOIN variable_set_variables vsv USING (variable_id)
 JOIN variable_sets vs USING (variable_set_id)
 WHERE vs.global IS true
 AND vs.organization_name = $1
@@ -109,11 +129,16 @@ AND vs.organization_name = $1
 func (pdb *pgdb) getVariable(ctx context.Context, variableID resource.ID) (*Variable, error) {
 	row := pdb.Query(ctx, `
 SELECT
-    v.*,
-	COALESCE(wv.workspace_id, vsv.variable_set_id) AS parent_id
+	v.variable_id,
+	v.key,
+	v.value,
+	v.description,
+	v.category,
+	v.sensitive,
+	v.hcl,
+	v.version_id,
+	COALESCE(v.workspace_id, v.variable_set_id) AS parent_id
 FROM variables v
-LEFT OUTER JOIN workspace_variables wv USING (variable_id)
-LEFT OUTER JOIN variable_set_variables vsv USING (variable_id)
 WHERE v.variable_id = $1
 `, variableID)
 	return sql.CollectExactlyOneRow(row, pgx.RowToAddrOfStructByName[Variable])
@@ -199,8 +224,7 @@ SELECT
     (
         SELECT array_agg(v.*)::variables[]
         FROM variables v
-        JOIN variable_set_variables vsv USING (variable_id)
-        WHERE vsv.variable_set_id = vs.variable_set_id
+        WHERE v.variable_set_id = vs.variable_set_id
     ) AS variables,
     (
         SELECT array_agg(vsw.workspace_id)::text[]
@@ -221,8 +245,7 @@ SELECT
     (
         SELECT array_agg(v.*)::variables[]
         FROM variables v
-        JOIN variable_set_variables vsv USING (variable_id)
-        WHERE vsv.variable_set_id = vs.variable_set_id
+        WHERE v.variable_set_id = vs.variable_set_id
     ) AS variables,
     (
         SELECT array_agg(vsw.workspace_id)::text[]
@@ -242,8 +265,7 @@ SELECT
     (
         SELECT array_agg(v.*)::variables[]
         FROM variables v
-        JOIN variable_set_variables vsv USING (variable_id)
-        WHERE vsv.variable_set_id = vs.variable_set_id
+        WHERE v.variable_set_id = vs.variable_set_id
     ) AS variables,
     (
         SELECT array_agg(vsw.workspace_id)::text[]
@@ -259,8 +281,7 @@ SELECT
     (
         SELECT array_agg(v.*)::variables[]
         FROM variables v
-        JOIN variable_set_variables vsv USING (variable_id)
-        WHERE vsv.variable_set_id = vs.variable_set_id
+        WHERE v.variable_set_id = vs.variable_set_id
     ) AS variables,
     (
         SELECT array_agg(vsw.workspace_id)::text[]
@@ -290,14 +311,16 @@ func scanVariableSet(row pgx.CollectableRow) (*VariableSet, error) {
 	// pgx complains that the table is missing a column for the variable's
 	// ParentID field.
 	type variableModel struct {
-		ID          resource.TfeID   `db:"variable_id"`
-		Key         string           `db:"key"`
-		Value       string           `db:"value"`
-		Description string           `db:"description"`
-		Category    VariableCategory `db:"category"`
-		Sensitive   bool             `db:"sensitive"`
-		HCL         bool             `db:"hcl"`
-		VersionID   string           `db:"version_id"`
+		ID            resource.TfeID   `db:"variable_id"`
+		Key           string           `db:"key"`
+		Value         string           `db:"value"`
+		Description   string           `db:"description"`
+		Category      VariableCategory `db:"category"`
+		Sensitive     bool             `db:"sensitive"`
+		HCL           bool             `db:"hcl"`
+		VersionID     string           `db:"version_id"`
+		WorkspaceID   resource.TfeID   `db:"workspace_id"`
+		VariableSetID resource.TfeID   `db:"variable_set_id"`
 	}
 	type setModel struct {
 		ID           resource.TfeID    `db:"variable_set_id"`
