@@ -184,6 +184,35 @@ resources: {}
   #   cpu: 100m
   #   memory: 128Mi
 
+# -- Startup probe for the otfd container. Set to `{}` to disable.
+startupProbe:
+  # Allow enough time for database migrations to complete. With large
+  # installations these can take a long while so allow 120 seconds before
+  # deeming startup a failure.
+  periodSeconds: 1
+  failureThreshold: 120
+  httpGet:
+    path: /healthz
+    port: http
+
+# -- Liveness probe for the otfd container. Set to `{}` to disable. See [k8s
+# probe
+# docs](https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes).
+livenessProbe:
+  # Set a higher failure threshold (5) than that for the readiness probe (3),
+  # ensuring the pod is observed as not-ready for some period of time before it
+  # is hard killed.
+  failureThreshold: 5
+  httpGet:
+    path: /healthz
+    port: http
+
+# -- Readiness probe for the otfd container. Set to `{}` to disable.
+readinessProbe:
+  httpGet:
+    path: /healthz
+    port: http
+
 nodeSelector: {}
 
 tolerations: []

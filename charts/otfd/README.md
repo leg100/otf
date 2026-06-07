@@ -1,6 +1,6 @@
 # Helm chart for `otfd`
 
-![Version: 0.3.35](https://img.shields.io/badge/Version-0.3.35-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 0.6.1](https://img.shields.io/badge/AppVersion-0.6.1-informational?style=flat-square)
+![Version: 0.4.0](https://img.shields.io/badge/Version-0.4.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 0.6.1](https://img.shields.io/badge/AppVersion-0.6.1-informational?style=flat-square)
 
 Installs the [otf](https://github.com/leg100/otf) daemon.
 
@@ -67,6 +67,7 @@ Note: you should only use this for testing purposes.
 | ingress.path | string | `"/"` |  |
 | ingress.pathType | string | `"Prefix"` |  |
 | ingress.tls | list | `[]` |  |
+| livenessProbe | object | `{"failureThreshold":5,"httpGet":{"path":"/healthz","port":"http"}}` | Liveness probe for the otfd container. Set to `{}` to disable. See [k8s probe docs](https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes). |
 | logging.format | string | `"default"` | Logging format: default, text, or json. See [docs](https://docs.otf.ninja/config/flags/#-log-format) |
 | logging.http | bool | `false` | Log http requests. |
 | logging.verbosity | int | `0` | Logging verbosity, the higher the number the more verbose the logs. See [docs](https://docs.otf.ninja/config/flags/#-v). |
@@ -85,6 +86,7 @@ Note: you should only use this for testing purposes.
 | postgres.enabled | bool | `false` | Install postgres chart dependency. NOTE: this should only be used for testing purposes. |
 | proxy | string | `nil` | Specify an http(s) proxy for outbound connections. |
 | rbac.create | bool | `true` | Create and use RBAC resources |
+| readinessProbe | object | `{"httpGet":{"path":"/healthz","port":"http"}}` | Readiness probe for the otfd container. Set to `{}` to disable. |
 | replicaCount | int | `1` | Number of otfd nodes to cluster |
 | resources | object | `{}` |  |
 | secret | string | `""` | Cryptographic secret. Must be a hex-encoded 16-byte string. See [docs](https://docs.otf.ninja/config/flags/#-secret). |
@@ -99,6 +101,7 @@ Note: you should only use this for testing purposes.
 | sidecars | list | `[]` | Additional sidecar containers to run alongside the main otfd container |
 | siteAdmins | list | `[]` | Site admins - list of user accounts promoted to site admin. See [docs](https://docs.otf.ninja/config/flags/#-site-admins). |
 | siteToken | string | `""` | Site admin token - empty string disables the site admin account. See [docs](https://docs.otf.ninja/config/flags/#-site-token). |
+| startupProbe | object | `{"failureThreshold":120,"httpGet":{"path":"/healthz","port":"http"},"periodSeconds":1}` | Startup probe for the otfd container. Set to `{}` to disable. |
 | tolerations | list | `[]` |  |
 | volumeMounts | list | `[]` | Additional volume mounts for the main otfd container |
 | volumes | list | `[]` | Additional volumes to make available to the pod |

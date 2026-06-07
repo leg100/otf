@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"io/fs"
 
-	"github.com/leg100/otf/internal/logr"
 	"github.com/jackc/pgx/v5"
 	tern "github.com/jackc/tern/v2/migrate"
+	"github.com/leg100/otf/internal/logr"
 )
 
 //go:embed migrations/*.sql
@@ -34,7 +34,10 @@ func migrate(ctx context.Context, logger logr.Logger, connString string) error {
 	}
 	from, err := m.GetCurrentVersion(ctx)
 	if err != nil {
-		return fmt.Errorf("retreiving current database migration version")
+		return fmt.Errorf("retrieving current database migration version")
+	}
+	if from != int32(len(m.Migrations)) {
+		logger.Info("migrating database schema", "from", from, "to", len(m.Migrations))
 	}
 	if err := m.Migrate(ctx); err != nil {
 		return err
@@ -42,7 +45,7 @@ func migrate(ctx context.Context, logger logr.Logger, connString string) error {
 	if from == int32(len(m.Migrations)) {
 		logger.Info("database schema up to date", "version", len(m.Migrations))
 	} else {
-		logger.Info("migrated database schema", "from", from, "to", len(m.Migrations))
+		logger.Info("completed database migration", "from", from, "to", len(m.Migrations))
 	}
 	return nil
 }
