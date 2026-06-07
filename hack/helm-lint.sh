@@ -1,4 +1,5 @@
 helm lint ./charts/otfd
+helm lint ./charts/otfd --values ./charts/otfd/tests/cache_volume.yaml
 helm lint ./charts/otf-agent
 helm lint ./charts/otf-agent --values ./charts/otf-agent/tests/volume_mounts.yaml
 helm template ./charts/otfd > /dev/null

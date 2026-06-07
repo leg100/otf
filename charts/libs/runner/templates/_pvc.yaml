@@ -15,13 +15,13 @@ spec:
   resources:
     requests:
       storage: {{ .size | quote }}
-  {{- with .storageClass }}
-    {{- if (eq "-" .) }}
-      storageClassName: ""
-    {{- else }}
-      storageClassName: "{{ . }}"
-    {{- end }}
-  {{- end }}
+{{- with .storageClass }}
+{{- if (eq "-" .) }}
+  storageClassName: ""
+{{- else }}
+  storageClassName: "{{ . }}"
+{{- end }}
+{{- end }}
 {{- end }}
 {{- end }}
 {{- end -}}
