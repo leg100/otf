@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.6.2](https://github.com/leg100/otf/compare/v0.6.1...v0.6.2) (2026-06-07)
+
+
+### Bug Fixes
+
+* add startupProbe and enable probes to be configurable ([#957](https://github.com/leg100/otf/issues/957)) ([6a7b996](https://github.com/leg100/otf/commit/6a7b99654345adf3ea30339c16394c59310854ec))
+* **helm:** incorrect indentation for cache volume storageClassName ([1fa7baf](https://github.com/leg100/otf/commit/1fa7bafc6fac8cf830c021ea179ff83d2f3b3fa1))
+* orphaned variables after deleting workspace or set ([#959](https://github.com/leg100/otf/issues/959)) ([38ec116](https://github.com/leg100/otf/commit/38ec116e2b4bc991aeaee35a437b382e6dcbc534))
+
+
+### Miscellaneous
+
+* bump helm charts with app version v0.6.1 ([941a12b](https://github.com/leg100/otf/commit/941a12b415f52810ea882b3f190fe93540be3090))
+
 ## [0.6.1](https://github.com/leg100/otf/compare/v0.6.0...v0.6.1) (2026-06-03)
 
 
