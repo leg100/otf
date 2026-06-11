@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.6.3](https://github.com/leg100/otf/compare/v0.6.2...v0.6.3) (2026-06-11)
+
+
+### Bug Fixes
+
+* **k8s:** service account permission issue when listing jobs ([#961](https://github.com/leg100/otf/issues/961)) ([c6e2d93](https://github.com/leg100/otf/commit/c6e2d93564fb22a845c9b6547fdcad5cf2688899))
+
+
+### Miscellaneous
+
+* bump helm charts with app version v0.6.2 ([5c6fb5f](https://github.com/leg100/otf/commit/5c6fb5f8fff7fcf62cf280a3c9e61c56d7a74b8d))
+
 ## [0.6.2](https://github.com/leg100/otf/compare/v0.6.1...v0.6.2) (2026-06-07)
 
 
