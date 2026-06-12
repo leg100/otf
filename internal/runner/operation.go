@@ -109,6 +109,12 @@ type (
 		Job      *Job
 		JobToken []byte
 		Client   OperationClient
+		// CredentialHostname sets an additional TF_TOKEN_* credential env var
+		// alongside the one derived from Client.Hostname(). Needed when the API
+		// client uses an internal address (e.g. a Kubernetes service URL) that
+		// differs from the public-facing OTF hostname that Terraform uses to look
+		// up credentials.
+		CredentialHostname string
 	}
 
 	// downloader downloads engine versions
@@ -143,6 +149,13 @@ func DoOperation(runnerCtx context.Context, g *errgroup.Group, opts OperationOpt
 	envs := defaultEnvs
 	// make token available to engine CLI
 	envs = append(envs, internal.CredentialEnv(opts.Client.Hostname(), opts.JobToken))
+	// If a separate public-facing hostname is configured (e.g. when the API
+	// client uses an internal Kubernetes service URL), also set a credential env
+	// var for that hostname so Terraform can authenticate regardless of which
+	// hostname is used in remote backend configs.
+	if opts.CredentialHostname != "" && opts.CredentialHostname != opts.Client.Hostname() {
+		envs = append(envs, internal.CredentialEnv(opts.CredentialHostname, opts.JobToken))
+	}
 
 	op := &operation{
 		Logger:   opts.Logger.WithValues("job", opts.Job),
