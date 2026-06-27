@@ -46,6 +46,22 @@ builds:
     goarch:
     - amd64
     - arm64
+  - id: otf
+    ldflags:
+    - -s -w
+    - -X github.com/leg100/otf/internal.Version={{.Version}}
+    - -X github.com/leg100/otf/internal.Commit={{.Commit}}
+    - -X github.com/leg100/otf/internal.Built={{.Date}}
+    main: ./cmd/otf
+    binary: otf
+    env:
+      - CGO_ENABLED=0
+    goos:
+    - darwin
+    - linux
+    goarch:
+    - amd64
+    - arm64
 archives:
 - id: otfd
   ids: [otfd]
@@ -59,6 +75,10 @@ archives:
   ids: [otf-job]
   formats: [zip]
   name_template: "otf-job_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+- id: otf
+  ids: [otf]
+  formats: [zip]
+  name_template: "otf_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
 dockers_v2:
 - id: otfd
   ids: [otfd]
