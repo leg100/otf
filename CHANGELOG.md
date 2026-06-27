@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.6.4](https://github.com/leg100/otf/compare/v0.6.3...v0.6.4) (2026-06-27)
+
+
+### Bug Fixes
+
+* **ci:** restore otf cli to releases ([#963](https://github.com/leg100/otf/issues/963)) ([ff8ea2c](https://github.com/leg100/otf/commit/ff8ea2c7e96be19507e93c60c5a94d39becd3a24))
+
+
+### Miscellaneous
+
+* bump dependencies ([dfcb06b](https://github.com/leg100/otf/commit/dfcb06bc7f608d12751d542a7dfc676e686e7a18))
+* bump helm charts with app version v0.6.3 ([5926849](https://github.com/leg100/otf/commit/5926849db19456d08ae9c622b5c6928a2a9f6ddb))
+
 ## [0.6.3](https://github.com/leg100/otf/compare/v0.6.2...v0.6.3) (2026-06-11)
 
 
