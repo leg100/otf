@@ -4,12 +4,12 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal/github/testserver"
-	"github.com/leg100/otf/internal/testutils"
 	"github.com/leg100/otf/internal/path"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/testutils"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/workspace"
-	"github.com/playwright-community/playwright-go"
+	"github.com/mxschmitt/playwright-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

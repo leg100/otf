@@ -12,7 +12,7 @@ import (
 
 	goexpect "github.com/google/goexpect"
 	"github.com/leg100/otf/internal"
-	"github.com/playwright-community/playwright-go"
+	"github.com/mxschmitt/playwright-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

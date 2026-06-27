@@ -17,7 +17,7 @@ import (
 	"github.com/leg100/otf/internal/testbrowser"
 	"github.com/leg100/otf/internal/testcompose"
 	"github.com/leg100/otf/internal/user"
-	"github.com/playwright-community/playwright-go"
+	"github.com/mxschmitt/playwright-go"
 )
 
 const assertionTimeout = 10_000
