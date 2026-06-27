@@ -102,7 +102,7 @@ func (s *Service) CreateVariable(ctx context.Context, parentID resource.TfeID, o
 	v, err := s.createVariable(ctx, parentID, opts)
 	if err != nil {
 		s.Error(err, "creating variable", "subject", subject, "variable", v)
-		return nil, err
+		return nil, fmt.Errorf("creating variable: %w", err)
 	}
 	s.V(1).Info("created variable", "subject", subject, "variable", v)
 
@@ -116,7 +116,7 @@ func (s *Service) createVariable(ctx context.Context, parentID resource.TfeID, o
 	}
 	err = s.db.Lock(ctx, "variables", func(ctx context.Context) error {
 		if err := s.conflicts.checkVariable(ctx, v); err != nil {
-			return err
+			return fmt.Errorf("checking for conflicts: %w", err)
 		}
 		err = s.db.createVariable(ctx, parentID, v)
 		if err != nil {

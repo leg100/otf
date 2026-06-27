@@ -11,9 +11,9 @@ import (
 
 func TestVariable(t *testing.T) {
 	integrationTest(t)
+	daemon, _, ctx := setup(t)
 
 	t.Run("create", func(t *testing.T) {
-		daemon, _, ctx := setup(t)
 		ws := daemon.createWorkspace(t, ctx, nil)
 
 		_, err := daemon.Variables.CreateVariable(ctx, ws.ID, variable.CreateVariableOptions{
@@ -25,7 +25,6 @@ func TestVariable(t *testing.T) {
 	})
 
 	t.Run("update", func(t *testing.T) {
-		daemon, _, ctx := setup(t)
 		v := daemon.createVariable(t, ctx, nil, nil)
 
 		got, err := daemon.Variables.UpdateVariable(ctx, v.ID, variable.UpdateVariableOptions{
@@ -37,7 +36,6 @@ func TestVariable(t *testing.T) {
 	})
 
 	t.Run("list", func(t *testing.T) {
-		daemon, _, ctx := setup(t)
 		ws := daemon.createWorkspace(t, ctx, nil)
 		v1 := daemon.createVariable(t, ctx, ws, nil)
 		v2 := daemon.createVariable(t, ctx, ws, nil)
@@ -52,7 +50,6 @@ func TestVariable(t *testing.T) {
 	})
 
 	t.Run("get", func(t *testing.T) {
-		daemon, _, ctx := setup(t)
 		want := daemon.createVariable(t, ctx, nil, nil)
 
 		got, err := daemon.Variables.GetVariable(ctx, want.ID)
@@ -62,7 +59,6 @@ func TestVariable(t *testing.T) {
 	})
 
 	t.Run("delete", func(t *testing.T) {
-		daemon, _, ctx := setup(t)
 		want := daemon.createVariable(t, ctx, nil, nil)
 
 		got, err := daemon.Variables.DeleteVariable(ctx, want.ID)

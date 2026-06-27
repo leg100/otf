@@ -13,6 +13,7 @@ rules:
     - jobs
   verbs:
     - create
+    - list
 - apiGroups:
     - "" # core API group
   resources:

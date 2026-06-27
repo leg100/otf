@@ -10,10 +10,10 @@ import (
 	gogithub "github.com/google/go-github/v65/github"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/github"
-	"github.com/leg100/otf/internal/testutils"
 	"github.com/leg100/otf/internal/path"
+	"github.com/leg100/otf/internal/testutils"
 	"github.com/leg100/otf/internal/user"
-	"github.com/playwright-community/playwright-go"
+	"github.com/mxschmitt/playwright-go"
 	"github.com/stretchr/testify/require"
 )
 

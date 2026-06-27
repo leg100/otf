@@ -3,9 +3,9 @@ package integration
 import (
 	"testing"
 
-	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/path"
-	"github.com/playwright-community/playwright-go"
+	"github.com/leg100/otf/internal/run"
+	"github.com/mxschmitt/playwright-go"
 	"github.com/stretchr/testify/require"
 )
 

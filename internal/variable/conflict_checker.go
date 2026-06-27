@@ -2,6 +2,7 @@ package variable
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
@@ -34,18 +35,18 @@ func (c *conflictChecker) checkVariable(ctx context.Context, v *Variable) (err e
 	if v.ParentID.Kind() == resource.VariableSetKind {
 		set, err = c.client.getVariableSet(ctx, v.ParentID)
 		if err != nil {
-			return err
+			return fmt.Errorf("retrieving variable set: %w", err)
 		}
 	}
 	if set != nil && set.Global {
 		scopedVariables, err = c.client.listGlobalVariables(ctx, set.Organization)
 		if err != nil {
-			return err
+			return fmt.Errorf("listing global variables: %w", err)
 		}
 	} else {
 		scopedVariables, err = c.client.listVariables(ctx, v.ParentID)
 		if err != nil {
-			return err
+			return fmt.Errorf("listing variables: %w", err)
 		}
 	}
 	if err := checkConflicts(v, scopedVariables); err != nil {

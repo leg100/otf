@@ -14,7 +14,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/tokens"
 	otfuser "github.com/leg100/otf/internal/user"
-	"github.com/playwright-community/playwright-go"
+	"github.com/mxschmitt/playwright-go"
 	"github.com/stretchr/testify/require"
 )
 

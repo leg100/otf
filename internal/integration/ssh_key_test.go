@@ -20,7 +20,7 @@ import (
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/leg100/otf/internal/workspace/execution"
-	"github.com/playwright-community/playwright-go"
+	"github.com/mxschmitt/playwright-go"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/ssh"
 )

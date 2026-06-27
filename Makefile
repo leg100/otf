@@ -23,7 +23,7 @@ build:
 	GOOS=$(GOOS) GOARCH=$(GOARCH) go build \
 		-ldflags $(LD_FLAGS) \
 		-o ./_build/$(GOOS)/$(GOARCH)/ \
-		./cmd/otfd ./cmd/otf-job ./cmd/otf-agent
+		./cmd/otfd ./cmd/otf-job ./cmd/otf-agent ./cmd/otf
 
 .PHONY: install
 install:
