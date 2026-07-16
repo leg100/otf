@@ -1,0 +1,21 @@
+.md-typeset .admonition {
+  font-size: .75rem;
+}
+
+.screenshot {
+    width: max(700px, 60%);
+    border: 1px solid #ddd;
+    padding: 4px;
+
+    /* horizontally center images */
+    display: block;
+    margin: 2em auto;
+
+    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+}
+
+img.crop {
+  object-fit: cover;
+  object-position: top;
+  height: 400px;
+}
