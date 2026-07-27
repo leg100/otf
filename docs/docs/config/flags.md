@@ -135,6 +135,15 @@ It is advisable to set this flag in a production deployment. Otherwise it defaul
 
 Set the image used for kubernetes jobs. Allows customization of the job image so that you can add custom tools or logic to your run environments.
 
+## `--kubernetes-image-pull-secrets`
+
+* System: `otfd`, `otf-agent`
+* Default: `""`
+
+Names of secrets to use for pulling the kubernetes job image from a private registry, e.g. `my-registry-creds`. Specify multiple names separated by a comma. Each secret must be of type `kubernetes.io/dockerconfigjson` and must exist in the same namespace as the jobs.
+
+Note this is separate to any image pull secrets set on the `otfd` or `otf-agent` deployment itself; those are not inherited by jobs.
+
 ## `--kubernetes-request-cpu`
 
 * System: `otfd`, `otf-agent`

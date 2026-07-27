@@ -82,11 +82,12 @@ type kubeConfig struct {
 	CachePVC       string
 	TTLAfterFinish time.Duration
 
-	requestCPU    k8sresource.Quantity
-	requestMemory k8sresource.Quantity
-	limitCPU      *k8sresource.Quantity
-	limitMemory   *k8sresource.Quantity
-	labels        map[string]string
+	requestCPU       k8sresource.Quantity
+	requestMemory    k8sresource.Quantity
+	limitCPU         *k8sresource.Quantity
+	limitMemory      *k8sresource.Quantity
+	labels           map[string]string
+	imagePullSecrets []corev1.LocalObjectReference
 
 	flags kubeConfigFlags
 }
@@ -94,11 +95,12 @@ type kubeConfig struct {
 // kubeConfigFlags are CLI flags that need to be parsed first and should not be
 // used directly by the kubernetes executor.
 type kubeConfigFlags struct {
-	Labels        []string
-	RequestCPU    string
-	RequestMemory string
-	LimitCPU      string
-	LimitMemory   string
+	Labels           []string
+	RequestCPU       string
+	RequestMemory    string
+	LimitCPU         string
+	LimitMemory      string
+	ImagePullSecrets []string
 }
 
 func registerKubeFlags(flags *pflag.FlagSet, cfg *kubeConfig) {
@@ -109,6 +111,7 @@ func registerKubeFlags(flags *pflag.FlagSet, cfg *kubeConfig) {
 	flags.StringVar(&cfg.flags.LimitCPU, "kubernetes-limit-cpu", cfg.flags.LimitCPU, "CPU limit for kubernetes job.")
 	flags.StringVar(&cfg.flags.LimitMemory, "kubernetes-limit-memory", cfg.flags.LimitMemory, "Memory limit for kubernetes job.")
 	flags.StringSliceVar(&cfg.flags.Labels, "kubernetes-labels", cfg.flags.Labels, "Set additional labels on kubernetes jobs. Name and value are separated by an equals sign, e.g. `foo=bar`.")
+	flags.StringSliceVar(&cfg.flags.ImagePullSecrets, "kubernetes-image-pull-secrets", cfg.flags.ImagePullSecrets, "Names of secrets in the same namespace to use for pulling the kubernetes job image from a private registry.")
 }
 
 type kubeExecutor struct {
@@ -175,6 +178,15 @@ func newKubeExecutor(
 			return nil, fmt.Errorf("invalid label: must be in format name=value")
 		}
 		executor.Config.labels[k] = v
+	}
+
+	for _, name := range kubeConfig.flags.ImagePullSecrets {
+		if name == "" {
+			return nil, fmt.Errorf("invalid image pull secret: name cannot be empty")
+		}
+		executor.Config.imagePullSecrets = append(executor.Config.imagePullSecrets, corev1.LocalObjectReference{
+			Name: name,
+		})
 	}
 
 	// assume running in-cluster; otherwise use config path
@@ -265,6 +277,7 @@ func (s *kubeExecutor) SpawnOperation(ctx context.Context, _ *errgroup.Group, jo
 				Spec: corev1.PodSpec{
 					ServiceAccountName: s.Config.ServiceAccount,
 					RestartPolicy:      corev1.RestartPolicyNever,
+					ImagePullSecrets:   s.Config.imagePullSecrets,
 					Resources: &corev1.ResourceRequirements{
 						Requests: corev1.ResourceList{
 							corev1.ResourceCPU:    s.Config.requestCPU,

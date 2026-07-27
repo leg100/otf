@@ -36,6 +36,10 @@
 - name: OTF_KUBERNETES_JOB_IMAGE
   value: "{{ . }}"
 {{- end }}
+{{- with .kubernetesImagePullSecrets }}
+- name: OTF_KUBERNETES_IMAGE_PULL_SECRETS
+  value: {{ . | join "," }}
+{{- end }}
 - name: OTF_ENGINE_BINS_DIR
   value: "/cache/engines"
 {{- with .pluginCache }}

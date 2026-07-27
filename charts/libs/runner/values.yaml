@@ -14,6 +14,8 @@ kubernetesLimitMemory: ~
 kubernetesLabels: []
 # -- Set the kubernetes job image. Defaults to `leg100/otf-job` tagged with the current OTF version. See [docs](https://docs.otf.ninja/config/flags/#-kubernetes-job-image).
 kubernetesJobImage: ""
+# -- Names of secrets in the same namespace to use for pulling the kubernetes job image from a private registry, e.g. `["my-registry-creds"]`.
+kubernetesImagePullSecrets: []
 # -- Delete finished kubernetes jobs after this duration.
 kubernetesTTLAfterFinish:
 # -- (bool) Enable shared provider plugin cache for terraform providers. Note this is only concurrency safe in opentofu 1.10.0 and greater.

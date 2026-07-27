@@ -74,6 +74,34 @@ func TestNewKubeExecutor(t *testing.T) {
 		)
 		assert.Error(t, err)
 	})
+
+	t.Run("with image pull secrets", func(t *testing.T) {
+		cfg := defaultKubeConfig
+		cfg.flags.ImagePullSecrets = []string{"regcred", "othercred"}
+
+		executor, err := newKubeExecutor(
+			logr.Discard(),
+			defaultOperationConfig(),
+			cfg,
+		)
+		require.NoError(t, err)
+		assert.Equal(t, []corev1.LocalObjectReference{
+			{Name: "regcred"},
+			{Name: "othercred"},
+		}, executor.Config.imagePullSecrets)
+	})
+
+	t.Run("with invalid image pull secrets", func(t *testing.T) {
+		cfg := defaultKubeConfig
+		cfg.flags.ImagePullSecrets = []string{""}
+
+		_, err := newKubeExecutor(
+			logr.Discard(),
+			defaultOperationConfig(),
+			cfg,
+		)
+		assert.Error(t, err)
+	})
 }
 
 func TestKubeExecutor_SpawnOperation(t *testing.T) {
@@ -81,6 +109,7 @@ func TestKubeExecutor_SpawnOperation(t *testing.T) {
 	cfg.flags.Labels = []string{"foo=bar"}
 	cfg.flags.LimitCPU = "3000m"
 	cfg.flags.LimitMemory = "512Mi"
+	cfg.flags.ImagePullSecrets = []string{"regcred"}
 
 	executor, err := newKubeExecutor(
 		logr.Discard(),
@@ -122,6 +151,7 @@ func TestKubeExecutor_SpawnOperation(t *testing.T) {
 	}
 	assert.Equal(t, wantLabels, jobsClient.job.Labels)
 	assert.Equal(t, wantLabels, secretsClient.secret.Labels)
+	assert.Equal(t, []corev1.LocalObjectReference{{Name: "regcred"}}, jobsClient.job.Spec.Template.Spec.ImagePullSecrets)
 	assert.Equal(t, map[string]string{"jobToken": "token"}, secretsClient.secret.StringData)
 }
 
