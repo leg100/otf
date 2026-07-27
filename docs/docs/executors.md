@@ -26,6 +26,8 @@ This executor is only functional when `otfd` or `otf-agent` is deployed via the 
 There are a number of flags that customise the jobs:
 
 * [`--kubernetes-job-image`](config/flags.md#-kubernetes-job-image)
+* [`--kubernetes-node-selector`](config/flags.md#-kubernetes-node-selector)
+* [`--kubernetes-tolerations`](config/flags.md#-kubernetes-tolerations)
 * [`--kubernetes-request-cpu`](config/flags.md#-kubernetes-request-cpu)
 * [`--kubernetes-request-memory`](config/flags.md#-kubernetes-request-memory)
 * [`--kubernetes-ttl-after-finish`](config/flags.md#-kubernetes-ttl-after-finish)

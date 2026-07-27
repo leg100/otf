@@ -72,7 +72,6 @@ var (
 	defaultKubeConfig kubeConfig
 )
 
-
 type kubeConfig struct {
 	Namespace      string
 	Image          string
@@ -87,6 +86,8 @@ type kubeConfig struct {
 	limitCPU      *k8sresource.Quantity
 	limitMemory   *k8sresource.Quantity
 	labels        map[string]string
+	nodeSelector  map[string]string
+	tolerations   []corev1.Toleration
 
 	flags kubeConfigFlags
 }
@@ -99,6 +100,8 @@ type kubeConfigFlags struct {
 	RequestMemory string
 	LimitCPU      string
 	LimitMemory   string
+	NodeSelector  []string
+	Tolerations   []string
 }
 
 func registerKubeFlags(flags *pflag.FlagSet, cfg *kubeConfig) {
@@ -109,6 +112,34 @@ func registerKubeFlags(flags *pflag.FlagSet, cfg *kubeConfig) {
 	flags.StringVar(&cfg.flags.LimitCPU, "kubernetes-limit-cpu", cfg.flags.LimitCPU, "CPU limit for kubernetes job.")
 	flags.StringVar(&cfg.flags.LimitMemory, "kubernetes-limit-memory", cfg.flags.LimitMemory, "Memory limit for kubernetes job.")
 	flags.StringSliceVar(&cfg.flags.Labels, "kubernetes-labels", cfg.flags.Labels, "Set additional labels on kubernetes jobs. Name and value are separated by an equals sign, e.g. `foo=bar`.")
+	flags.StringSliceVar(&cfg.flags.NodeSelector, "kubernetes-node-selector", cfg.flags.NodeSelector, "Constrain kubernetes jobs to nodes with these labels. Name and value are separated by an equals sign, e.g. `foo=bar`.")
+	flags.StringSliceVar(&cfg.flags.Tolerations, "kubernetes-tolerations", cfg.flags.Tolerations, "Add tolerations to kubernetes jobs, in the format `key[=value]:effect` (operator is `Exists` when no value is given, otherwise `Equal`), e.g. `dedicated=terraform:NoSchedule`. Omit the effect to tolerate all effects for the key.")
+}
+
+// parseToleration parses a toleration from the format key[=value]:effect,
+// mirroring the syntax used by `kubectl taint`. The operator is Exists when no
+// value is supplied, otherwise Equal. An empty effect tolerates all effects.
+func parseToleration(s string) (corev1.Toleration, error) {
+	keyValue, effect, _ := strings.Cut(s, ":")
+	switch corev1.TaintEffect(effect) {
+	case "", corev1.TaintEffectNoSchedule, corev1.TaintEffectPreferNoSchedule, corev1.TaintEffectNoExecute:
+	default:
+		return corev1.Toleration{}, fmt.Errorf("invalid toleration effect %q: must be one of NoSchedule, PreferNoSchedule, NoExecute", effect)
+	}
+
+	toleration := corev1.Toleration{Effect: corev1.TaintEffect(effect)}
+	if key, value, ok := strings.Cut(keyValue, "="); ok {
+		toleration.Key = key
+		toleration.Value = value
+		toleration.Operator = corev1.TolerationOpEqual
+	} else {
+		toleration.Key = keyValue
+		toleration.Operator = corev1.TolerationOpExists
+	}
+	if toleration.Key == "" {
+		return corev1.Toleration{}, fmt.Errorf("invalid toleration %q: key must not be empty", s)
+	}
+	return toleration, nil
 }
 
 type kubeExecutor struct {
@@ -175,6 +206,23 @@ func newKubeExecutor(
 			return nil, fmt.Errorf("invalid label: must be in format name=value")
 		}
 		executor.Config.labels[k] = v
+	}
+
+	executor.Config.nodeSelector = make(map[string]string)
+	for _, selector := range kubeConfig.flags.NodeSelector {
+		k, v, ok := strings.Cut(selector, "=")
+		if !ok {
+			return nil, fmt.Errorf("invalid node selector: must be in format name=value")
+		}
+		executor.Config.nodeSelector[k] = v
+	}
+
+	for _, t := range kubeConfig.flags.Tolerations {
+		toleration, err := parseToleration(t)
+		if err != nil {
+			return nil, err
+		}
+		executor.Config.tolerations = append(executor.Config.tolerations, toleration)
 	}
 
 	// assume running in-cluster; otherwise use config path
@@ -265,6 +313,8 @@ func (s *kubeExecutor) SpawnOperation(ctx context.Context, _ *errgroup.Group, jo
 				Spec: corev1.PodSpec{
 					ServiceAccountName: s.Config.ServiceAccount,
 					RestartPolicy:      corev1.RestartPolicyNever,
+					NodeSelector:       s.Config.nodeSelector,
+					Tolerations:        s.Config.tolerations,
 					Resources: &corev1.ResourceRequirements{
 						Requests: corev1.ResourceList{
 							corev1.ResourceCPU:    s.Config.requestCPU,

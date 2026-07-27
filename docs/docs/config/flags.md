@@ -170,6 +170,20 @@ Set a memory limit for kubernetes jobs.
 
 Set additional labels on kubernetes jobs. Name and value are separated by an equals sign, e.g. `foo=bar`.
 
+## `--kubernetes-node-selector`
+
+* System: `otfd`, `otf-agent`
+* Default: `""`
+
+Constrain kubernetes jobs to nodes with these labels. Name and value are separated by an equals sign, e.g. `foo=bar`. Specify multiple selectors separated by a comma. Combine with `--kubernetes-tolerations` to schedule jobs onto a dedicated, tainted node pool.
+
+## `--kubernetes-tolerations`
+
+* System: `otfd`, `otf-agent`
+* Default: `""`
+
+Add tolerations to kubernetes jobs, in the format `key[=value]:effect`. The operator is `Exists` when no value is given, otherwise `Equal`; omit the effect to tolerate all effects for the key. `effect`, when given, must be one of `NoSchedule`, `PreferNoSchedule` or `NoExecute`, e.g. `dedicated=terraform:NoSchedule`. Specify multiple tolerations separated by a comma.
+
 ## `--kubernetes-ttl-after-finish`
 
 * System: `otfd`, `otf-agent`

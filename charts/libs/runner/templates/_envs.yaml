@@ -16,6 +16,14 @@
 - name: OTF_KUBERNETES_LABELS
   value: {{ . | join "," }}
 {{- end }}
+{{- with .kubernetesNodeSelector }}
+- name: OTF_KUBERNETES_NODE_SELECTOR
+  value: {{ . | join "," }}
+{{- end }}
+{{- with .kubernetesTolerations }}
+- name: OTF_KUBERNETES_TOLERATIONS
+  value: {{ . | join "," }}
+{{- end }}
 {{- with .kubernetesRequestCPU }}
 - name: OTF_KUBERNETES_REQUEST_CPU
   value: {{ . }}

@@ -1,6 +1,6 @@
 # runner
 
-![Version: 0.1.0](https://img.shields.io/badge/Version-0.1.0-informational?style=flat-square) ![Type: library](https://img.shields.io/badge/Type-library-informational?style=flat-square) ![AppVersion: 1.16.0](https://img.shields.io/badge/AppVersion-1.16.0-informational?style=flat-square)
+![Version: 0.1.1](https://img.shields.io/badge/Version-0.1.1-informational?style=flat-square) ![Type: library](https://img.shields.io/badge/Type-library-informational?style=flat-square) ![AppVersion: 1.16.0](https://img.shields.io/badge/AppVersion-1.16.0-informational?style=flat-square)
 
 A Helm chart library for otf runner resources and configuration.
 
@@ -18,8 +18,10 @@ A Helm chart library for otf runner resources and configuration.
 | kubernetesLabels | list | `[]` | Set additional labels on kubernetes jobs. Name and value are separated by an equals sign, e.g. `foo=bar`. |
 | kubernetesLimitCPU | string | `nil` | Set a CPU limit for kubernetes jobs. |
 | kubernetesLimitMemory | string | `nil` | Set a memory limit for kubernetes jobs. |
+| kubernetesNodeSelector | list | `[]` | Constrain kubernetes jobs to nodes with these labels. Name and value are separated by an equals sign, e.g. `foo=bar`. |
 | kubernetesRequestCPU | string | `nil` | Set the requested CPU resources for kubernetes jobs. |
 | kubernetesRequestMemory | string | `nil` | Set the requested memory resources for kubernetes jobs. |
 | kubernetesTTLAfterFinish | string | `nil` | Delete finished kubernetes jobs after this duration. |
+| kubernetesTolerations | list | `[]` | Add tolerations to kubernetes jobs, in the format `key[=value]:effect` (operator is `Exists` when no value is given, otherwise `Equal`), e.g. `dedicated=terraform:NoSchedule`. |
 | pluginCache | bool | `nil` | Enable shared provider plugin cache for terraform providers. Note this is only concurrency safe in opentofu 1.10.0 and greater. |
 

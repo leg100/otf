@@ -74,6 +74,72 @@ func TestNewKubeExecutor(t *testing.T) {
 		)
 		assert.Error(t, err)
 	})
+
+	t.Run("with node selector", func(t *testing.T) {
+		cfg := defaultKubeConfig
+		cfg.flags.NodeSelector = []string{"foo=bar", "coo=boo"}
+
+		executor, err := newKubeExecutor(
+			logr.Discard(),
+			defaultOperationConfig(),
+			cfg,
+		)
+		require.NoError(t, err)
+		assert.Equal(t, map[string]string{"foo": "bar", "coo": "boo"}, executor.Config.nodeSelector)
+	})
+
+	t.Run("with invalid node selector", func(t *testing.T) {
+		cfg := defaultKubeConfig
+		cfg.flags.NodeSelector = []string{"foobar"}
+
+		_, err := newKubeExecutor(
+			logr.Discard(),
+			defaultOperationConfig(),
+			cfg,
+		)
+		assert.Error(t, err)
+	})
+
+	t.Run("with tolerations", func(t *testing.T) {
+		cfg := defaultKubeConfig
+		cfg.flags.Tolerations = []string{"dedicated=terraform:NoSchedule", "spot:NoExecute", "gpu"}
+
+		executor, err := newKubeExecutor(
+			logr.Discard(),
+			defaultOperationConfig(),
+			cfg,
+		)
+		require.NoError(t, err)
+		assert.Equal(t, []corev1.Toleration{
+			{Key: "dedicated", Operator: corev1.TolerationOpEqual, Value: "terraform", Effect: corev1.TaintEffectNoSchedule},
+			{Key: "spot", Operator: corev1.TolerationOpExists, Effect: corev1.TaintEffectNoExecute},
+			{Key: "gpu", Operator: corev1.TolerationOpExists},
+		}, executor.Config.tolerations)
+	})
+
+	t.Run("with invalid toleration effect", func(t *testing.T) {
+		cfg := defaultKubeConfig
+		cfg.flags.Tolerations = []string{"dedicated=terraform:Bogus"}
+
+		_, err := newKubeExecutor(
+			logr.Discard(),
+			defaultOperationConfig(),
+			cfg,
+		)
+		assert.Error(t, err)
+	})
+
+	t.Run("with empty toleration key", func(t *testing.T) {
+		cfg := defaultKubeConfig
+		cfg.flags.Tolerations = []string{":NoSchedule"}
+
+		_, err := newKubeExecutor(
+			logr.Discard(),
+			defaultOperationConfig(),
+			cfg,
+		)
+		assert.Error(t, err)
+	})
 }
 
 func TestKubeExecutor_SpawnOperation(t *testing.T) {
@@ -81,6 +147,8 @@ func TestKubeExecutor_SpawnOperation(t *testing.T) {
 	cfg.flags.Labels = []string{"foo=bar"}
 	cfg.flags.LimitCPU = "3000m"
 	cfg.flags.LimitMemory = "512Mi"
+	cfg.flags.NodeSelector = []string{"dedicated=terraform"}
+	cfg.flags.Tolerations = []string{"dedicated=terraform:NoSchedule"}
 
 	executor, err := newKubeExecutor(
 		logr.Discard(),
@@ -123,6 +191,12 @@ func TestKubeExecutor_SpawnOperation(t *testing.T) {
 	assert.Equal(t, wantLabels, jobsClient.job.Labels)
 	assert.Equal(t, wantLabels, secretsClient.secret.Labels)
 	assert.Equal(t, map[string]string{"jobToken": "token"}, secretsClient.secret.StringData)
+
+	podSpec := jobsClient.job.Spec.Template.Spec
+	assert.Equal(t, map[string]string{"dedicated": "terraform"}, podSpec.NodeSelector)
+	assert.Equal(t, []corev1.Toleration{
+		{Key: "dedicated", Operator: corev1.TolerationOpEqual, Value: "terraform", Effect: corev1.TaintEffectNoSchedule},
+	}, podSpec.Tolerations)
 }
 
 type fakeSecretsClient struct {

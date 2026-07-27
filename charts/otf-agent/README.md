@@ -1,6 +1,6 @@
 # Helm Chart for `otf-agent`
 
-![Version: 0.1.33](https://img.shields.io/badge/Version-0.1.33-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 0.6.3](https://img.shields.io/badge/AppVersion-0.6.3-informational?style=flat-square)
+![Version: 0.1.34](https://img.shields.io/badge/Version-0.1.34-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 0.6.3](https://img.shields.io/badge/AppVersion-0.6.3-informational?style=flat-square)
 
 Installs the [otf agent](https://docs.otf.ninja/runners/).
 
@@ -93,8 +93,10 @@ address=10.244.0.18 agent.pool_id=apool-5b90443ed82ef769
 | runner.kubernetesLabels | list | `[]` | Set additional labels on kubernetes jobs. Name and value are separated by an equals sign, e.g. `foo=bar`. |
 | runner.kubernetesLimitCPU | string | `nil` | Set a CPU limit for kubernetes jobs. |
 | runner.kubernetesLimitMemory | string | `nil` | Set a memory limit for kubernetes jobs. |
+| runner.kubernetesNodeSelector | list | `[]` | Constrain kubernetes jobs to nodes with these labels. Name and value are separated by an equals sign, e.g. `foo=bar`. |
 | runner.kubernetesRequestCPU | string | `nil` | Set the requested CPU resources for kubernetes jobs. |
 | runner.kubernetesRequestMemory | string | `nil` | Set the requested memory resources for kubernetes jobs. |
 | runner.kubernetesTTLAfterFinish | string | `nil` | Delete finished kubernetes jobs after this duration. |
+| runner.kubernetesTolerations | list | `[]` | Add tolerations to kubernetes jobs, in the format `key[=value]:effect` (operator is `Exists` when no value is given, otherwise `Equal`), e.g. `dedicated=terraform:NoSchedule`. |
 | runner.pluginCache | bool | `nil` | Enable shared provider plugin cache for terraform providers. Note this is only concurrency safe in opentofu 1.10.0 and greater. |
 
