@@ -27,9 +27,10 @@ type Runner struct {
 	PluginCache     bool   // toggle use of terraform's shared plugin cache
 	TerraformBinDir string // destination directory for terraform binaries
 
-	runners    runnerClient
-	executor   executor
-	registered chan struct{}
+	runners                runnerClient
+	executor               executor
+	operationClientCreator OperationClientCreator
+	registered             chan struct{}
 
 	logger logr.Logger // logger that logs messages regardless of whether runner is a server or agent runner.
 	v      int         // logger verbosity
@@ -55,9 +56,10 @@ func New(
 			MaxJobs:      cfg.MaxJobs,
 			ExecutorKind: cfg.ExecutorKind,
 		},
-		runners:    runnerClient,
-		registered: make(chan struct{}),
-		logger:     logger,
+		runners:                runnerClient,
+		operationClientCreator: operationClientCreator,
+		registered:             make(chan struct{}),
+		logger:                 logger,
 	}
 	if !cfg.IsAgent {
 		// Set a higher threshold for logging on server runner where the runner is
@@ -164,6 +166,12 @@ func (r *Runner) Start(ctx context.Context) error {
 						return fmt.Errorf("starting job and retrieving job token: %w", err)
 					}
 					if err := r.executor.SpawnOperation(ctx, g, j, token); err != nil {
+						// The job has already been started, so it is skipped by
+						// subsequent passes over allocated jobs and can never be
+						// spawned again. Report it as errored, otherwise it
+						// remains in the running state and its run hangs until
+						// its phase timeout expires.
+						r.failJob(ctx, j, token, err)
 						return fmt.Errorf("spawning job operation: %w", err)
 					}
 				}
@@ -184,6 +192,27 @@ func (r *Runner) Start(ctx context.Context) error {
 
 func (r *Runner) Started() <-chan struct{} {
 	return r.registered
+}
+
+// Report a job as failed.
+func (r *Runner) failJob(ctx context.Context, job *Job, jobToken []byte, cause error) {
+	// Report the job using a context that is still valid for a further 10
+	// seconds unless daemon is forcefully shutdown.
+	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 10*time.Second)
+	defer cancel()
+	// Authenticate as the job.
+	ctx = authz.AddSubjectToContext(ctx, job)
+
+	client := r.operationClientCreator(string(jobToken))
+	err := client.FinishJob(ctx, job.ID, FinishJobOptions{
+		Status: JobErrored,
+		Error:  cause.Error(),
+	})
+	if err != nil {
+		r.logger.Error(err, "reporting job as errored after failing to spawn operation", "job", job)
+		return
+	}
+	r.logger.V(r.v).Info("reported job as errored after failing to spawn operation", "job", job)
 }
 
 func (r *Runner) sendStatusUpdates(ctx context.Context) error {

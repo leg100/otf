@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cenkalti/backoff"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/resource"
@@ -18,6 +19,7 @@ import (
 	"golang.org/x/sync/errgroup"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	k8sresource "k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -60,6 +62,8 @@ func init() {
 		),
 		// Delete job by default 1 hour after it has finished
 		TTLAfterFinish: time.Hour,
+		// Retry spawning a job this many times.
+		SpawnRetries: 3,
 		flags: kubeConfigFlags{
 			RequestCPU:    "500m",
 			RequestMemory: "128Mi",
@@ -72,7 +76,6 @@ var (
 	defaultKubeConfig kubeConfig
 )
 
-
 type kubeConfig struct {
 	Namespace      string
 	Image          string
@@ -81,6 +84,7 @@ type kubeConfig struct {
 	ServiceAccount string
 	CachePVC       string
 	TTLAfterFinish time.Duration
+	SpawnRetries   int
 
 	requestCPU    k8sresource.Quantity
 	requestMemory k8sresource.Quantity
@@ -104,6 +108,7 @@ type kubeConfigFlags struct {
 func registerKubeFlags(flags *pflag.FlagSet, cfg *kubeConfig) {
 	flags.StringVar(&cfg.Image, "kubernetes-job-image", cfg.Image, "Image to use for kubernetes jobs.")
 	flags.DurationVar(&cfg.TTLAfterFinish, "kubernetes-ttl-after-finish", cfg.TTLAfterFinish, "Delete finished kubernetes job after this duration.")
+	flags.IntVar(&cfg.SpawnRetries, "kubernetes-spawn-retries", cfg.SpawnRetries, "Number of times to retry spawning a kubernetes job before reporting the job as errored. A retry resumes from the first step that has not yet completed. Zero disables retrying.")
 	flags.StringVar(&cfg.flags.RequestCPU, "kubernetes-request-cpu", cfg.flags.RequestCPU, "Requested CPU for kubernetes job.")
 	flags.StringVar(&cfg.flags.RequestMemory, "kubernetes-request-memory", cfg.flags.RequestMemory, "Requested memory for kubernetes job.")
 	flags.StringVar(&cfg.flags.LimitCPU, "kubernetes-limit-cpu", cfg.flags.LimitCPU, "CPU limit for kubernetes job.")
@@ -121,6 +126,7 @@ type kubeExecutor struct {
 
 type kubeExecutorJobsClient interface {
 	Create(ctx context.Context, job *batchv1.Job, opts metav1.CreateOptions) (*batchv1.Job, error)
+	Get(ctx context.Context, name string, opts metav1.GetOptions) (*batchv1.Job, error)
 	List(ctx context.Context, opts metav1.ListOptions) (*batchv1.JobList, error)
 }
 
@@ -168,6 +174,10 @@ func newKubeExecutor(
 		executor.Config.limitMemory = &limitMemory
 	}
 
+	if kubeConfig.SpawnRetries < 0 {
+		return nil, fmt.Errorf("invalid spawn retries: must not be negative: %d", kubeConfig.SpawnRetries)
+	}
+
 	executor.Config.labels = make(map[string]string)
 	for _, label := range kubeConfig.flags.Labels {
 		k, v, ok := strings.Cut(label, "=")
@@ -194,6 +204,122 @@ func newKubeExecutor(
 	executor.jobs = clientset.BatchV1().Jobs(kubeConfig.Namespace)
 
 	return executor, nil
+}
+
+// optionalStepError wraps an error from a spawn step that the kubernetes job
+// does not depend upon. Such a step is retried like any other, but if the
+// retries are exhausted the spawn as a whole must still be reported as having
+// succeeded, because the job is running.
+type optionalStepError struct{ err error }
+
+func (e *optionalStepError) Error() string { return e.err.Error() }
+func (e *optionalStepError) Unwrap() error { return e.err }
+
+// spawn is an attempt-in-progress at spawning a kubernetes job for an OTF job.
+// Its specs are built once and then held fixed - in particular the generated
+// name, so that a retry addresses the same objects rather than creating a second
+// secret and a second kubernetes job, which would carry out the OTF job twice
+// concurrently. The remaining fields record progress, so that a retry resumes
+// from the first step that has not yet completed.
+type spawn struct {
+	job    *Job
+	name   string
+	secret *corev1.Secret
+	spec   *batchv1.Job
+
+	secretCreated bool
+	jobCreated    bool
+	kjob          *batchv1.Job // nil until the created job's UID is known
+	ownerRefSet   bool
+}
+
+// retry invokes fn, retrying with exponential backoff up to SpawnRetries times
+// before returning the last error.
+func (s *kubeExecutor) retry(ctx context.Context, sp *spawn, fn func() error) error {
+	if s.Config.SpawnRetries <= 0 {
+		// Retrying is disabled: make a single attempt. NOTE: this must be
+		// handled explicitly because backoff.WithMaxRetries treats a maximum of
+		// zero as unlimited.
+		return fn()
+	}
+	policy := backoff.NewExponentialBackOff()
+	policy.InitialInterval = 500 * time.Millisecond
+	policy.MaxInterval = 5 * time.Second
+	// Bound the retries solely by their number, not by elapsed time: an attempt
+	// can itself block for the duration of the API server's etcd request
+	// timeout, which would make the effective number of attempts unpredictable.
+	policy.MaxElapsedTime = 0
+
+	tries := backoff.WithMaxRetries(policy, uint64(s.Config.SpawnRetries))
+	return backoff.RetryNotify(
+		fn,
+		backoff.WithContext(tries, ctx),
+		func(err error, next time.Duration) {
+			s.Logger.Error(err, "retrying spawn of kubernetes job", "name", sp.name, "otf-job", sp.job, "backoff", next)
+		},
+	)
+}
+
+// spawn makes the kubernetes API calls needed to spawn a job, resuming from the
+// first step that has not yet completed.
+// Steps that the kubernetes job does not depend upon return an optionalStepError.
+func (s *kubeExecutor) spawn(ctx context.Context, sp *spawn) error {
+	if !sp.secretCreated {
+		_, err := s.secrets.Create(ctx, sp.secret, metav1.CreateOptions{})
+		switch {
+		case apierrors.IsAlreadyExists(err):
+			// An earlier attempt timed out but did in fact create the secret.
+		case err != nil:
+			return fmt.Errorf("creating kubernetes secret for job token: %w", err)
+		}
+		sp.secretCreated = true
+		s.Logger.V(4).Info("created kubernetes secret for job token", "name", sp.name, "namespace", s.Config.Namespace, "otf-job", sp.job)
+	}
+
+	if !sp.jobCreated {
+		kjob, err := s.jobs.Create(ctx, sp.spec, metav1.CreateOptions{})
+		switch {
+		case apierrors.IsAlreadyExists(err):
+			// Earlier attempt created the job; UID is unknown and to be retrieved below.
+		case err != nil:
+			return fmt.Errorf("creating kubernetes job: %w", err)
+		default:
+			sp.kjob = kjob
+		}
+		sp.jobCreated = true
+		s.Logger.V(1).Info("created kubernetes job", "name", sp.name, "namespace", s.Config.Namespace, "otf-job", sp.job)
+	}
+
+	// The kubernetes job now exists and is going to run to completion, so every
+	// remaining step is optional.
+
+	if sp.kjob == nil {
+		// The create response was lost to a timeout. Retrieve the job in order
+		// to obtain the UID needed for the owner reference.
+		kjob, err := s.jobs.Get(ctx, sp.name, metav1.GetOptions{})
+		if err != nil {
+			return &optionalStepError{fmt.Errorf("retrieving kubernetes job created by an earlier attempt: %w", err)}
+		}
+		sp.kjob = kjob
+	}
+
+	if !sp.ownerRefSet {
+		// Set secret's owner to its job, so that it is deleted when its job is deleted.
+		sp.secret.OwnerReferences = []metav1.OwnerReference{
+			{
+				APIVersion: "batch/v1",
+				Kind:       "job",
+				Name:       sp.kjob.Name,
+				UID:        sp.kjob.UID,
+			},
+		}
+		if _, err := s.secrets.Update(ctx, sp.secret, metav1.UpdateOptions{}); err != nil {
+			return &optionalStepError{fmt.Errorf("setting kubernetes job token secret owner reference: %w", err)}
+		}
+		sp.ownerRefSet = true
+	}
+
+	return nil
 }
 
 func (s *kubeExecutor) SpawnOperation(ctx context.Context, _ *errgroup.Group, job *Job, jobToken []byte) error {
@@ -240,12 +366,6 @@ func (s *kubeExecutor) SpawnOperation(ctx context.Context, _ *errgroup.Group, jo
 			jobTokenSecretKey: string(jobToken),
 		},
 	}
-	ksecret, err := s.secrets.Create(ctx, secret, metav1.CreateOptions{})
-	if err != nil {
-		return fmt.Errorf("creating kubernetes secret for job token: %w", err)
-	}
-	s.Logger.V(4).Info("created kubernetes secret for job token", "name", ksecret.GetName(), "namespace", ksecret.GetNamespace(), "otf-job", job)
-
 	// Create k8s job for OTF job.
 	spec := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
@@ -289,7 +409,7 @@ func (s *kubeExecutor) SpawnOperation(ctx context.Context, _ *errgroup.Group, jo
 									ValueFrom: &corev1.EnvVarSource{
 										SecretKeyRef: &corev1.SecretKeySelector{
 											LocalObjectReference: corev1.LocalObjectReference{
-												Name: ksecret.GetName(),
+												Name: jobName,
 											},
 											Key: jobTokenSecretKey,
 										},
@@ -365,30 +485,19 @@ func (s *kubeExecutor) SpawnOperation(ctx context.Context, _ *errgroup.Group, jo
 			},
 		}
 	}
-	kjob, err := s.jobs.Create(ctx, spec, metav1.CreateOptions{})
-	if err != nil {
-		return fmt.Errorf("creating kubernetes job: %w", err)
-	}
-	s.Logger.V(1).Info("created kubernetes job", "name", kjob.GetName(), "namespace", kjob.GetNamespace(), "otf-job", job)
+	// Retry the spawn as a whole rather than each API call individually: an
+	// attempt resumes from the first step that has not yet completed, so a retry
+	// costs no more API calls than retrying that step alone would, but there is
+	// a single budget and a single place where the outcome is decided.
+	sp := &spawn{job: job, name: jobName, secret: secret, spec: spec}
+	err := s.retry(ctx, sp, func() error { return s.spawn(ctx, sp) })
 
-	// Set secret's owner to its job, so that it is deleted when its job is
-	// deleted.
-	secret.OwnerReferences = []metav1.OwnerReference{
-		{
-			// NOTE: the API version and kind are empty strings in the returned
-			// job struct, so we're forced to hardcode them.
-			APIVersion: "batch/v1",
-			Kind:       "job",
-			Name:       kjob.Name,
-			UID:        kjob.UID,
-		},
+	var optional *optionalStepError
+	if errors.As(err, &optional) {
+		s.Logger.Error(optional, "spawned kubernetes job but could not complete an optional step; job token secret will not be garbage collected with its job", "name", jobName, "namespace", s.Config.Namespace, "otf-job", job)
+		return nil
 	}
-	_, err = s.secrets.Update(ctx, secret, metav1.UpdateOptions{})
-	if err != nil {
-		return fmt.Errorf("setting kubernetes job token secret owner reference: %w", err)
-	}
-
-	return nil
+	return err
 }
 
 func (s *kubeExecutor) currentJobs(ctx context.Context, runnerID resource.TfeID) int {
