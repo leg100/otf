@@ -16,6 +16,10 @@
 - name: OTF_KUBERNETES_LABELS
   value: {{ . | join "," }}
 {{- end }}
+{{- with .kubernetesAnnotations }}
+- name: OTF_KUBERNETES_ANNOTATIONS
+  value: {{ . | join "," }}
+{{- end }}
 {{- with .kubernetesRequestCPU }}
 - name: OTF_KUBERNETES_REQUEST_CPU
   value: {{ . }}

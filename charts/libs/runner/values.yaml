@@ -12,6 +12,8 @@ kubernetesLimitCPU: ~
 kubernetesLimitMemory: ~
 # -- Set additional labels on kubernetes jobs. Name and value are separated by an equals sign, e.g. `foo=bar`.
 kubernetesLabels: []
+# -- Set additional annotations on the pods created for kubernetes jobs. Name and value are separated by an equals sign, e.g. `cluster-autoscaler.kubernetes.io/safe-to-evict=false`.
+kubernetesAnnotations: []
 # -- Set the kubernetes job image. Defaults to `leg100/otf-job` tagged with the current OTF version. See [docs](https://docs.otf.ninja/config/flags/#-kubernetes-job-image).
 kubernetesJobImage: ""
 # -- Delete finished kubernetes jobs after this duration.

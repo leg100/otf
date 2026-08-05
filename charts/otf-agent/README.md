@@ -1,6 +1,6 @@
 # Helm Chart for `otf-agent`
 
-![Version: 0.1.33](https://img.shields.io/badge/Version-0.1.33-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 0.6.3](https://img.shields.io/badge/AppVersion-0.6.3-informational?style=flat-square)
+![Version: 0.1.34](https://img.shields.io/badge/Version-0.1.34-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 0.6.3](https://img.shields.io/badge/AppVersion-0.6.3-informational?style=flat-square)
 
 Installs the [otf agent](https://docs.otf.ninja/runners/).
 
@@ -89,6 +89,7 @@ address=10.244.0.18 agent.pool_id=apool-5b90443ed82ef769
 | runner.cacheVolume.storageClass | string | `nil` | Persistent volume storage class. # If defined, storageClassName: <storageClass> # If set to "-", storageClassName: "", which disables dynamic provisioning # If undefined (the default) or set to null, no storageClassName spec is # set, choosing the default provisioner. |
 | runner.concurrency | int | `nil` | Set the number of runs that can be processed concurrently. See [docs](https://docs.otf.ninja/config/flags/#-concurrency). |
 | runner.executor | string | `""` | The executor to use. See [docs](https://docs.otf.ninja/config/flags/#-executor) |
+| runner.kubernetesAnnotations | list | `[]` | Set additional annotations on the pods created for kubernetes jobs. Name and value are separated by an equals sign, e.g. `cluster-autoscaler.kubernetes.io/safe-to-evict=false`. |
 | runner.kubernetesJobImage | string | `""` | Set the kubernetes job image. Defaults to `leg100/otf-job` tagged with the current OTF version. See [docs](https://docs.otf.ninja/config/flags/#-kubernetes-job-image). |
 | runner.kubernetesLabels | list | `[]` | Set additional labels on kubernetes jobs. Name and value are separated by an equals sign, e.g. `foo=bar`. |
 | runner.kubernetesLimitCPU | string | `nil` | Set a CPU limit for kubernetes jobs. |

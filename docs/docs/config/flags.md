@@ -170,6 +170,13 @@ Set a memory limit for kubernetes jobs.
 
 Set additional labels on kubernetes jobs. Name and value are separated by an equals sign, e.g. `foo=bar`.
 
+## `--kubernetes-annotations`
+
+* System: `otfd`, `otf-agent`
+* Default: `""`
+
+Set additional annotations on the pods created for kubernetes jobs. Name and value are separated by an equals sign, e.g. `cluster-autoscaler.kubernetes.io/safe-to-evict=false`. Specify multiple annotations separated by a comma. Use this to set the [cluster-autoscaler](https://github.com/kubernetes/autoscaler/blob/master/cluster-autoscaler/FAQ.md#what-types-of-pods-can-prevent-ca-from-removing-a-node) `cluster-autoscaler.kubernetes.io/safe-to-evict` annotation so that in-progress runs are not disrupted by node scale-down.
+
 ## `--kubernetes-ttl-after-finish`
 
 * System: `otfd`, `otf-agent`

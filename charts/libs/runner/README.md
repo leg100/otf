@@ -1,6 +1,6 @@
 # runner
 
-![Version: 0.1.0](https://img.shields.io/badge/Version-0.1.0-informational?style=flat-square) ![Type: library](https://img.shields.io/badge/Type-library-informational?style=flat-square) ![AppVersion: 1.16.0](https://img.shields.io/badge/AppVersion-1.16.0-informational?style=flat-square)
+![Version: 0.1.1](https://img.shields.io/badge/Version-0.1.1-informational?style=flat-square) ![Type: library](https://img.shields.io/badge/Type-library-informational?style=flat-square) ![AppVersion: 1.16.0](https://img.shields.io/badge/AppVersion-1.16.0-informational?style=flat-square)
 
 A Helm chart library for otf runner resources and configuration.
 
@@ -14,6 +14,7 @@ A Helm chart library for otf runner resources and configuration.
 | cacheVolume.storageClass | string | `nil` | Persistent volume storage class. # If defined, storageClassName: <storageClass> # If set to "-", storageClassName: "", which disables dynamic provisioning # If undefined (the default) or set to null, no storageClassName spec is # set, choosing the default provisioner. |
 | concurrency | int | `nil` | Set the number of runs that can be processed concurrently. See [docs](https://docs.otf.ninja/config/flags/#-concurrency). |
 | executor | string | `""` | The executor to use. See [docs](https://docs.otf.ninja/config/flags/#-executor) |
+| kubernetesAnnotations | list | `[]` | Set additional annotations on the pods created for kubernetes jobs. Name and value are separated by an equals sign, e.g. `cluster-autoscaler.kubernetes.io/safe-to-evict=false`. |
 | kubernetesJobImage | string | `""` | Set the kubernetes job image. Defaults to `leg100/otf-job` tagged with the current OTF version. See [docs](https://docs.otf.ninja/config/flags/#-kubernetes-job-image). |
 | kubernetesLabels | list | `[]` | Set additional labels on kubernetes jobs. Name and value are separated by an equals sign, e.g. `foo=bar`. |
 | kubernetesLimitCPU | string | `nil` | Set a CPU limit for kubernetes jobs. |
