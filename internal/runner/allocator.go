@@ -215,11 +215,11 @@ func (a *allocator) allocate(ctx context.Context, job *Job) error {
 		if runner.AgentPool != nil && job.AgentPoolID != nil && runner.AgentPool.ID != *job.AgentPoolID {
 			continue
 		}
-		// skip runners with insufficient capacity (only applicable to runners
-		// with a 'fork' executor kind - an infinite number of jobs can be
-		// allocated to the 'kubernetes' executor kind, where kubernetes itself
-		// is then responsible for allocation of resources.
-		if runner.ExecutorKind == ForkExecutorKind && runner.MaxJobs == a.currentJobs[runner.ID] {
+		// Skip runners with insufficient capacity.
+		// A runner with a limit of zero is unlimited and never has insufficient
+		// capacity (only applicable to runners with a 'kubernetes' executor kind),
+		// where kubernetes itself is then responsible for allocation of resources.
+		if runner.MaxJobs > 0 && a.currentJobs[runner.ID] >= runner.MaxJobs {
 			insufficientCapacity = true
 			continue
 		}

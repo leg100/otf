@@ -49,10 +49,14 @@ func New(
 	operationClientCreator OperationClientCreator,
 	cfg *Config,
 ) (*Runner, error) {
+	maxJobs, err := cfg.resolveMaxJobs()
+	if err != nil {
+		return nil, err
+	}
 	r := &Runner{
 		RunnerMeta: &RunnerMeta{
 			Name:         cfg.Name,
-			MaxJobs:      cfg.MaxJobs,
+			MaxJobs:      maxJobs,
 			ExecutorKind: cfg.ExecutorKind,
 		},
 		runners:    runnerClient,

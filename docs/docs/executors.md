@@ -23,6 +23,8 @@ The kubernetes executor executes jobs on kubernetes. Each job is run as a [kuber
 
 This executor is only functional when `otfd` or `otf-agent` is deployed via the [helm charts](https://github.com/leg100/otf/tree/master/charts) to a kubernetes cluster.
 
+By default an unlimited number of kubernetes jobs can be created. Set the [--concurrency](config/flags.md#-concurrency) flag to limit the number of kubernetes jobs that can exist at any one time.
+
 There are a number of flags that customise the jobs:
 
 * [`--kubernetes-job-image`](config/flags.md#-kubernetes-job-image)

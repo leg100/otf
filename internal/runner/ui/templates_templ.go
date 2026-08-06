@@ -258,7 +258,7 @@ func (t runnersTable) Row(runner *runnerpkg.RunnerMeta) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if runner.ExecutorKind == runnerpkg.ForkExecutorKind {
+		if runner.MaxJobs > 0 {
 			var templ_7745c5c3_Var13 string
 			templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("(%d/%d)", runner.CurrentJobs, runner.MaxJobs))
 			if templ_7745c5c3_Err != nil {

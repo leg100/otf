@@ -26,9 +26,13 @@ Sets the amount of time a run is permitted to be in the `applying` state before 
 ## `--concurrency`
 
 * System: `otfd`, `otf-agent`
-* Default: 5
+* Default: 5 for the [fork](executors.md#fork) executor; unlimited for the [kubernetes](executors.md#kubernetes) executor
 
-Sets the number of workers that can process runs concurrently. Only applies to the [fork](#-executor) executor.
+Sets the number of runs that can be processed concurrently. Runs beyond the limit remain queued until a running job completes.
+
+For the [fork](executors.md#fork) executor this is the number of workers, and therefore the number of forked processes. For the [kubernetes](executors.md#kubernetes) executor it is the number of kubernetes jobs permitted to exist at any one time.
+
+Specify `0` for an unlimited number of concurrent runs. The [fork](executors.md#fork) executor does not permit `0`.
 
 ## `--default-engine`
 

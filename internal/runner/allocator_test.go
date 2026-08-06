@@ -151,6 +151,43 @@ func TestAllocator_allocate(t *testing.T) {
 			},
 		},
 		{
+			name: "do not allocate job to kubernetes runner with insufficient capacity",
+			runners: []*RunnerMeta{
+				{ID: runner1ID, Status: RunnerIdle, CurrentJobs: 100, MaxJobs: 100, ExecutorKind: KubeExecutorKind},
+			},
+			job: &Job{
+				ID:     job1ID,
+				Status: JobUnallocated,
+			},
+			wantJob: &Job{
+				ID:     job1ID,
+				Status: JobUnallocated,
+			},
+			wantRunners: map[resource.TfeID]*RunnerMeta{
+				runner1ID: {ID: runner1ID, Status: RunnerIdle, CurrentJobs: 100, MaxJobs: 100, ExecutorKind: KubeExecutorKind},
+			},
+			wantCurrentJobs: map[resource.TfeID]int{runner1ID: 100},
+		},
+		{
+			name: "allocate job to kubernetes runner with unlimited capacity",
+			runners: []*RunnerMeta{
+				{ID: runner1ID, Status: RunnerIdle, CurrentJobs: 100, MaxJobs: 0, ExecutorKind: KubeExecutorKind},
+			},
+			job: &Job{
+				ID:     job1ID,
+				Status: JobUnallocated,
+			},
+			wantJob: &Job{
+				ID:       job1ID,
+				Status:   JobAllocated,
+				RunnerID: &runner1ID,
+			},
+			wantRunners: map[resource.TfeID]*RunnerMeta{
+				runner1ID: {ID: runner1ID, Status: RunnerIdle, CurrentJobs: 100, MaxJobs: 0, ExecutorKind: KubeExecutorKind},
+			},
+			wantCurrentJobs: map[resource.TfeID]int{runner1ID: 101},
+		},
+		{
 			name: "re-allocate job from unresponsive agent",
 			runners: []*RunnerMeta{
 				{ID: runner1ID, Status: RunnerUnknown},
@@ -213,6 +250,11 @@ func TestAllocator_allocate(t *testing.T) {
 			// check job
 			if tt.wantJob != nil {
 				assert.Equal(t, tt.wantJob, a.jobs[tt.wantJob.ID])
+			}
+			// check tally of current jobs, which determines whether a runner
+			// has capacity for further jobs.
+			for id, want := range tt.wantCurrentJobs {
+				assert.Equal(t, want, a.currentJobs[id])
 			}
 		})
 	}

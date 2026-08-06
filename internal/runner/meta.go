@@ -20,8 +20,9 @@ type RunnerMeta struct {
 	Version string `jsonapi:"attribute" json:"version"`
 	// Current status of runner
 	Status RunnerStatus `jsonapi:"attribute" json:"status"`
-	// Max number of jobs runner can execute. Only applicable to the 'fork'
-	// executor.
+	// Max number of jobs runner can execute. Zero means the runner can be
+	// allocated an unlimited number of jobs, which only the 'kubernetes'
+	// executor permits.
 	MaxJobs int `jsonapi:"attribute" json:"max_jobs" db:"max_jobs"`
 	// Current number of jobs allocated to runner.
 	CurrentJobs int `jsonapi:"attribute" json:"current_jobs" db:"current_jobs"`

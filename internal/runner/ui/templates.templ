@@ -85,7 +85,7 @@ templ (t runnersTable) Row(runner *runnerpkg.RunnerMeta) {
 			</span>
 		</td>
 		<td>
-			if runner.ExecutorKind == runnerpkg.ForkExecutorKind {
+			if runner.MaxJobs > 0 {
 				{ fmt.Sprintf("(%d/%d)", runner.CurrentJobs, runner.MaxJobs) }
 			} else {
 				{ runner.CurrentJobs }
