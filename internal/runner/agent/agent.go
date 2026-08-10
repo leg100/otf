@@ -14,6 +14,7 @@ func New(logger logr.Logger, serverURL string, token string, config *runner.Conf
 		logger,
 		serverURL,
 		token,
+		config.SkipTLSVerification,
 	)
 	if err != nil {
 		return nil, err

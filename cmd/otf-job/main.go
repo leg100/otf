@@ -55,6 +55,7 @@ func run(ctx context.Context, args []string) error {
 				logger,
 				url,
 				string(jobToken),
+				operationConfig.SkipTLSVerification,
 			)
 			if err != nil {
 				return err
@@ -82,6 +83,7 @@ func run(ctx context.Context, args []string) error {
 	cmd.Flags().StringVar(&jobToken, "job-token", "", "Job token for authentication")
 	cmd.Flags().Var(&jobID, "job-id", "ID of job to execute")
 	cmd.Flags().StringVar(&url, "url", otfhttp.DefaultURL, "URL of OTF server")
+	cmd.Flags().BoolVar(&operationConfig.SkipTLSVerification, "skip-tls-verification", false, "Skip verification of the OTF server's TLS certificate.")
 
 	cmd.SetArgs(args)
 

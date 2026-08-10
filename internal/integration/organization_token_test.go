@@ -29,6 +29,9 @@ func TestIntegration_OrganizationTokens(t *testing.T) {
 		logr.Discard(),
 		daemon.System.URL("/"),
 		string(token),
+		// The daemon's self-signed cert is trusted via SSL_CERT_FILE, so
+		// verification can stay enabled.
+		false,
 	)
 	require.NoError(t, err)
 

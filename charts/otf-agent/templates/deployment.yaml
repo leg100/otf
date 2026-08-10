@@ -57,6 +57,10 @@ spec:
             {{- end }}
             - name: OTF_URL
               value: "{{ required ".Values.url is required" .Values.url }}"
+            {{- with .Values.skipTLSVerification }}
+            - name: OTF_SKIP_TLS_VERIFICATION
+              value: "{{ . }}"
+            {{- end }}
             {{- with .Values.logging }}
             {{- with .verbosity }}
             - name: OTF_V

@@ -95,11 +95,12 @@ type (
 	}
 
 	OperationConfig struct {
-		Debug          bool   // toggle debug mode
-		PluginCache    bool   // toggle use of engine's shared plugin cache
-		PluginCacheDir string // directory for shared plugin cache.
-		EngineBinDir   string // destination directory for engine binaries
-		IsAgent        bool   // set to true if operation is running on an agent
+		Debug               bool   // toggle debug mode
+		PluginCache         bool   // toggle use of engine's shared plugin cache
+		PluginCacheDir      string // directory for shared plugin cache.
+		EngineBinDir        string // destination directory for engine binaries
+		IsAgent             bool   // set to true if operation is running on an agent
+		SkipTLSVerification bool   // skip verification of otfd's TLS certificate.
 	}
 
 	OperationOptions struct {

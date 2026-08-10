@@ -125,6 +125,55 @@ func TestKubeExecutor_SpawnOperation(t *testing.T) {
 	assert.Equal(t, map[string]string{"jobToken": "token"}, secretsClient.secret.StringData)
 }
 
+// TestKubeExecutor_SpawnOperation_skipTLSVerification tests that a job inherits
+// the runner's TLS verification setting, because it connects to otfd at the same
+// URL as the runner that spawned it.
+func TestKubeExecutor_SpawnOperation_skipTLSVerification(t *testing.T) {
+	tests := []struct {
+		name string
+		skip bool
+		want string
+	}{
+		{"verify by default", false, "false"},
+		{"skip verification", true, "true"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			opConfig := defaultOperationConfig()
+			opConfig.SkipTLSVerification = tt.skip
+
+			executor, err := newKubeExecutor(
+				logr.Discard(),
+				opConfig,
+				defaultKubeConfig,
+			)
+			require.NoError(t, err)
+
+			jobsClient := &fakeJobsClient{}
+			executor.jobs = jobsClient
+			executor.secrets = &fakeSecretsClient{}
+
+			job := &Job{
+				ID:           resource.NewTfeID(resource.JobKind),
+				RunID:        resource.NewTfeID(resource.RunKind),
+				Phase:        run.PlanPhase,
+				Status:       JobAllocated,
+				Organization: organization.NewTestName(t),
+				WorkspaceID:  resource.NewTfeID(resource.WorkspaceKind),
+				RunnerID:     new(resource.NewTfeID(resource.RunnerKind)),
+			}
+
+			err = executor.SpawnOperation(t.Context(), nil, job, []byte("token"))
+			require.NoError(t, err)
+
+			assert.Contains(t,
+				jobsClient.job.Spec.Template.Spec.Containers[0].Env,
+				corev1.EnvVar{Name: "OTF_SKIP_TLS_VERIFICATION", Value: tt.want},
+			)
+		})
+	}
+}
+
 type fakeSecretsClient struct {
 	secret *corev1.Secret
 }

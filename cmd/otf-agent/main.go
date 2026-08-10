@@ -74,6 +74,7 @@ func run(ctx context.Context, args []string) error {
 	cmd.Flags().StringVar(&config.Name, "name", "", "Give agent a descriptive name. Optional.")
 	cmd.Flags().StringVar(&url, "url", otfhttp.DefaultURL, "URL of OTF server")
 	cmd.Flags().StringVar(&token, "token", "", "Agent token for authentication")
+	cmd.Flags().BoolVar(&config.SkipTLSVerification, "skip-tls-verification", false, "Skip verification of the OTF server's TLS certificate. When using the kubernetes executor the setting is inherited by jobs.")
 
 	cmd.MarkFlagRequired("token")
 	cmd.SetArgs(args)

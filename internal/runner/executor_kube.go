@@ -319,6 +319,10 @@ func (s *kubeExecutor) SpawnOperation(ctx context.Context, _ *errgroup.Group, jo
 									Name:  "OTF_DEBUG",
 									Value: strconv.FormatBool(s.OperationConfig.Debug),
 								},
+								{
+									Name:  "OTF_SKIP_TLS_VERIFICATION",
+									Value: strconv.FormatBool(s.OperationConfig.SkipTLSVerification),
+								},
 							},
 							VolumeMounts: []corev1.VolumeMount{
 								{

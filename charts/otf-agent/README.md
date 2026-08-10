@@ -76,6 +76,7 @@ address=10.244.0.18 agent.pool_id=apool-5b90443ed82ef769
 | serviceAccount.create | bool | `true` |  |
 | serviceAccount.name | string | `""` |  |
 | sidecars | list | `[]` | Additional sidecar containers to run alongside the main otf-agent container |
+| skipTLSVerification | bool | `nil` | Skip verification of the OTF server's TLS certificate. Only use with a trusted server when you cannot trust the CA. Inherited by kubernetes jobs. See [docs](https://docs.otf.ninja/config/flags/#-skip-tls-verification). |
 | token | string | `nil` | Token to authenticate the agent. Either this or `tokenFromSecret` must be specified. |
 | tokenFromSecret | object | `nil` | Source token from a secret. Either this or `token` must be specified. |
 | tolerations | list | `[]` |  |

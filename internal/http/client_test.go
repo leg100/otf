@@ -50,6 +50,27 @@ func TestClient_UnmarshalResponse(t *testing.T) {
 	assert.Equal(t, want, got)
 }
 
+func TestNewClient_transport(t *testing.T) {
+	override := &http.Transport{}
+	tests := []struct {
+		name   string
+		config ClientConfig
+		want   http.RoundTripper
+	}{
+		{"verify by default", ClientConfig{}, http.DefaultTransport},
+		{"skip verification", ClientConfig{SkipTLSVerification: true}, InsecureTransport},
+		{"overridden transport takes precedence", ClientConfig{SkipTLSVerification: true, Transport: override}, override},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client, err := NewClient(tt.config)
+			require.NoError(t, err)
+
+			assert.Same(t, tt.want, client.http.HTTPClient.Transport)
+		})
+	}
+}
+
 func TestClient_checkResponseCode(t *testing.T) {
 	tests := []struct {
 		name     string

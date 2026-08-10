@@ -30,4 +30,6 @@ There are a number of flags that customise the jobs:
 * [`--kubernetes-request-memory`](config/flags.md#-kubernetes-request-memory)
 * [`--kubernetes-ttl-after-finish`](config/flags.md#-kubernetes-ttl-after-finish)
 
+A job connects back to `otfd` at the same URL as the runner that spawned it, so it inherits [`--skip-tls-verification`](config/flags.md#-skip-tls-verification) from that runner rather than being configured separately.
+
 It's advisable to provide a persistent volume for the cache. Otherwise the terraform or tofu binary is downloaded at the beginning of every job. See the helm chart settings to enable the persistent volume claim. You will need to make available a persistent volume that supports the [ReadWriteMany](https://kubernetes.io/docs/concepts/storage/persistent-volumes/#access-modes) access mode.

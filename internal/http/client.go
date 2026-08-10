@@ -43,6 +43,8 @@ type (
 		RetryRequests bool
 		// Override default http transport
 		Transport http.RoundTripper
+		// Skip verification of the server's TLS certificate.
+		SkipTLSVerification bool
 		// Logger for logging an error upon retry
 		Logger logr.Logger
 	}
@@ -60,7 +62,11 @@ func NewClient(config ClientConfig) (*Client, error) {
 		config.Headers = make(http.Header)
 	}
 	if config.Transport == nil {
-		config.Transport = http.DefaultTransport
+		if config.SkipTLSVerification {
+			config.Transport = InsecureTransport
+		} else {
+			config.Transport = http.DefaultTransport
+		}
 	}
 	config.Headers.Set("User-Agent", "otf-agent")
 

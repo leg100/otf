@@ -281,6 +281,19 @@ Hex-encoded 16-byte secret for performing cryptographic work. You should use a c
 !!! note
     The secret is required. It must be exactly 16 bytes in size, and it must be hex-encoded.
 
+## `--skip-tls-verification`
+
+* System: `otf-agent`
+* Default: `false`
+
+Skip verification of the TLS certificate presented by `otfd`. Use this when `otfd` is served with a certificate that the agent cannot verify, e.g. a self-signed certificate, or one issued by an internal certificate authority.
+
+Only enable this for a server you trust when you cannot trust the CA as it disables authentication of the server's identity, leaving the connection open to interception.
+
+When using the `kubernetes` [executor](../executors.md), jobs connect to `otfd` at the same URL as the agent that spawned them, so they inherit this setting; you don't need to configure it separately.
+
+The setting only applies to the connections `otf-agent` and its jobs make to `otfd`.
+
 ## `--site-admins`
 
 * System: `otfd`

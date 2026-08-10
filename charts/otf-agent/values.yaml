@@ -26,6 +26,9 @@ tokenFromSecret:
 # -- (string) URL of the OTF server to connect to. Must begin with `https://` or `http://`. Required.
 url:
 
+# -- (bool) Skip verification of the OTF server's TLS certificate. Only use with a trusted server when you cannot trust the CA. Inherited by kubernetes jobs. See [docs](https://docs.otf.ninja/config/flags/#-skip-tls-verification).
+skipTLSVerification:
+
 logging:
   # -- (int) Logging verbosity, the higher the number the more verbose the logs. See [docs](https://docs.otf.ninja/config/flags/#-v).
   verbosity:

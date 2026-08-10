@@ -37,12 +37,14 @@ func New(
 	logger logr.Logger,
 	url string,
 	token string,
+	skipTLSVerification bool,
 ) (*Client, error) {
 	httpClient, err := otfhttp.NewClient(otfhttp.ClientConfig{
-		URL:           url,
-		Logger:        logger,
-		Token:         token,
-		RetryRequests: true,
+		URL:                 url,
+		Logger:              logger,
+		Token:               token,
+		RetryRequests:       true,
+		SkipTLSVerification: skipTLSVerification,
 	})
 	if err != nil {
 		return nil, err
