@@ -128,6 +128,12 @@ func doMain(m *testing.M) (int, error) {
 	defer os.RemoveAll(homeDir)
 
 	oldHome := os.Getenv("HOME")
+	// Resolve the user cache directory before $HOME is changed below.
+	oldCacheDir, err := os.UserCacheDir()
+	if err != nil {
+		return 0, fmt.Errorf("determining user cache directory: %w", err)
+	}
+
 	unset, err = setenv("HOME", homeDir)
 	if err != nil {
 		return 0, err
@@ -138,12 +144,20 @@ func doMain(m *testing.M) (int, error) {
 	// slow.
 	expect = playwright.NewPlaywrightAssertions(assertionTimeout * 2)
 
-	// Playwright installs its drivers and browsers in
-	// $HOME/.cache/ms-playwright, but we've set a new $HOME, so set the
-	// relevant environment variable pointing at that directory in the original
-	// home.
-	err = os.Symlink(path.Join(oldHome, ".cache"), path.Join(os.Getenv("HOME"), ".cache"))
+	// Playwright installs its driver and browsers in the user cache directory,
+	// but we've set a new $HOME, so symlink the original cache directory into the
+	// dedicated home directory. The location within the home directory is
+	// platform-specific - .cache on linux, Library/Caches on macOS - so derive it
+	// rather than assuming one.
+	cacheRel, err := filepath.Rel(oldHome, oldCacheDir)
 	if err != nil {
+		return 0, fmt.Errorf("locating user cache directory relative to home directory: %w", err)
+	}
+	newCacheDir := filepath.Join(homeDir, cacheRel)
+	if err := os.MkdirAll(filepath.Dir(newCacheDir), 0o755); err != nil {
+		return 0, fmt.Errorf("making parent of cache directory symlink: %w", err)
+	}
+	if err := os.Symlink(oldCacheDir, newCacheDir); err != nil {
 		return 0, err
 	}
 
@@ -171,7 +185,7 @@ func doMain(m *testing.M) (int, error) {
 	{
 		const mirrorPath = "../../mirror"
 		if _, err := os.Stat(mirrorPath); err != nil {
-			return 0, fmt.Errorf("integration tests require mirror to be setup with ./hacks/setup_mirror.sh: %w", err)
+			return 0, fmt.Errorf("integration tests require mirror to be setup with ./hack/setup_mirror.sh: %w", err)
 		}
 		mirrorPathAbs, err := filepath.Abs(mirrorPath)
 		if err != nil {

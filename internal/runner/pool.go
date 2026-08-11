@@ -15,6 +15,11 @@ var (
 	ErrCannotDeletePoolReferencedByWorkspaces = errors.New("agent pool is still being used by workspaces in your organization. You must switch your workspaces to a different agent pool or execution mode before you can delete this agent pool")
 	ErrWorkspaceNotAllowedToUsePool           = errors.New("access to this agent pool is not allowed - you must explictly grant access to the workspace first")
 	ErrPoolAssignedWorkspacesNotAllowed       = errors.New("workspaces assigned to the pool have not been granted access to the pool")
+
+	ErrCannotDeletePoolReferencedByOrganization     = errors.New("agent pool is the default agent pool for your organization. You must change your organization's default execution mode or default agent pool before you can delete this agent pool")
+	ErrCannotRestrictPoolReferencedByOrganization   = errors.New("agent pool is the default agent pool for your organization, so it must remain accessible to all workspaces in the organization. You must change your organization's default execution mode or default agent pool before restricting access to this agent pool")
+	ErrOrganizationDefaultPoolWrongOrganization     = errors.New("default agent pool must belong to the organization")
+	ErrOrganizationDefaultPoolNotOrganizationScoped = errors.New("default agent pool must be accessible to all workspaces in the organization, because workspaces created with the default are not granted access to the pool individually")
 )
 
 type (
@@ -35,6 +40,8 @@ type (
 		// IDs of workspaces assigned to the pool. Note: this is a subset of
 		// AllowedWorkspaces.
 		AssignedWorkspaces []resource.TfeID `json:"workspace_ids" db:"workspace_ids"`
+		// Whether the pool is its organization's default agent pool.
+		IsOrganizationDefault bool `json:"is_organization_default" db:"is_organization_default"`
 	}
 
 	CreateAgentPoolOptions struct {
@@ -107,6 +114,12 @@ func (p *Pool) update(opts UpdatePoolOptions) error {
 			if !slices.Contains(p.AllowedWorkspaces, assigned) {
 				return ErrPoolAssignedWorkspacesNotAllowed
 			}
+		}
+		// the organization's default pool is inherited by workspaces that are
+		// never individually granted access, so it cannot be restricted to
+		// specific workspaces.
+		if p.IsOrganizationDefault {
+			return ErrCannotRestrictPoolReferencedByOrganization
 		}
 	}
 	return nil

@@ -28,6 +28,7 @@ type (
 		tokenFactory *tokenFactory
 
 		afterCreateHooks  []func(context.Context, *Organization) error
+		beforeUpdateHooks []func(context.Context, *Organization) error
 		beforeDeleteHooks []func(context.Context, *Organization) error
 	}
 
@@ -119,7 +120,15 @@ func (s *Service) UpdateOrganization(ctx context.Context, name Name, opts Update
 		return nil, err
 	}
 	org, err := s.db.update(ctx, name, func(ctx context.Context, org *Organization) error {
-		return org.Update(opts)
+		if err := org.Update(opts); err != nil {
+			return err
+		}
+		for _, hook := range s.beforeUpdateHooks {
+			if err := hook(ctx, org); err != nil {
+				return err
+			}
+		}
+		return nil
 	})
 	if err != nil {
 		s.Error(err, "updating organization", "name", name, "subject", subject)
@@ -128,6 +137,10 @@ func (s *Service) UpdateOrganization(ctx context.Context, name Name, opts Update
 
 	s.V(2).Info("updated organization", "name", name, "id", org.ID, "subject", subject)
 	return org, nil
+}
+
+func (s *Service) BeforeUpdateOrganization(hook func(context.Context, *Organization) error) {
+	s.beforeUpdateHooks = append(s.beforeUpdateHooks, hook)
 }
 
 // ListOrganizations lists organizations. If the subject lacks the ListOrganizationsAction

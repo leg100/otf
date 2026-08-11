@@ -22,37 +22,25 @@ type (
 		UpdatedAt time.Time      `jsonapi:"attribute" json:"updated-at" db:"updated_at"`
 		Name      Name           `jsonapi:"attribute" json:"name" db:"name"`
 
+		// Execution mode, and optional agent pool, that workspaces in the organization
+		// are created with unless they specify their own.
+		DefaultMode execution.Mode
+
 		// TFE fields that OTF does not support but persists merely to pass the
 		// go-tfe integration tests
 		Email                      *string `db:"email"`
 		CollaboratorAuthPolicy     *string `db:"collaborator_auth_policy"`
+		CostEstimationEnabled      bool    `db:"cost_estimation_enabled"`
 		SessionRemember            *int    `db:"session_remember"`
 		SessionTimeout             *int    `db:"session_timeout"`
 		AllowForceDeleteWorkspaces bool    `db:"allow_force_delete_workspaces"`
-		CostEstimationEnabled      bool    `db:"cost_estimation_enabled"`
-		DefaultMode                execution.Mode
 	}
 
 	// UpdateOptions represents the options for updating an organization.
 	UpdateOptions struct {
-		Name            *string
-		SessionRemember *int
-		SessionTimeout  *int
-
-		// TFE fields that OTF does not support but persists merely to pass the
-		// go-tfe integration tests
-		Email                      *string
-		CollaboratorAuthPolicy     *string
-		CostEstimationEnabled      *bool
-		AllowForceDeleteWorkspaces *bool
-		DefaultExecutionMode       *execution.Kind
-		DefaultAgentPoolID         *resource.TfeID
-	}
-
-	// CreateOptions represents the options for creating an organization. See
-	// types.CreateOptions for more details.
-	CreateOptions struct {
-		Name *string
+		Name                 *string
+		DefaultExecutionMode *execution.Kind
+		DefaultAgentPoolID   *resource.TfeID
 
 		// TFE fields that OTF does not support but persists merely to pass the
 		// go-tfe integration tests
@@ -62,8 +50,23 @@ type (
 		SessionRemember            *int
 		SessionTimeout             *int
 		AllowForceDeleteWorkspaces *bool
-		DefaultExecutionMode       *execution.Kind
-		DefaultAgentPoolID         *resource.TfeID
+	}
+
+	// CreateOptions represents the options for creating an organization. See
+	// types.CreateOptions for more details.
+	CreateOptions struct {
+		Name                 *string
+		DefaultExecutionMode *execution.Kind
+		DefaultAgentPoolID   *resource.TfeID
+
+		// TFE fields that OTF does not support but persists merely to pass the
+		// go-tfe integration tests
+		Email                      *string
+		CollaboratorAuthPolicy     *string
+		CostEstimationEnabled      *bool
+		SessionRemember            *int
+		SessionTimeout             *int
+		AllowForceDeleteWorkspaces *bool
 	}
 )
 
@@ -84,6 +87,9 @@ func NewOrganization(opts CreateOptions) (*Organization, error) {
 		opts.DefaultAgentPoolID,
 		nil,
 	)
+	if err != nil {
+		return nil, err
+	}
 
 	org := Organization{
 		Name:                   name,

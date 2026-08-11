@@ -28,8 +28,9 @@ func (db *pgdb) create(ctx context.Context, org *Organization) error {
 			session_remember,
 			session_timeout,
 			allow_force_delete_workspaces,
-			default_execution_kind
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+			default_execution_kind,
+			default_agent_pool_id
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
 		org.ID,
 		org.CreatedAt,
 		org.UpdatedAt,
@@ -41,6 +42,7 @@ func (db *pgdb) create(ctx context.Context, org *Organization) error {
 		org.SessionTimeout,
 		org.AllowForceDeleteWorkspaces,
 		org.DefaultMode.Kind(),
+		org.DefaultMode.AgentPoolID(),
 	)
 	return err
 }

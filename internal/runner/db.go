@@ -501,7 +501,12 @@ SELECT ap.agent_pool_id, ap.name, ap.created_at, ap.organization_name, ap.organi
         SELECT array_agg(aw.workspace_id)::text[]
         FROM agent_pool_allowed_workspaces aw
         WHERE aw.agent_pool_id = ap.agent_pool_id
-    ) AS allowed_workspace_ids
+    ) AS allowed_workspace_ids,
+    EXISTS (
+        SELECT 1
+        FROM organizations o
+        WHERE o.default_agent_pool_id = ap.agent_pool_id
+    ) AS is_organization_default
 FROM agent_pools ap
 WHERE ap.agent_pool_id = $1
 GROUP BY ap.agent_pool_id
@@ -521,7 +526,12 @@ SELECT ap.agent_pool_id, ap.name, ap.created_at, ap.organization_name, ap.organi
         SELECT array_agg(aw.workspace_id)::text[]
         FROM agent_pool_allowed_workspaces aw
         WHERE aw.agent_pool_id = ap.agent_pool_id
-    ) AS allowed_workspace_ids
+    ) AS allowed_workspace_ids,
+    EXISTS (
+        SELECT 1
+        FROM organizations o
+        WHERE o.default_agent_pool_id = ap.agent_pool_id
+    ) AS is_organization_default
 FROM agent_pools ap
 JOIN agent_tokens at USING (agent_pool_id)
 WHERE at.agent_token_id = $1
@@ -542,7 +552,12 @@ SELECT ap.agent_pool_id, ap.name, ap.created_at, ap.organization_name, ap.organi
         SELECT array_agg(aw.workspace_id)::text[]
         FROM agent_pool_allowed_workspaces aw
         WHERE aw.agent_pool_id = ap.agent_pool_id
-    ) AS allowed_workspace_ids
+    ) AS allowed_workspace_ids,
+    EXISTS (
+        SELECT 1
+        FROM organizations o
+        WHERE o.default_agent_pool_id = ap.agent_pool_id
+    ) AS is_organization_default
 FROM agent_pools ap
 LEFT JOIN (agent_pool_allowed_workspaces aw JOIN workspaces w USING (workspace_id)) ON ap.agent_pool_id = aw.agent_pool_id
 WHERE ap.organization_name = $1

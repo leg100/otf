@@ -46,14 +46,13 @@ data "http" "wait" {
 
 	// Invoke terraform apply
 	_, token := daemon.createToken(t, ctx, nil)
-	e, tferr, err := goexpect.SpawnWithArgs(
+	e, cmd, tferr, err := spawnPTY(
+		t,
 		[]string{terraformPath, "-chdir=" + config, "apply", "-no-color"},
+		append(sharedEnvs, internal.CredentialEnv(daemon.System.Hostname(), token)),
 		time.Minute,
 		goexpect.PartialMatch(true),
 		goexpect.Tee(out),
-		goexpect.SetEnv(
-			append(sharedEnvs, internal.CredentialEnv(daemon.System.Hostname(), token)),
-		),
 	)
 	require.NoError(t, err)
 	defer e.Close()
@@ -63,7 +62,7 @@ data "http" "wait" {
 	require.NoError(t, err)
 
 	// Send Ctrl-C now that terraform apply is in-flow.
-	err = e.SendSignal(os.Interrupt)
+	err = cmd.Process.Signal(os.Interrupt)
 	require.NoError(t, err)
 
 	// Confirm canceling run

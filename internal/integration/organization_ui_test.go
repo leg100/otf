@@ -86,7 +86,7 @@ func TestIntegration_OrganizationUI(t *testing.T) {
 			err = page.Locator("input#name").Fill("super-duper-org")
 			require.NoError(t, err)
 
-			err = page.Locator(`//button[text()='Update organization name']`).Click()
+			err = page.Locator(`//button[@id='update-organization-button']`).Click()
 			require.NoError(t, err)
 
 			err = expect.Locator(page.GetByRole("alert")).ToHaveText("updated organization")

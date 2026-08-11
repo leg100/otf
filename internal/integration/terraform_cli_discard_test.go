@@ -29,11 +29,12 @@ func TestIntegration_TerraformCLIDiscard(t *testing.T) {
 	_, token := daemon.createToken(t, ctx, nil)
 
 	// Invoke terraform apply
-	e, tferr, err := goexpect.SpawnWithArgs(
+	e, _, tferr, err := spawnPTY(
+		t,
 		[]string{terraformPath, "-chdir=" + configPath, "apply", "-no-color"},
+		internal.SafeAppend(sharedEnvs, internal.CredentialEnv(daemon.System.Hostname(), token)),
 		time.Minute,
 		goexpect.PartialMatch(true),
-		goexpect.SetEnv(internal.SafeAppend(sharedEnvs, internal.CredentialEnv(daemon.System.Hostname(), token))),
 	)
 	require.NoError(t, err)
 	defer e.Close()

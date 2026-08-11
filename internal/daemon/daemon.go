@@ -418,6 +418,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		DB:                        db,
 		RunService:                runService,
 		WorkspaceService:          workspaceService,
+		OrganizationService:       orgService,
 		TokensService:             tokensService,
 		Listener:                  sqlListener,
 		DynamicCredentialsService: dynamiccredsService,
@@ -712,7 +713,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 				},
 				authorizer,
 			),
-			orgui.NewHandlers(orgService, cfg.RestrictOrganizationCreation),
+			orgui.NewHandlers(orgService, runnerService, authorizer, cfg.RestrictOrganizationCreation),
 			vcsui.NewHandlers(vcsService),
 			variableui.NewHandlers(
 				struct {

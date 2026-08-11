@@ -34,15 +34,14 @@ func TestTerraformLogin(t *testing.T) {
 			require.NoError(t, err)
 			killBrowserPath := path.Join(wd, "./fixtures/kill-browser")
 
-			e, tferr, err := goexpect.SpawnWithArgs(
+			e, _, tferr, err := spawnPTY(
+				t,
 				[]string{tt.path, "login", daemon.System.Hostname()},
+				append(sharedEnvs, fmt.Sprintf("PATH=%s:%s", killBrowserPath, os.Getenv("PATH"))),
 				time.Minute,
 				goexpect.PartialMatch(true),
 				goexpect.Verbose(testing.Verbose()),
 				goexpect.Tee(out),
-				goexpect.SetEnv(
-					append(sharedEnvs, fmt.Sprintf("PATH=%s:%s", killBrowserPath, os.Getenv("PATH"))),
-				),
 			)
 			require.NoError(t, err)
 			defer e.Close()

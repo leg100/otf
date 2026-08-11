@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"os"
+	"path/filepath"
+	"regexp"
 	"testing"
 
 	"github.com/leg100/otf/internal/resource"
@@ -24,7 +26,8 @@ func TestRunDownload(t *testing.T) {
 	cmd.SetOut(&got)
 
 	require.NoError(t, cmd.Execute())
-	assert.Regexp(t, `Extracted tarball to: /tmp/run-123-.*`, got.String())
+	wantPrefix := regexp.QuoteMeta(filepath.Join(os.TempDir(), "run-123-"))
+	assert.Regexp(t, `Extracted tarball to: `+wantPrefix+`.*`, got.String())
 }
 
 type fakeCLIService struct {

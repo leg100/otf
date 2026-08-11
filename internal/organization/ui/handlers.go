@@ -3,6 +3,7 @@ package ui
 import (
 	"context"
 	"net/http"
+	"slices"
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal/authz"
@@ -10,11 +11,15 @@ import (
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/path"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/runner"
 	"github.com/leg100/otf/internal/ui/helpers"
+	"github.com/leg100/otf/internal/workspace/execution"
 )
 
 type Handlers struct {
 	Organizations                OrganizationService
+	Runners                      RunnerService
+	Authorizer                   authz.Interface
 	RestrictOrganizationCreation bool
 }
 
@@ -29,9 +34,15 @@ type OrganizationService interface {
 	DeleteOrganizationToken(ctx context.Context, org organization.Name) error
 }
 
-func NewHandlers(organizations OrganizationService, restrictOrganizationCreation bool) *Handlers {
+type RunnerService interface {
+	ListAgentPoolsByOrganization(ctx context.Context, organization organization.Name, opts runner.ListPoolOptions) ([]*runner.Pool, error)
+}
+
+func NewHandlers(organizations OrganizationService, runners RunnerService, authorizer authz.Interface, restrictOrganizationCreation bool) *Handlers {
 	return &Handlers{
 		Organizations:                organizations,
+		Runners:                      runners,
+		Authorizer:                   authorizer,
 		RestrictOrganizationCreation: restrictOrganizationCreation,
 	}
 }
@@ -146,8 +157,22 @@ func (h *Handlers) editOrganization(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var pools []*runner.Pool
+	canSetDefaultMode := h.Authorizer.CanAccess(r.Context(), resource.List, resource.AgentPoolKind, params.Name)
+	if canSetDefaultMode {
+		pools, err = h.defaultCandidatePools(r.Context(), params.Name)
+		if err != nil {
+			helpers.Error(r, w, err.Error())
+			return
+		}
+	}
+
 	helpers.RenderPage(
-		organizationEdit(org),
+		organizationEdit(organizationEditProps{
+			org:               org,
+			pools:             pools,
+			canSetDefaultMode: canSetDefaultMode,
+		}),
 		org.Name.String(),
 		w,
 		r,
@@ -161,17 +186,28 @@ func (h *Handlers) editOrganization(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handlers) updateOrganization(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		Name        organization.Name `schema:"name,required"`
-		UpdatedName string            `schema:"new_name,required"`
+		Name          organization.Name `schema:"name,required"`
+		UpdatedName   string            `schema:"new_name,required"`
+		ExecutionKind execution.Kind    `schema:"execution_kind"`
+		AgentPoolID   *resource.TfeID   `schema:"agent_pool_id"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 
-	org, err := h.Organizations.UpdateOrganization(r.Context(), params.Name, organization.UpdateOptions{
+	opts := organization.UpdateOptions{
 		Name: &params.UpdatedName,
-	})
+	}
+	if params.ExecutionKind != "" {
+		opts.DefaultExecutionMode = &params.ExecutionKind
+		// agent pool is submitted regardless of execution kind, so only honor it for the agent kind.
+		if params.ExecutionKind == execution.AgentKind {
+			opts.DefaultAgentPoolID = params.AgentPoolID
+		}
+	}
+
+	org, err := h.Organizations.UpdateOrganization(r.Context(), params.Name, opts)
 	if err != nil {
 		helpers.Error(r, w, err.Error())
 		return
@@ -197,6 +233,21 @@ func (h *Handlers) deleteOrganization(w http.ResponseWriter, r *http.Request) {
 
 	helpers.FlashSuccess(w, "deleted organization: "+params.Name.String())
 	http.Redirect(w, r, path.List(resource.OrganizationKind, nil), http.StatusFound)
+}
+
+// defaultCandidatePools returns the agent pools in the organization that are
+// eligible to be its default agent pool. Pools restricted to specific
+// workspaces are excluded: a workspace inheriting the organization default is
+// never individually granted access to the pool, so its creation would be
+// rejected.
+func (h *Handlers) defaultCandidatePools(ctx context.Context, name organization.Name) ([]*runner.Pool, error) {
+	pools, err := h.Runners.ListAgentPoolsByOrganization(ctx, name, runner.ListPoolOptions{})
+	if err != nil {
+		return nil, err
+	}
+	return slices.DeleteFunc(pools, func(pool *runner.Pool) bool {
+		return !pool.OrganizationScoped
+	}), nil
 }
 
 func (h *Handlers) editAdvancedOrganization(w http.ResponseWriter, r *http.Request) {

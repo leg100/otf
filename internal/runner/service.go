@@ -52,6 +52,7 @@ type (
 		Listener                  *sql.Listener
 		RunService                *otfrun.Service
 		WorkspaceService          *workspace.Service
+		OrganizationService       *organization.Service
 		TokensService             *tokens.Service
 		Authorizer                *authz.Authorizer
 		DynamicCredentialsService *dynamiccreds.Service
@@ -126,6 +127,10 @@ func NewService(opts ServiceOptions) *Service {
 	// use an agent pool, and if so, check that it is allowed to use the pool.
 	opts.WorkspaceService.BeforeCreateWorkspace(svc.checkWorkspacePoolAccess)
 	opts.WorkspaceService.BeforeUpdateWorkspace(svc.checkWorkspacePoolAccess)
+	// check whether an organization is being created or updated with a default
+	// agent pool, and if so, check the pool is usable as a default.
+	opts.OrganizationService.AfterCreateOrganization(svc.checkOrganizationDefaultPool)
+	opts.OrganizationService.BeforeUpdateOrganization(svc.checkOrganizationDefaultPool)
 	// Register with auth middleware the job token and a means of
 	// retrieving Job corresponding to token.
 	opts.TokensService.RegisterKind(resource.JobKind, func(ctx context.Context, jobID resource.TfeID) (authz.Subject, error) {
@@ -641,6 +646,28 @@ func (s *Service) checkWorkspacePoolAccess(ctx context.Context, ws *workspace.Wo
 	return ErrWorkspaceNotAllowedToUsePool
 }
 
+// checkOrganizationDefaultPool checks that an organization's default agent pool,
+// if set, is one that workspaces in the organization can actually use: it must
+// belong to the organization, and it must be organization-scoped.
+func (s *Service) checkOrganizationDefaultPool(ctx context.Context, org *organization.Organization) error {
+	poolID := org.DefaultMode.AgentPoolID()
+	if poolID == nil {
+		// organization is not using any pool
+		return nil
+	}
+	pool, err := s.db.getPool(ctx, *poolID)
+	if err != nil {
+		return err
+	}
+	if pool.Organization != org.Name {
+		return ErrOrganizationDefaultPoolWrongOrganization
+	}
+	if !pool.OrganizationScoped {
+		return ErrOrganizationDefaultPoolNotOrganizationScoped
+	}
+	return nil
+}
+
 func (s *Service) CreateAgentPool(ctx context.Context, opts CreateAgentPoolOptions) (*Pool, error) {
 	subject, err := s.Authorize(ctx, resource.Create, resource.AgentPoolKind, &opts.Organization)
 	if err != nil {
@@ -753,6 +780,10 @@ func (s *Service) DeleteAgentPool(ctx context.Context, poolID resource.TfeID) (*
 		// to return an informative error message).
 		if len(pool.AssignedWorkspaces) > 0 {
 			return nil, nil, ErrCannotDeletePoolReferencedByWorkspaces
+		}
+		//  only permit pool to be deleted if it is not its organization's default.
+		if pool.IsOrganizationDefault {
+			return nil, nil, ErrCannotDeletePoolReferencedByOrganization
 		}
 		if err := s.db.deleteAgentPool(ctx, pool.ID); err != nil {
 			return nil, subject, err

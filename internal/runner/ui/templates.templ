@@ -206,7 +206,18 @@ templ getAgentPool(props getAgentPoolProps) {
 				<label for="workspaces-all">Grant access to all workspaces in this organization</label>
 			</div>
 			<div class="mt-4 form-checkbox">
-				<input class="peer" type="radio" id="workspaces-specific" name="organization_scoped" value="false" checked?={ !props.pool.OrganizationScoped }/>
+				<input
+					class="peer"
+					type="radio"
+					id="workspaces-specific"
+					name="organization_scoped"
+					value="false"
+					checked?={ !props.pool.OrganizationScoped }
+					disabled?={ props.pool.IsOrganizationDefault }
+					if props.pool.IsOrganizationDefault {
+						title={ "this pool is the default agent pool for the " + props.pool.Organization.String() + " organization, so it must grant access to all workspaces" }
+					}
+				/>
 				<label for="workspaces-specific">Grant access to specific workspaces</label>
 				<script src={ helpers.AssetPath(ctx, "/js/dropdown.js") }></script>
 				<div
@@ -298,8 +309,13 @@ templ getAgentPool(props getAgentPoolProps) {
 				}
 			</ul>
 		}
+		if props.pool.IsOrganizationDefault {
+			<span class="description" id="unset-organization-default-before-deletion">
+				Before deleting this agent pool the default execution mode or default agent pool of the { props.pool.Organization.String() } organization must be changed.
+			</span>
+		}
 		<form class="mt-2" action={ path.Delete(props.pool.ID) } method="POST">
-			<button id="delete-agent-pool-button" class="btn btn-outline btn-error disabled:opacity-75" onclick="return confirm('Are you sure you want to delete?')" disabled?={ len(props.assignedWorkspaces) > 0 }>
+			<button id="delete-agent-pool-button" class="btn btn-outline btn-error disabled:opacity-75" onclick="return confirm('Are you sure you want to delete?')" disabled?={ len(props.assignedWorkspaces) > 0 || props.pool.IsOrganizationDefault }>
 				Delete agent pool
 			</button>
 		</form>
