@@ -3,6 +3,7 @@ package ui
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/a-h/templ"
@@ -88,6 +89,7 @@ func (h *Handlers) AddHandlers(r *mux.Router) {
 	r.HandleFunc("/runs/{run_id}/retry", h.retryRun).Methods("POST")
 	r.HandleFunc("/runs/{run_id}/watch", h.watchRun).Methods("GET")
 	r.HandleFunc("/runs/{run_id}/tail", h.tailRun)
+	r.HandleFunc("/runs/{run_id}/logs", h.getLogs).Methods("GET")
 	// this handles the link the terraform CLI shows during a plan/apply.
 	r.HandleFunc("/{organization_name}/{workspace_id}/runs/{run_id}", h.getRun).Methods("GET")
 }
@@ -238,6 +240,38 @@ func (h *Handlers) getRun(w http.ResponseWriter, r *http.Request) {
 			helpers.Breadcrumb{Name: props.run.ID.String()},
 		),
 	)
+}
+
+func (h *Handlers) getLogs(w http.ResponseWriter, r *http.Request) {
+	var opts runpkg.GetChunkOptions
+	if err := decode.All(&opts, r); err != nil {
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusUnprocessableEntity))
+		return
+	}
+	// GetChunk is unauthorized, so check the caller is permitted the same
+	// access to these logs as they would be were they tailing them.
+	if _, err := h.authorizer.Authorize(r.Context(), resource.Tail, resource.ChunkKind, opts.RunID); err != nil {
+		helpers.Error(r, w, err.Error(), helpers.WithStatus(http.StatusForbidden))
+		return
+	}
+
+	chunk, err := h.client.GetChunk(r.Context(), opts)
+	if err != nil {
+		helpers.Error(r, w, err.Error())
+		return
+	}
+	logs := chunk.RawLogs()
+	if logs == "" {
+		// the phase has yet to produce logs, or never will.
+		helpers.Error(r, w, "phase has no logs", helpers.WithStatus(http.StatusNotFound))
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", fmt.Sprintf("%s-%s.log", opts.RunID, opts.Phase)))
+	if _, err := w.Write([]byte(logs)); err != nil {
+		h.logger.Error(err, "writing logs", "run_id", opts.RunID, "phase", opts.Phase)
+	}
 }
 
 func (h *Handlers) deleteRun(w http.ResponseWriter, r *http.Request) {

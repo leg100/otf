@@ -95,40 +95,20 @@ templ (t *templates) getRun(props getRunProps) {
 			>
 				@t.singleRunTable(props.run)
 			</div>
-			<details class="collapse collapse-arrow border-base-content/20 border" id="plan" open>
-				<summary class="collapse-title">
-					<div class="flex gap-2 items-center">
-						<span class="font-semibold">Plan</span>
-						<div sse-swap={ planStatusUpdate }>
-							@phaseStatus(props.run.Plan)
-						</div>
-						<div sse-swap={ planTimeUpdate }>
-							@runningTime(&props.run.Plan)
-						</div>
-					</div>
-				</summary>
-				<div class="collapse-content bg-black text-white whitespace-pre-wrap break-words p-4 text-sm leading-snug font-mono">
-					@templ.Raw(strings.TrimSpace(props.planLogs.ToHTML()))
-					<div id="tailed-plan-logs"></div>
-				</div>
-			</details>
-			<details class="collapse collapse-arrow border-base-content/20 border" id="apply" open>
-				<summary class="collapse-title">
-					<div class="flex gap-2 items-center">
-						<span class="font-semibold">Apply</span>
-						<div sse-swap={ applyStatusUpdate }>
-							@phaseStatus(props.run.Apply)
-						</div>
-						<div sse-swap={ applyTimeUpdate }>
-							@runningTime(&props.run.Apply)
-						</div>
-					</div>
-				</summary>
-				<div class="collapse-content collapse-arrow bg-black text-white whitespace-pre-wrap break-words p-4 text-sm leading-snug font-mono">
-					@templ.Raw(strings.TrimSpace(props.applyLogs.ToHTML()))
-					<div id="tailed-apply-logs"></div>
-				</div>
-			</details>
+			@phaseLogs(phaseLogsProps{
+				phase:        props.run.Plan,
+				title:        "Plan",
+				statusUpdate: planStatusUpdate,
+				timeUpdate:   planTimeUpdate,
+				logs:         props.planLogs,
+			})
+			@phaseLogs(phaseLogsProps{
+				phase:        props.run.Apply,
+				title:        "Apply",
+				statusUpdate: applyStatusUpdate,
+				timeUpdate:   applyTimeUpdate,
+				logs:         props.applyLogs,
+			})
 		</div>
 		<div id="triggered-run-alerts" sse-swap={ triggeredRunAlertUpdate } hx-swap="beforeend" class="flex flex-col gap-2">
 			for _, id := range props.triggeredRunIDs {
@@ -137,6 +117,82 @@ templ (t *templates) getRun(props getRunProps) {
 		</div>
 		@templ.JSFuncCall("scrollMessageIntoView", triggeredRunAlertUpdate)
 	</div>
+}
+
+type phaseLogsProps struct {
+	phase        runpkg.Phase
+	title        string
+	statusUpdate sseEvent
+	timeUpdate   sseEvent
+	logs         runpkg.Chunk
+}
+
+templ phaseLogs(props phaseLogsProps) {
+	{{ name := string(props.phase.PhaseType) }}
+	<details
+		class="collapse collapse-arrow border-base-content/20 border"
+		id={ name }
+		open?={ !props.phase.Done() }
+		x-data={ fmt.Sprintf("phase_logs(%s)", runBoolString(props.logs.RawLogs() != "")) }
+		@toggle="onToggle()"
+	>
+		<summary class="collapse-title">
+			<div class="flex gap-2 items-center">
+				<span class="font-semibold">{ props.title }</span>
+				<div sse-swap={ props.statusUpdate }>
+					@phaseStatus(props.phase)
+				</div>
+				<div sse-swap={ props.timeUpdate }>
+					@runningTime(&props.phase)
+				</div>
+			</div>
+		</summary>
+		<div class="collapse-content p-0!">
+			<div class="flex gap-2 items-center px-4 py-2 border-t border-base-content/20">
+				<a
+					class="btn btn-xs btn-ghost"
+					href={ templ.URL(path.Resource(resource.Action("logs"), props.phase.RunID) + "?phase=" + name) }
+					target="_blank"
+					:class="{ 'btn-disabled': !hasLogs }"
+					:aria-disabled="!hasLogs"
+					:tabindex="hasLogs ? null : -1"
+				>View log</a>
+				<div class="flex gap-2 items-center ml-auto">
+					<button
+						type="button"
+						class="btn btn-xs btn-ghost"
+						@click="scrollToTop()"
+						:disabled="atTop"
+						:class="{ 'btn-disabled': atTop }"
+					>Top</button>
+					<button
+						type="button"
+						class="btn btn-xs btn-ghost"
+						@click="scrollToBottom()"
+						:disabled="atBottom"
+						:class="{ 'btn-disabled': atBottom }"
+					>Bottom</button>
+					<button
+						type="button"
+						class="btn btn-xs btn-ghost"
+						@click="toggleExpanded()"
+						x-text="expanded ? 'Collapse' : 'Expand'"
+					>Expand</button>
+				</div>
+			</div>
+			<div
+				id={ name + "-logs" }
+				x-ref="logs"
+				@scroll="refresh()"
+				@logs-appended="hasLogs = true; refresh()"
+				class="bg-black text-white whitespace-pre-wrap break-words p-4 text-sm leading-snug font-mono max-h-[350px] overflow-scroll"
+				:class="{ 'max-h-[350px] overflow-scroll': !expanded }"
+			>
+				@templ.Raw(strings.TrimSpace(props.logs.ToHTML()))
+				<div id={ "tailed-" + name + "-logs" }></div>
+			</div>
+		</div>
+	</details>
 }
 
 templ getPreContent() {

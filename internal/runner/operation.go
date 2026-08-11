@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/cenkalti/backoff"
@@ -52,10 +53,14 @@ type (
 		logr.Logger
 		*workdir
 
-		job           *Job
-		run           *runpkg.Run
-		ws            *workspace.Workspace
+		job *Job
+		run *runpkg.Run
+		ws  *workspace.Workspace
+		// mu guards canceled, forceCanceled and proc, which are accessed both by
+		// the goroutine running the operation and by callers of cancel.
+		mu            sync.Mutex
 		canceled      bool
+		forceCanceled bool
 		ctx           context.Context
 		cancelfn      context.CancelFunc
 		out           io.Writer
@@ -206,7 +211,7 @@ func (o *operation) doAndFinish() {
 
 	var opts FinishJobOptions
 	switch {
-	case o.canceled:
+	case o.isCanceled():
 		if o.ctx.Err() != nil {
 			// the context is closed, which only occurs when the server has
 			// already canceled the job and the server has sent the operation a
@@ -342,7 +347,7 @@ func (o *operation) do() error {
 	// do each step
 	for _, step := range steps {
 		// skip remaining steps if op is canceled
-		if o.canceled {
+		if o.isCanceled() {
 			return fmt.Errorf("execution canceled")
 		}
 		// do step
@@ -365,21 +370,56 @@ func (o *operation) do() error {
 }
 
 func (o *operation) cancel(force, sendSignal bool) {
+	o.mu.Lock()
+	defer o.mu.Unlock()
+
 	o.canceled = true
 	// cancel context only if forced
 	if force {
+		o.forceCanceled = true
 		o.cancelfn()
 	}
-	// signal current process if there is one.
-	if sendSignal && o.proc != nil {
-		if force {
-			o.V(2).Info("sending SIGKILL to engine process", "pid", o.proc.Pid)
-			o.proc.Signal(os.Kill)
-		} else {
-			o.V(2).Info("sending SIGINT to engine process", "pid", o.proc.Pid)
-			o.proc.Signal(os.Interrupt)
-		}
+	if sendSignal {
+		o.signalProcess(force)
 	}
+}
+
+// signalProcess signals the process, if one is running yet. Callers must hold mu.
+//
+// The process may not have been started yet, in which case there is nothing to
+// signal; execute signals it as soon as it has, so that a cancel arriving in
+// between is not silently dropped.
+func (o *operation) signalProcess(force bool) {
+	if o.proc == nil {
+		return
+	}
+	if force {
+		o.V(2).Info("sending SIGKILL to engine process", "pid", o.proc.Pid)
+		o.proc.Signal(os.Kill)
+	} else {
+		o.V(2).Info("sending SIGINT to engine process", "pid", o.proc.Pid)
+		o.proc.Signal(os.Interrupt)
+	}
+}
+
+// isCanceled reports whether cancelation has been requested.
+func (o *operation) isCanceled() bool {
+	o.mu.Lock()
+	defer o.mu.Unlock()
+	return o.canceled
+}
+
+// syncWriter serializes writes to a writer that is shared by more than one
+// goroutine.
+type syncWriter struct {
+	mu sync.Mutex
+	w  io.Writer
+}
+
+func (s *syncWriter) Write(p []byte) (int, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.w.Write(p)
 }
 
 type (
@@ -411,6 +451,10 @@ func (o *operation) execute(args []string, funcs ...executionOptionFunc) error {
 	cmd.Dir = o.workdir.String()
 	cmd.Env = append(os.Environ(), o.envs...)
 
+	// stdout and stderr are copied by separate goroutines, so serialize writes to
+	// the output they share.
+	out := &syncWriter{w: o.out}
+
 	if opts.redirectStdout != nil {
 		dst, err := os.Create(filepath.Join(o.workdir.String(), *opts.redirectStdout))
 		if err != nil {
@@ -419,18 +463,27 @@ func (o *operation) execute(args []string, funcs ...executionOptionFunc) error {
 		defer dst.Close()
 		cmd.Stdout = dst
 	} else {
-		cmd.Stdout = o.out
+		cmd.Stdout = out
 	}
 
 	// send stderr to both output (for sending to client) and to
-	// buffer, so that upon error its contents can be relayed.
+	// buffer, so that upon error its contents can be relayed. The buffer is only
+	// written by the stderr goroutine, and only read once cmd.Wait has returned.
 	stderr := new(bytes.Buffer)
-	cmd.Stderr = io.MultiWriter(o.out, stderr)
+	cmd.Stderr = io.MultiWriter(out, stderr)
 
 	if err := cmd.Start(); err != nil {
 		return err
 	}
+	o.mu.Lock()
 	o.proc = cmd.Process
+	// The process is only signalable once registered above, so a cancel that
+	// arrived before now could not be delivered. Deliver it here, otherwise the
+	// process runs on and cmd.Wait below never returns.
+	if o.canceled {
+		o.signalProcess(o.forceCanceled)
+	}
+	o.mu.Unlock()
 
 	o.Logger.V(5).Info("executing process", "process", args[0], "args", args[1:])
 

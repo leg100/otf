@@ -3,6 +3,7 @@ package integration
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"runtime"
 	"testing"
 	"time"
@@ -45,13 +46,23 @@ func TestIntegration_NotificationGCPPubSub(t *testing.T) {
 		Topic: topic.GetName(),
 	})
 	require.NoError(t, err)
-	received := make(chan *pubsub.Message)
+	// Ack messages, otherwise they are redelivered, and buffer them so the
+	// callback doesn't block once the test stops reading.
+	received := make(chan *pubsub.Message, 100)
 	sub := client.Subscriber(subscription.GetName())
 	go func() {
 		err := sub.Receive(t.Context(), func(_ context.Context, m *pubsub.Message) {
-			received <- m
+			m.Ack()
+			select {
+			case received <- m:
+			default:
+			}
 		})
-		require.NoError(t, err)
+		// Cancellation on test teardown is expected. The test cannot be failed
+		// from here in any case: wrong goroutine.
+		if err != nil && !errors.Is(err, context.Canceled) {
+			t.Logf("subscriber stopped: %s", err)
+		}
 	}()
 
 	daemon, _, ctx := setup(t)
@@ -79,29 +90,51 @@ func TestIntegration_NotificationGCPPubSub(t *testing.T) {
 	cv := daemon.createAndUploadConfigurationVersion(t, ctx, ws, nil)
 	run := daemon.createRun(t, ctx, ws, cv, nil)
 
-	// gcp-pubsub messages are not necessarily received in the same order as
-	// they are sent, so wait til all expected messages are received and then
-	// check them.
-	var got []*pubsub.Message
-	got = append(got, <-received)
-	got = append(got, <-received)
-	got = append(got, <-received)
-	got = append(got, <-received)
-
 	// keep a record of whether a match was found for each expected status
 	matches := map[runstatus.Status]bool{
 		runstatus.Pending:  false,
 		runstatus.Planning: false,
 		runstatus.Planned:  false,
 	}
-	for _, g := range got {
+	missing := func() []runstatus.Status {
+		var statuses []runstatus.Status
+		for status, seen := range matches {
+			if !seen {
+				statuses = append(statuses, status)
+			}
+		}
+		return statuses
+	}
+
+	// Wait for each expected status. Notifications are published per run event
+	// rather than per status transition, so neither the number of messages nor
+	// their order is fixed. Bounded, so a missing status fails this test rather
+	// than the whole package's timeout.
+	deadline := time.After(time.Minute)
+receive:
+	for len(missing()) > 0 {
+		var g *pubsub.Message
+		select {
+		case <-deadline:
+			// Include the run status: a failed run sends no notification, so
+			// otherwise an errored plan is indistinguishable from a slow one. Not
+			// via getRun, which is fatal on error.
+			var status runstatus.Status
+			if r, rerr := daemon.Runs.GetRun(ctx, run.ID); rerr == nil {
+				status = r.Status
+			}
+			t.Errorf("timed out waiting for notifications; statuses not received: %v; run status: %s",
+				missing(), status)
+			break receive
+		case g = <-received:
+		}
+
 		var payload notifications.GenericPayload
 		err = json.Unmarshal(g.Data, &payload)
 		require.NoError(t, err)
 
 		notification := payload.Notifications[0]
 		if _, ok := matches[notification.RunStatus]; ok {
-			assert.Equal(t, run.ID, payload.RunID)
 			matches[notification.RunStatus] = true
 		}
 
@@ -122,9 +155,5 @@ func TestIntegration_NotificationGCPPubSub(t *testing.T) {
 		assert.Equal(t, run.ID, payload.RunID)
 		assert.Equal(t, run.Organization, payload.OrganizationName)
 		assert.Equal(t, ws.Name, payload.WorkspaceName)
-	}
-	// check statuses were all received
-	for status, want := range matches {
-		assert.True(t, want, "status %s not received", status)
 	}
 }

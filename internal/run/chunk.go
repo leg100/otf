@@ -120,7 +120,7 @@ func (c Chunk) IsEnd() bool {
 	return len(c.Data) > 0 && c.Data[len(c.Data)-1] == ETX
 }
 
-func (c Chunk) ToHTML() string {
+func (c Chunk) RawLogs() string {
 	// remove ASCII markers
 	if c.IsStart() {
 		c.Data = c.Data[1:]
@@ -128,9 +128,12 @@ func (c Chunk) ToHTML() string {
 	if c.IsEnd() {
 		c.Data = c.Data[:len(c.Data)-1]
 	}
+	return string(c.Data)
+}
 
+func (c Chunk) ToHTML() string {
 	// convert ANSI escape sequences to HTML
-	html := term2html.Render([]byte(c.Data))
+	html := term2html.Render([]byte(c.RawLogs()))
 
 	return string(html)
 }
