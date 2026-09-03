@@ -19,11 +19,11 @@ func TestBroker_Subscribe(t *testing.T) {
 
 	sub, unsub, err := broker.Subscribe(t.Context())
 	require.NoError(t, err)
-	assert.Equal(t, 1, len(broker.subs))
+	assert.Equal(t, 1, broker.numSubs())
 
 	unsub()
 	<-sub
-	assert.Equal(t, 0, len(broker.subs))
+	assert.Equal(t, 0, broker.numSubs())
 }
 
 func TestBroker_UnsubscribeViaContext(t *testing.T) {
@@ -32,11 +32,11 @@ func TestBroker_UnsubscribeViaContext(t *testing.T) {
 
 	sub, _, err := broker.Subscribe(ctx)
 	require.NoError(t, err)
-	assert.Equal(t, 1, len(broker.subs))
+	assert.Equal(t, 1, broker.numSubs())
 
 	cancel()
 	<-sub
-	assert.Equal(t, 0, len(broker.subs))
+	assert.Equal(t, 0, broker.numSubs())
 }
 
 func TestBroker_forward(t *testing.T) {
@@ -58,12 +58,12 @@ func TestBroker_UnsubscribeFullSubscriber(t *testing.T) {
 	broker := NewBroker[*foo](logr.Discard(), "foos")
 
 	broker.Subscribe(t.Context())
-	assert.Equal(t, 1, len(broker.subs))
+	assert.Equal(t, 1, broker.numSubs())
 
 	// deliberating publish more than subBufferSize events to trigger broker to
 	// unsubscribe the sub
 	for range subBufferSize + 1 {
 		broker.Forward(sql.Event{Action: sql.InsertAction, Record: []byte(`{"bar": "baz"}`)})
 	}
-	assert.Equal(t, 0, len(broker.subs))
+	assert.Equal(t, 0, broker.numSubs())
 }

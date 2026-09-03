@@ -3,6 +3,7 @@ package runner
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sync"
 
@@ -20,8 +21,22 @@ type jobSignaler struct {
 	db     *sql.DB
 	logger logr.Logger
 
-	subscribers map[resource.TfeID]chan JobSignal
+	// subscriptions awaiting a signal, keyed by job ID. There can be more than
+	// one subscription per job: the operation carrying out a job re-establishes
+	// its subscription whenever the connection is interrupted, e.g. by a proxy
+	// timing out the long-lived request, and the new subscription can be
+	// established before the old one has been torn down.
+	subscribers map[resource.TfeID]map[*jobSignalSubscription]struct{}
 	mu          sync.Mutex // sync access to map
+}
+
+// jobSignalSubscription is a one-shot subscription awaiting a signal for a job.
+type jobSignalSubscription struct {
+	// signals receives the job signal. Closed when the subscription is removed.
+	signals chan JobSignal
+	// done is closed when the subscription is removed, releasing the go routine
+	// watching the subscriber's context.
+	done chan struct{}
 }
 
 type JobSignal struct {
@@ -33,7 +48,7 @@ func newJobSignaler(logger logr.Logger, db *sql.DB) *jobSignaler {
 	return &jobSignaler{
 		db:          db,
 		logger:      logger.WithValues("component", "job-signaler"),
-		subscribers: make(map[resource.TfeID]chan JobSignal),
+		subscribers: make(map[resource.TfeID]map[*jobSignalSubscription]struct{}),
 	}
 }
 
@@ -57,12 +72,18 @@ func (s *jobSignaler) relay(signals <-chan string) error {
 		}
 
 		s.mu.Lock()
-		sub, ok := s.subscribers[signal.JobID]
+		subs := make([]*jobSignalSubscription, 0, len(s.subscribers[signal.JobID]))
+		for sub := range s.subscribers[signal.JobID] {
+			subs = append(subs, sub)
+		}
 		s.mu.Unlock()
 
-		if ok {
-			sub <- signal
-			s.unsubscribe(signal.JobID)
+		for _, sub := range subs {
+			// signals is buffered, so this never blocks, and the subscriber
+			// still receives the buffered signal after removal closes the
+			// channel.
+			sub.signals <- signal
+			s.unsubscribe(signal.JobID, sub)
 		}
 	}
 	return pubsub.ErrSubscriptionTerminated
@@ -81,34 +102,60 @@ func (s *jobSignaler) publish(ctx context.Context, jobID resource.TfeID, force b
 // ID. If the context is canceled then an error is instead returned giving the
 // reason for the context cancelation.
 func (s *jobSignaler) awaitJobSignal(ctx context.Context, jobID resource.TfeID) func() (JobSignal, error) {
-	ch := make(chan JobSignal, 1)
+	sub := &jobSignalSubscription{
+		signals: make(chan JobSignal, 1),
+		done:    make(chan struct{}),
+	}
 
 	s.mu.Lock()
-	s.subscribers[jobID] = ch
+	if _, ok := s.subscribers[jobID]; !ok {
+		s.subscribers[jobID] = make(map[*jobSignalSubscription]struct{})
+	}
+	s.subscribers[jobID][sub] = struct{}{}
 	s.mu.Unlock()
 
+	// Remove the subscription when the subscriber's context is canceled. The go
+	// routine also exits once the subscription has been removed by other means,
+	// rather than lingering for as long as the context is alive.
 	go func() {
-		<-ctx.Done()
-		s.unsubscribe(jobID)
+		select {
+		case <-ctx.Done():
+			s.unsubscribe(jobID, sub)
+		case <-sub.done:
+		}
 	}()
 
 	return func() (JobSignal, error) {
-		signal, ok := <-ch
+		signal, ok := <-sub.signals
 		if !ok {
-			// The only reason the channel closes is because the context has been
-			// canceled, so return the reason for context being canceled.
-			return JobSignal{}, ctx.Err()
+			// The channel closes when the subscription is removed, which only
+			// happens without a signal having been sent when the context has
+			// been canceled.
+			if err := ctx.Err(); err != nil {
+				return JobSignal{}, err
+			}
+			return JobSignal{}, errors.New("job signal subscription closed")
 		}
 		return signal, nil
 	}
 }
 
-func (s *jobSignaler) unsubscribe(jobID resource.TfeID) {
+func (s *jobSignaler) unsubscribe(jobID resource.TfeID, sub *jobSignalSubscription) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if ch, ok := s.subscribers[jobID]; ok {
-		delete(s.subscribers, jobID)
-		close(ch)
+	subs, ok := s.subscribers[jobID]
+	if !ok {
+		return
 	}
+	if _, ok := subs[sub]; !ok {
+		// already unsubscribed
+		return
+	}
+	delete(subs, sub)
+	if len(subs) == 0 {
+		delete(s.subscribers, jobID)
+	}
+	close(sub.signals)
+	close(sub.done)
 }

@@ -72,7 +72,6 @@ var (
 	defaultKubeConfig kubeConfig
 )
 
-
 type kubeConfig struct {
 	Namespace      string
 	Image          string
@@ -127,6 +126,7 @@ type kubeExecutorJobsClient interface {
 type kubeExecutorSecretsClient interface {
 	Create(ctx context.Context, secret *corev1.Secret, opts metav1.CreateOptions) (*corev1.Secret, error)
 	Update(ctx context.Context, secret *corev1.Secret, opts metav1.UpdateOptions) (*corev1.Secret, error)
+	Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error
 }
 
 func newKubeExecutor(
@@ -367,6 +367,9 @@ func (s *kubeExecutor) SpawnOperation(ctx context.Context, _ *errgroup.Group, jo
 	}
 	kjob, err := s.jobs.Create(ctx, spec, metav1.CreateOptions{})
 	if err != nil {
+		// The secret has no owner to garbage collect it yet, so remove it here,
+		// otherwise it lingers in the namespace indefinitely.
+		s.deleteSecret(ctx, ksecret.GetName())
 		return fmt.Errorf("creating kubernetes job: %w", err)
 	}
 	s.Logger.V(1).Info("created kubernetes job", "name", kjob.GetName(), "namespace", kjob.GetNamespace(), "otf-job", job)
@@ -378,17 +381,27 @@ func (s *kubeExecutor) SpawnOperation(ctx context.Context, _ *errgroup.Group, jo
 			// NOTE: the API version and kind are empty strings in the returned
 			// job struct, so we're forced to hardcode them.
 			APIVersion: "batch/v1",
-			Kind:       "job",
+			Kind:       "Job",
 			Name:       kjob.Name,
 			UID:        kjob.UID,
 		},
 	}
 	_, err = s.secrets.Update(ctx, secret, metav1.UpdateOptions{})
 	if err != nil {
+		s.deleteSecret(ctx, ksecret.GetName())
 		return fmt.Errorf("setting kubernetes job token secret owner reference: %w", err)
 	}
 
 	return nil
+}
+
+// deleteSecret deletes a job token secret, for use when the secret has been left
+// without an owner to garbage collect it. Failure is logged rather than
+// returned: it never supersedes the error that prompted the deletion.
+func (s *kubeExecutor) deleteSecret(ctx context.Context, name string) {
+	if err := s.secrets.Delete(ctx, name, metav1.DeleteOptions{}); err != nil {
+		s.Logger.Error(err, "deleting kubernetes secret for job token", "name", name, "namespace", s.Config.Namespace)
+	}
 }
 
 func (s *kubeExecutor) currentJobs(ctx context.Context, runnerID resource.TfeID) int {
@@ -397,6 +410,7 @@ func (s *kubeExecutor) currentJobs(ctx context.Context, runnerID resource.TfeID)
 	})
 	if err != nil {
 		s.Logger.Error(err, "listing current number of kubernetes jobs")
+		return 0
 	}
 	return len(jobs.Items)
 }

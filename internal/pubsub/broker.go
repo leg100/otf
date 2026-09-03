@@ -37,9 +37,11 @@ var ErrSubscriptionTerminated = errors.New("broker terminated the subscription")
 
 // Broker allows clients to subscribe to OTF events.
 type Broker[T any] struct {
-	logger  logr.Logger
-	subs    map[chan Event[T]]struct{} // subscriptions
-	mu      sync.Mutex                 // sync access to map
+	logger logr.Logger
+	// subscriptions, mapped to a channel that is closed when the subscription
+	// is removed.
+	subs    map[chan Event[T]]chan struct{}
+	mu      sync.Mutex // sync access to map
 	table   sql.Table
 	enabled bool
 }
@@ -47,7 +49,7 @@ type Broker[T any] struct {
 func NewBroker[T any](logger logr.Logger, table sql.Table) *Broker[T] {
 	b := &Broker[T]{
 		logger:  logger.WithValues("component", "broker"),
-		subs:    make(map[chan Event[T]]struct{}),
+		subs:    make(map[chan Event[T]]chan struct{}),
 		table:   table,
 		enabled: true,
 	}
@@ -85,15 +87,33 @@ func (b *Broker[T]) Subscribe(ctx context.Context) (<-chan Event[T], func(), err
 	}
 
 	sub := make(chan Event[T], subBufferSize)
-	b.subs[sub] = struct{}{}
+	// unsubscribed is closed when sub is removed from the broker.
+	unsubscribed := make(chan struct{})
+	b.subs[sub] = unsubscribed
 
-	// when the context is canceled remove the subscriber
+	// when the context is canceled remove the subscriber. The goroutine also
+	// exits once the subscriber has been removed by other means - otherwise it
+	// would outlive the subscription for as long as the caller's context is
+	// alive, keeping sub and its buffer of subBufferSize events alive with it.
+	// Callers such as the runner subscribe repeatedly with a context that lives
+	// for the lifetime of the process.
 	go func() {
-		<-ctx.Done()
-		b.unsubscribe(sub)
+		select {
+		case <-ctx.Done():
+			b.unsubscribe(sub)
+		case <-unsubscribed:
+		}
 	}()
 
 	return sub, func() { b.unsubscribe(sub) }, nil
+}
+
+// numSubs is the number of current subscriptions.
+func (b *Broker[T]) numSubs() int {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	return len(b.subs)
 }
 
 func (b *Broker[T]) unsubscribe(sub chan Event[T]) {
@@ -103,12 +123,15 @@ func (b *Broker[T]) unsubscribe(sub chan Event[T]) {
 }
 
 func (b *Broker[T]) unsubscribeWithoutLock(sub chan Event[T]) {
-	if _, ok := b.subs[sub]; !ok {
+	done, ok := b.subs[sub]
+	if !ok {
 		// already unsubscribed
 		return
 	}
 	close(sub)
 	delete(b.subs, sub)
+	// release the goroutine watching the subscriber's context
+	close(done)
 }
 
 // Forward retrieves the type T uniquely identified by id and forwards it onto
