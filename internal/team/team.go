@@ -18,6 +18,7 @@ type (
 		CreatedAt time.Time      `jsonapi:"attribute" json:"created-at" db:"created_at"`
 
 		ManageWorkspaces bool `db:"permission_manage_workspaces"` // admin access on all workspaces
+		ReadWorkspaces   bool `db:"permission_read_workspaces"`   // read-only access on all workspaces
 		ManageVCS        bool `db:"permission_manage_vcs"`        // manage VCS providers
 		ManageModules    bool `db:"permission_manage_modules"`    // manage module registry
 
@@ -67,6 +68,7 @@ type (
 	// or to grant/rescind to/from an existing team.
 	OrganizationAccessOptions struct {
 		ManageWorkspaces *bool
+		ReadWorkspaces   *bool
 		ManageVCS        *bool
 		ManageModules    *bool
 
@@ -99,6 +101,9 @@ func NewTeam(organization organization.Name, opts CreateTeamOptions) (*Team, err
 	if opts.ManageWorkspaces != nil {
 		team.ManageWorkspaces = *opts.ManageWorkspaces
 	}
+	if opts.ReadWorkspaces != nil {
+		team.ReadWorkspaces = *opts.ReadWorkspaces
+	}
 	if opts.ManageVCS != nil {
 		team.ManageVCS = *opts.ManageVCS
 	}
@@ -113,6 +118,10 @@ func NewTeam(organization organization.Name, opts CreateTeamOptions) (*Team, err
 	}
 	if opts.ManagePolicyOverrides != nil {
 		team.ManagePolicyOverrides = *opts.ManagePolicyOverrides
+	}
+	// managing workspaces implies being able to read them
+	if team.ManageWorkspaces {
+		team.ReadWorkspaces = true
 	}
 	return team, nil
 }
@@ -145,6 +154,11 @@ func (t *Team) CanAccess(action resource.Action, kind resource.Kind, req authz.R
 	}
 	if t.ManageWorkspaces {
 		if authz.WorkspaceManagerRole.IsAllowed(action, kind) {
+			return true
+		}
+	}
+	if t.ReadWorkspaces {
+		if authz.WorkspaceReaderRole.IsAllowed(action, kind) {
 			return true
 		}
 	}
@@ -181,6 +195,9 @@ func (t *Team) Update(opts UpdateTeamOptions) error {
 	if opts.ManageWorkspaces != nil {
 		t.ManageWorkspaces = *opts.ManageWorkspaces
 	}
+	if opts.ReadWorkspaces != nil {
+		t.ReadWorkspaces = *opts.ReadWorkspaces
+	}
 	if opts.ManageVCS != nil {
 		t.ManageVCS = *opts.ManageVCS
 	}
@@ -195,6 +212,10 @@ func (t *Team) Update(opts UpdateTeamOptions) error {
 	}
 	if opts.ManagePolicyOverrides != nil {
 		t.ManagePolicyOverrides = *opts.ManagePolicyOverrides
+	}
+	// managing workspaces implies being able to read them
+	if t.ManageWorkspaces {
+		t.ReadWorkspaces = true
 	}
 	return nil
 }

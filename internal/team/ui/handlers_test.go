@@ -67,6 +67,32 @@ func TestTeam_WebHandlers(t *testing.T) {
 		}
 	})
 
+	t.Run("get renders permissions form", func(t *testing.T) {
+		org1 := organization.NewTestName(t)
+		owners := &team.Team{Name: "owners", ID: testutils.ParseID(t, "team-123"), Organization: org1}
+		owner, err := user.NewUser(uuid.NewString(), user.WithTeams(owners))
+		require.NoError(t, err)
+		// a non-owners team: unlike the owners team its permissions are
+		// editable, so the form renders a save button.
+		devs := &team.Team{Name: "devs", ID: testutils.ParseID(t, "team-456"), Organization: org1}
+		h := &Handlers{
+			Authorizer: authz.NewAllowAllAuthorizer(),
+			Client:     &fakeClient{team: devs, user: owner},
+		}
+
+		q := "/?team_id=team-456"
+		r := httptest.NewRequest("GET", q, nil)
+		w := httptest.NewRecorder()
+		h.getTeam(w, r)
+		require.Equal(t, 200, w.Code, w.Body.String())
+
+		// the browser test drives this form via these ids; keep them stable.
+		body := w.Body.String()
+		assert.Contains(t, body, `id="read_workspaces"`)
+		assert.Contains(t, body, `id="manage_workspaces"`)
+		assert.Contains(t, body, `id="save-team-permissions-button"`)
+	})
+
 	t.Run("list", func(t *testing.T) {
 		team := &team.Team{Name: "acme-org", ID: testutils.ParseID(t, "team-123")}
 		h := &Handlers{

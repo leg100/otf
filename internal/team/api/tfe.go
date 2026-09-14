@@ -68,6 +68,7 @@ func (a *TFEAPI) createTeam(w http.ResponseWriter, r *http.Request) {
 	if params.OrganizationAccess != nil {
 		opts.OrganizationAccessOptions = team.OrganizationAccessOptions{
 			ManageWorkspaces:      params.OrganizationAccess.ManageWorkspaces,
+			ReadWorkspaces:        params.OrganizationAccess.ReadWorkspaces,
 			ManageVCS:             params.OrganizationAccess.ManageVCSSettings,
 			ManageModules:         params.OrganizationAccess.ManageModules,
 			ManageProviders:       params.OrganizationAccess.ManageProviders,
@@ -106,6 +107,7 @@ func (a *TFEAPI) updateTeam(w http.ResponseWriter, r *http.Request) {
 	if params.OrganizationAccess != nil {
 		opts.OrganizationAccessOptions = team.OrganizationAccessOptions{
 			ManageWorkspaces:      params.OrganizationAccess.ManageWorkspaces,
+			ReadWorkspaces:        params.OrganizationAccess.ReadWorkspaces,
 			ManageVCS:             params.OrganizationAccess.ManageVCSSettings,
 			ManageModules:         params.OrganizationAccess.ManageModules,
 			ManageProviders:       params.OrganizationAccess.ManageProviders,
@@ -202,6 +204,7 @@ func (a *TFEAPI) convertTeam(from *team.Team) *team.TFETeam {
 		Visibility: from.Visibility,
 		OrganizationAccess: &team.TFEOrganizationAccess{
 			ManageWorkspaces:      from.ManageWorkspaces,
+			ReadWorkspaces:        from.ReadWorkspaces,
 			ManageVCSSettings:     from.ManageVCS,
 			ManageModules:         from.ManageModules,
 			ManageProviders:       from.ManageProviders,

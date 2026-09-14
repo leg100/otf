@@ -89,6 +89,7 @@ func (h *Handlers) updateTeam(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		TeamID           resource.TfeID `schema:"team_id,required"`
 		ManageWorkspaces bool           `schema:"manage_workspaces"`
+		ReadWorkspaces   bool           `schema:"read_workspaces"`
 		ManageVCS        bool           `schema:"manage_vcs"`
 		ManageModules    bool           `schema:"manage_modules"`
 	}
@@ -100,6 +101,7 @@ func (h *Handlers) updateTeam(w http.ResponseWriter, r *http.Request) {
 	updatedTeam, err := h.Client.UpdateTeam(r.Context(), params.TeamID, team.UpdateTeamOptions{
 		OrganizationAccessOptions: team.OrganizationAccessOptions{
 			ManageWorkspaces: &params.ManageWorkspaces,
+			ReadWorkspaces:   &params.ReadWorkspaces,
 			ManageVCS:        &params.ManageVCS,
 			ManageModules:    &params.ManageModules,
 		},

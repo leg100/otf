@@ -95,6 +95,8 @@ func TestIntegration_TeamUI_Permissions(t *testing.T) {
 		require.NoError(t, err)
 
 		// new team should have no permissions
+		err = expect.Locator(page.Locator(`//*[@id="read_workspaces"]`)).Not().ToBeChecked()
+		require.NoError(t, err)
 		err = expect.Locator(page.Locator(`//*[@id="manage_workspaces"]`)).Not().ToBeChecked()
 		require.NoError(t, err)
 		err = expect.Locator(page.Locator(`//*[@id="manage_vcs"]`)).Not().ToBeChecked()
@@ -107,7 +109,7 @@ func TestIntegration_TeamUI_Permissions(t *testing.T) {
 		require.NoError(t, err)
 
 		// save changes
-		err = page.Locator(`//*[@id="content"]/form[1]/div[4]/button`).Click()
+		err = page.Locator(`//*[@id="save-team-permissions-button"]`).Click()
 		require.NoError(t, err)
 
 		// expect flash message
@@ -118,12 +120,16 @@ func TestIntegration_TeamUI_Permissions(t *testing.T) {
 		err = expect.Locator(page.Locator(`//*[@id="manage_workspaces"]`)).ToBeChecked()
 		require.NoError(t, err)
 
+		// ...and managing workspaces implies being able to view them
+		err = expect.Locator(page.Locator(`//*[@id="read_workspaces"]`)).ToBeChecked()
+		require.NoError(t, err)
+
 		// unassign manage workspaces permission
 		err = page.Locator(`//*[@id="manage_workspaces"]`).Uncheck()
 		require.NoError(t, err)
 
 		// save changes
-		err = page.Locator(`//*[@id="content"]/form[1]/div[4]/button`).Click()
+		err = page.Locator(`//*[@id="save-team-permissions-button"]`).Click()
 		require.NoError(t, err)
 
 		// expect flash message

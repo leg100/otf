@@ -49,6 +49,26 @@ func TestIntegation_TeamService(t *testing.T) {
 		assert.True(t, got.ManageWorkspaces)
 		assert.True(t, got.ManageVCS)
 		assert.True(t, got.ManageModules)
+		// managing workspaces implies reading them
+		assert.True(t, got.ReadWorkspaces)
+	})
+
+	t.Run("update read workspaces", func(t *testing.T) {
+		daemon, _, ctx := setup(t)
+		team := daemon.createTeam(t, ctx, nil)
+
+		_, err := daemon.Teams.UpdateTeam(ctx, team.ID, otfteam.UpdateTeamOptions{
+			OrganizationAccessOptions: otfteam.OrganizationAccessOptions{
+				ReadWorkspaces: new(true),
+			},
+		})
+		require.NoError(t, err)
+
+		got, err := daemon.Teams.GetTeam(ctx, team.Organization, team.Name)
+		require.NoError(t, err)
+
+		assert.True(t, got.ReadWorkspaces)
+		assert.False(t, got.ManageWorkspaces)
 	})
 
 	t.Run("get", func(t *testing.T) {

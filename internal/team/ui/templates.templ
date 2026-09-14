@@ -84,6 +84,21 @@ templ getTeam(props getTeamProps) {
 			<div class="form-checkbox">
 				<input
 					type="checkbox"
+					name="read_workspaces"
+					id="read_workspaces"
+					value="true"
+					checked?={ props.team.ReadWorkspaces || props.team.ManageWorkspaces || props.team.IsOwners() }
+					if props.team.IsOwners() {
+						title="cannot change permissions of owners team"
+						disabled
+					}
+				/>
+				<label for="read_workspaces">View Workspaces</label>
+				<span class="description">Allows members to view all workspaces within the organization. Implied by Manage Workspaces.</span>
+			</div>
+			<div class="form-checkbox">
+				<input
+					type="checkbox"
 					name="manage_workspaces"
 					id="manage_workspaces"
 					value="true"
@@ -128,7 +143,7 @@ templ getTeam(props getTeamProps) {
 			</div>
 			if !props.team.IsOwners() {
 				<div class="field">
-					<button class="btn w-40">Save changes</button>
+					<button class="btn w-40" id="save-team-permissions-button">Save changes</button>
 				</div>
 			}
 		</form>

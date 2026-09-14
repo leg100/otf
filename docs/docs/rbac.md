@@ -28,6 +28,7 @@ Members of the owners team possess broad privileges across an organization. Owne
 
 Permissions are assigned to teams on two levels: organizations and workspaces. Organization permissions confer privileges across the organization:
 
+* View Workspaces: Allows members to view all workspaces within the organization. This is equivalent to assigning the workspace-level [Read](#permissions) permission on every workspace in the organization, and is implied by Manage Workspaces.
 * Manage Workspaces: Allows members to create and administrate all workspaces within the organization.
 * Manage VCS Settings: Allows members to manage the set of VCS providers available within the organization.
 * Manage Registry: Allows members to publish and delete modules within the organization.

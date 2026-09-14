@@ -160,6 +160,18 @@ var (
 		inherits: &WorkspaceWriteRole,
 	}
 
+	// WorkspaceReaderRole is scoped to an organization and permits read-only
+	// access to all workspaces within the organization.
+	WorkspaceReaderRole = Role{
+		name: "workspace-reader",
+		permissions: map[resource.Kind]map[resource.Action]bool{
+			resource.WorkspaceKind: map[resource.Action]bool{
+				resource.List: true,
+			},
+		},
+		inherits: &WorkspaceReadRole,
+	}
+
 	// WorkspaceManagerRole is scoped to an organization and permits management
 	// of workspaces.
 	WorkspaceManagerRole = Role{

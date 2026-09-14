@@ -302,11 +302,11 @@ func getTeam(props getTeamProps) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "\" method=\"POST\"><div class=\"form-checkbox\"><input type=\"checkbox\" name=\"manage_workspaces\" id=\"manage_workspaces\" value=\"true\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "\" method=\"POST\"><div class=\"form-checkbox\"><input type=\"checkbox\" name=\"read_workspaces\" id=\"read_workspaces\" value=\"true\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			if props.team.ManageWorkspaces || props.team.IsOwners() {
+			if props.team.ReadWorkspaces || props.team.ManageWorkspaces || props.team.IsOwners() {
 				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, " checked")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -318,11 +318,11 @@ func getTeam(props getTeamProps) templ.Component {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "> <label for=\"manage_workspaces\">Manage Workspaces</label> <span class=\"description\">Allows members to create and administrate all workspaces within the organization.</span></div><div class=\"form-checkbox\"><input type=\"checkbox\" name=\"manage_vcs\" id=\"manage_vcs\" value=\"true\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "> <label for=\"read_workspaces\">View Workspaces</label> <span class=\"description\">Allows members to view all workspaces within the organization. Implied by Manage Workspaces.</span></div><div class=\"form-checkbox\"><input type=\"checkbox\" name=\"manage_workspaces\" id=\"manage_workspaces\" value=\"true\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			if props.team.ManageVCS || props.team.IsOwners() {
+			if props.team.ManageWorkspaces || props.team.IsOwners() {
 				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, " checked")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -334,11 +334,11 @@ func getTeam(props getTeamProps) templ.Component {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "> <label for=\"manage_vcs\">Manage VCS Settings</label> <span class=\"description\">Allows members to manage the set of VCS providers available within the organization.</span></div><div class=\"form-checkbox\"><input type=\"checkbox\" name=\"manage_modules\" id=\"manage_modules\" value=\"true\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "> <label for=\"manage_workspaces\">Manage Workspaces</label> <span class=\"description\">Allows members to create and administrate all workspaces within the organization.</span></div><div class=\"form-checkbox\"><input type=\"checkbox\" name=\"manage_vcs\" id=\"manage_vcs\" value=\"true\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			if props.team.ManageModules || props.team.IsOwners() {
+			if props.team.ManageVCS || props.team.IsOwners() {
 				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, " checked")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -350,22 +350,38 @@ func getTeam(props getTeamProps) templ.Component {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "> <label for=\"manage_modules\">Manage Modules</label> <span class=\"description\" for=\"manage_modules\">Allows members to publish and delete modules within the organization.</span></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "> <label for=\"manage_vcs\">Manage VCS Settings</label> <span class=\"description\">Allows members to manage the set of VCS providers available within the organization.</span></div><div class=\"form-checkbox\"><input type=\"checkbox\" name=\"manage_modules\" id=\"manage_modules\" value=\"true\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			if !props.team.IsOwners() {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "<div class=\"field\"><button class=\"btn w-40\">Save changes</button></div>")
+			if props.team.ManageModules || props.team.IsOwners() {
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, " checked")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "</form><hr class=\"my-4\">")
+			if props.team.IsOwners() {
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, " title=\"cannot change permissions of owners team\" disabled")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "> <label for=\"manage_modules\">Manage Modules</label> <span class=\"description\" for=\"manage_modules\">Allows members to publish and delete modules within the organization.</span></div>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			if !props.team.IsOwners() {
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "<div class=\"field\"><button class=\"btn w-40\" id=\"save-team-permissions-button\">Save changes</button></div>")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "</form><hr class=\"my-4\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "<h3 class=\"font-semibold my-2 text-lg\">Members</h3><div id=\"content-list\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "<h3 class=\"font-semibold my-2 text-lg\">Members</h3><div id=\"content-list\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -376,12 +392,12 @@ func getTeam(props getTeamProps) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "</div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "</div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if props.canAddMember {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "<div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, "<div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -389,39 +405,39 @@ func getTeam(props getTeamProps) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 32, "</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
 		if !props.team.IsOwners() && props.canDeleteTeam {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "<hr class=\"my-4\"><h3 class=\"font-semibold my-2 text-lg\">Advanced</h3><form action=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, "<hr class=\"my-4\"><h3 class=\"font-semibold my-2 text-lg\">Advanced</h3><form action=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var13 templ.SafeURL
 			templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinURLErrs(path.Delete(props.team.ID))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/team/ui/templates.templ`, Line: 152, Col: 43}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/team/ui/templates.templ`, Line: 167, Col: 43}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, "\" method=\"POST\"><button class=\"btn btn-error btn-outline\" onclick=\"return confirm('Are you sure you want to delete?')\">Delete team</button> <input type=\"hidden\" name=\"id\" value=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 34, "\" method=\"POST\"><button class=\"btn btn-error btn-outline\" onclick=\"return confirm('Are you sure you want to delete?')\">Delete team</button> <input type=\"hidden\" name=\"id\" value=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var14 string
 			templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.ResolveAttributeValue(props.team.ID.String())
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/team/ui/templates.templ`, Line: 156, Col: 64}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/team/ui/templates.templ`, Line: 171, Col: 64}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var14)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 32, "\"></form>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 35, "\"></form>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

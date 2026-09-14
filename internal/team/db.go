@@ -5,9 +5,9 @@ import (
 	"errors"
 	"time"
 
-	"github.com/leg100/otf/internal/logr"
 	"github.com/jackc/pgx/v5"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
@@ -29,6 +29,7 @@ INSERT INTO teams (
     visibility,
     sso_team_id,
     permission_manage_workspaces,
+    permission_read_workspaces,
     permission_manage_vcs,
     permission_manage_modules,
     permission_manage_providers,
@@ -42,6 +43,7 @@ INSERT INTO teams (
     @visibility,
     @sso_team_id,
     @permission_manage_workspaces,
+    @permission_read_workspaces,
     @permission_manage_vcs,
     @permission_manage_modules,
     @permission_manage_providers,
@@ -57,6 +59,7 @@ INSERT INTO teams (
 			"visibility":                         team.Visibility,
 			"sso_team_id":                        team.SSOTeamID,
 			"permission_manage_workspaces":       team.ManageWorkspaces,
+			"permission_read_workspaces":         team.ReadWorkspaces,
 			"permission_manage_vcs":              team.ManageVCS,
 			"permission_manage_modules":          team.ManageModules,
 			"permission_manage_providers":        team.ManageProviders,
@@ -73,7 +76,7 @@ func (db *pgdb) UpdateTeam(ctx context.Context, teamID resource.ID, fn func(cont
 		db.DB,
 		func(ctx context.Context) (*Team, error) {
 			rows := db.Query(ctx, `
-SELECT team_id, name, created_at, permission_manage_workspaces, permission_manage_vcs, permission_manage_modules, organization_name, sso_team_id, visibility, permission_manage_policies, permission_manage_policy_overrides, permission_manage_providers
+SELECT team_id, name, created_at, permission_manage_workspaces, permission_read_workspaces, permission_manage_vcs, permission_manage_modules, organization_name, sso_team_id, visibility, permission_manage_policies, permission_manage_policy_overrides, permission_manage_providers
 FROM teams t
 WHERE team_id = $1
 FOR UPDATE OF t
@@ -89,6 +92,7 @@ SET
     visibility = @visibility,
     sso_team_id = @sso_team_id,
     permission_manage_workspaces = @permission_manage_workspaces,
+    permission_read_workspaces = @permission_read_workspaces,
     permission_manage_vcs = @permission_manage_vcs,
     permission_manage_modules = @permission_manage_modules,
     permission_manage_providers = @permission_manage_providers,
@@ -103,6 +107,7 @@ RETURNING team_id
 					"visibility":                         team.Visibility,
 					"sso_team_id":                        team.SSOTeamID,
 					"permission_manage_workspaces":       team.ManageWorkspaces,
+					"permission_read_workspaces":         team.ReadWorkspaces,
 					"permission_manage_vcs":              team.ManageVCS,
 					"permission_manage_modules":          team.ManageModules,
 					"permission_manage_providers":        team.ManageProviders,
@@ -117,7 +122,7 @@ RETURNING team_id
 
 func (db *pgdb) getTeam(ctx context.Context, name string, organization organization.Name) (*Team, error) {
 	rows := db.Query(ctx, `
-SELECT team_id, name, created_at, permission_manage_workspaces, permission_manage_vcs, permission_manage_modules, organization_name, sso_team_id, visibility, permission_manage_policies, permission_manage_policy_overrides, permission_manage_providers
+SELECT team_id, name, created_at, permission_manage_workspaces, permission_read_workspaces, permission_manage_vcs, permission_manage_modules, organization_name, sso_team_id, visibility, permission_manage_policies, permission_manage_policy_overrides, permission_manage_providers
 FROM teams
 WHERE name              = $1
 AND   organization_name = $2
@@ -127,7 +132,7 @@ AND   organization_name = $2
 
 func (db *pgdb) getTeamByID(ctx context.Context, id resource.ID) (*Team, error) {
 	rows := db.Query(ctx, `
-SELECT team_id, name, created_at, permission_manage_workspaces, permission_manage_vcs, permission_manage_modules, organization_name, sso_team_id, visibility, permission_manage_policies, permission_manage_policy_overrides, permission_manage_providers
+SELECT team_id, name, created_at, permission_manage_workspaces, permission_read_workspaces, permission_manage_vcs, permission_manage_modules, organization_name, sso_team_id, visibility, permission_manage_policies, permission_manage_policy_overrides, permission_manage_providers
 FROM teams
 WHERE team_id = $1
 `, id)
@@ -136,7 +141,7 @@ WHERE team_id = $1
 
 func (db *pgdb) getTeamByTokenID(ctx context.Context, tokenID resource.TfeID) (*Team, error) {
 	rows := db.Query(ctx, `
-SELECT t.team_id, t.name, t.created_at, t.permission_manage_workspaces, t.permission_manage_vcs, t.permission_manage_modules, t.organization_name, t.sso_team_id, t.visibility, t.permission_manage_policies, t.permission_manage_policy_overrides, t.permission_manage_providers
+SELECT t.team_id, t.name, t.created_at, t.permission_manage_workspaces, t.permission_read_workspaces, t.permission_manage_vcs, t.permission_manage_modules, t.organization_name, t.sso_team_id, t.visibility, t.permission_manage_policies, t.permission_manage_policy_overrides, t.permission_manage_providers
 FROM teams t
 JOIN team_tokens tt USING (team_id)
 WHERE tt.team_token_id = $1
@@ -146,7 +151,7 @@ WHERE tt.team_token_id = $1
 
 func (db *pgdb) listTeams(ctx context.Context, organization organization.Name) ([]*Team, error) {
 	rows := db.Query(ctx, `
-SELECT team_id, name, created_at, permission_manage_workspaces, permission_manage_vcs, permission_manage_modules, organization_name, sso_team_id, visibility, permission_manage_policies, permission_manage_policy_overrides, permission_manage_providers
+SELECT team_id, name, created_at, permission_manage_workspaces, permission_read_workspaces, permission_manage_vcs, permission_manage_modules, organization_name, sso_team_id, visibility, permission_manage_policies, permission_manage_policy_overrides, permission_manage_providers
 FROM teams
 WHERE organization_name = $1
 `, organization)
@@ -232,6 +237,7 @@ type Model struct {
 	ManagePolicies        bool `db:"permission_manage_policies"`
 	ManagePolicyOverrides bool `db:"permission_manage_policy_overrides"`
 	ManageProviders       bool `db:"permission_manage_providers"`
+	ReadWorkspaces        bool `db:"permission_read_workspaces"`
 }
 
 func (m Model) ToTeam() *Team {
@@ -240,6 +246,7 @@ func (m Model) ToTeam() *Team {
 		Name:                  m.Name,
 		CreatedAt:             m.CreatedAt,
 		ManageWorkspaces:      m.ManageWorkspaces,
+		ReadWorkspaces:        m.ReadWorkspaces,
 		ManageModules:         m.ManageModules,
 		ManageVCS:             m.ManageVCS,
 		Organization:          m.Organization,
