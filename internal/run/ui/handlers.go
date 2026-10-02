@@ -337,7 +337,7 @@ func (h *Handlers) retryRun(w http.ResponseWriter, r *http.Request) {
 		ConfigurationVersionID: &existingRun.ConfigurationVersionID,
 		IsDestroy:              &existingRun.IsDestroy,
 		PlanOnly:               &existingRun.PlanOnly,
-		Source:                 source.UI,
+		Source:                 existingRun.Source,
 	})
 	if err != nil {
 		helpers.Error(r, w, err.Error())

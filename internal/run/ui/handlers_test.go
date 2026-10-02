@@ -55,6 +55,25 @@ func TestRunsHandlers(t *testing.T) {
 	})
 }
 
+func TestRuns_RetryHandlerPreservesSource(t *testing.T) {
+	existingRun := &run.Run{
+		ID:                     testutils.ParseID(t, "run-1"),
+		WorkspaceID:            testutils.ParseID(t, "ws-1"),
+		ConfigurationVersionID: testutils.ParseID(t, "cv-1"),
+		Source:                 source.Source("github"),
+	}
+	newRun := &run.Run{ID: testutils.ParseID(t, "run-2")}
+	client := &fakeRunClient{run: existingRun, newRun: newRun}
+	h := &Handlers{client: client}
+
+	r := httptest.NewRequest("POST", "/?run_id=run-1", nil)
+	w := httptest.NewRecorder()
+	h.retryRun(w, r)
+
+	testutils.AssertRedirect(t, w, path.Get(newRun.ID))
+	assert.Equal(t, source.Source("github"), client.createRunOpts.Source)
+}
+
 func TestRuns_CancelHandler(t *testing.T) {
 	run := &run.Run{ID: testutils.ParseID(t, "run-1")}
 	h := &Handlers{
@@ -153,9 +172,11 @@ func TestTailLogs(t *testing.T) {
 
 type fakeRunClient struct {
 	Client
-	run    *run.Run
-	ws     *workspace.Workspace
-	chunks chan run.Chunk
+	run           *run.Run
+	newRun        *run.Run
+	createRunOpts run.CreateOptions
+	ws            *workspace.Workspace
+	chunks        chan run.Chunk
 }
 
 func (f *fakeRunClient) ListRuns(_ context.Context, opts run.ListOptions) (*resource.Page[*run.Run], error) {
@@ -183,6 +204,10 @@ func (f *fakeRunClient) DiscardRun(ctx context.Context, id resource.TfeID) error
 }
 
 func (f *fakeRunClient) CreateRun(ctx context.Context, workspaceID resource.TfeID, opts run.CreateOptions) (*run.Run, error) {
+	f.createRunOpts = opts
+	if f.newRun != nil {
+		return f.newRun, nil
+	}
 	return f.run, nil
 }
 
