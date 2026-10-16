@@ -81,6 +81,7 @@ func TestKubeExecutor_SpawnOperation(t *testing.T) {
 	cfg.flags.Labels = []string{"foo=bar"}
 	cfg.flags.LimitCPU = "3000m"
 	cfg.flags.LimitMemory = "512Mi"
+	cfg.Hostname = "app.otf.example.com"
 
 	executor, err := newKubeExecutor(
 		logr.Discard(),
@@ -123,6 +124,7 @@ func TestKubeExecutor_SpawnOperation(t *testing.T) {
 	assert.Equal(t, wantLabels, jobsClient.job.Labels)
 	assert.Equal(t, wantLabels, secretsClient.secret.Labels)
 	assert.Equal(t, map[string]string{"jobToken": "token"}, secretsClient.secret.StringData)
+	assert.Contains(t, jobsClient.job.Spec.Template.Spec.Containers[0].Env, corev1.EnvVar{Name: "OTF_HOSTNAME", Value: "app.otf.example.com"})
 }
 
 type fakeSecretsClient struct {

@@ -72,12 +72,12 @@ var (
 	defaultKubeConfig kubeConfig
 )
 
-
 type kubeConfig struct {
 	Namespace      string
 	Image          string
 	ConfigPath     string
 	ServerURL      string
+	Hostname       string // public-facing OTF hostname
 	ServiceAccount string
 	CachePVC       string
 	TTLAfterFinish time.Duration
@@ -279,6 +279,10 @@ func (s *kubeExecutor) SpawnOperation(ctx context.Context, _ *errgroup.Group, jo
 								{
 									Name:  "OTF_URL",
 									Value: s.Config.ServerURL,
+								},
+								{
+									Name:  "OTF_HOSTNAME",
+									Value: s.Config.Hostname,
 								},
 								{
 									Name:  "OTF_JOB_ID",
