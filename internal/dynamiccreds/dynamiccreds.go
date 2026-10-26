@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"slices"
 	"strconv"
 	"strings"
 
@@ -268,11 +267,8 @@ func lookupRunEnv(envs map[string]string, provider provider, tag string, phase r
 // with that name and returns the value of the first one found. Otherwise an
 // error is returned.
 func tryEnvs(envs map[string]string, names ...string) (string, error) {
-	for i := range names {
-		names[i] = strings.ToUpper(names[i])
-	}
-	for k, v := range envs {
-		if slices.Contains(names, k) {
+	for _, name := range names {
+		if v, ok := envs[strings.ToUpper(name)]; ok {
 			return v, nil
 		}
 	}
