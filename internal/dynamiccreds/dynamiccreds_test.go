@@ -297,3 +297,55 @@ func assertJSONFileMatches(t *testing.T, want string, path string) {
 	require.NoError(t, err)
 	assert.Equal(t, want, indented.String())
 }
+
+func TestLookupRunEnv(t *testing.T) {
+	tests := []struct {
+		name string
+		envs map[string]string
+		want string
+	}{
+		{
+			name: "phase-specific takes precedence over run",
+			envs: map[string]string{
+				"TFC_GCP_PLAN_SERVICE_ACCOUNT_EMAIL": "plan@iam.google.com",
+				"TFC_GCP_RUN_SERVICE_ACCOUNT_EMAIL":  "run@iam.google.com",
+			},
+			want: "plan@iam.google.com",
+		},
+		{
+			name: "phase-specific takes precedence over default",
+			envs: map[string]string{
+				"TFC_GCP_PLAN_SERVICE_ACCOUNT_EMAIL":         "plan@iam.google.com",
+				"TFC_DEFAULT_GCP_PLAN_SERVICE_ACCOUNT_EMAIL": "default-plan@iam.google.com",
+			},
+			want: "plan@iam.google.com",
+		},
+		{
+			name: "run takes precedence over default",
+			envs: map[string]string{
+				"TFC_GCP_RUN_SERVICE_ACCOUNT_EMAIL":     "run@iam.google.com",
+				"TFC_DEFAULT_GCP_SERVICE_ACCOUNT_EMAIL": "default@iam.google.com",
+			},
+			want: "run@iam.google.com",
+		},
+		{
+			name: "fall back to run",
+			envs: map[string]string{
+				"TFC_GCP_APPLY_SERVICE_ACCOUNT_EMAIL": "apply@iam.google.com",
+				"TFC_GCP_RUN_SERVICE_ACCOUNT_EMAIL":   "run@iam.google.com",
+			},
+			want: "run@iam.google.com",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// map iteration order is random, so repeat to catch any reliance
+			// on it
+			for range 100 {
+				got, err := lookupRunEnv(tt.envs, gcp, "", run.PlanPhase, "SERVICE_ACCOUNT_EMAIL")
+				require.NoError(t, err)
+				require.Equal(t, tt.want, got)
+			}
+		})
+	}
+}
