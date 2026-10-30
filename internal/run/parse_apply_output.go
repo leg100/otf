@@ -6,7 +6,9 @@ import (
 	"strconv"
 )
 
-var applyChangesRegex = regexp.MustCompile(`(?m)^Apply complete! Resources: (\d+) added, (\d+) changed, (\d+) destroyed.`)
+// The imported count is only printed when the apply imported anything, e.g.
+// "Apply complete! Resources: 1 imported, 1 added, 0 changed, 0 destroyed."
+var applyChangesRegex = regexp.MustCompile(`(?m)^Apply complete! Resources: (?:\d+ imported, )?(\d+) added, (\d+) changed, (\d+) destroyed.`)
 
 func ParseApplyOutput(output string) (Report, error) {
 	matches := applyChangesRegex.FindStringSubmatch(output)
