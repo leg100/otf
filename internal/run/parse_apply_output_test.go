@@ -37,3 +37,18 @@ func TestParseApplyOutputNoChanges(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, want, apply)
 }
+
+func TestParseApplyOutputImports(t *testing.T) {
+	want := Report{
+		Additions:    1,
+		Changes:      0,
+		Destructions: 0,
+	}
+
+	output, err := os.ReadFile("testdata/apply_import.txt")
+	require.NoError(t, err)
+
+	apply, err := ParseApplyOutput(string(output))
+	require.NoError(t, err)
+	assert.Equal(t, want, apply)
+}
