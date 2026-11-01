@@ -98,19 +98,6 @@ templ (t *templates) getRun(props getRunProps) {
 			>
 				@t.singleRunTable(props.run)
 			</div>
-			if props.planChanges != nil {
-				<details class="collapse collapse-arrow border-base-content/20 border" id="plan-changes" open>
-					<summary class="collapse-title">
-						<div class="flex gap-2 items-center">
-							<span class="font-semibold">Changes</span>
-							@planChangeSummary(props.planChanges)
-						</div>
-					</summary>
-					<div class="collapse-content">
-						@planChanges(props.planChanges)
-					</div>
-				</details>
-			}
 			<details class="collapse collapse-arrow border-base-content/20 border" id="plan" open>
 				<summary class="collapse-title">
 					<div class="flex gap-2 items-center">
@@ -121,12 +108,35 @@ templ (t *templates) getRun(props getRunProps) {
 						<div sse-swap={ planTimeUpdate }>
 							@runningTime(&props.run.Plan)
 						</div>
+						if props.planChanges != nil {
+							@planChangeSummary(props.planChanges)
+						}
 					</div>
 				</summary>
-				<div class="collapse-content bg-black text-white whitespace-pre-wrap break-words p-4 text-sm leading-snug font-mono">
-					@templ.Raw(strings.TrimSpace(props.planLogs.ToHTML()))
-					<div id="tailed-plan-logs"></div>
-				</div>
+				if props.planChanges != nil {
+					// Structured run output is available: offer a selector
+					// between the changes view and the raw log. Both panes
+					// stay in the DOM so the log tail keeps streaming while
+					// the changes pane is selected.
+					<div class="collapse-content p-4" x-data={ "{ view: 'changes' }" }>
+						<div role="tablist" class="tabs tabs-box mb-4">
+							<a role="tab" class="tab" :class={ "view === 'changes' ? 'tab-active' : ''" } @click={ "view = 'changes'" }>Changes</a>
+							<a role="tab" class="tab" :class={ "view === 'log' ? 'tab-active' : ''" } @click={ "view = 'log'" }>Raw log</a>
+						</div>
+						<div x-show={ "view === 'changes'" }>
+							@planChanges(props.planChanges)
+						</div>
+						<div x-show={ "view === 'log'" } class="bg-black text-white whitespace-pre-wrap break-words p-4 text-sm leading-snug font-mono">
+							@templ.Raw(strings.TrimSpace(props.planLogs.ToHTML()))
+							<div id="tailed-plan-logs"></div>
+						</div>
+					</div>
+				} else {
+					<div class="collapse-content bg-black text-white whitespace-pre-wrap break-words p-4 text-sm leading-snug font-mono">
+						@templ.Raw(strings.TrimSpace(props.planLogs.ToHTML()))
+						<div id="tailed-plan-logs"></div>
+					</div>
+				}
 			</details>
 			<details class="collapse collapse-arrow border-base-content/20 border" id="apply" open>
 				<summary class="collapse-title">
