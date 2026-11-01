@@ -43,6 +43,9 @@ type getRunProps struct {
 	planLogs        runpkg.Chunk
 	applyLogs       runpkg.Chunk
 	triggeredRunIDs []resource.TfeID
+	// planChanges is nil unless the workspace has structured run output
+	// enabled and the plan phase has produced its JSON plan file.
+	planChanges []changeView
 }
 
 templ (t *templates) getRun(props getRunProps) {
@@ -95,6 +98,19 @@ templ (t *templates) getRun(props getRunProps) {
 			>
 				@t.singleRunTable(props.run)
 			</div>
+			if props.planChanges != nil {
+				<details class="collapse collapse-arrow border-base-content/20 border" id="plan-changes" open>
+					<summary class="collapse-title">
+						<div class="flex gap-2 items-center">
+							<span class="font-semibold">Changes</span>
+							@planChangeSummary(props.planChanges)
+						</div>
+					</summary>
+					<div class="collapse-content">
+						@planChanges(props.planChanges)
+					</div>
+				</details>
+			}
 			<details class="collapse collapse-arrow border-base-content/20 border" id="plan" open>
 				<summary class="collapse-title">
 					<div class="flex gap-2 items-center">
@@ -208,6 +224,68 @@ templ resourceReport(report *runpkg.Report) {
 	<div class="font-mono text-md" id="resource-summary">
 		<span style="color: limegreen">+{ report.Additions }</span><span style="color: dodgerblue">~{ report.Changes }</span><span class="text-red-700">-{ report.Destructions }</span>
 	</div>
+}
+
+// planChangeSummary renders the +N ~N +/-N -N tally for the changes view.
+templ planChangeSummary(changes []changeView) {
+	<div class="font-mono text-md">
+		for _, action := range []string{ "create", "update", "replace", "delete" } {
+			if n := countChanges(changes, action); n > 0 {
+				<span style={ templ.SafeCSS("color: " + actionColor(action)) }>{ actionSymbol(action) }{ fmt.Sprintf("%d", n) }</span>
+			}
+		}
+	</div>
+}
+
+// planChanges renders the list of changed resources.
+templ planChanges(changes []changeView) {
+	if len(changes) == 0 {
+		<div class="alert alert-soft alert-info" role="alert">
+			<span>No changes. The infrastructure matches the configuration.</span>
+		</div>
+	} else {
+		<div class="flex flex-col gap-2">
+			for _, c := range changes {
+				@planChangeRow(c)
+			}
+		</div>
+	}
+}
+
+// planChangeRow renders one changed resource: an action badge, the address,
+// and a collapsible table of the changed attributes.
+templ planChangeRow(c changeView) {
+	<details class="collapse collapse-arrow border-base-content/20 border bg-base-100">
+		<summary class="collapse-title py-2 min-h-0">
+			<div class="flex gap-2 items-center font-mono text-sm">
+				<span class={ "badge", actionBadge(c.Action) }>{ actionSymbol(c.Action) }</span>
+				<span class="break-all">{ c.Address }</span>
+				<span class="opacity-60 text-xs">{ fmt.Sprintf("%d", len(c.Fields)) } changed</span>
+			</div>
+		</summary>
+		<div class="collapse-content">
+			<div class="overflow-x-auto">
+				<table class="table table-sm font-mono text-xs">
+					<thead>
+						<tr>
+							<th>Attribute</th>
+							<th>Before</th>
+							<th>After</th>
+						</tr>
+					</thead>
+					<tbody>
+						for _, f := range c.Fields {
+							<tr>
+								<td class="whitespace-pre-wrap break-all max-w-40">{ f.Key }</td>
+								<td class="whitespace-pre-wrap break-all max-w-60">{ f.Before }</td>
+								<td class="whitespace-pre-wrap break-all max-w-60">{ f.After }</td>
+							</tr>
+						}
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</details>
 }
 
 var phaseBadges = map[runpkg.PhaseStatus]string{

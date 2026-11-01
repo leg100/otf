@@ -190,6 +190,10 @@ func (f *fakeRunClient) TailRun(context.Context, run.TailOptions) (<-chan run.Ch
 	return f.chunks, nil
 }
 
+func (f *fakeRunClient) GetRunPlanFile(context.Context, resource.TfeID, run.PlanFormat) ([]byte, error) {
+	return nil, nil
+}
+
 func (f *fakeRunClient) GetWorkspace(context.Context, resource.TfeID) (*workspace.Workspace, error) {
 	return f.ws, nil
 }

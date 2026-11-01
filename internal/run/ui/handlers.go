@@ -43,6 +43,7 @@ type Client interface {
 	ApplyRun(context.Context, resource.TfeID) error
 	WatchRuns(ctx context.Context) (<-chan pubsub.Event[*runpkg.Event], func(), error)
 	ListTriggeredRunIDs(ctx context.Context, runID resource.ID) ([]resource.TfeID, error)
+	GetRunPlanFile(ctx context.Context, runID resource.TfeID, format runpkg.PlanFormat) ([]byte, error)
 	GetWorkspace(context.Context, resource.TfeID) (*workspace.Workspace, error)
 	WatchWorkspaces(ctx context.Context) (<-chan pubsub.Event[*workspace.Event], func(), error)
 	GetUser(ctx context.Context, spec user.UserSpec) (*user.User, error)
@@ -219,12 +220,29 @@ func (h *Handlers) getRun(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Build the structured plan changes view when the workspace has the
+	// advanced run UI enabled and the plan phase has finished (the JSON
+	// plan file is uploaded at the end of the phase). A parse or retrieval
+	// error hides the section rather than failing the page.
+	var planChanges []changeView
+	if ws.StructuredRunOutputEnabled && run.Plan.Status == runpkg.PhaseFinished {
+		planJSON, err := h.client.GetRunPlanFile(r.Context(), run.ID, runpkg.PlanFormatJSON)
+		if err != nil {
+			h.logger.Error(err, "retrieving plan JSON", "run", run.ID)
+		} else if changes, err := buildChangeView(planJSON); err != nil {
+			h.logger.Error(err, "parsing plan JSON", "run", run.ID)
+		} else {
+			planChanges = changes
+		}
+	}
+
 	props := getRunProps{
 		run:             run,
 		ws:              ws,
 		planLogs:        runpkg.Chunk{Data: planLogs.Data},
 		applyLogs:       runpkg.Chunk{Data: applyLogs.Data},
 		triggeredRunIDs: triggeredRunIDs,
+		planChanges:     planChanges,
 	}
 	helpers.RenderPage(
 		h.templates.getRun(props),
