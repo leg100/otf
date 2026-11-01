@@ -236,6 +236,15 @@ func (h *Handlers) getRun(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Build the structured apply view from the apply log when the advanced
+	// run UI is enabled and the apply phase has started producing output.
+	var applyChanges []applyChangeView
+	if ws.StructuredRunOutputEnabled && run.Apply.Status != runpkg.PhasePending {
+		if changes := parseApplyView(string(applyLogs.Data)); len(changes) > 0 {
+			applyChanges = changes
+		}
+	}
+
 	props := getRunProps{
 		run:             run,
 		ws:              ws,
@@ -243,6 +252,7 @@ func (h *Handlers) getRun(w http.ResponseWriter, r *http.Request) {
 		applyLogs:       runpkg.Chunk{Data: applyLogs.Data},
 		triggeredRunIDs: triggeredRunIDs,
 		planChanges:     planChanges,
+		applyChanges:    applyChanges,
 	}
 	helpers.RenderPage(
 		h.templates.getRun(props),

@@ -46,6 +46,9 @@ type getRunProps struct {
 	// planChanges is nil unless the workspace has structured run output
 	// enabled and the plan phase has produced its JSON plan file.
 	planChanges []changeView
+	// applyChanges is nil unless the workspace has structured run output
+	// enabled and the apply log contains resource operations.
+	applyChanges []applyChangeView
 }
 
 templ (t *templates) getRun(props getRunProps) {
@@ -148,12 +151,36 @@ templ (t *templates) getRun(props getRunProps) {
 						<div sse-swap={ applyTimeUpdate }>
 							@runningTime(&props.run.Apply)
 						</div>
+						if props.applyChanges != nil {
+							@applyChangeSummary(props.applyChanges)
+						}
 					</div>
 				</summary>
-				<div class="collapse-content collapse-arrow bg-black text-white whitespace-pre-wrap break-words p-4 text-sm leading-snug font-mono">
-					@templ.Raw(strings.TrimSpace(props.applyLogs.ToHTML()))
-					<div id="tailed-apply-logs"></div>
-				</div>
+				if props.applyChanges != nil {
+					// Structured run output is available: offer a selector
+					// between the changes view and the raw log, mirroring
+					// the plan section. Both panes stay in the DOM so the
+					// log tail keeps streaming while the changes pane is
+					// selected.
+					<div class="collapse-content p-4" x-data={ "{ view: 'changes' }" }>
+						<div role="tablist" class="tabs tabs-box mb-4">
+							<a role="tab" class="tab" :class={ "view === 'changes' ? 'tab-active' : ''" } @click={ "view = 'changes'" }>Changes</a>
+							<a role="tab" class="tab" :class={ "view === 'log' ? 'tab-active' : ''" } @click={ "view = 'log'" }>Raw log</a>
+						</div>
+						<div x-show={ "view === 'changes'" }>
+							@applyChanges(props.applyChanges)
+						</div>
+						<div x-show={ "view === 'log'" } class="bg-black text-white whitespace-pre-wrap break-words p-4 text-sm leading-snug font-mono">
+							@templ.Raw(strings.TrimSpace(props.applyLogs.ToHTML()))
+							<div id="tailed-apply-logs"></div>
+						</div>
+					</div>
+				} else {
+					<div class="collapse-content collapse-arrow bg-black text-white whitespace-pre-wrap break-words p-4 text-sm leading-snug font-mono">
+						@templ.Raw(strings.TrimSpace(props.applyLogs.ToHTML()))
+						<div id="tailed-apply-logs"></div>
+					</div>
+				}
 			</details>
 		</div>
 		<div id="triggered-run-alerts" sse-swap={ triggeredRunAlertUpdate } hx-swap="beforeend" class="flex flex-col gap-2">
@@ -296,6 +323,51 @@ templ planChangeRow(c changeView) {
 			</div>
 		</div>
 	</details>
+}
+
+// applyChangeSummary renders the +N ~N -N tally for the apply changes view.
+// A replace operation emits both a destroy and a create row, so both are
+// counted, like the engine's own report.
+templ applyChangeSummary(changes []applyChangeView) {
+	<div class="font-mono text-md">
+		for _, action := range []string{ "create", "update", "destroy" } {
+			if n := countApplyChanges(changes, action); n > 0 {
+				<span style={ templ.SafeCSS("color: " + actionColor(action)) }>{ actionSymbol(action) }{ fmt.Sprintf("%d", n) }</span>
+			}
+		}
+	</div>
+}
+
+// applyChanges renders the list of applied resource operations.
+templ applyChanges(changes []applyChangeView) {
+	if len(changes) == 0 {
+		<div class="alert alert-soft alert-info" role="alert">
+			<span>No resource operations in this apply.</span>
+		</div>
+	} else {
+		<div class="flex flex-col gap-2">
+			for _, c := range changes {
+				@applyChangeRow(c)
+			}
+		</div>
+	}
+}
+
+// applyChangeRow renders one applied resource operation: an action badge, the
+// address, and the operation's outcome (duration and id once complete).
+templ applyChangeRow(c applyChangeView) {
+	<div class="flex gap-2 items-center font-mono text-sm border border-base-content/20 bg-base-100 p-2">
+		<span class={ "badge", actionBadge(c.Action) }>{ actionSymbol(c.Action) }</span>
+		<span class="break-all">{ c.Address }</span>
+		if c.Complete {
+			<span class="opacity-60 text-xs">after { c.Duration }</span>
+			if c.ID != "" {
+				<span class="opacity-60 text-xs">[id={ c.ID }]</span>
+			}
+		} else {
+			<span class="opacity-60 text-xs">(in progress)</span>
+		}
+	</div>
 }
 
 var phaseBadges = map[runpkg.PhaseStatus]string{
